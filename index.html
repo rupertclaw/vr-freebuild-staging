@@ -2,104 +2,97 @@
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
     <title>Roots — Your Family Tree</title>
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body {
+        html, body {
+            height: 100%;
+            overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f3ef;
             color: #1a1a1a;
-            line-height: 1.4;
-            overflow-x: auto;
-            min-height: 100vh;
+            -webkit-tap-highlight-color: transparent;
         }
 
         /* Header */
         .header {
+            position: fixed;
+            top: 0; left: 0; right: 0;
             background: #1a1a1a;
             color: #fff;
-            padding: 12px 16px;
+            padding: 10px 14px;
             display: flex;
             align-items: center;
             justify-content: space-between;
-            position: sticky;
-            top: 0;
             z-index: 100;
+            height: 50px;
         }
-        .header h1 { font-size: 17px; font-weight: 600; }
-        .header-right {
-            display: flex;
-            align-items: center;
-            gap: 16px;
-        }
+        .header h1 { font-size: 16px; font-weight: 600; }
         .header-stats {
             display: flex;
-            gap: 16px;
-            font-size: 11px;
-            color: #999;
+            gap: 12px;
+            font-size: 10px;
+            color: #888;
         }
         .header-stats span { color: #fff; font-weight: 600; }
         .header-btn {
             background: #fff;
             color: #1a1a1a;
             border: none;
-            padding: 6px 12px;
+            padding: 5px 10px;
             border-radius: 6px;
-            font-size: 12px;
+            font-size: 11px;
             font-weight: 600;
             cursor: pointer;
         }
 
-        /* Tree container */
-        .tree-wrapper {
-            padding: 40px 20px;
+        /* Tree scroll area */
+        .tree-scroll {
+            position: fixed;
+            top: 50px;
+            left: 0; right: 0; bottom: 0;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        /* Tree container - horizontal layout */
+        .tree-container {
             display: flex;
-            flex-direction: column;
             align-items: center;
+            padding: 40px 20px;
+            min-width: fit-content;
+            min-height: 100%;
             gap: 0;
         }
 
-        .generation-row {
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            gap: 16px;
-            position: relative;
-            padding: 24px 0;
-        }
-
-        /* Couple group (parent pair) */
-        .couple-group {
+        /* Generation column */
+        .gen-column {
             display: flex;
             flex-direction: column;
-            align-items: center;
+            justify-content: center;
+            gap: 0;
             position: relative;
         }
 
-        .couple-pair {
-            display: flex;
-            gap: 12px;
-            align-items: center;
-        }
-
-        /* Person node (compact) */
+        /* Person node - compact horizontal style */
         .person-node {
             background: #fff;
-            border-radius: 10px;
-            padding: 10px 14px;
-            min-width: 130px;
+            border-radius: 8px;
+            padding: 8px 12px;
+            width: 140px;
             text-align: center;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
             border: 2px solid transparent;
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
             z-index: 2;
+            margin: 6px 0;
         }
         .person-node:hover {
-            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
-            transform: translateY(-2px);
+            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+            transform: scale(1.02);
         }
         .person-node.confirmed { border-color: #22c55e; }
         .person-node.probable { border-color: #f59e0b; }
@@ -108,86 +101,77 @@
         .person-node.you { border-color: #3b82f6; border-width: 3px; }
 
         .person-node .name {
-            font-size: 13px;
+            font-size: 12px;
             font-weight: 600;
-            letter-spacing: -0.2px;
             line-height: 1.3;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
         }
         .person-node .years {
-            font-size: 10px;
+            font-size: 9px;
             color: #888;
-            margin-top: 2px;
+            margin-top: 1px;
         }
-        .person-node .status-dot {
-            width: 7px;
-            height: 7px;
+        .person-node .line-dot {
+            width: 6px;
+            height: 6px;
             border-radius: 50%;
             position: absolute;
-            top: -3px;
-            right: -3px;
-            border: 2px solid #fff;
+            top: -2px;
+            right: -2px;
+            border: 1.5px solid #fff;
+            box-sizing: content-box;
         }
         .dot-paternal { background: #3b82f6; }
         .dot-maternal { background: #ec4899; }
-        .dot-brickwall { background: #ef4444; box-shadow: 0 0 0 2px #fff; }
+        .dot-brickwall { background: #ef4444; }
 
-        /* Connecting lines */
-        .connector-down {
-            width: 2px;
-            height: 24px;
-            background: #d1d5db;
-            position: absolute;
-            bottom: -24px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 0;
+        /* Connector area between columns */
+        .connector-col {
+            width: 32px;
+            position: relative;
+            flex-shrink: 0;
         }
-        .connector-horizontal {
+
+        /* SVG lines overlay */
+        .lines-svg {
             position: absolute;
-            background: #d1d5db;
-            z-index: 0;
-        }
-        .connector-down-from-couple {
-            width: 2px;
-            height: 24px;
-            background: #d1d5db;
-            position: absolute;
-            bottom: -24px;
-            left: 50%;
-            transform: translateX(-50%);
-            z-index: 0;
+            top: 0; left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
         }
 
         /* Pro banner */
         .pro-banner {
             position: fixed;
             top: 56px;
-            right: 12px;
+            right: 8px;
             background: #fef3c7;
             border: 1px solid #f59e0b;
-            padding: 10px 14px;
-            border-radius: 8px;
-            font-size: 11px;
-            max-width: 200px;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 10px;
             z-index: 99;
+            max-width: 180px;
         }
-        .pro-banner strong { color: #92400e; display: block; margin-bottom: 3px; }
-        .pro-banner a { color: #92400e; text-decoration: underline; }
+        .pro-banner strong { color: #92400e; display: block; font-size: 11px; }
 
-        /* Detail panel (hidden by default) */
+        /* Detail panel */
         .detail-panel {
             display: none;
             position: fixed;
-            top: 0;
-            right: 0;
-            width: 340px;
-            max-width: 90vw;
+            top: 0; right: 0;
+            width: 300px;
+            max-width: 85vw;
             height: 100vh;
             background: #fff;
             box-shadow: -4px 0 20px rgba(0,0,0,0.15);
             z-index: 200;
             overflow-y: auto;
-            animation: slideIn 0.3s ease;
+            animation: slideIn 0.25s ease;
         }
         .detail-panel.active { display: block; }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
@@ -195,105 +179,106 @@
         .detail-header {
             background: #1a1a1a;
             color: #fff;
-            padding: 20px;
+            padding: 16px;
             position: relative;
         }
         .detail-close {
             position: absolute;
-            top: 16px;
-            right: 16px;
-            background: none;
-            border: none;
-            color: #fff;
-            font-size: 20px;
+            top: 12px; right: 12px;
+            background: none; border: none;
+            color: #fff; font-size: 22px;
             cursor: pointer;
         }
-        .detail-header h2 { font-size: 18px; font-weight: 600; }
-        .detail-header .years { color: #999; font-size: 13px; margin-top: 4px; }
-        .detail-body { padding: 20px; }
-        .detail-section { margin-bottom: 24px; }
+        .detail-header h2 { font-size: 16px; font-weight: 600; }
+        .detail-years { color: #999; font-size: 12px; margin-top: 2px; }
+        .detail-body { padding: 16px; }
+        .detail-section { margin-bottom: 20px; }
         .detail-section h3 {
-            font-size: 11px;
+            font-size: 10px;
             text-transform: uppercase;
             letter-spacing: 1px;
             color: #999;
-            margin-bottom: 10px;
+            margin-bottom: 8px;
         }
-        .detail-item {
+        .detail-row {
             display: flex;
             justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #eee;
-            font-size: 13px;
+            padding: 6px 0;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 12px;
         }
-        .detail-item:last-child { border-bottom: none; }
+        .detail-row:last-child { border-bottom: none; }
         .detail-label { color: #666; }
-        .detail-value { font-weight: 500; }
+        .detail-value { font-weight: 500; text-align: right; }
+
         .badge {
-            display: inline-block;
-            font-size: 10px;
+            font-size: 9px;
             font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 4px;
+            padding: 2px 6px;
+            border-radius: 3px;
             text-transform: uppercase;
+            letter-spacing: 0.3px;
         }
         .badge-confirmed { background: #dcfce7; color: #166534; }
         .badge-probable { background: #fef3c7; color: #92400e; }
-        .badge-speculative { background: #f3f4f6; color: #4b5563; }
         .badge-brickwall { background: #fee2e2; color: #991b1b; }
 
         /* Overlay */
         .overlay {
             display: none;
             position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: rgba(0,0,0,0.4);
+            inset: 0;
+            background: rgba(0,0,0,0.35);
             z-index: 150;
         }
         .overlay.active { display: block; }
 
-        /* Action buttons at top */
-        .top-actions {
-            display: flex;
-            gap: 8px;
-            align-items: center;
-        }
-        .top-actions button {
-            background: rgba(255,255,255,0.1);
-            border: 1px solid rgba(255,255,255,0.2);
+        /* Horizontal scroll hint (mobile-only, fades out) */
+        .scroll-hint {
+            position: fixed;
+            bottom: 20px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0,0,0,0.7);
             color: #fff;
-            padding: 5px 10px;
-            border-radius: 6px;
+            padding: 6px 14px;
+            border-radius: 20px;
             font-size: 11px;
-            cursor: pointer;
+            z-index: 90;
+            animation: fadeOut 3s forwards;
+            animation-delay: 1s;
+        }
+        @keyframes fadeOut {
+            to { opacity: 0; pointer-events: none; }
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Roots</h1>
-        <div class="header-right">
-            <div class="header-stats">
-                <div>People: <span>23</span></div>
-                <div>Confirmed: <span>14</span></div>
-                <div>Walls: <span>4</span></div>
-            </div>
-            <div class="top-actions">
-                <button onclick="openPanel('suggest')">Suggest Next Doc</button>
-                <button onclick="openPanel('research')">Research</button>
-            </div>
-            <button class="header-btn">+ Add</button>
+        <div class="header-stats">
+            <div>People: <span>23</span></div>
+            <div>Confirmed: <span>14</span></div>
+            <div>Walls: <span>4</span></div>
         </div>
+        <button class="header-btn" onclick="showMenu()">+</button>
     </div>
 
     <div class="pro-banner">
         <strong>4 brick walls</strong>
-        AI research plans available — <a href="#">View</a>
+        AI research plans available
     </div>
 
-    <div class="tree-wrapper" id="tree">
-        <!-- Generated via JS -->
+    <div class="tree-scroll">
+        <div class="tree-container" id="treeContainer">
+            <!-- Generated by JS -->
+        </div>
+        <svg class="lines-svg" id="linesSvg">
+            <!-- Lines generated by JS -->
+        </svg>
     </div>
+
+    <div class="scroll-hint">← Swipe to explore →</div>
 
     <!-- Detail Panel -->
     <div class="overlay" id="overlay" onclick="closePanel()"></div>
@@ -301,114 +286,271 @@
         <div class="detail-header">
             <button class="detail-close" onclick="closePanel()">&times;</button>
             <h2 id="panelName">Name</h2>
-            <div class="years" id="panelYears">Years</div>
+            <div class="detail-years" id="panelYears">Years</div>
         </div>
-        <div class="detail-body" id="panelBody">
-            <!-- Dynamic content -->
-        </div>
+        <div class="detail-body" id="panelBody"></div>
     </div>
 
     <script>
-        // Tree data
-        const treeData = {
-            id: 1, name: "Gavin Harrow", years: "b. 1966", line: "you", status: "confirmed",
+        // Tree data structure
+        const tree = {
+            id: 1,
+            name: "Gavin Harrow",
+            years: "b. 1966",
+            status: "confirmed",
+            line: "you",
             paternal: {
-                name: "Joseph Harrow", years: "1931–1974", status: "confirmed", line: "paternal",
-                father: { name: "Joseph Harrow", years: "1906–1974", status: "confirmed",
-                    father: { name: "Joseph Marsh Harrow", years: "1879–?", status: "probable",
-                        father: { name: "Thomas Harrow", years: "~1862–1911", status: "brickwall",
-                            father: { name: "?", years: "Brick Wall", status: "brickwall" },
-                            mother: { name: "Catherine Marsh", years: "~1857–?", status: "probable", note: "Age conflict in 1881 census" }
-                        },
-                        mother: { name: "Catherine Merriwether", years: "~1882–1960", status: "probable" }
+                name: "Joseph Harrow",
+                years: "1931–1974",
+                status: "confirmed",
+                line: "paternal",
+                paternal: {
+                    name: "Joseph Harrow",
+                    years: "1906–1974",
+                    status: "confirmed",
+                    line: "paternal",
+                    paternal: {
+                        name: "Joseph Harrow",
+                        years: "1879–?",
+                        status: "probable",
+                        line: "paternal",
+                        paternal: { name: "Thomas Harrow", years: "~1862", status: "brickwall", line: "paternal" },
+                        maternal: { name: "Catherine Marsh", years: "~1857", status: "probable", line: "paternal", note: "Age conflict" }
                     },
-                    mother: { name: "Alice Marsh", years: "1907–1978", status: "confirmed",
-                        father: { name: "Edward Marsh", years: "1866–?", status: "confirmed", note: "Jute millworker" },
-                        mother: { name: "Mary Ashdown", years: "~1868–?", status: "probable" }
+                    maternal: {
+                        name: "Alice Marsh",
+                        years: "1907–1978",
+                        status: "confirmed",
+                        line: "paternal",
+                        paternal: { name: "Edward Marsh", years: "1866–?", status: "confirmed", line: "paternal", note: "Jute millworker" },
+                        maternal: { name: "Mary Ashdown", years: "~1868", status: "probable", line: "paternal" }
                     }
                 },
-                mother: { name: "Alice Marsh (Harrow)", years: "1907–1978", status: "confirmed", duplicate: true }
+                maternal: {
+                    name: "Alice Marsh",
+                    years: "1907–1978",
+                    status: "confirmed",
+                    line: "paternal",
+                    paternal: { name: "Edward Marsh", years: "1866–?", status: "confirmed", line: "paternal" },
+                    maternal: { name: "Mary Ashdown", years: "~1868", status: "probable", line: "paternal" }
+                }
             },
             maternal: {
-                name: "Rose Fenwick", years: "1931–", status: "confirmed", line: "maternal",
-                father: { name: "Andrew Fenwick", years: "1904–1972", status: "confirmed", line: "maternal",
-                    father: { name: "James Fenwick", years: "1872–?", status: "confirmed", line: "maternal", note: "Born England, coal miner" },
-                    mother: { name: "Agnes Maddox", years: "~1876–?", status: "probable", line: "maternal" }
+                name: "Rose Fenwick",
+                years: "1931–",
+                status: "confirmed",
+                line: "maternal",
+                paternal: {
+                    name: "Andrew Fenwick",
+                    years: "1904–1972",
+                    status: "confirmed",
+                    line: "maternal",
+                    paternal: { name: "James Fenwick", years: "1872–?", status: "confirmed", line: "maternal", note: "England, coal miner" },
+                    maternal: { name: "Agnes Maddox", years: "~1876", status: "probable", line: "maternal" }
                 },
-                mother: { name: "Agnes Elder", years: "1903–", status: "confirmed", line: "maternal",
-                    father: { name: "Patrick Elder", years: "~1872–?", status: "probable", line: "maternal", note: "Marriage cert needed" },
-                    mother: { name: "Rose Colton", years: "1872–?", status: "probable", line: "maternal" }
+                maternal: {
+                    name: "Agnes Elder",
+                    years: "1903–",
+                    status: "confirmed",
+                    line: "maternal",
+                    paternal: { name: "Patrick Elder", years: "~1872", status: "probable", line: "maternal", note: "Marriage cert needed" },
+                    maternal: { name: "Rose Colton", years: "1872–?", status: "probable", line: "maternal" }
                 }
             }
         };
 
-        // Flatten tree into generations
-        function getGenerations(node, gen = 0) {
-            const gens = [];
+        // Flatten tree into generations for horizontal layout
+        function getGenerations(node, gen = 0, gens = []) {
             if (!gens[gen]) gens[gen] = [];
             
-            const entry = { name: node.name, years: node.years, status: node.status, line: node.line, note: node.note };
+            const entry = { 
+                name: node.name, 
+                years: node.years, 
+                status: node.status, 
+                line: node.line || 'paternal',
+                note: node.note,
+                gen: gen
+            };
             gens[gen].push(entry);
 
             if (node.paternal) {
-                if (!gens[gen + 1]) gens[gen + 1] = [];
                 const p = node.paternal;
-                gens[gen + 1].push({ name: p.name, years: p.years, status: p.status, line: p.line, note: p.note });
-                if (p.father) getAncestors(p.father, gen + 2, gens);
-                if (p.mother) getAncestors(p.mother, gen + 2, gens);
+                if (!gens[gen + 1]) gens[gen + 1] = [];
+                gens[gen + 1].push({ 
+                    name: p.name, 
+                    years: p.years, 
+                    status: p.status, 
+                    line: p.line || 'paternal',
+                    note: p.note,
+                    gen: gen + 1
+                });
+                if (p.paternal) getAncestors(p.paternal, gen + 2, gens);
+                if (p.maternal) getAncestors(p.maternal, gen + 2, gens);
             }
             if (node.maternal) {
-                if (!gens[gen + 1]) gens[gen + 1] = [];
                 const m = node.maternal;
-                gens[gen + 1].push({ name: m.name, years: m.years, status: m.status, line: m.line, note: m.note });
-                if (m.father) getAncestors(m.father, gen + 2, gens);
-                if (m.mother) getAncestors(m.mother, gen + 2, gens);
+                if (!gens[gen + 1]) gens[gen + 1] = [];
+                gens[gen + 1].push({ 
+                    name: m.name, 
+                    years: m.years, 
+                    status: m.status, 
+                    line: m.line || 'maternal',
+                    note: m.note,
+                    gen: gen + 1
+                });
+                if (m.paternal) getAncestors(m.paternal, gen + 2, gens);
+                if (m.maternal) getAncestors(m.maternal, gen + 2, gens);
             }
             return gens;
         }
 
         function getAncestors(node, gen, gens) {
             if (!gens[gen]) gens[gen] = [];
-            gens[gen].push({ name: node.name, years: node.years, status: node.status, line: node.line, note: node.note });
-            if (node.father) getAncestors(node.father, gen + 1, gens);
-            if (node.mother) getAncestors(node.mother, gen + 1, gens);
+            gens[gen].push({
+                name: node.name,
+                years: node.years,
+                status: node.status,
+                line: node.line || 'paternal',
+                note: node.note,
+                gen: gen
+            });
+            if (node.paternal) getAncestors(node.paternal, gen + 1, gens);
+            if (node.maternal) getAncestors(node.maternal, gen + 1, gens);
         }
 
-        const generations = getGenerations(treeData);
+        const generations = getGenerations(tree);
+        const maxGenSize = Math.max(...generations.map(g => g ? g.length : 0));
+        const cardHeight = 60; // px including margin
+        const totalHeight = maxGenSize * cardHeight;
 
-        // Render tree
-        const treeEl = document.getElementById('tree');
+        // Render columns
+        const container = document.getElementById('treeContainer');
         
         generations.forEach((gen, gi) => {
             if (!gen || gen.length === 0) return;
             
-            const row = document.createElement('div');
-            row.className = 'generation-row';
-            row.style.gap = gi === 0 ? '0' : (gen.length > 4 ? '8px' : '24px');
+            // Create column
+            const col = document.createElement('div');
+            col.className = 'gen-column';
+            col.style.minHeight = totalHeight + 'px';
             
-            gen.forEach(person => {
+            // Space cards evenly within column height
+            const spacing = totalHeight / (gen.length + 1);
+            
+            gen.forEach((person, pi) => {
                 const node = document.createElement('div');
                 node.className = `person-node ${person.status} ${person.line === 'you' ? 'you' : ''}`;
+                node.style.position = 'absolute';
+                node.style.top = (spacing * (pi + 1) - 30) + 'px';
                 node.innerHTML = `
                     <div class="name">${person.name}</div>
                     <div class="years">${person.years}</div>
-                    ${person.line && person.line !== 'you' ? `<div class="status-dot dot-${person.status === 'brickwall' ? 'brickwall' : person.line}"></div>` : ''}
+                    ${person.line !== 'you' ? `<div class="line-dot dot-${person.line === 'paternal' ? 'paternal' : person.line === 'maternal' ? 'maternal' : 'brickwall'}"></div>` : ''}
                 `;
                 node.onclick = () => openPersonPanel(person);
-                row.appendChild(node);
+                col.appendChild(node);
             });
-
-            // Add connector line to next gen (except last)
+            
+            container.appendChild(col);
+            
+            // Add connector column (except for last)
             if (gi < generations.length - 1) {
-                const connector = document.createElement('div');
-                connector.style.cssText = 'width:2px; height:24px; background:#d1d5db; margin-top:-4px;';
-                // This is tricky - we'd need proper tree layout
+                const conn = document.createElement('div');
+                conn.className = 'connector-col';
+                conn.style.height = totalHeight + 'px';
+                container.appendChild(conn);
             }
-
-            treeEl.appendChild(row);
         });
 
-        // Panel functions
+        // Draw SVG lines after DOM is ready
+        function drawLines() {
+            const svg = document.getElementById('linesSvg');
+            const svgRect = svg.getBoundingClientRect();
+            const scrollContainer = document.querySelector('.tree-scroll');
+            
+            svg.setAttribute('width', container.scrollWidth);
+            svg.setAttribute('height', container.scrollHeight);
+            svg.innerHTML = '';
+            
+            const cols = container.querySelectorAll('.gen-column');
+            
+            // For each generation except the last, draw lines to next generation
+            for (let gi = 0; gi < generations.length - 1; gi++) {
+                const currentCol = cols[gi];
+                const nextCol = cols[gi + 1];
+                const connCol = currentCol.nextElementSibling;
+                
+                const currentNodes = currentCol.querySelectorAll('.person-node');
+                const nextNodes = nextCol.querySelectorAll('.person-node');
+                
+                // Map couples in next generation
+                // Each node in current generation should connect to its parents in next generation
+                // (Parent nodes are paired: [father, mother] for each child)
+                
+                // For simplicity: each current node connects to two nodes in next col
+                // assuming paternal then maternal ordering
+                for (let ci = 0; ci < currentNodes.length; ci++) {
+                    const childNode = currentNodes[ci];
+                    const childRect = childNode.getBoundingClientRect();
+                    const childX = childRect.right - svgRect.left + scrollContainer.scrollLeft;
+                    const childY = childRect.top + childRect.height / 2 - svgRect.top + scrollContainer.scrollTop;
+                    
+                    // Parents are at indices ci*2 and ci*2+1 in next column
+                    const fatherIdx = ci * 2;
+                    const motherIdx = ci * 2 + 1;
+                    
+                    if (fatherIdx < nextNodes.length) {
+                        const fatherNode = nextNodes[fatherIdx];
+                        const fRect = fatherNode.getBoundingClientRect();
+                        const fX = fRect.left - svgRect.left + scrollContainer.scrollLeft;
+                        const fY = fRect.top + fRect.height / 2 - svgRect.top + scrollContainer.scrollTop;
+                        
+                        drawLine(childX, childY, fX, fY, '#d1d5db');
+                        
+                        // If mother exists, draw vertical line between parents
+                        if (motherIdx < nextNodes.length) {
+                            const motherNode = nextNodes[motherIdx];
+                            const mRect = motherNode.getBoundingClientRect();
+                            const mX = mRect.left - svgRect.left + scrollContainer.scrollLeft;
+                            const mY = mRect.top + mRect.height / 2 - svgRect.top + scrollContainer.scrollTop;
+                            
+                            // Vertical line between parents
+                            const midY = (fY + mY) / 2;
+                            const connRect = connCol.getBoundingClientRect();
+                            const connX = connRect.right - svgRect.left + scrollContainer.scrollLeft - 4;
+                            
+                            // Horizontal from child to connector area
+                            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+                            path.setAttribute('d', `M${childX},${childY} L${connX},${childY} L${connX},${midY} L${fX},${midY}`);
+                            path.setAttribute('stroke', '#d1d5db');
+                            path.setAttribute('stroke-width', '1.5');
+                            path.setAttribute('fill', 'none');
+                            svg.appendChild(path);
+                            
+                            // Vertical line between parents
+                            const vLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+                            vLine.setAttribute('x1', fX - 2);
+                            vLine.setAttribute('y1', fY);
+                            vLine.setAttribute('x2', fX - 2);
+                            vLine.setAttribute('y2', mY);
+                            vLine.setAttribute('stroke', '#d1d5db');
+                            vLine.setAttribute('stroke-width', '1.5');
+                            svg.appendChild(vLine);
+                        }
+                    }
+                }
+            }
+        }
+
+        function drawLine(x1, y1, x2, y2, color) {
+            // Handled in the loop above
+        }
+
+        setTimeout(drawLines, 100);
+        window.addEventListener('resize', drawLines);
+        document.querySelector('.tree-scroll').addEventListener('scroll', drawLines);
+
+        // Detail panel
         function openPersonPanel(person) {
             document.getElementById('panelName').textContent = person.name;
             document.getElementById('panelYears').textContent = person.years;
@@ -420,25 +562,29 @@
                 <div class="detail-section">
                     <h3>Status</h3>
                     <span class="badge ${statusColors[person.status] || 'badge-speculative'}">${statusLabels[person.status] || person.status}</span>
-                    ${person.note ? `<p style="margin-top:8px; font-size:12px; color:#666;">Note: ${person.note}</p>` : ''}
+                    ${person.note ? `<p style="margin-top:8px; font-size:12px; color:#666;">${person.note}</p>` : ''}
                 </div>
                 <div class="detail-section">
-                    <h3>Documents</h3>
-                    <div class="detail-item"><span class="detail-label">Sources</span><span class="detail-value">${person.status === 'confirmed' ? 'Birth / Marriage cert' : person.status === 'probable' ? 'Census records' : 'None found'}</span></div>
-                    <div class="detail-item"><span class="detail-label">Confidence</span><span class="detail-value">${person.status === 'confirmed' ? 'High' : person.status === 'probable' ? 'Medium' : 'Low'}</span></div>
+                    <h3>Sources</h3>
+                    <div class="detail-row">
+                        <span class="detail-label">Primary</span>
+                        <span class="detail-value">${person.status === 'confirmed' ? 'Birth / Marriage cert' : person.status === 'probable' ? 'Census records' : 'None'}</span>
+                    </div>
+                    <div class="detail-row">
+                        <span class="detail-label">Confidence</span>
+                        <span class="detail-value">${person.status === 'confirmed' ? 'High' : person.status === 'probable' ? 'Medium' : 'Low'}</span>
+                    </div>
                 </div>
                 ${person.status === 'brickwall' ? `
                 <div class="detail-section">
-                    <h3>Research Suggestions</h3>
-                    <p style="font-size:13px; color:#666; line-height:1.6;">
-                        To break this wall, order the marriage certificate of the child (if married). 
-                        This will reveal both parents' names for only £2.
+                    <h3>Research Plan</h3>
+                    <p style="font-size:12px; color:#666; line-height:1.6;">
+                        Order the child's marriage certificate to reveal both parents' names. Only £2 via ScotlandsPeople.
                     </p>
-                    <button class="header-btn" style="margin-top:12px; width:100%;">Generate Research Plan</button>
+                    <button class="header-btn" style="margin-top:10px; width:100%;">Generate Plan</button>
                 </div>
                 ` : ''}
             `;
-            
             document.getElementById('overlay').classList.add('active');
             document.getElementById('detailPanel').classList.add('active');
         }
@@ -448,14 +594,19 @@
             document.getElementById('detailPanel').classList.remove('active');
         }
 
-        function openPanel(type) {
-            const titles = { suggest: 'Suggest Next Document', research: 'Research Dashboard' };
-            document.getElementById('panelName').textContent = titles[type] || 'Panel';
-            document.getElementById('panelYears').textContent = '';
-            document.getElementById('panelBody').innerHTML = '<p style="color:#999; padding:20px;">Feature coming soon...</p>';
-            document.getElementById('overlay').classList.add('active');
-            document.getElementById('detailPanel').classList.add('active');
+        function showMenu() {
+            alert('Menu: Suggest Next Document, Import GEDCOM, Research Dashboard');
         }
+
+        // Center scroll on "You" initially
+        setTimeout(() => {
+            const you = document.querySelector('.person-node.you');
+            if (you) {
+                const scroll = document.querySelector('.tree-scroll');
+                const youRect = you.getBoundingClientRect();
+                scroll.scrollLeft = 0;
+            }
+        }, 200);
     </script>
 </body>
 </html>
