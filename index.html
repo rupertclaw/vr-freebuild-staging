@@ -11,7 +11,6 @@
             overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #1a1a1a;
-            color: #fff;
             -webkit-tap-highlight-color: transparent;
         }
 
@@ -29,7 +28,7 @@
             z-index: 100;
             border-bottom: 1px solid #333;
         }
-        .header h1 { font-size: 17px; font-weight: 700; letter-spacing: -0.5px; }
+        .header h1 { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
         .header-stats {
             display: flex;
             gap: 14px;
@@ -44,11 +43,7 @@
             border: none;
             border-radius: 8px;
             font-size: 18px;
-            font-weight: 400;
             cursor: pointer;
-            display: flex;
-            align-items: center;
-            justify-content: center;
         }
 
         /* Scroll area */
@@ -61,52 +56,90 @@
             background: #f5f3ef;
         }
 
-        /* Tree wrapper */
+        /* Tree */
         .tree-wrapper {
             display: flex;
             align-items: flex-start;
-            padding: 30px 20px;
+            gap: 0;
+            padding: 24px 16px;
             min-width: fit-content;
             min-height: 100%;
-            position: relative;
         }
 
         /* Generation column */
         .gen-col {
             display: flex;
             flex-direction: column;
-            justify-content: center;
-            width: 130px;
+            gap: 12px;
+            width: 132px;
             flex-shrink: 0;
+            padding: 0 6px;
+        }
+
+        /* Connector column */
+        .conn-col {
+            width: 28px;
+            flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 12px;
             position: relative;
         }
 
-        .connector-gap {
-            width: 40px;
-            flex-shrink: 0;
+        /* Connector lines (CSS-based) */
+        .conn-line {
+            display: flex;
+            align-items: center;
+            height: 54px;
             position: relative;
+        }
+        .conn-line::before {
+            content: '';
+            position: absolute;
+            right: 0;
+            top: 50%;
+            width: 8px;
+            height: 2px;
+            background: #d1d5db;
+            transform: translateY(-50%);
+        }
+        .conn-line::after {
+            content: '';
+            position: absolute;
+            left: 0;
+            width: 2px;
+            background: #d1d5db;
+        }
+        /* Two children branch */
+        .conn-line.branch::after {
+            height: calc(100% + 12px);
+            top: 50%;
+            transform: translateY(-50%);
+        }
+        /* Single child straight */
+        .conn-line.straight::after {
+            height: 2px;
+            top: 50%;
+            transform: translateY(-50%);
         }
 
         /* Person card */
         .person-card {
             background: #fff;
             border-radius: 10px;
-            padding: 8px 10px;
-            margin: 4px 0;
+            padding: 10px;
+            min-height: 54px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             border-left: 3px solid transparent;
             cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.15s;
-            position: relative;
-            z-index: 2;
-            min-height: 54px;
+            transition: transform 0.15s;
             display: flex;
             flex-direction: column;
             justify-content: center;
+            flex-shrink: 0;
         }
-        .person-card:active { transform: scale(0.97); }
-        .person-card:hover { box-shadow: 0 3px 10px rgba(0,0,0,0.15); }
-
+        .person-card:active { transform: scale(0.96); }
         .person-card.confirmed { border-left-color: #22c55e; }
         .person-card.probable { border-left-color: #f59e0b; }
         .person-card.brickwall { border-left-color: #ef4444; border-left-style: dashed; }
@@ -122,26 +155,9 @@
             text-overflow: ellipsis;
         }
         .person-card .years {
-            font-size: 9px;
+            font-size: 10px;
             color: #888;
             margin-top: 2px;
-        }
-        .person-card .status-badge {
-            position: absolute;
-            top: 4px; right: 4px;
-            width: 6px; height: 6px;
-            border-radius: 50%;
-        }
-        .status-paternal { background: #3b82f6; }
-        .status-maternal { background: #ec4899; }
-        .status-brickwall { background: #ef4444; }
-
-        /* SVG lines layer */
-        .lines-layer {
-            position: absolute;
-            top: 0; left: 0;
-            pointer-events: none;
-            z-index: 1;
         }
 
         /* Pro banner */
@@ -155,17 +171,17 @@
             border-radius: 8px;
             font-size: 10px;
             z-index: 99;
-            max-width: 180px;
+            max-width: 160px;
             color: #92400e;
         }
-        .pro-banner strong { font-size: 12px; display: block; margin-bottom: 2px; }
+        .pro-banner strong { font-size: 11px; display: block; margin-bottom: 2px; }
 
         /* Detail panel */
         .detail-panel {
             display: none;
             position: fixed;
             top: 0; right: 0;
-            width: 320px;
+            width: 300px;
             max-width: 85vw;
             height: 100vh;
             background: #fff;
@@ -226,7 +242,6 @@
         }
         .overlay.active { display: block; }
 
-        /* Scroll hint */
         .scroll-hint {
             position: fixed;
             bottom: 16px;
@@ -258,18 +273,137 @@
 
     <div class="pro-banner">
         <strong>4 brick walls</strong>
-        AI research plans available
+        AI research plans
     </div>
 
     <div class="tree-scroll">
         <div class="tree-wrapper" id="treeWrapper">
-            <!-- Columns generated by JS -->
+            <!-- Gen 1: You -->
+            <div class="gen-col">
+                <div class="person-card you" onclick="openPanel({name:'Gavin Harrow',years:'b. 1966',status:'you',line:'you'})">
+                    <div class="name">Gavin Harrow</div>
+                    <div class="years">b. 1966</div>
+                </div>
+            </div>
+
+            <div class="conn-col">
+                <div class="conn-line branch"></div>
+            </div>
+
+            <!-- Gen 2: Parents -->
+            <div class="gen-col">
+                <div class="person-card confirmed" onclick="openPanel({name:'Joseph Harrow',years:'1931–1974',status:'confirmed',note:'Kelmscott'})">
+                    <div class="name">Joseph Harrow</div>
+                    <div class="years">1931–1974</div>
+                </div>
+                <div class="person-card confirmed" onclick="openPanel({name:'Rose Fenwick',years:'1931–',status:'confirmed',note:'Kelmscott'})">
+                    <div class="name">Rose Fenwick</div>
+                    <div class="years">1931–</div>
+                </div>
+            </div>
+
+            <div class="conn-col">
+                <div class="conn-line branch"></div>
+                <div class="conn-line branch"></div>
+            </div>
+
+            <!-- Gen 3: Grandparents -->
+            <div class="gen-col">
+                <div class="person-card confirmed" onclick="openPanel({name:'Joseph Harrow',years:'1906–1974',status:'confirmed',note:'Marriage cert 1929'})">
+                    <div class="name">Joseph Harrow</div>
+                    <div class="years">1906–1974</div>
+                </div>
+                <div class="person-card confirmed" onclick="openPanel({name:'Alice Marsh',years:'1907–1978',status:'confirmed',note:'Marriage cert 1929'})">
+                    <div class="name">Alice Marsh</div>
+                    <div class="years">1907–1978</div>
+                </div>
+                <div class="person-card confirmed" onclick="openPanel({name:'Andrew Fenwick',years:'1904–1972',status:'confirmed',note:'Buckhaven'})">
+                    <div class="name">Andrew Fenwick</div>
+                    <div class="years">1904–1972</div>
+                </div>
+                <div class="person-card confirmed" onclick="openPanel({name:'Agnes Elder',years:'1903–',status:'confirmed'})">
+                    <div class="name">Agnes Elder</div>
+                    <div class="years">1903–</div>
+                </div>
+            </div>
+
+            <div class="conn-col">
+                <div class="conn-line branch"></div>
+                <div class="conn-line branch"></div>
+                <div class="conn-line branch"></div>
+                <div class="conn-line branch"></div>
+            </div>
+
+            <!-- Gen 4: Great-grandparents -->
+            <div class="gen-col">
+                <div class="person-card probable" onclick="openPanel({name:'Joseph Marsh Harrow',years:'1879–?',status:'probable'})">
+                    <div class="name">Joseph Harrow</div>
+                    <div class="years">1879–?</div>
+                </div>
+                <div class="person-card probable" onclick="openPanel({name:'Catherine Merriwether',years:'~1882–1960',status:'probable'})">
+                    <div class="name">Catherine Merriwether</div>
+                    <div class="years">~1882–1960</div>
+                </div>
+                <div class="person-card confirmed" onclick="openPanel({name:'Edward Marsh',years:'1866–?',status:'confirmed',note:'Jute millworker'})">
+                    <div class="name">Edward Marsh</div>
+                    <div class="years">1866–?</div>
+                </div>
+                <div class="person-card probable" onclick="openPanel({name:'Mary Ashdown',years:'~1868–?',status:'probable'})">
+                    <div class="name">Mary Ashdown</div>
+                    <div class="years">~1868</div>
+                </div>
+                <div class="person-card confirmed" onclick="openPanel({name:'James Fenwick',years:'1872–?',status:'confirmed',note:'England, coal miner'})">
+                    <div class="name">James Fenwick</div>
+                    <div class="years">1872–?</div>
+                </div>
+                <div class="person-card probable" onclick="openPanel({name:'Agnes Maddox',years:'~1876–?',status:'probable'})">
+                    <div class="name">Agnes Maddox</div>
+                    <div class="years">~1876</div>
+                </div>
+                <div class="person-card probable" onclick="openPanel({name:'Patrick Elder',years:'~1872–?',status:'probable',note:'Marriage cert needed'})">
+                    <div class="name">Patrick Elder</div>
+                    <div class="years">~1872</div>
+                </div>
+                <div class="person-card probable" onclick="openPanel({name:'Rose Colton',years:'1872–?',status:'probable'})">
+                    <div class="name">Rose Colton</div>
+                    <div class="years">1872–?</div>
+                </div>
+            </div>
+
+            <div class="conn-col">
+                <div class="conn-line branch"></div>
+                <div class="conn-line branch"></div>
+                <div class="conn-line branch"></div>
+                <div class="conn-line branch"></div>
+                <div class="conn-line branch"></div>
+                <div class="conn-line branch"></div>
+                <div class="conn-line branch"></div>
+                <div class="conn-line branch"></div>
+            </div>
+
+            <!-- Gen 5 -->
+            <div class="gen-col">
+                <div class="person-card brickwall" onclick="openPanel({name:'Thomas Harrow',years:'~1862–1911',status:'brickwall',note:'Father unknown'})">
+                    <div class="name">Thomas Harrow</div>
+                    <div class="years">~1862–1911</div>
+                </div>
+                <div class="person-card probable" onclick="openPanel({name:'Catherine Marsh',years:'~1857–?',status:'probable',note:'Age conflict 1881'})">
+                    <div class="name">Catherine Marsh</div>
+                    <div class="years">~1857</div>
+                </div>
+                <div class="person-card brickwall" onclick="openPanel({name:'?',years:'Father unknown',status:'brickwall'})">
+                    <div class="name">?</div>
+                    <div class="years">Brick Wall</div>
+                </div>
+                <div class="person-card probable" onclick="openPanel({name:'Catherine Marsh',years:'~1857–?',status:'probable'})">
+                    <div class="name">Catherine Marsh</div>
+                    <div class="years">~1857</div>
+                </div>
+            </div>
         </div>
     </div>
 
-    <div class="scroll-hint">← Swipe to explore →</div>
-
-    <svg class="lines-layer" id="linesSvg"></svg>
+    <div class="scroll-hint">← Swipe right to explore →</div>
 
     <div class="overlay" id="overlay" onclick="closePanel()"></div>
     <div class="detail-panel" id="detailPanel">
@@ -282,180 +416,11 @@
     </div>
 
     <script>
-        // === DATA ===
-        // Pre-calculated generations for your tree
-        // Each generation is a column. Index 0 = you (leftmost).
-        // People are listed top-to-bottom within each column.
-        const generations = [
-            [
-                { name: "Gavin Harrow", years: "b. 1966", status: "you", line: "you" }
-            ],
-            [
-                { name: "Joseph Harrow", years: "1931–1974", status: "confirmed", line: "paternal" },
-                { name: "Rose Fenwick", years: "1931–", status: "confirmed", line: "maternal" }
-            ],
-            [
-                { name: "Joseph Harrow", years: "1906–1974", status: "confirmed", line: "paternal" },
-                { name: "Alice Marsh", years: "1907–1978", status: "confirmed", line: "paternal" },
-                { name: "Andrew Fenwick", years: "1904–1972", status: "confirmed", line: "maternal" },
-                { name: "Agnes Elder", years: "1903–", status: "confirmed", line: "maternal" }
-            ],
-            [
-                { name: "Joseph Harrow", years: "1879–?", status: "probable", line: "paternal" },
-                { name: "Alice Marsh", years: "(Harrow)", status: "confirmed", line: "paternal" },
-                { name: "Edward Marsh", years: "1866–?", status: "confirmed", line: "paternal", note: "Jute millworker" },
-                { name: "Mary Ashdown", years: "~1868–?", status: "probable", line: "paternal" },
-                { name: "James Fenwick", years: "1872–?", status: "confirmed", line: "maternal", note: "England, coal miner" },
-                { name: "Agnes Maddox", years: "~1876–?", status: "probable", line: "maternal" },
-                { name: "Patrick Elder", years: "~1872–?", status: "probable", line: "maternal", note: "Marriage cert needed" },
-                { name: "Rose Colton", years: "1872–?", status: "probable", line: "maternal" }
-            ],
-            [
-                { name: "Thomas Harrow", years: "~1862–1911", status: "brickwall", line: "paternal" },
-                { name: "Catherine Marsh", years: "~1857–?", status: "probable", line: "paternal", note: "Age conflict 1881" },
-                { name: "?", years: "Father unknown", status: "brickwall", line: "paternal" },
-                { name: "Catherine Marsh", years: "~1857–?", status: "probable", line: "paternal" }
-            ]
-        ];
-
-        // Parent mapping: childIndex -> [fatherIndex, motherIndex] in NEXT generation
-        // Gen 0 (you) -> Gen 1 parents
-        const parentMap = [
-            [0, 1],
-            // Gen 1: Joseph (0) -> parents in Gen 2: Joseph_1906 (0) + Alice_Marsh (1)
-            //        Rose (1)  -> parents in Gen 2: Andrew_Fenwick (2) + Agnes_Elder (3)
-            [0, 1], [2, 3],
-            // Gen 2: Joseph_1906 (0) -> parents in Gen 3: Joseph_1879 (0) + Alice_parent (1)
-            //        Alice_1907 (1)  -> parents in Gen 3: Edward_Marsh (2) + Mary_Ashdown (3)
-            [0, 1], [2, 3],
-            // Gen 2: Andrew_Fenwick (2) -> parents in Gen 3: James_Fenwick (4) + Agnes_Maddox (5)
-            //        Agnes_Elder (3) -> parents in Gen 3: Patrick_Elder (6) + Rose_Colton (7)
-            [4, 5], [6, 7]
-            // Gen 3 entries 0..7 map to Gen 4:
-            // 0 (Joseph_1879) -> 0 (Thomas) + 1 (Catherine Marsh)
-            // 1 (Alice parent) -> skip
-            // 2 (Edward Marsh) -> skip
-            // 3 (Mary Ashdown) -> skip
-            // 4 (James Fenwick) -> 2 (? father unknown)
-            // 5 (Agnes Maddox) ->
-            // 6 (Patrick Elder) ->
-            // 7 (Rose Colton) ->
-        ];
-
-        // === RENDER ===
-        const wrapper = document.getElementById('treeWrapper');
-        const svg = document.getElementById('linesSvg');
-
-        function renderTree() {
-            wrapper.innerHTML = '';
-            
-            generations.forEach((gen, gi) => {
-                const col = document.createElement('div');
-                col.className = 'gen-col';
-                col.dataset.gen = gi;
-                
-                gen.forEach((person, pi) => {
-                    const card = document.createElement('div');
-                    card.className = `person-card ${person.status} ${person.line === 'you' ? 'you' : ''}`;
-                    card.dataset.gen = gi;
-                    card.dataset.index = pi;
-                    card.innerHTML = `
-                        <div class="name">${person.name}</div>
-                        <div class="years">${person.years}</div>
-                        ${person.line !== 'you' ? `<div class="status-badge ${person.status === 'brickwall' ? 'status-brickwall' : person.line === 'paternal' ? 'status-paternal' : 'status-maternal'}"></div>` : ''}
-                    `;
-                    card.onclick = () => openPanel(person);
-                    col.appendChild(card);
-                });
-                
-                wrapper.appendChild(col);
-                
-                // Connector gap (except after last gen)
-                if (gi < generations.length - 1) {
-                    const gap = document.createElement('div');
-                    gap.className = 'connector-gap';
-                    gap.dataset.fromGen = gi;
-                    wrapper.appendChild(gap);
-                }
-            });
-
-            // Draw lines after DOM settles
-            requestAnimationFrame(drawLines);
-        }
-
-        function drawLines() {
-            const wrapperRect = wrapper.getBoundingClientRect();
-            const colWidth = 130;
-            const gapWidth = 40;
-            const cardHeight = 62; // 54 + 8 margin
-            
-            svg.setAttribute('width', wrapper.scrollWidth);
-            svg.setAttribute('height', wrapper.scrollHeight);
-            svg.innerHTML = '';
-            
-            // Draw lines for each generation connection
-            for (let gi = 0; gi < generations.length - 1; gi++) {
-                const currentGen = generations[gi];
-                const nextGen = generations[gi + 1];
-                
-                // Column X positions
-                const colStartX = gi * (colWidth + gapWidth);
-                const colEndX = colStartX + colWidth;
-                const nextColStartX = (gi + 1) * (colWidth + gapWidth);
-                const connectorX = colEndX + gapWidth / 2;
-                
-                // Calculate total height for centering
-                const totalHeight = Math.max(
-                    currentGen.length * cardHeight,
-                    nextGen.length * cardHeight
-                );
-                const startY = (wrapper.scrollHeight - totalHeight) / 2 + cardHeight / 2;
-                
-                // Each person in current generation connects to parents in next generation
-                for (let ci = 0; ci < currentGen.length; ci++) {
-                    const childY = startY + ci * cardHeight * (nextGen.length / currentGen.length);
-                    
-                    // Parents indices in next generation
-                    const fatherIdx = ci * 2;
-                    const motherIdx = ci * 2 + 1;
-                    
-                    if (fatherIdx < nextGen.length) {
-                        const fatherY = startY + fatherIdx * cardHeight;
-                        
-                        // Line from child right edge to connector
-                        const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
-                        path.setAttribute('d', `M${colEndX},${childY} C${connectorX-5},${childY} ${colEndX+5},${fatherY} ${nextColStartX},${fatherY}`);
-                        path.setAttribute('stroke', '#ccc');
-                        path.setAttribute('stroke-width', '1.5');
-                        path.setAttribute('fill', 'none');
-                        svg.appendChild(path);
-                        
-                        if (motherIdx < nextGen.length) {
-                            const motherY = startY + motherIdx * cardHeight;
-                            
-                            // Vertical line between parents
-                            const vLine = document.createElementNS('http://www.w3.org/2000/svg', 'line');
-                            vLine.setAttribute('x1', nextColStartX - 2);
-                            vLine.setAttribute('y1', fatherY);
-                            vLine.setAttribute('x2', nextColStartX - 2);
-                            vLine.setAttribute('y2', motherY);
-                            vLine.setAttribute('stroke', '#ccc');
-                            vLine.setAttribute('stroke-width', '1.5');
-                            svg.appendChild(vLine);
-                        }
-                    }
-                }
-            }
-        }
-
-        // === DETAIL PANEL ===
         function openPanel(person) {
             document.getElementById('panelName').textContent = person.name;
             document.getElementById('panelYears').textContent = person.years;
-            
             const labels = { confirmed: 'Confirmed', probable: 'Probable', brickwall: 'Brick Wall', you: 'You' };
             const colors = { confirmed: 'badge-confirmed', probable: 'badge-probable', brickwall: 'badge-brickwall', you: 'badge-confirmed' };
-            
             document.getElementById('panelBody').innerHTML = `
                 <div class="detail-section">
                     <h3>Status</h3>
@@ -464,34 +429,25 @@
                 </div>
                 <div class="detail-section">
                     <h3>Sources</h3>
-                    <div class="detail-row"><span class="detail-label">Confidence</span><span class="detail-value">${person.status === 'confirmed' || person.status === 'you' ? 'High' : person.status === 'probable' ? 'Medium' : 'Unknown'}</span></div>
+                    <div class="detail-row">
+                        <span class="detail-label">Confidence</span>
+                        <span class="detail-value">${person.status === 'confirmed' || person.status === 'you' ? 'High' : person.status === 'probable' ? 'Medium' : 'Unknown'}</span>
+                    </div>
                 </div>
                 ${person.status === 'brickwall' ? `
                 <div class="detail-section">
                     <h3>Next Step</h3>
-                    <p style="font-size:12px; color:#666;">Order the marriage certificate of the child to reveal both parents (£2 at ScotlandsPeople).</p>
+                    <p style="font-size:12px; color:#666;">Order the child's marriage cert to reveal both parents (£2 via ScotlandsPeople).</p>
                 </div>
                 ` : ''}
             `;
             document.getElementById('overlay').classList.add('active');
             document.getElementById('detailPanel').classList.add('active');
         }
-
         function closePanel() {
             document.getElementById('overlay').classList.remove('active');
             document.getElementById('detailPanel').classList.remove('active');
         }
-
-        // Initial render
-        renderTree();
-        window.addEventListener('resize', () => { setTimeout(drawLines, 50); });
-        document.querySelector('.tree-scroll').addEventListener('scroll', () => { setTimeout(drawLines, 50); });
-
-        // Center on "You" by default
-        setTimeout(() => {
-            const scroll = document.querySelector('.tree-scroll');
-            scroll.scrollLeft = 0;
-        }, 100);
     </script>
 </body>
 </html>
