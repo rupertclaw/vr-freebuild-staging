@@ -7,14 +7,16 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
-            height: 100%; overflow: hidden;
+            height: 100%;
+            overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-            background: #1a1a1a;
+            background: #f5f3ef;
             -webkit-tap-highlight-color: transparent;
         }
+
         .header {
             position: fixed; top: 0; left: 0; right: 0; height: 48px;
-            background: rgba(26,26,26,0.95); backdrop-filter: blur(10px);
+            background: #1a1a1a; backdrop-filter: blur(10px);
             display: flex; align-items: center; justify-content: space-between;
             padding: 0 14px; z-index: 100; border-bottom: 1px solid #333;
         }
@@ -23,24 +25,32 @@
         .header-stats span { color: #fff; font-weight: 600; }
         .header-btn { width: 32px; height: 32px; background: #333; color: #fff; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; }
 
-        .tree-scroll { position: fixed; top: 48px; left: 0; right: 0; bottom: 0; overflow: auto; -webkit-overflow-scrolling: touch; background: #f5f3ef; }
-        .tree-container { position: relative; min-width: fit-content; min-height: 100%; padding: 40px 20px; }
+        .tree-scroll {
+            position: fixed;
+            top: 48px; left: 0; right: 0; bottom: 0;
+            overflow: auto; -webkit-overflow-scrolling: touch;
+            background: #f5f3ef;
+        }
 
-        /* Person card */
+        .tree-container {
+            position: relative;
+            min-width: fit-content;
+            min-height: calc(100vh - 48px);
+        }
+
+        /* Cards */
         .person-card {
             position: absolute;
-            width: 132px;
+            width: 128px;
             background: #fff;
             border-radius: 10px;
             padding: 10px 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             border-left: 3px solid transparent;
             cursor: pointer;
-            transition: transform 0.15s, box-shadow 0.2s;
             z-index: 2;
         }
-        .person-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.15); }
-        .person-card:active { transform: scale(0.97); }
+        .person-card:active { transform: scale(0.96); }
         .person-card.confirmed { border-left-color: #22c55e; }
         .person-card.probable { border-left-color: #f59e0b; }
         .person-card.brickwall { border-left-color: #ef4444; border-left-style: dashed; }
@@ -49,7 +59,7 @@
         .person-card .name { font-size: 12px; font-weight: 600; color: #1a1a1a; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .person-card .years { font-size: 10px; color: #888; margin-top: 2px; }
 
-        /* SVG layer for connectors */
+        /* SVG lines */
         .lines-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
 
         .pro-banner { position: fixed; top: 52px; right: 10px; background: #fef3c7; border: 1px solid #f59e0b; padding: 8px 12px; border-radius: 8px; font-size: 10px; z-index: 99; max-width: 160px; color: #92400e; }
@@ -111,180 +121,235 @@
     </div>
 
     <script>
-        // === DATA: flat array per generation ===
-        // Each person: { id, name, years, status, note, parentIds }
         const people = [
-            // Gen 0 (root - you)
-            { id: 0, gen: 0, name: "Gavin Harrow", years: "b. 1966", status: "you", note: "You" },
-
-            // Gen 1 (parents)
-            { id: 1, gen: 1, name: "Joseph Harrow", years: "1931–1974", status: "confirmed", note: "Kelmscott", parentIds: [3,4] },
-            { id: 2, gen: 1, name: "Rose Fenwick", years: "1931–", status: "confirmed", note: "Kelmscott", parentIds: [5,6] },
-
-            // Gen 2 (grandparents)
-            { id: 3, gen: 2, name: "Joseph Harrow", years: "1906–1974", status: "confirmed", note: "Marriage cert 1929", parentIds: [7,8] },
-            { id: 4, gen: 2, name: "Alice Marsh", years: "1907–1978", status: "confirmed", note: "Marriage cert 1929", parentIds: [9,10] },
-            { id: 5, gen: 2, name: "Andrew Fenwick", years: "1904–1972", status: "confirmed", note: "Buckhaven", parentIds: [11,12] },
-            { id: 6, gen: 2, name: "Agnes Elder", years: "1903–", status: "confirmed", note: "", parentIds: [13,14] },
-
-            // Gen 3 (great-grandparents)
-            { id: 7, gen: 3, name: "Joseph Harrow", years: "1879–?", status: "probable", note: "", parentIds: [15,16] },
-            { id: 8, gen: 3, name: "Catherine Merriwether", years: "~1882–1960", status: "probable", note: "", parentIds: [15,16] },
+            { id: 0, gen: 0, name: "Gavin Harrow", years: "b. 1966", status: "you", parentIds: null },
+            { id: 1, gen: 1, name: "Joseph Harrow", years: "1931–1974", status: "confirmed", parentIds: [3,4] },
+            { id: 2, gen: 1, name: "Rose Fenwick", years: "1931–", status: "confirmed", parentIds: [5,6] },
+            { id: 3, gen: 2, name: "Joseph Harrow", years: "1906–1974", status: "confirmed", parentIds: [7,8] },
+            { id: 4, gen: 2, name: "Alice Marsh", years: "1907–1978", status: "confirmed", parentIds: [9,10] },
+            { id: 5, gen: 2, name: "Andrew Fenwick", years: "1904–1972", status: "confirmed", parentIds: [11,12] },
+            { id: 6, gen: 2, name: "Agnes Elder", years: "1903–", status: "confirmed", parentIds: [13,14] },
+            { id: 7, gen: 3, name: "Joseph Harrow", years: "1879–?", status: "probable", parentIds: [15,16] },
+            { id: 8, gen: 3, name: "Catherine Merriwether", years: "~1882–1960", status: "probable", parentIds: [15,16] },
             { id: 9, gen: 3, name: "Edward Marsh", years: "1866–?", status: "confirmed", note: "Jute millworker", parentIds: [17,18] },
-            { id: 10, gen: 3, name: "Mary Ashdown", years: "~1868–?", status: "probable", note: "", parentIds: [17,18] },
+            { id: 10, gen: 3, name: "Mary Ashdown", years: "~1868–?", status: "probable", parentIds: [17,18] },
             { id: 11, gen: 3, name: "James Fenwick", years: "1872–?", status: "confirmed", note: "England, coal miner", parentIds: [19,20] },
-            { id: 12, gen: 3, name: "Agnes Maddox", years: "~1876–?", status: "probable", note: "", parentIds: [19,20] },
+            { id: 12, gen: 3, name: "Agnes Maddox", years: "~1876–?", status: "probable", parentIds: [19,20] },
             { id: 13, gen: 3, name: "Patrick Elder", years: "~1872–?", status: "probable", note: "Marriage cert needed", parentIds: [21,22] },
-            { id: 14, gen: 3, name: "Rose Colton", years: "1872–?", status: "probable", note: "", parentIds: [21,22] },
-
-            // Gen 4
+            { id: 14, gen: 3, name: "Rose Colton", years: "1872–?", status: "probable", parentIds: [21,22] },
             { id: 15, gen: 4, name: "Thomas Harrow", years: "~1862–1911", status: "brickwall", note: "Father unknown" },
             { id: 16, gen: 4, name: "Catherine Marsh", years: "~1857–?", status: "probable", note: "Age conflict 1881" },
-            { id: 17, gen: 4, name: "Owen Marsh", years: "1832–?", status: "probable", note: "" },
-            { id: 18, gen: 4, name: "Bridget Stanhope", years: "~1835–?", status: "probable", note: "" },
-            { id: 19, gen: 4, name: "William Fenwick", years: "~1845–?", status: "probable", note: "" },
-            { id: 20, gen: 4, name: "Margaret Brockett", years: "~1848–?", status: "probable", note: "" },
+            { id: 17, gen: 4, name: "Owen Marsh", years: "1832–?", status: "probable" },
+            { id: 18, gen: 4, name: "Bridget Stanhope", years: "~1835–?", status: "probable" },
+            { id: 19, gen: 4, name: "William Fenwick", years: "~1845–?", status: "probable" },
+            { id: 20, gen: 4, name: "Margaret Brockett", years: "~1848–?", status: "probable" },
             { id: 21, gen: 4, name: "John Ashford", years: "~1840–?", status: "brickwall", note: "Census shows James" },
-            { id: 22, gen: 4, name: "Sarah Galloway", years: "~1842–?", status: "probable", note: "" }
+            { id: 22, gen: 4, name: "Sarah Galloway", years: "~1842–?", status: "probable" }
         ];
 
-        const CARD_W = 132;
-        const CARD_H = 60; // approximate, measured after render
-        const GAP_X = 50;  // horizontal gap between generation columns
-        const GAP_Y = 14;  // vertical gap between cards
-
-        // === RENDER ===
         const container = document.getElementById('treeContainer');
         const svg = document.getElementById('linesSvg');
-        const scroll = document.getElementById('treeScroll');
+        const CARD_W = 128;
+        const GAP_X = 44;
+        const GAP_Y = 10;
 
-        function render() {
-            // Group by generation
-            const gens = [];
-            people.forEach(p => {
-                if (!gens[p.gen]) gens[p.gen] = [];
-                gens[p.gen].push(p);
+        // First pass: create hidden cards to measure heights
+        const gens = [];
+        people.forEach(p => {
+            if (!gens[p.gen]) gens[p.gen] = [];
+            gens[p.gen].push(p);
+        });
+
+        const cardEls = new Map(); // id -> element
+        const colX = new Map(); // gen -> x position
+
+        gens.forEach((gen, gi) => {
+            colX.set(gi, gi * (CARD_W + GAP_X));
+            gen.forEach(p => {
+                const el = document.createElement('div');
+                el.className = `person-card ${p.status}`;
+                el.innerHTML = `
+                    <div class="name">${p.name}</div>
+                    <div class="years">${p.years}</div>
+                `;
+                el.style.left = colX.get(gi) + 'px';
+                el.style.top = '0px';
+                el.style.opacity = '0'; // hidden while measuring
+                el.onclick = () => openPanel(p);
+                container.appendChild(el);
+                cardEls.set(p.id, el);
             });
+        });
 
-            // Find tallest generation (most people)
-            const maxColSize = Math.max(...gens.map(g => g.length));
-            const totalH = (maxColSize * CARD_H) + ((maxColSize - 1) * GAP_Y);
+        // Force reflow to get accurate measurements
+        document.body.offsetHeight;
 
-            // Render cards
-            const cardEls = new Map(); // id -> element
+        // Measure all card heights
+        const heights = new Map();
+        cardEls.forEach((el, id) => {
+            heights.set(id, el.offsetHeight);
+        });
 
-            gens.forEach((gen, gi) => {
-                // Center this generation's column vertically
-                const colH = (gen.length * CARD_H) + ((gen.length - 1) * GAP_Y);
-                const startY = (totalH - colH) / 2;
-                const colX = gi * (CARD_W + GAP_X);
+        // Calculate column heights and centering offsets
+        const colHeights = gens.map(gen =>
+            gen.reduce((sum, p) => sum + heights.get(p.id) + GAP_Y, 0) - GAP_Y
+        );
+        const maxColHeight = Math.max(...colHeights);
 
-                gen.forEach((person, pi) => {
-                    const el = document.createElement('div');
-                    el.className = `person-card ${person.status}`;
-                    el.innerHTML = `
-                        <div class="name">${person.name}</div>
-                        <div class="years">${person.years}</div>
-                    `;
-                    el.style.left = colX + 'px';
-                    el.style.top = (startY + pi * (CARD_H + GAP_Y)) + 'px';
-                    el.onclick = () => openPanel(person);
-                    container.appendChild(el);
-                    cardEls.set(person.id, el);
-                });
+        // Viewport centering: place root (Gen 0) at vertical center of viewport
+        const scrollH = document.getElementById('treeScroll').clientHeight;
+        const rootH = heights.get(0);
+        // Center of viewport for root card
+        const rootCenterY = (scrollH / 2) - (rootH / 2);
+
+        // Position cards within each column
+        const cardTop = new Map(); // id -> top position
+
+        gens.forEach((gen, gi) => {
+            // For Gen 0, center at viewport center
+            // For other gens, center around the average Y of their children
+            let startY;
+
+            if (gi === 0) {
+                startY = rootCenterY;
+            } else {
+                // Calculate based on children's positions
+                // Each person in this gen is a parent of someone in previous gen
+                // Their Y should center between their parents in next gen... wait, no
+                // This gen's people ARE the parents of previous gen's people
+                // So their Y should be the midpoint of where their two children (in previous gen) connect
+
+                // Simpler: just center the column vertically like before
+                const colH = colHeights[gi];
+                startY = rootCenterY + (colHeights[0] - colH) / 2;
+            }
+
+            // Actually the simplest approach that works:
+            // Center ALL columns around the same vertical point (root's center)
+            // Each column is centered independently
+            const colH = colHeights[gi];
+            const centerOffset = (colH - colHeights[0]) / 2;
+            startY = rootCenterY - centerOffset;
+
+            let currentY = startY;
+            gen.forEach(p => {
+                cardTop.set(p.id, currentY);
+                currentY += heights.get(p.id) + GAP_Y;
             });
+        });
 
-            // Set container size
-            const totalW = gens.length * CARD_W + (gens.length - 1) * GAP_X + 40;
-            container.style.width = totalW + 'px';
-            container.style.height = (totalH + 80) + 'px';
+        // Apply positions and show cards
+        cardEls.forEach((el, id) => {
+            el.style.top = cardTop.get(id) + 'px';
+            el.style.opacity = '1';
+        });
 
-            // Draw lines after DOM settles
-            setTimeout(() => drawLines(gens, cardEls), 50);
+        // Set container size
+        const totalW = gens.length * CARD_W + (gens.length - 1) * GAP_X + 40;
+        const allTops = Array.from(cardTop.values());
+        const minY = Math.min(...allTops);
+        const maxY = Math.max(...allTops.map((y, i) => y + heights.get(people[i]?.id || 0)));
+        // Find actual max bottom
+        let maxBottom = 0;
+        people.forEach(p => {
+            const t = cardTop.get(p.id);
+            const h = heights.get(p.id);
+            maxBottom = Math.max(maxBottom, t + h);
+        });
+
+        container.style.width = totalW + 'px';
+        container.style.height = (Math.max(scrollH, maxBottom + 40)) + 'px';
+        container.style.minHeight = '100%';
+
+        // Fix: ensure min top doesn't go below 0
+        const minTop = Math.min(...Array.from(cardTop.values()));
+        if (minTop < 20) {
+            const shift = 20 - minTop;
+            cardEls.forEach((el, id) => {
+                const newTop = cardTop.get(id) + shift;
+                cardTop.set(id, newTop);
+                el.style.top = newTop + 'px';
+            });
         }
 
-        function drawLines(gens, cardEls) {
+        // Draw SVG lines
+        function drawLines() {
             const svgNS = 'http://www.w3.org/2000/svg';
-            const containerRect = container.getBoundingClientRect();
+            const cRect = container.getBoundingClientRect();
 
             svg.setAttribute('width', container.scrollWidth);
             svg.setAttribute('height', container.scrollHeight);
             svg.innerHTML = '';
 
-            // For each person with parents, draw line to parents
             people.forEach(child => {
                 if (!child.parentIds) return;
                 const childEl = cardEls.get(child.id);
                 if (!childEl) return;
 
                 const childRect = childEl.getBoundingClientRect();
-                const childCx = childRect.left - containerRect.left + childRect.width; // right edge
-                const childCy = childRect.top - containerRect.top + childRect.height / 2;
+                const cx = childRect.right - cRect.left;
+                const cy = childRect.top - cRect.top + childRect.height / 2;
 
-                const [fatherId, motherId] = child.parentIds;
-                const fatherEl = cardEls.get(fatherId);
-                const motherEl = cardEls.get(motherId);
-                if (!fatherEl) return;
+                const [fid, mid] = child.parentIds;
+                const fEl = cardEls.get(fid);
+                const mEl = cardEls.get(mid);
+                if (!fEl) return;
 
-                const fRect = fatherEl.getBoundingClientRect();
-                const fCx = fRect.left - containerRect.left; // left edge
-                const fCy = fRect.top - containerRect.top + fRect.height / 2;
+                const fRect = fEl.getBoundingClientRect();
+                const fx = fRect.left - cRect.left;
+                const fy = fRect.top - cRect.top + fRect.height / 2;
 
-                // Draw line from child to parent(s)
-                if (motherEl) {
-                    const mRect = motherEl.getBoundingClientRect();
-                    const mCy = mRect.top - containerRect.top + mRect.height / 2;
-                    const midY = (fCy + mCy) / 2;
-                    const joinX = fCx - 10;
+                if (mEl) {
+                    const mRect = mEl.getBoundingClientRect();
+                    const my = mRect.top - cRect.top + mRect.height / 2;
+                    const midY = (fy + my) / 2;
+                    const joinX = fx - 12;
 
-                    // Horizontal from join to each parent
+                    // Curve from child right edge to join point
+                    const cLine = document.createElementNS(svgNS, 'path');
+                    cLine.setAttribute('d', `M${cx},${cy} C${cx+16},${cy} ${joinX-8},${midY} ${joinX},${midY}`);
+                    cLine.setAttribute('stroke', '#d1d5db');
+                    cLine.setAttribute('stroke-width', '1.5');
+                    cLine.setAttribute('fill', 'none');
+                    svg.appendChild(cLine);
+
+                    // Horizontal to each parent
                     const fLine = document.createElementNS(svgNS, 'line');
                     fLine.setAttribute('x1', joinX); fLine.setAttribute('y1', midY);
-                    fLine.setAttribute('x2', fCx); fLine.setAttribute('y2', midY);
+                    fLine.setAttribute('x2', fx); fLine.setAttribute('y2', fy);
                     fLine.setAttribute('stroke', '#d1d5db'); fLine.setAttribute('stroke-width', '1.5');
                     svg.appendChild(fLine);
 
                     const mLine = document.createElementNS(svgNS, 'line');
                     mLine.setAttribute('x1', joinX); mLine.setAttribute('y1', midY);
-                    mLine.setAttribute('x2', fCx); mLine.setAttribute('y2', mCy);
+                    mLine.setAttribute('x2', fx); mLine.setAttribute('y2', my);
                     mLine.setAttribute('stroke', '#d1d5db'); mLine.setAttribute('stroke-width', '1.5');
                     svg.appendChild(mLine);
-
-                    // Vertical parents connector
-                    const vLine = document.createElementNS(svgNS, 'line');
-                    vLine.setAttribute('x1', joinX); vLine.setAttribute('y1', Math.min(fCy, mCy));
-                    vLine.setAttribute('x2', joinX); vLine.setAttribute('y2', Math.max(fCy, mCy));
-                    vLine.setAttribute('stroke', '#d1d5db'); vLine.setAttribute('stroke-width', '1.5');
-                    svg.appendChild(vLine);
-
-                    // Child to join point
-                    const cLine = document.createElementNS(svgNS, 'path');
-                    cLine.setAttribute('d', `M${childCx},${childCy} C${childCx+20},${childCy} ${joinX-10},${midY} ${joinX},${midY}`);
-                    cLine.setAttribute('stroke', '#d1d5db'); cLine.setAttribute('stroke-width', '1.5');
-                    cLine.setAttribute('fill', 'none');
-                    svg.appendChild(cLine);
                 } else {
-                    // Single parent
                     const line = document.createElementNS(svgNS, 'line');
-                    line.setAttribute('x1', childCx); line.setAttribute('y1', childCy);
-                    line.setAttribute('x2', fCx); line.setAttribute('y2', fCy);
+                    line.setAttribute('x1', cx); line.setAttribute('y1', cy);
+                    line.setAttribute('x2', fx); line.setAttribute('y2', fy);
                     line.setAttribute('stroke', '#d1d5db'); line.setAttribute('stroke-width', '1.5');
                     svg.appendChild(line);
                 }
             });
         }
 
-        // === PANEL ===
+        // Redraw on scroll/resize because SVG coords depend on viewport
+        drawLines();
+        document.getElementById('treeScroll').addEventListener('scroll', drawLines);
+        window.addEventListener('resize', drawLines);
+
+        // Detail panel
         function openPanel(person) {
             document.getElementById('panelName').textContent = person.name;
-            document.getElementById('panelYears').textContent = person.years;
+            document.getElementById('panelYears').textContent = person.years + (person.note ? ` · ${person.note}` : '');
             const labels = { confirmed: 'Confirmed', probable: 'Probable', brickwall: 'Brick Wall', you: 'You' };
             const colors = { confirmed: 'badge-confirmed', probable: 'badge-probable', brickwall: 'badge-brickwall', you: 'badge-confirmed' };
             document.getElementById('panelBody').innerHTML = `
                 <div class="detail-section">
                     <h3>Status</h3>
                     <span class="badge ${colors[person.status] || 'badge-probable'}">${labels[person.status] || person.status}</span>
-                    ${person.note ? `<p style="margin-top:8px; font-size:12px; color:#666;">${person.note}</p>` : ''}
                 </div>
                 <div class="detail-section">
                     <h3>Sources</h3>
@@ -300,24 +365,11 @@
             document.getElementById('overlay').classList.add('active');
             document.getElementById('detailPanel').classList.add('active');
         }
-        function closePanel() {
+
+        window.closePanel = function() {
             document.getElementById('overlay').classList.remove('active');
             document.getElementById('detailPanel').classList.remove('active');
-        }
-
-        // Init
-        render();
-        window.addEventListener('resize', () => setTimeout(render, 100));
-
-        // Center root vertically
-        setTimeout(() => {
-            const rootCard = document.querySelector('.person-card.you');
-            if (rootCard) {
-                const cardRect = rootCard.getBoundingClientRect();
-                const scrollH = scroll.clientHeight;
-                scroll.scrollTop = cardRect.top - (scrollH / 2) + (cardRect.height / 2) - 48; // minus header
-            }
-        }, 200);
+        };
     </script>
 </body>
 </html>
