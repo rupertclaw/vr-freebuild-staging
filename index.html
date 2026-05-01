@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roots — Your Family Tree</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #f5f3ef;
+            color: #1a1a1a;
+            line-height: 1.5;
+            overflow-x: auto;
+        }
+
+        /* Header */
+        .header {
+            background: #1a1a1a;
+            color: #fff;
+            padding: 12px 24px;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            position: sticky;
+            top: 0;
+            z-index: 100;
+        }
+        .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+        .header-stats {
+            display: flex;
+            gap: 20px;
+            font-size: 12px;
+            color: #999;
+        }
+        .header-stats span { color: #fff; font-weight: 600; }
+
+        /* Tree container */
+        .tree-wrapper {
+            padding: 40px 60px;
+            min-width: 1200px;
+        }
+
+        .generation-row {
+            display: flex;
+            justify-content: center;
+            gap: 24px;
+            margin-bottom: 48px;
+            position: relative;
+        }
+
+        .gen-label {
+            position: absolute;
+            left: -50px;
+            top: 50%;
+            transform: translateY(-50%) rotate(-90deg);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #999;
+        }
+
+        /* Person card */
+        .person-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px 20px;
+            width: 220px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border: 2px solid transparent;
+            cursor: pointer;
+            transition: all 0.2s;
+            position: relative;
+        }
+        .person-card:hover {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+            transform: translateY(-2px);
+        }
+        .person-card.confirmed { border-color: #22c55e; }
+        .person-card.probable { border-color: #f59e0b; }
+        .person-card.speculative { border-color: #9ca3af; }
+        .person-card.brickwall { border-color: #ef4444; border-style: dashed; }
+        .person-card.you { border-color: #3b82f6; border-width: 3px; }
+
+        .person-card .name {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            letter-spacing: -0.2px;
+        }
+        .person-card .dates {
+            font-size: 12px;
+            color: #666;
+            margin-bottom: 8px;
+        }
+        .person-card .badges {
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .badge {
+            font-size: 10px;
+            font-weight: 600;
+            padding: 3px 8px;
+            border-radius: 4px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        .badge-confirmed { background: #dcfce7; color: #166534; }
+        .badge-probable { background: #fef3c7; color: #92400e; }
+        .badge-speculative { background: #f3f4f6; color: #4b5563; }
+        .badge-brickwall { background: #fee2e2; color: #991b1b; }
+        .badge-generation { background: #e0e7ff; color: #3730a3; }
+
+        .person-card .line-indicator {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        .line-paternal { background: #3b82f6; }
+        .line-maternal { background: #ec4899; }
+
+        .person-card .document-count {
+            font-size: 11px;
+            color: #999;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+        }
+
+        /* Connection lines */
+        .connector {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 32px;
+            position: relative;
+        }
+        .connector::before {
+            content: '';
+            width: 2px;
+            height: 100%;
+            background: #d1d5db;
+        }
+
+        /* Action bar */
+        .action-bar {
+            position: fixed;
+            bottom: 24px;
+            left: 50%;
+            transform: translateX(-50%);
+            display: flex;
+            gap: 12px;
+            background: #1a1a1a;
+            padding: 12px 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+        }
+        .action-btn {
+            background: transparent;
+            border: 1px solid #444;
+            color: #fff;
+            padding: 8px 16px;
+            border-radius: 8px;
+            font-size: 13px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        .action-btn:hover { background: #333; }
+        .action-btn.primary { background: #fff; color: #1a1a1a; border-color: #fff; }
+        .action-btn.primary:hover { background: #f5f5f5; }
+
+        /* Pro banner */
+        .pro-banner {
+            position: fixed;
+            top: 60px;
+            right: 24px;
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 12px 16px;
+            border-radius: 8px;
+            font-size: 12px;
+            max-width: 240px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+        }
+        .pro-banner strong { color: #92400e; display: block; margin-bottom: 4px; }
+        .pro-banner a { color: #92400e; text-decoration: underline; font-weight: 500; }
+
+        /* Legend */
+        .legend {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            background: #fff;
+            padding: 12px 16px;
+            border-radius: 8px;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            font-size: 11px;
+        }
+        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+        .legend-item:last-child { margin-bottom: 0; }
+        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .tree-wrapper { padding: 20px; min-width: auto; }
+            .generation-row { flex-wrap: wrap; gap: 12px; }
+            .person-card { width: 160px; padding: 12px; }
+            .action-bar { flex-direction: column; bottom: 12px; }
+            .pro-banner, .legend { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="header">
+        <h1>Roots</h1>
+        <div class="header-stats">
+            <div>People: <span>23</span></div>
+            <div>Confirmed: <span>14</span></div>
+            <div>Brick Walls: <span>4</span></div>
+            <div>Documents: <span>7</span></div>
+        </div>
+    </div>
+
+    <div class="pro-banner">
+        <strong>4 brick walls detected</strong>
+        Get AI research plans for each — upgrade to Pro for £4.99/mo
+        <br><a href="#">View plans</a>
+    </div>
+
+    <div class="tree-wrapper">
+        <!-- Generation 1 -->
+        <div class="generation-row">
+            <div class="gen-label">Gen 1</div>
+            <div class="person-card you confirmed">
+                <div class="line-indicator line-paternal"></div>
+                <div class="name">Gavin Harrow</div>
+                <div class="dates">b. 1966<br>Brampton, Ontario</div>
+                <div class="badges">
+                    <span class="badge badge-generation">You</span>
+                    <span class="badge badge-confirmed">Confirmed</span>
+                </div>
+                <div class="document-count">📄 1 document</div>
+            </div>
+        </div>
+
+        <!-- Gen 2 -->
+        <div class="generation-row">
+            <div class="gen-label">Gen 2</div>
+            <div class="person-card confirmed">
+                <div class="line-indicator line-paternal"></div>
+                <div class="name">Joseph Harrow</div>
+                <div class="dates">b. 1931, Kelmscott<br>d. 1974</div>
+                <div class="badges">
+                    <span class="badge badge-confirmed">Confirmed</span>
+                </div>
+                <div class="document-count">📄 Birth cert (1931)</div>
+            </div>
+            <div class="connector"></div>
+            <div class="person-card confirmed">
+                <div class="line-indicator line-maternal"></div>
+                <div class="name">Rose Fenwick</div>
+                <div class="dates">b. 1931, Kelmscott</div>
+                <div class="badges">
+                    <span class="badge badge-confirmed">Confirmed</span>
+                </div>
+                <div class="document-count">📄 2 documents</div>
+            </div>
+        </div>
+
+        <!-- Gen 3 -->
+        <div class="generation-row">
+            <div class="gen-label">Gen 3</div>
+            <div class="person-card confirmed">
+                <div class="line-indicator line-paternal"></div>
+                <div class="name">Joseph Harrow</div>
+                <div class="dates">b. 1906, Kelmscott<br>d. 1974</div>
+                <div class="badges">
+                    <span class="badge badge-confirmed">Confirmed</span>
+                </div>
+                <div class="document-count">📄 Marriage cert (1929)</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="line-indicator line-paternal"></div>
+                <div class="name">Alice Marsh</div>
+                <div class="dates">b. 1907<br>d. 1978</div>
+                <div class="badges">
+                    <span class="badge badge-confirmed">Confirmed</span>
+                </div>
+                <div class="document-count">📄 Marriage cert (1929)</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="line-indicator line-maternal"></div>
+                <div class="name">Andrew Fenwick</div>
+                <div class="dates">b. 1904, Buckhaven<br>d. 1972</div>
+                <div class="badges">
+                    <span class="badge badge-confirmed">Confirmed</span>
+                </div>
+                <div class="document-count">📄 Birth cert (Entry 475)</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="line-indicator line-maternal"></div>
+                <div class="name">Agnes Elder</div>
+                <div class="dates">b. 1903</div>
+                <div class="badges">
+                    <span class="badge badge-confirmed">Confirmed</span>
+                </div>
+                <div class="document-count">📄 1 document</div>
+            </div>
+        </div>
+
+        <!-- Gen 4 -->
+        <div class="generation-row">
+            <div class="gen-label">Gen 4</div>
+            <div class="person-card probable">
+                <div class="line-indicator line-paternal"></div>
+                <div class="name">Joseph Harrow</div>
+                <div class="dates">b. 1879</div>
+                <div class="badges">
+                    <span class="badge badge-probable">Probable</span>
+                </div>
+                <div class="document-count">📄 Census 1881, 1891</div>
+            </div>
+            <div class="person-card probable">
+                <div class="line-indicator line-paternal"></div>
+                <div class="name">Catherine Merriwether</div>
+                <div class="dates">b. ~1882<br>d. 1960</div>
+                <div class="badges">
+                    <span class="badge badge-probable">Probable</span>
+                </div>
+                <div class="document-count">📄 Census 1901 (conflict: age)</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="line-indicator line-paternal"></div>
+                <div class="name">Edward Marsh</div>
+                <div class="dates">b. 1866<br>d. Jute millworker</div>
+                <div class="badges">
+                    <span class="badge badge-confirmed">Confirmed</span>
+                </div>
+                <div class="document-count">📄 Census 1871</div>
+            </div>
+            <div class="person-card probable">
+                <div class="line-indicator line-paternal"></div>
+                <div class="name">Mary Ashdown</div>
+                <div class="dates">b. ~1868</div>
+                <div class="badges">
+                    <span class="badge badge-probable">Probable</span>
+                </div>
+                <div class="document-count">📄 Census 1871</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="line-indicator line-maternal"></div>
+                <div class="name">James Fenwick</div>
+                <div class="dates">b. 1872, England<br>Coal miner</div>
+                <div class="badges">
+                    <span class="badge badge-confirmed">Confirmed</span>
+                </div>
+                <div class="document-count">📄 Census 1901</div>
+            </div>
+            <div class="person-card probable">
+                <div class="line-indicator line-maternal"></div>
+                <div class="name">Agnes Maddox</div>
+                <div class="dates">b. ~1876, Fife</div>
+                <div class="badges">
+                    <span class="badge badge-probable">Probable</span>
+                </div>
+                <div class="document-count">📄 Census 1881</div>
+            </div>
+            <div class="person-card probable">
+                <div class="line-indicator line-maternal"></div>
+                <div class="name">Patrick Elder</div>
+                <div class="dates">b. ~1872</div>
+                <div class="badges">
+                    <span class="badge badge-probable">Probable</span>
+                </div>
+                <div class="document-count">📄 Marriage cert needed</div>
+            </div>
+            <div class="person-card probable">
+                <div class="line-indicator line-maternal"></div>
+                <div class="name">Rose Colton</div>
+                <div class="dates">b. 1872</div>
+                <div class="badges">
+                    <span class="badge badge-probable">Probable</span>
+                </div>
+                <div class="document-count">📄 Census 1881</div>
+            </div>
+        </div>
+
+        <!-- Gen 5 (partial, showing brick walls) -->
+        <div class="generation-row">
+            <div class="gen-label">Gen 5</div>
+            <div class="person-card brickwall speculative">
+                <div class="line-indicator line-paternal"></div>
+                <div class="name">Thomas Harrow</div>
+                <div class="dates">b. ~1862, Kelmscott<br>d. 1911</div>
+                <div class="badges">
+                    <span class="badge badge-brickwall">Brick Wall</span>
+                    <span class="badge badge-speculative">Speculative</span>
+                </div>
+                <div class="document-count">🔒 Father unknown</div>
+            </div>
+            <div class="person-card probable">
+                <div class="line-indicator line-paternal"></div>
+                <div class="name">Catherine Marsh</div>
+                <div class="dates">b. ~1857 (not 1830)<br>Conflict detected</div>
+                <div class="badges">
+                    <span class="badge badge-probable">Probable</span>
+                </div>
+                <div class="document-count">⚠️ Age conflict (1881 census)</div>
+            </div>
+            <div class="person-card probable">
+                <div class="line-indicator line-paternal"></div>
+                <div class="name">Owen Marsh</div>
+                <div class="dates">b. 1832, Kelmscott</div>
+                <div class="badges">
+                    <span class="badge badge-probable">Probable</span>
+                </div>
+                <div class="document-count">📄 Census 1871</div>
+            </div>
+            <div class="person-card brickwall speculative">
+                <div class="line-indicator line-maternal"></div>
+                <div class="name">John Ashford</div>
+                <div class="dates">Father of Rose Anne<br>— OR James?</div>
+                <div class="badges">
+                    <span class="badge badge-brickwall">Brick Wall</span>
+                    <span class="badge badge-speculative">Speculative</span>
+                </div>
+                <div class="document-count">🔒 Census shows James, not John</div>
+            </div>
+        </div>
+    </div>
+
+    <div class="action-bar">
+        <button class="action-btn">+ Add Person</button>
+        <button class="action-btn">Import GEDCOM</button>
+        <button class="action-btn primary">📄 Suggest Next Document</button>
+        <button class="action-btn">🔍 Research Dashboard</button>
+    </div>
+
+    <div class="legend">
+        <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Confirmed (primary source)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Probable (census/secondary)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#9ca3af"></div> Speculative (guess/lore)</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Brick Wall (needs research)</div>
+    </div>
+</body>
+</html>
