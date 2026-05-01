@@ -10,15 +10,16 @@
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #f5f3ef;
             color: #1a1a1a;
-            line-height: 1.5;
+            line-height: 1.4;
             overflow-x: auto;
+            min-height: 100vh;
         }
 
         /* Header */
         .header {
             background: #1a1a1a;
             color: #fff;
-            padding: 12px 24px;
+            padding: 12px 16px;
             display: flex;
             align-items: center;
             justify-content: space-between;
@@ -26,428 +27,435 @@
             top: 0;
             z-index: 100;
         }
-        .header h1 { font-size: 18px; font-weight: 600; letter-spacing: -0.3px; }
+        .header h1 { font-size: 17px; font-weight: 600; }
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+        }
         .header-stats {
             display: flex;
-            gap: 20px;
-            font-size: 12px;
+            gap: 16px;
+            font-size: 11px;
             color: #999;
         }
         .header-stats span { color: #fff; font-weight: 600; }
+        .header-btn {
+            background: #fff;
+            color: #1a1a1a;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            cursor: pointer;
+        }
 
         /* Tree container */
         .tree-wrapper {
-            padding: 40px 60px;
-            min-width: 1200px;
+            padding: 40px 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 0;
         }
 
         .generation-row {
             display: flex;
             justify-content: center;
-            gap: 24px;
-            margin-bottom: 48px;
+            align-items: flex-start;
+            gap: 16px;
+            position: relative;
+            padding: 24px 0;
+        }
+
+        /* Couple group (parent pair) */
+        .couple-group {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
             position: relative;
         }
 
-        .gen-label {
-            position: absolute;
-            left: -50px;
-            top: 50%;
-            transform: translateY(-50%) rotate(-90deg);
-            font-size: 11px;
-            font-weight: 600;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #999;
+        .couple-pair {
+            display: flex;
+            gap: 12px;
+            align-items: center;
         }
 
-        /* Person card */
-        .person-card {
+        /* Person node (compact) */
+        .person-node {
             background: #fff;
-            border-radius: 12px;
-            padding: 16px 20px;
-            width: 220px;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+            border-radius: 10px;
+            padding: 10px 14px;
+            min-width: 130px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06);
             border: 2px solid transparent;
             cursor: pointer;
             transition: all 0.2s;
             position: relative;
+            z-index: 2;
         }
-        .person-card:hover {
-            box-shadow: 0 4px 12px rgba(0,0,0,0.12);
+        .person-node:hover {
+            box-shadow: 0 3px 10px rgba(0,0,0,0.1);
             transform: translateY(-2px);
         }
-        .person-card.confirmed { border-color: #22c55e; }
-        .person-card.probable { border-color: #f59e0b; }
-        .person-card.speculative { border-color: #9ca3af; }
-        .person-card.brickwall { border-color: #ef4444; border-style: dashed; }
-        .person-card.you { border-color: #3b82f6; border-width: 3px; }
+        .person-node.confirmed { border-color: #22c55e; }
+        .person-node.probable { border-color: #f59e0b; }
+        .person-node.speculative { border-color: #9ca3af; }
+        .person-node.brickwall { border-color: #ef4444; border-style: dashed; }
+        .person-node.you { border-color: #3b82f6; border-width: 3px; }
 
-        .person-card .name {
-            font-size: 15px;
+        .person-node .name {
+            font-size: 13px;
             font-weight: 600;
-            margin-bottom: 6px;
             letter-spacing: -0.2px;
+            line-height: 1.3;
         }
-        .person-card .dates {
-            font-size: 12px;
-            color: #666;
-            margin-bottom: 8px;
+        .person-node .years {
+            font-size: 10px;
+            color: #888;
+            margin-top: 2px;
         }
-        .person-card .badges {
+        .person-node .status-dot {
+            width: 7px;
+            height: 7px;
+            border-radius: 50%;
+            position: absolute;
+            top: -3px;
+            right: -3px;
+            border: 2px solid #fff;
+        }
+        .dot-paternal { background: #3b82f6; }
+        .dot-maternal { background: #ec4899; }
+        .dot-brickwall { background: #ef4444; box-shadow: 0 0 0 2px #fff; }
+
+        /* Connecting lines */
+        .connector-down {
+            width: 2px;
+            height: 24px;
+            background: #d1d5db;
+            position: absolute;
+            bottom: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+        .connector-horizontal {
+            position: absolute;
+            background: #d1d5db;
+            z-index: 0;
+        }
+        .connector-down-from-couple {
+            width: 2px;
+            height: 24px;
+            background: #d1d5db;
+            position: absolute;
+            bottom: -24px;
+            left: 50%;
+            transform: translateX(-50%);
+            z-index: 0;
+        }
+
+        /* Pro banner */
+        .pro-banner {
+            position: fixed;
+            top: 56px;
+            right: 12px;
+            background: #fef3c7;
+            border: 1px solid #f59e0b;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 11px;
+            max-width: 200px;
+            z-index: 99;
+        }
+        .pro-banner strong { color: #92400e; display: block; margin-bottom: 3px; }
+        .pro-banner a { color: #92400e; text-decoration: underline; }
+
+        /* Detail panel (hidden by default) */
+        .detail-panel {
+            display: none;
+            position: fixed;
+            top: 0;
+            right: 0;
+            width: 340px;
+            max-width: 90vw;
+            height: 100vh;
+            background: #fff;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.15);
+            z-index: 200;
+            overflow-y: auto;
+            animation: slideIn 0.3s ease;
+        }
+        .detail-panel.active { display: block; }
+        @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+        .detail-header {
+            background: #1a1a1a;
+            color: #fff;
+            padding: 20px;
+            position: relative;
+        }
+        .detail-close {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            background: none;
+            border: none;
+            color: #fff;
+            font-size: 20px;
+            cursor: pointer;
+        }
+        .detail-header h2 { font-size: 18px; font-weight: 600; }
+        .detail-header .years { color: #999; font-size: 13px; margin-top: 4px; }
+        .detail-body { padding: 20px; }
+        .detail-section { margin-bottom: 24px; }
+        .detail-section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+        .detail-item {
             display: flex;
-            gap: 6px;
-            flex-wrap: wrap;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
+            font-size: 13px;
         }
+        .detail-item:last-child { border-bottom: none; }
+        .detail-label { color: #666; }
+        .detail-value { font-weight: 500; }
         .badge {
+            display: inline-block;
             font-size: 10px;
             font-weight: 600;
             padding: 3px 8px;
             border-radius: 4px;
             text-transform: uppercase;
-            letter-spacing: 0.5px;
         }
         .badge-confirmed { background: #dcfce7; color: #166534; }
         .badge-probable { background: #fef3c7; color: #92400e; }
         .badge-speculative { background: #f3f4f6; color: #4b5563; }
         .badge-brickwall { background: #fee2e2; color: #991b1b; }
-        .badge-generation { background: #e0e7ff; color: #3730a3; }
 
-        .person-card .line-indicator {
-            position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 8px;
-            height: 8px;
-            border-radius: 50%;
-        }
-        .line-paternal { background: #3b82f6; }
-        .line-maternal { background: #ec4899; }
-
-        .person-card .document-count {
-            font-size: 11px;
-            color: #999;
-            margin-top: 8px;
-            display: flex;
-            align-items: center;
-            gap: 4px;
-        }
-
-        /* Connection lines */
-        .connector {
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            height: 32px;
-            position: relative;
-        }
-        .connector::before {
-            content: '';
-            width: 2px;
-            height: 100%;
-            background: #d1d5db;
-        }
-
-        /* Action bar */
-        .action-bar {
+        /* Overlay */
+        .overlay {
+            display: none;
             position: fixed;
-            bottom: 24px;
-            left: 50%;
-            transform: translateX(-50%);
-            display: flex;
-            gap: 12px;
-            background: #1a1a1a;
-            padding: 12px 20px;
-            border-radius: 12px;
-            box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: rgba(0,0,0,0.4);
+            z-index: 150;
         }
-        .action-btn {
-            background: transparent;
-            border: 1px solid #444;
+        .overlay.active { display: block; }
+
+        /* Action buttons at top */
+        .top-actions {
+            display: flex;
+            gap: 8px;
+            align-items: center;
+        }
+        .top-actions button {
+            background: rgba(255,255,255,0.1);
+            border: 1px solid rgba(255,255,255,0.2);
             color: #fff;
-            padding: 8px 16px;
-            border-radius: 8px;
-            font-size: 13px;
-            font-weight: 500;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        .action-btn:hover { background: #333; }
-        .action-btn.primary { background: #fff; color: #1a1a1a; border-color: #fff; }
-        .action-btn.primary:hover { background: #f5f5f5; }
-
-        /* Pro banner */
-        .pro-banner {
-            position: fixed;
-            top: 60px;
-            right: 24px;
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            padding: 12px 16px;
-            border-radius: 8px;
-            font-size: 12px;
-            max-width: 240px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
-        }
-        .pro-banner strong { color: #92400e; display: block; margin-bottom: 4px; }
-        .pro-banner a { color: #92400e; text-decoration: underline; font-weight: 500; }
-
-        /* Legend */
-        .legend {
-            position: fixed;
-            bottom: 24px;
-            right: 24px;
-            background: #fff;
-            padding: 12px 16px;
-            border-radius: 8px;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+            padding: 5px 10px;
+            border-radius: 6px;
             font-size: 11px;
-        }
-        .legend-item { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
-        .legend-item:last-child { margin-bottom: 0; }
-        .legend-dot { width: 8px; height: 8px; border-radius: 50%; }
-
-        /* Responsive */
-        @media (max-width: 768px) {
-            .tree-wrapper { padding: 20px; min-width: auto; }
-            .generation-row { flex-wrap: wrap; gap: 12px; }
-            .person-card { width: 160px; padding: 12px; }
-            .action-bar { flex-direction: column; bottom: 12px; }
-            .pro-banner, .legend { display: none; }
+            cursor: pointer;
         }
     </style>
 </head>
 <body>
     <div class="header">
         <h1>Roots</h1>
-        <div class="header-stats">
-            <div>People: <span>23</span></div>
-            <div>Confirmed: <span>14</span></div>
-            <div>Brick Walls: <span>4</span></div>
-            <div>Documents: <span>7</span></div>
+        <div class="header-right">
+            <div class="header-stats">
+                <div>People: <span>23</span></div>
+                <div>Confirmed: <span>14</span></div>
+                <div>Walls: <span>4</span></div>
+            </div>
+            <div class="top-actions">
+                <button onclick="openPanel('suggest')">Suggest Next Doc</button>
+                <button onclick="openPanel('research')">Research</button>
+            </div>
+            <button class="header-btn">+ Add</button>
         </div>
     </div>
 
     <div class="pro-banner">
-        <strong>4 brick walls detected</strong>
-        Get AI research plans for each — upgrade to Pro for £4.99/mo
-        <br><a href="#">View plans</a>
+        <strong>4 brick walls</strong>
+        AI research plans available — <a href="#">View</a>
     </div>
 
-    <div class="tree-wrapper">
-        <!-- Generation 1 -->
-        <div class="generation-row">
-            <div class="gen-label">Gen 1</div>
-            <div class="person-card you confirmed">
-                <div class="line-indicator line-paternal"></div>
-                <div class="name">Gavin Harrow</div>
-                <div class="dates">b. 1966<br>Brampton, Ontario</div>
-                <div class="badges">
-                    <span class="badge badge-generation">You</span>
-                    <span class="badge badge-confirmed">Confirmed</span>
-                </div>
-                <div class="document-count">📄 1 document</div>
-            </div>
-        </div>
+    <div class="tree-wrapper" id="tree">
+        <!-- Generated via JS -->
+    </div>
 
-        <!-- Gen 2 -->
-        <div class="generation-row">
-            <div class="gen-label">Gen 2</div>
-            <div class="person-card confirmed">
-                <div class="line-indicator line-paternal"></div>
-                <div class="name">Joseph Harrow</div>
-                <div class="dates">b. 1931, Kelmscott<br>d. 1974</div>
-                <div class="badges">
-                    <span class="badge badge-confirmed">Confirmed</span>
-                </div>
-                <div class="document-count">📄 Birth cert (1931)</div>
-            </div>
-            <div class="connector"></div>
-            <div class="person-card confirmed">
-                <div class="line-indicator line-maternal"></div>
-                <div class="name">Rose Fenwick</div>
-                <div class="dates">b. 1931, Kelmscott</div>
-                <div class="badges">
-                    <span class="badge badge-confirmed">Confirmed</span>
-                </div>
-                <div class="document-count">📄 2 documents</div>
-            </div>
+    <!-- Detail Panel -->
+    <div class="overlay" id="overlay" onclick="closePanel()"></div>
+    <div class="detail-panel" id="detailPanel">
+        <div class="detail-header">
+            <button class="detail-close" onclick="closePanel()">&times;</button>
+            <h2 id="panelName">Name</h2>
+            <div class="years" id="panelYears">Years</div>
         </div>
-
-        <!-- Gen 3 -->
-        <div class="generation-row">
-            <div class="gen-label">Gen 3</div>
-            <div class="person-card confirmed">
-                <div class="line-indicator line-paternal"></div>
-                <div class="name">Joseph Harrow</div>
-                <div class="dates">b. 1906, Kelmscott<br>d. 1974</div>
-                <div class="badges">
-                    <span class="badge badge-confirmed">Confirmed</span>
-                </div>
-                <div class="document-count">📄 Marriage cert (1929)</div>
-            </div>
-            <div class="person-card confirmed">
-                <div class="line-indicator line-paternal"></div>
-                <div class="name">Alice Marsh</div>
-                <div class="dates">b. 1907<br>d. 1978</div>
-                <div class="badges">
-                    <span class="badge badge-confirmed">Confirmed</span>
-                </div>
-                <div class="document-count">📄 Marriage cert (1929)</div>
-            </div>
-            <div class="person-card confirmed">
-                <div class="line-indicator line-maternal"></div>
-                <div class="name">Andrew Fenwick</div>
-                <div class="dates">b. 1904, Buckhaven<br>d. 1972</div>
-                <div class="badges">
-                    <span class="badge badge-confirmed">Confirmed</span>
-                </div>
-                <div class="document-count">📄 Birth cert (Entry 475)</div>
-            </div>
-            <div class="person-card confirmed">
-                <div class="line-indicator line-maternal"></div>
-                <div class="name">Agnes Elder</div>
-                <div class="dates">b. 1903</div>
-                <div class="badges">
-                    <span class="badge badge-confirmed">Confirmed</span>
-                </div>
-                <div class="document-count">📄 1 document</div>
-            </div>
-        </div>
-
-        <!-- Gen 4 -->
-        <div class="generation-row">
-            <div class="gen-label">Gen 4</div>
-            <div class="person-card probable">
-                <div class="line-indicator line-paternal"></div>
-                <div class="name">Joseph Harrow</div>
-                <div class="dates">b. 1879</div>
-                <div class="badges">
-                    <span class="badge badge-probable">Probable</span>
-                </div>
-                <div class="document-count">📄 Census 1881, 1891</div>
-            </div>
-            <div class="person-card probable">
-                <div class="line-indicator line-paternal"></div>
-                <div class="name">Catherine Merriwether</div>
-                <div class="dates">b. ~1882<br>d. 1960</div>
-                <div class="badges">
-                    <span class="badge badge-probable">Probable</span>
-                </div>
-                <div class="document-count">📄 Census 1901 (conflict: age)</div>
-            </div>
-            <div class="person-card confirmed">
-                <div class="line-indicator line-paternal"></div>
-                <div class="name">Edward Marsh</div>
-                <div class="dates">b. 1866<br>d. Jute millworker</div>
-                <div class="badges">
-                    <span class="badge badge-confirmed">Confirmed</span>
-                </div>
-                <div class="document-count">📄 Census 1871</div>
-            </div>
-            <div class="person-card probable">
-                <div class="line-indicator line-paternal"></div>
-                <div class="name">Mary Ashdown</div>
-                <div class="dates">b. ~1868</div>
-                <div class="badges">
-                    <span class="badge badge-probable">Probable</span>
-                </div>
-                <div class="document-count">📄 Census 1871</div>
-            </div>
-            <div class="person-card confirmed">
-                <div class="line-indicator line-maternal"></div>
-                <div class="name">James Fenwick</div>
-                <div class="dates">b. 1872, England<br>Coal miner</div>
-                <div class="badges">
-                    <span class="badge badge-confirmed">Confirmed</span>
-                </div>
-                <div class="document-count">📄 Census 1901</div>
-            </div>
-            <div class="person-card probable">
-                <div class="line-indicator line-maternal"></div>
-                <div class="name">Agnes Maddox</div>
-                <div class="dates">b. ~1876, Fife</div>
-                <div class="badges">
-                    <span class="badge badge-probable">Probable</span>
-                </div>
-                <div class="document-count">📄 Census 1881</div>
-            </div>
-            <div class="person-card probable">
-                <div class="line-indicator line-maternal"></div>
-                <div class="name">Patrick Elder</div>
-                <div class="dates">b. ~1872</div>
-                <div class="badges">
-                    <span class="badge badge-probable">Probable</span>
-                </div>
-                <div class="document-count">📄 Marriage cert needed</div>
-            </div>
-            <div class="person-card probable">
-                <div class="line-indicator line-maternal"></div>
-                <div class="name">Rose Colton</div>
-                <div class="dates">b. 1872</div>
-                <div class="badges">
-                    <span class="badge badge-probable">Probable</span>
-                </div>
-                <div class="document-count">📄 Census 1881</div>
-            </div>
-        </div>
-
-        <!-- Gen 5 (partial, showing brick walls) -->
-        <div class="generation-row">
-            <div class="gen-label">Gen 5</div>
-            <div class="person-card brickwall speculative">
-                <div class="line-indicator line-paternal"></div>
-                <div class="name">Thomas Harrow</div>
-                <div class="dates">b. ~1862, Kelmscott<br>d. 1911</div>
-                <div class="badges">
-                    <span class="badge badge-brickwall">Brick Wall</span>
-                    <span class="badge badge-speculative">Speculative</span>
-                </div>
-                <div class="document-count">🔒 Father unknown</div>
-            </div>
-            <div class="person-card probable">
-                <div class="line-indicator line-paternal"></div>
-                <div class="name">Catherine Marsh</div>
-                <div class="dates">b. ~1857 (not 1830)<br>Conflict detected</div>
-                <div class="badges">
-                    <span class="badge badge-probable">Probable</span>
-                </div>
-                <div class="document-count">⚠️ Age conflict (1881 census)</div>
-            </div>
-            <div class="person-card probable">
-                <div class="line-indicator line-paternal"></div>
-                <div class="name">Owen Marsh</div>
-                <div class="dates">b. 1832, Kelmscott</div>
-                <div class="badges">
-                    <span class="badge badge-probable">Probable</span>
-                </div>
-                <div class="document-count">📄 Census 1871</div>
-            </div>
-            <div class="person-card brickwall speculative">
-                <div class="line-indicator line-maternal"></div>
-                <div class="name">John Ashford</div>
-                <div class="dates">Father of Rose Anne<br>— OR James?</div>
-                <div class="badges">
-                    <span class="badge badge-brickwall">Brick Wall</span>
-                    <span class="badge badge-speculative">Speculative</span>
-                </div>
-                <div class="document-count">🔒 Census shows James, not John</div>
-            </div>
+        <div class="detail-body" id="panelBody">
+            <!-- Dynamic content -->
         </div>
     </div>
 
-    <div class="action-bar">
-        <button class="action-btn">+ Add Person</button>
-        <button class="action-btn">Import GEDCOM</button>
-        <button class="action-btn primary">📄 Suggest Next Document</button>
-        <button class="action-btn">🔍 Research Dashboard</button>
-    </div>
+    <script>
+        // Tree data
+        const treeData = {
+            id: 1, name: "Gavin Harrow", years: "b. 1966", line: "you", status: "confirmed",
+            paternal: {
+                name: "Joseph Harrow", years: "1931–1974", status: "confirmed", line: "paternal",
+                father: { name: "Joseph Harrow", years: "1906–1974", status: "confirmed",
+                    father: { name: "Joseph Marsh Harrow", years: "1879–?", status: "probable",
+                        father: { name: "Thomas Harrow", years: "~1862–1911", status: "brickwall",
+                            father: { name: "?", years: "Brick Wall", status: "brickwall" },
+                            mother: { name: "Catherine Marsh", years: "~1857–?", status: "probable", note: "Age conflict in 1881 census" }
+                        },
+                        mother: { name: "Catherine Merriwether", years: "~1882–1960", status: "probable" }
+                    },
+                    mother: { name: "Alice Marsh", years: "1907–1978", status: "confirmed",
+                        father: { name: "Edward Marsh", years: "1866–?", status: "confirmed", note: "Jute millworker" },
+                        mother: { name: "Mary Ashdown", years: "~1868–?", status: "probable" }
+                    }
+                },
+                mother: { name: "Alice Marsh (Harrow)", years: "1907–1978", status: "confirmed", duplicate: true }
+            },
+            maternal: {
+                name: "Rose Fenwick", years: "1931–", status: "confirmed", line: "maternal",
+                father: { name: "Andrew Fenwick", years: "1904–1972", status: "confirmed", line: "maternal",
+                    father: { name: "James Fenwick", years: "1872–?", status: "confirmed", line: "maternal", note: "Born England, coal miner" },
+                    mother: { name: "Agnes Maddox", years: "~1876–?", status: "probable", line: "maternal" }
+                },
+                mother: { name: "Agnes Elder", years: "1903–", status: "confirmed", line: "maternal",
+                    father: { name: "Patrick Elder", years: "~1872–?", status: "probable", line: "maternal", note: "Marriage cert needed" },
+                    mother: { name: "Rose Colton", years: "1872–?", status: "probable", line: "maternal" }
+                }
+            }
+        };
 
-    <div class="legend">
-        <div class="legend-item"><div class="legend-dot" style="background:#22c55e"></div> Confirmed (primary source)</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#f59e0b"></div> Probable (census/secondary)</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#9ca3af"></div> Speculative (guess/lore)</div>
-        <div class="legend-item"><div class="legend-dot" style="background:#ef4444"></div> Brick Wall (needs research)</div>
-    </div>
+        // Flatten tree into generations
+        function getGenerations(node, gen = 0) {
+            const gens = [];
+            if (!gens[gen]) gens[gen] = [];
+            
+            const entry = { name: node.name, years: node.years, status: node.status, line: node.line, note: node.note };
+            gens[gen].push(entry);
+
+            if (node.paternal) {
+                if (!gens[gen + 1]) gens[gen + 1] = [];
+                const p = node.paternal;
+                gens[gen + 1].push({ name: p.name, years: p.years, status: p.status, line: p.line, note: p.note });
+                if (p.father) getAncestors(p.father, gen + 2, gens);
+                if (p.mother) getAncestors(p.mother, gen + 2, gens);
+            }
+            if (node.maternal) {
+                if (!gens[gen + 1]) gens[gen + 1] = [];
+                const m = node.maternal;
+                gens[gen + 1].push({ name: m.name, years: m.years, status: m.status, line: m.line, note: m.note });
+                if (m.father) getAncestors(m.father, gen + 2, gens);
+                if (m.mother) getAncestors(m.mother, gen + 2, gens);
+            }
+            return gens;
+        }
+
+        function getAncestors(node, gen, gens) {
+            if (!gens[gen]) gens[gen] = [];
+            gens[gen].push({ name: node.name, years: node.years, status: node.status, line: node.line, note: node.note });
+            if (node.father) getAncestors(node.father, gen + 1, gens);
+            if (node.mother) getAncestors(node.mother, gen + 1, gens);
+        }
+
+        const generations = getGenerations(treeData);
+
+        // Render tree
+        const treeEl = document.getElementById('tree');
+        
+        generations.forEach((gen, gi) => {
+            if (!gen || gen.length === 0) return;
+            
+            const row = document.createElement('div');
+            row.className = 'generation-row';
+            row.style.gap = gi === 0 ? '0' : (gen.length > 4 ? '8px' : '24px');
+            
+            gen.forEach(person => {
+                const node = document.createElement('div');
+                node.className = `person-node ${person.status} ${person.line === 'you' ? 'you' : ''}`;
+                node.innerHTML = `
+                    <div class="name">${person.name}</div>
+                    <div class="years">${person.years}</div>
+                    ${person.line && person.line !== 'you' ? `<div class="status-dot dot-${person.status === 'brickwall' ? 'brickwall' : person.line}"></div>` : ''}
+                `;
+                node.onclick = () => openPersonPanel(person);
+                row.appendChild(node);
+            });
+
+            // Add connector line to next gen (except last)
+            if (gi < generations.length - 1) {
+                const connector = document.createElement('div');
+                connector.style.cssText = 'width:2px; height:24px; background:#d1d5db; margin-top:-4px;';
+                // This is tricky - we'd need proper tree layout
+            }
+
+            treeEl.appendChild(row);
+        });
+
+        // Panel functions
+        function openPersonPanel(person) {
+            document.getElementById('panelName').textContent = person.name;
+            document.getElementById('panelYears').textContent = person.years;
+            
+            const statusLabels = { confirmed: 'Confirmed', probable: 'Probable', speculative: 'Speculative', brickwall: 'Brick Wall' };
+            const statusColors = { confirmed: 'badge-confirmed', probable: 'badge-probable', speculative: 'badge-speculative', brickwall: 'badge-brickwall' };
+            
+            document.getElementById('panelBody').innerHTML = `
+                <div class="detail-section">
+                    <h3>Status</h3>
+                    <span class="badge ${statusColors[person.status] || 'badge-speculative'}">${statusLabels[person.status] || person.status}</span>
+                    ${person.note ? `<p style="margin-top:8px; font-size:12px; color:#666;">Note: ${person.note}</p>` : ''}
+                </div>
+                <div class="detail-section">
+                    <h3>Documents</h3>
+                    <div class="detail-item"><span class="detail-label">Sources</span><span class="detail-value">${person.status === 'confirmed' ? 'Birth / Marriage cert' : person.status === 'probable' ? 'Census records' : 'None found'}</span></div>
+                    <div class="detail-item"><span class="detail-label">Confidence</span><span class="detail-value">${person.status === 'confirmed' ? 'High' : person.status === 'probable' ? 'Medium' : 'Low'}</span></div>
+                </div>
+                ${person.status === 'brickwall' ? `
+                <div class="detail-section">
+                    <h3>Research Suggestions</h3>
+                    <p style="font-size:13px; color:#666; line-height:1.6;">
+                        To break this wall, order the marriage certificate of the child (if married). 
+                        This will reveal both parents' names for only £2.
+                    </p>
+                    <button class="header-btn" style="margin-top:12px; width:100%;">Generate Research Plan</button>
+                </div>
+                ` : ''}
+            `;
+            
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('detailPanel').classList.add('active');
+        }
+
+        function closePanel() {
+            document.getElementById('overlay').classList.remove('active');
+            document.getElementById('detailPanel').classList.remove('active');
+        }
+
+        function openPanel(type) {
+            const titles = { suggest: 'Suggest Next Document', research: 'Research Dashboard' };
+            document.getElementById('panelName').textContent = titles[type] || 'Panel';
+            document.getElementById('panelYears').textContent = '';
+            document.getElementById('panelBody').innerHTML = '<p style="color:#999; padding:20px;">Feature coming soon...</p>';
+            document.getElementById('overlay').classList.add('active');
+            document.getElementById('detailPanel').classList.add('active');
+        }
+    </script>
 </body>
 </html>
