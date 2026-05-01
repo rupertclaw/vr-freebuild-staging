@@ -7,256 +7,72 @@
     <style>
         * { box-sizing: border-box; margin: 0; padding: 0; }
         html, body {
-            height: 100%;
-            overflow: hidden;
+            height: 100%; overflow: hidden;
             font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
             background: #1a1a1a;
             -webkit-tap-highlight-color: transparent;
         }
-
-        /* Header */
         .header {
-            position: fixed;
-            top: 0; left: 0; right: 0;
-            height: 48px;
-            background: rgba(26,26,26,0.95);
-            backdrop-filter: blur(10px);
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            padding: 0 14px;
-            z-index: 100;
-            border-bottom: 1px solid #333;
+            position: fixed; top: 0; left: 0; right: 0; height: 48px;
+            background: rgba(26,26,26,0.95); backdrop-filter: blur(10px);
+            display: flex; align-items: center; justify-content: space-between;
+            padding: 0 14px; z-index: 100; border-bottom: 1px solid #333;
         }
-        .header h1 { font-size: 17px; font-weight: 700; color: #fff; letter-spacing: -0.3px; }
-        .header-stats {
-            display: flex;
-            gap: 14px;
-            font-size: 10px;
-            color: #888;
-        }
+        .header h1 { font-size: 17px; font-weight: 700; color: #fff; }
+        .header-stats { display: flex; gap: 14px; font-size: 10px; color: #888; }
         .header-stats span { color: #fff; font-weight: 600; }
-        .header-btn {
-            width: 32px; height: 32px;
-            background: #333;
-            color: #fff;
-            border: none;
-            border-radius: 8px;
-            font-size: 18px;
-            cursor: pointer;
-        }
+        .header-btn { width: 32px; height: 32px; background: #333; color: #fff; border: none; border-radius: 8px; font-size: 18px; cursor: pointer; }
 
-        /* Scroll area */
-        .tree-scroll {
-            position: fixed;
-            top: 48px;
-            left: 0; right: 0; bottom: 0;
-            overflow: auto;
-            -webkit-overflow-scrolling: touch;
-            background: #f5f3ef;
-        }
-
-        /* Tree */
-        .tree-wrapper {
-            display: flex;
-            align-items: flex-start;
-            gap: 0;
-            padding: 24px 16px;
-            min-width: fit-content;
-            min-height: 100%;
-        }
-
-        /* Generation column */
-        .gen-col {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            width: 132px;
-            flex-shrink: 0;
-            padding: 0 6px;
-        }
-
-        /* Connector column */
-        .conn-col {
-            width: 28px;
-            flex-shrink: 0;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            gap: 12px;
-            position: relative;
-        }
-
-        /* Connector lines (CSS-based) */
-        .conn-line {
-            display: flex;
-            align-items: center;
-            height: 54px;
-            position: relative;
-        }
-        .conn-line::before {
-            content: '';
-            position: absolute;
-            right: 0;
-            top: 50%;
-            width: 8px;
-            height: 2px;
-            background: #d1d5db;
-            transform: translateY(-50%);
-        }
-        .conn-line::after {
-            content: '';
-            position: absolute;
-            left: 0;
-            width: 2px;
-            background: #d1d5db;
-        }
-        /* Two children branch */
-        .conn-line.branch::after {
-            height: calc(100% + 12px);
-            top: 50%;
-            transform: translateY(-50%);
-        }
-        /* Single child straight */
-        .conn-line.straight::after {
-            height: 2px;
-            top: 50%;
-            transform: translateY(-50%);
-        }
+        .tree-scroll { position: fixed; top: 48px; left: 0; right: 0; bottom: 0; overflow: auto; -webkit-overflow-scrolling: touch; background: #f5f3ef; }
+        .tree-container { position: relative; min-width: fit-content; min-height: 100%; padding: 40px 20px; }
 
         /* Person card */
         .person-card {
+            position: absolute;
+            width: 132px;
             background: #fff;
             border-radius: 10px;
-            padding: 10px;
-            min-height: 54px;
+            padding: 10px 12px;
             box-shadow: 0 1px 3px rgba(0,0,0,0.1);
             border-left: 3px solid transparent;
             cursor: pointer;
-            transition: transform 0.15s;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            flex-shrink: 0;
+            transition: transform 0.15s, box-shadow 0.2s;
+            z-index: 2;
         }
-        .person-card:active { transform: scale(0.96); }
+        .person-card:hover { box-shadow: 0 3px 12px rgba(0,0,0,0.15); }
+        .person-card:active { transform: scale(0.97); }
         .person-card.confirmed { border-left-color: #22c55e; }
         .person-card.probable { border-left-color: #f59e0b; }
         .person-card.brickwall { border-left-color: #ef4444; border-left-style: dashed; }
         .person-card.you { border: 2px solid #3b82f6; }
 
-        .person-card .name {
-            font-size: 12px;
-            font-weight: 600;
-            color: #1a1a1a;
-            line-height: 1.3;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-        }
-        .person-card .years {
-            font-size: 10px;
-            color: #888;
-            margin-top: 2px;
-        }
+        .person-card .name { font-size: 12px; font-weight: 600; color: #1a1a1a; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+        .person-card .years { font-size: 10px; color: #888; margin-top: 2px; }
 
-        /* Pro banner */
-        .pro-banner {
-            position: fixed;
-            top: 52px;
-            right: 8px;
-            background: #fef3c7;
-            border: 1px solid #f59e0b;
-            padding: 8px 12px;
-            border-radius: 8px;
-            font-size: 10px;
-            z-index: 99;
-            max-width: 160px;
-            color: #92400e;
-        }
+        /* SVG layer for connectors */
+        .lines-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+
+        .pro-banner { position: fixed; top: 52px; right: 10px; background: #fef3c7; border: 1px solid #f59e0b; padding: 8px 12px; border-radius: 8px; font-size: 10px; z-index: 99; max-width: 160px; color: #92400e; }
         .pro-banner strong { font-size: 11px; display: block; margin-bottom: 2px; }
 
-        /* Detail panel */
-        .detail-panel {
-            display: none;
-            position: fixed;
-            top: 0; right: 0;
-            width: 300px;
-            max-width: 85vw;
-            height: 100vh;
-            background: #fff;
-            z-index: 200;
-            overflow-y: auto;
-            animation: slideIn 0.25s ease;
-        }
+        .detail-panel { display: none; position: fixed; top: 0; right: 0; width: 300px; max-width: 85vw; height: 100vh; background: #fff; z-index: 200; overflow-y: auto; animation: slideIn 0.25s ease; }
         .detail-panel.active { display: block; }
         @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
-
-        .detail-header {
-            background: #1a1a1a;
-            color: #fff;
-            padding: 18px 16px;
-            position: relative;
-        }
-        .detail-close {
-            position: absolute;
-            top: 14px; right: 14px;
-            background: none; border: none;
-            color: #fff; font-size: 24px;
-            cursor: pointer;
-        }
+        .detail-header { background: #1a1a1a; color: #fff; padding: 18px 16px; position: relative; }
+        .detail-close { position: absolute; top: 14px; right: 14px; background: none; border: none; color: #fff; font-size: 24px; cursor: pointer; }
         .detail-header h2 { font-size: 17px; font-weight: 600; }
         .detail-years { color: #999; font-size: 13px; margin-top: 3px; }
         .detail-body { padding: 16px; color: #333; }
         .detail-section { margin-bottom: 22px; }
-        .detail-section h3 {
-            font-size: 10px;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            color: #999;
-            margin-bottom: 10px;
-        }
-        .detail-row {
-            display: flex;
-            justify-content: space-between;
-            padding: 8px 0;
-            border-bottom: 1px solid #f0f0f0;
-            font-size: 13px;
-        }
-        .badge {
-            font-size: 10px;
-            font-weight: 600;
-            padding: 3px 8px;
-            border-radius: 4px;
-        }
+        .detail-section h3 { font-size: 10px; text-transform: uppercase; letter-spacing: 1px; color: #999; margin-bottom: 10px; }
+        .detail-row { display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #f0f0f0; font-size: 13px; }
+        .badge { font-size: 10px; font-weight: 600; padding: 3px 8px; border-radius: 4px; }
         .badge-confirmed { background: #dcfce7; color: #166534; }
         .badge-probable { background: #fef3c7; color: #92400e; }
         .badge-brickwall { background: #fee2e2; color: #991b1b; }
-
-        .overlay {
-            display: none;
-            position: fixed;
-            inset: 0;
-            background: rgba(0,0,0,0.4);
-            z-index: 150;
-        }
+        .overlay { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.4); z-index: 150; }
         .overlay.active { display: block; }
-
-        .scroll-hint {
-            position: fixed;
-            bottom: 16px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: rgba(0,0,0,0.7);
-            color: #fff;
-            padding: 6px 14px;
-            border-radius: 20px;
-            font-size: 11px;
-            z-index: 90;
-            animation: fadeOut 3s forwards;
-            animation-delay: 1.5s;
-            pointer-events: none;
-        }
+        .scroll-hint { position: fixed; bottom: 16px; left: 50%; transform: translateX(-50%); background: rgba(0,0,0,0.7); color: #fff; padding: 6px 14px; border-radius: 20px; font-size: 11px; z-index: 90; animation: fadeOut 3s forwards; animation-delay: 1.5s; pointer-events: none; }
         @keyframes fadeOut { to { opacity: 0; } }
     </style>
 </head>
@@ -273,133 +89,12 @@
 
     <div class="pro-banner">
         <strong>4 brick walls</strong>
-        AI research plans
+        AI research plans available
     </div>
 
-    <div class="tree-scroll">
-        <div class="tree-wrapper" id="treeWrapper">
-            <!-- Gen 1: You -->
-            <div class="gen-col">
-                <div class="person-card you" onclick="openPanel({name:'Graeme Mooney',years:'b. 1966',status:'you',line:'you'})">
-                    <div class="name">Graeme Mooney</div>
-                    <div class="years">b. 1966</div>
-                </div>
-            </div>
-
-            <div class="conn-col">
-                <div class="conn-line branch"></div>
-            </div>
-
-            <!-- Gen 2: Parents -->
-            <div class="gen-col">
-                <div class="person-card confirmed" onclick="openPanel({name:'Joseph Mooney',years:'1931–1974',status:'confirmed',note:'Dundee'})">
-                    <div class="name">Joseph Mooney</div>
-                    <div class="years">1931–1974</div>
-                </div>
-                <div class="person-card confirmed" onclick="openPanel({name:'Rose Craigie',years:'1931–',status:'confirmed',note:'Dundee'})">
-                    <div class="name">Rose Craigie</div>
-                    <div class="years">1931–</div>
-                </div>
-            </div>
-
-            <div class="conn-col">
-                <div class="conn-line branch"></div>
-                <div class="conn-line branch"></div>
-            </div>
-
-            <!-- Gen 3: Grandparents -->
-            <div class="gen-col">
-                <div class="person-card confirmed" onclick="openPanel({name:'Joseph Mooney',years:'1906–1974',status:'confirmed',note:'Marriage cert 1929'})">
-                    <div class="name">Joseph Mooney</div>
-                    <div class="years">1906–1974</div>
-                </div>
-                <div class="person-card confirmed" onclick="openPanel({name:'Alice Lynch',years:'1907–1978',status:'confirmed',note:'Marriage cert 1929'})">
-                    <div class="name">Alice Lynch</div>
-                    <div class="years">1907–1978</div>
-                </div>
-                <div class="person-card confirmed" onclick="openPanel({name:'Andrew Craigie',years:'1904–1972',status:'confirmed',note:'Buckhaven'})">
-                    <div class="name">Andrew Craigie</div>
-                    <div class="years">1904–1972</div>
-                </div>
-                <div class="person-card confirmed" onclick="openPanel({name:'Agnes Crawford',years:'1903–',status:'confirmed'})">
-                    <div class="name">Agnes Crawford</div>
-                    <div class="years">1903–</div>
-                </div>
-            </div>
-
-            <div class="conn-col">
-                <div class="conn-line branch"></div>
-                <div class="conn-line branch"></div>
-                <div class="conn-line branch"></div>
-                <div class="conn-line branch"></div>
-            </div>
-
-            <!-- Gen 4: Great-grandparents -->
-            <div class="gen-col">
-                <div class="person-card probable" onclick="openPanel({name:'Joseph Lynch Mooney',years:'1879–?',status:'probable'})">
-                    <div class="name">Joseph Mooney</div>
-                    <div class="years">1879–?</div>
-                </div>
-                <div class="person-card probable" onclick="openPanel({name:'Catherine Farrell',years:'~1882–1960',status:'probable'})">
-                    <div class="name">Catherine Farrell</div>
-                    <div class="years">~1882–1960</div>
-                </div>
-                <div class="person-card confirmed" onclick="openPanel({name:'Edward Lynch',years:'1866–?',status:'confirmed',note:'Jute millworker'})">
-                    <div class="name">Edward Lynch</div>
-                    <div class="years">1866–?</div>
-                </div>
-                <div class="person-card probable" onclick="openPanel({name:'Mary Graham',years:'~1868–?',status:'probable'})">
-                    <div class="name">Mary Graham</div>
-                    <div class="years">~1868</div>
-                </div>
-                <div class="person-card confirmed" onclick="openPanel({name:'James Craigie',years:'1872–?',status:'confirmed',note:'England, coal miner'})">
-                    <div class="name">James Craigie</div>
-                    <div class="years">1872–?</div>
-                </div>
-                <div class="person-card probable" onclick="openPanel({name:'Agnes Henderson',years:'~1876–?',status:'probable'})">
-                    <div class="name">Agnes Henderson</div>
-                    <div class="years">~1876</div>
-                </div>
-                <div class="person-card probable" onclick="openPanel({name:'Patrick Crawford',years:'~1872–?',status:'probable',note:'Marriage cert needed'})">
-                    <div class="name">Patrick Crawford</div>
-                    <div class="years">~1872</div>
-                </div>
-                <div class="person-card probable" onclick="openPanel({name:'Rose MacFarland',years:'1872–?',status:'probable'})">
-                    <div class="name">Rose MacFarland</div>
-                    <div class="years">1872–?</div>
-                </div>
-            </div>
-
-            <div class="conn-col">
-                <div class="conn-line branch"></div>
-                <div class="conn-line branch"></div>
-                <div class="conn-line branch"></div>
-                <div class="conn-line branch"></div>
-                <div class="conn-line branch"></div>
-                <div class="conn-line branch"></div>
-                <div class="conn-line branch"></div>
-                <div class="conn-line branch"></div>
-            </div>
-
-            <!-- Gen 5 -->
-            <div class="gen-col">
-                <div class="person-card brickwall" onclick="openPanel({name:'Thomas Mooney',years:'~1862–1911',status:'brickwall',note:'Father unknown'})">
-                    <div class="name">Thomas Mooney</div>
-                    <div class="years">~1862–1911</div>
-                </div>
-                <div class="person-card probable" onclick="openPanel({name:'Catherine Lynch',years:'~1857–?',status:'probable',note:'Age conflict 1881'})">
-                    <div class="name">Catherine Lynch</div>
-                    <div class="years">~1857</div>
-                </div>
-                <div class="person-card brickwall" onclick="openPanel({name:'?',years:'Father unknown',status:'brickwall'})">
-                    <div class="name">?</div>
-                    <div class="years">Brick Wall</div>
-                </div>
-                <div class="person-card probable" onclick="openPanel({name:'Catherine Lynch',years:'~1857–?',status:'probable'})">
-                    <div class="name">Catherine Lynch</div>
-                    <div class="years">~1857</div>
-                </div>
-            </div>
+    <div class="tree-scroll" id="treeScroll">
+        <div class="tree-container" id="treeContainer">
+            <svg class="lines-svg" id="linesSvg"></svg>
         </div>
     </div>
 
@@ -416,6 +111,170 @@
     </div>
 
     <script>
+        // === DATA: flat array per generation ===
+        // Each person: { id, name, years, status, note, parentIds }
+        const people = [
+            // Gen 0 (root - you)
+            { id: 0, gen: 0, name: "Graeme Mooney", years: "b. 1966", status: "you", note: "You" },
+
+            // Gen 1 (parents)
+            { id: 1, gen: 1, name: "Joseph Mooney", years: "1931–1974", status: "confirmed", note: "Dundee", parentIds: [3,4] },
+            { id: 2, gen: 1, name: "Rose Craigie", years: "1931–", status: "confirmed", note: "Dundee", parentIds: [5,6] },
+
+            // Gen 2 (grandparents)
+            { id: 3, gen: 2, name: "Joseph Mooney", years: "1906–1974", status: "confirmed", note: "Marriage cert 1929", parentIds: [7,8] },
+            { id: 4, gen: 2, name: "Alice Lynch", years: "1907–1978", status: "confirmed", note: "Marriage cert 1929", parentIds: [9,10] },
+            { id: 5, gen: 2, name: "Andrew Craigie", years: "1904–1972", status: "confirmed", note: "Buckhaven", parentIds: [11,12] },
+            { id: 6, gen: 2, name: "Agnes Crawford", years: "1903–", status: "confirmed", note: "", parentIds: [13,14] },
+
+            // Gen 3 (great-grandparents)
+            { id: 7, gen: 3, name: "Joseph Mooney", years: "1879–?", status: "probable", note: "", parentIds: [15,16] },
+            { id: 8, gen: 3, name: "Catherine Farrell", years: "~1882–1960", status: "probable", note: "", parentIds: [15,16] },
+            { id: 9, gen: 3, name: "Edward Lynch", years: "1866–?", status: "confirmed", note: "Jute millworker", parentIds: [17,18] },
+            { id: 10, gen: 3, name: "Mary Graham", years: "~1868–?", status: "probable", note: "", parentIds: [17,18] },
+            { id: 11, gen: 3, name: "James Craigie", years: "1872–?", status: "confirmed", note: "England, coal miner", parentIds: [19,20] },
+            { id: 12, gen: 3, name: "Agnes Henderson", years: "~1876–?", status: "probable", note: "", parentIds: [19,20] },
+            { id: 13, gen: 3, name: "Patrick Crawford", years: "~1872–?", status: "probable", note: "Marriage cert needed", parentIds: [21,22] },
+            { id: 14, gen: 3, name: "Rose MacFarland", years: "1872–?", status: "probable", note: "", parentIds: [21,22] },
+
+            // Gen 4
+            { id: 15, gen: 4, name: "Thomas Mooney", years: "~1862–1911", status: "brickwall", note: "Father unknown" },
+            { id: 16, gen: 4, name: "Catherine Lynch", years: "~1857–?", status: "probable", note: "Age conflict 1881" },
+            { id: 17, gen: 4, name: "Owen Lynch", years: "1832–?", status: "probable", note: "" },
+            { id: 18, gen: 4, name: "Bridget Kelly", years: "~1835–?", status: "probable", note: "" },
+            { id: 19, gen: 4, name: "William Craigie", years: "~1845–?", status: "probable", note: "" },
+            { id: 20, gen: 4, name: "Margaret Smith", years: "~1848–?", status: "probable", note: "" },
+            { id: 21, gen: 4, name: "John McFarland", years: "~1840–?", status: "brickwall", note: "Census shows James" },
+            { id: 22, gen: 4, name: "Sarah McLaughlin", years: "~1842–?", status: "probable", note: "" }
+        ];
+
+        const CARD_W = 132;
+        const CARD_H = 60; // approximate, measured after render
+        const GAP_X = 50;  // horizontal gap between generation columns
+        const GAP_Y = 14;  // vertical gap between cards
+
+        // === RENDER ===
+        const container = document.getElementById('treeContainer');
+        const svg = document.getElementById('linesSvg');
+        const scroll = document.getElementById('treeScroll');
+
+        function render() {
+            // Group by generation
+            const gens = [];
+            people.forEach(p => {
+                if (!gens[p.gen]) gens[p.gen] = [];
+                gens[p.gen].push(p);
+            });
+
+            // Find tallest generation (most people)
+            const maxColSize = Math.max(...gens.map(g => g.length));
+            const totalH = (maxColSize * CARD_H) + ((maxColSize - 1) * GAP_Y);
+
+            // Render cards
+            const cardEls = new Map(); // id -> element
+
+            gens.forEach((gen, gi) => {
+                // Center this generation's column vertically
+                const colH = (gen.length * CARD_H) + ((gen.length - 1) * GAP_Y);
+                const startY = (totalH - colH) / 2;
+                const colX = gi * (CARD_W + GAP_X);
+
+                gen.forEach((person, pi) => {
+                    const el = document.createElement('div');
+                    el.className = `person-card ${person.status}`;
+                    el.innerHTML = `
+                        <div class="name">${person.name}</div>
+                        <div class="years">${person.years}</div>
+                    `;
+                    el.style.left = colX + 'px';
+                    el.style.top = (startY + pi * (CARD_H + GAP_Y)) + 'px';
+                    el.onclick = () => openPanel(person);
+                    container.appendChild(el);
+                    cardEls.set(person.id, el);
+                });
+            });
+
+            // Set container size
+            const totalW = gens.length * CARD_W + (gens.length - 1) * GAP_X + 40;
+            container.style.width = totalW + 'px';
+            container.style.height = (totalH + 80) + 'px';
+
+            // Draw lines after DOM settles
+            setTimeout(() => drawLines(gens, cardEls), 50);
+        }
+
+        function drawLines(gens, cardEls) {
+            const svgNS = 'http://www.w3.org/2000/svg';
+            const containerRect = container.getBoundingClientRect();
+
+            svg.setAttribute('width', container.scrollWidth);
+            svg.setAttribute('height', container.scrollHeight);
+            svg.innerHTML = '';
+
+            // For each person with parents, draw line to parents
+            people.forEach(child => {
+                if (!child.parentIds) return;
+                const childEl = cardEls.get(child.id);
+                if (!childEl) return;
+
+                const childRect = childEl.getBoundingClientRect();
+                const childCx = childRect.left - containerRect.left + childRect.width; // right edge
+                const childCy = childRect.top - containerRect.top + childRect.height / 2;
+
+                const [fatherId, motherId] = child.parentIds;
+                const fatherEl = cardEls.get(fatherId);
+                const motherEl = cardEls.get(motherId);
+                if (!fatherEl) return;
+
+                const fRect = fatherEl.getBoundingClientRect();
+                const fCx = fRect.left - containerRect.left; // left edge
+                const fCy = fRect.top - containerRect.top + fRect.height / 2;
+
+                // Draw line from child to parent(s)
+                if (motherEl) {
+                    const mRect = motherEl.getBoundingClientRect();
+                    const mCy = mRect.top - containerRect.top + mRect.height / 2;
+                    const midY = (fCy + mCy) / 2;
+                    const joinX = fCx - 10;
+
+                    // Horizontal from join to each parent
+                    const fLine = document.createElementNS(svgNS, 'line');
+                    fLine.setAttribute('x1', joinX); fLine.setAttribute('y1', midY);
+                    fLine.setAttribute('x2', fCx); fLine.setAttribute('y2', midY);
+                    fLine.setAttribute('stroke', '#d1d5db'); fLine.setAttribute('stroke-width', '1.5');
+                    svg.appendChild(fLine);
+
+                    const mLine = document.createElementNS(svgNS, 'line');
+                    mLine.setAttribute('x1', joinX); mLine.setAttribute('y1', midY);
+                    mLine.setAttribute('x2', fCx); mLine.setAttribute('y2', mCy);
+                    mLine.setAttribute('stroke', '#d1d5db'); mLine.setAttribute('stroke-width', '1.5');
+                    svg.appendChild(mLine);
+
+                    // Vertical parents connector
+                    const vLine = document.createElementNS(svgNS, 'line');
+                    vLine.setAttribute('x1', joinX); vLine.setAttribute('y1', Math.min(fCy, mCy));
+                    vLine.setAttribute('x2', joinX); vLine.setAttribute('y2', Math.max(fCy, mCy));
+                    vLine.setAttribute('stroke', '#d1d5db'); vLine.setAttribute('stroke-width', '1.5');
+                    svg.appendChild(vLine);
+
+                    // Child to join point
+                    const cLine = document.createElementNS(svgNS, 'path');
+                    cLine.setAttribute('d', `M${childCx},${childCy} C${childCx+20},${childCy} ${joinX-10},${midY} ${joinX},${midY}`);
+                    cLine.setAttribute('stroke', '#d1d5db'); cLine.setAttribute('stroke-width', '1.5');
+                    cLine.setAttribute('fill', 'none');
+                    svg.appendChild(cLine);
+                } else {
+                    // Single parent
+                    const line = document.createElementNS(svgNS, 'line');
+                    line.setAttribute('x1', childCx); line.setAttribute('y1', childCy);
+                    line.setAttribute('x2', fCx); line.setAttribute('y2', fCy);
+                    line.setAttribute('stroke', '#d1d5db'); line.setAttribute('stroke-width', '1.5');
+                    svg.appendChild(line);
+                }
+            });
+        }
+
+        // === PANEL ===
         function openPanel(person) {
             document.getElementById('panelName').textContent = person.name;
             document.getElementById('panelYears').textContent = person.years;
@@ -429,10 +288,7 @@
                 </div>
                 <div class="detail-section">
                     <h3>Sources</h3>
-                    <div class="detail-row">
-                        <span class="detail-label">Confidence</span>
-                        <span class="detail-value">${person.status === 'confirmed' || person.status === 'you' ? 'High' : person.status === 'probable' ? 'Medium' : 'Unknown'}</span>
-                    </div>
+                    <div class="detail-row"><span class="detail-label">Confidence</span><span class="detail-value">${person.status === 'confirmed' || person.status === 'you' ? 'High' : person.status === 'probable' ? 'Medium' : 'Unknown'}</span></div>
                 </div>
                 ${person.status === 'brickwall' ? `
                 <div class="detail-section">
@@ -448,6 +304,20 @@
             document.getElementById('overlay').classList.remove('active');
             document.getElementById('detailPanel').classList.remove('active');
         }
+
+        // Init
+        render();
+        window.addEventListener('resize', () => setTimeout(render, 100));
+
+        // Center root vertically
+        setTimeout(() => {
+            const rootCard = document.querySelector('.person-card.you');
+            if (rootCard) {
+                const cardRect = rootCard.getBoundingClientRect();
+                const scrollH = scroll.clientHeight;
+                scroll.scrollTop = cardRect.top - (scrollH / 2) + (cardRect.height / 2) - 48; // minus header
+            }
+        }, 200);
     </script>
 </body>
 </html>
