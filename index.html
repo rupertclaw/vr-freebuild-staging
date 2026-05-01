@@ -59,12 +59,9 @@
         .person-card .name { font-size: 11px; font-weight: 600; color: #1a1a1a; line-height: 1.3; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
         .person-card .years { font-size: 9px; color: #888; margin-top: 2px; }
 
-        /* SVG lines positioned absolutely within tree-wrap */
         .lines-svg {
-            position: absolute;
-            top: 0; left: 0;
-            pointer-events: none;
-            z-index: 1;
+            position: absolute; top: 0; left: 0;
+            pointer-events: none; z-index: 1;
         }
 
         .pro-banner {
@@ -101,15 +98,15 @@
     <div class="header">
         <h1>Roots</h1>
         <div class="header-stats">
-            <div>People: <span>23</span></div>
-            <div>Confirmed: <span>14</span></div>
-            <div>Walls: <span>4</span></div>
+            <div>People: <span>63</span></div>
+            <div>Confirmed: <span>12</span></div>
+            <div>Walls: <span>7</span></div>
         </div>
         <button class="header-btn">+</button>
     </div>
 
     <div class="pro-banner">
-        <strong>4 brick walls</strong>
+        <strong>7 brick walls</strong>
         AI research plans available
     </div>
 
@@ -119,7 +116,7 @@
         </div>
     </div>
 
-    <div class="scroll-hint">← Swipe right to explore →</div>
+    <div class="scroll-hint">&larr; Swipe right to explore &rarr;</div>
 
     <div class="overlay" id="overlay" onclick="closePanel()"></div>
     <div class="detail-panel" id="detailPanel">
@@ -135,106 +132,183 @@
     (function() {
         'use strict';
 
-        // === DATA ===
         const people = [
-            {id:0, gen:0, name:"Gavin Harrow", years:"b. 1966", status:"you", parents:null},
-            {id:1, gen:1, name:"Joseph Harrow", years:"1931–1974", status:"confirmed", parents:[3,4]},
-            {id:2, gen:1, name:"Rose Fenwick", years:"1931–", status:"confirmed", parents:[5,6]},
-            {id:3, gen:2, name:"Joseph Harrow", years:"1906–1974", status:"confirmed", parents:[7,8]},
-            {id:4, gen:2, name:"Alice Marsh", years:"1907–1978", status:"confirmed", parents:[9,10]},
-            {id:5, gen:2, name:"Andrew Fenwick", years:"1904–1972", status:"confirmed", parents:[11,12]},
-            {id:6, gen:2, name:"Agnes Elder", years:"1903–", status:"confirmed", parents:[13,14]},
-            {id:7, gen:3, name:"Joseph Harrow", years:"1879–?", status:"probable", parents:[15,16]},
-            {id:8, gen:3, name:"Catherine Merriwether", years:"~1882–1960", status:"probable", parents:[15,16]},
-            {id:9, gen:3, name:"Edward Marsh", years:"1866–?", status:"confirmed", note:"Jute millworker", parents:[17,18]},
-            {id:10, gen:3, name:"Mary Ashdown", years:"~1868–?", status:"probable", parents:[17,18]},
-            {id:11, gen:3, name:"James Fenwick", years:"1872–?", status:"confirmed", note:"England, coal miner", parents:[19,20]},
-            {id:12, gen:3, name:"Agnes Maddox", years:"~1876–?", status:"probable", parents:[19,20]},
-            {id:13, gen:3, name:"Patrick Elder", years:"~1872–?", status:"probable", note:"Marriage cert needed", parents:[21,22]},
-            {id:14, gen:3, name:"Rose Colton", years:"1872–?", status:"probable", parents:[21,22]},
-            {id:15, gen:4, name:"Thomas Harrow", years:"~1862–1911", status:"brickwall", note:"Father unknown"},
-            {id:16, gen:4, name:"Catherine Marsh", years:"~1857–?", status:"probable", note:"Age conflict 1881"},
-            {id:17, gen:4, name:"Owen Marsh", years:"1832–?", status:"probable"},
-            {id:18, gen:4, name:"Bridget Stanhope", years:"~1835–?", status:"probable"},
-            {id:19, gen:4, name:"William Fenwick", years:"~1845–?", status:"probable"},
-            {id:20, gen:4, name:"Margaret Brockett", years:"~1848–?", status:"probable"},
-            {id:21, gen:4, name:"John Ashford", years:"~1840–?", status:"brickwall", note:"Census shows James"},
-            {id:22, gen:4, name:"Sarah Galloway", years:"~1842–?", status:"probable"}
+            {id:0, gen:0, name:"Gavin Harrow", years:"b. 1966", status:"you", note:"Brampton, Ontario", parents:null},
+
+            {id:1, gen:1, name:"Joseph Harrow", years:"1931-2004", status:"confirmed", note:"Westmoor, Kelmscott -> Ontario", parents:[3,4]},
+            {id:2, gen:1, name:"Rose Fenwick", years:"b. 1931", status:"confirmed", note:"Kelmscott, Angus", parents:[5,6]},
+
+            {id:3, gen:2, name:"Joseph Harrow", years:"1905-1974", status:"confirmed", note:"Kelmscott, Angus", parents:[7,8]},
+            {id:4, gen:2, name:"Alice Marsh", years:"1907-1978", status:"confirmed", note:"Scotland", parents:[9,10]},
+            {id:5, gen:2, name:"Andrew Maddox Fenwick", years:"1902-1972", status:"confirmed", note:"Kelmscott, Angus", parents:[11,12]},
+            {id:6, gen:2, name:"Agnes Elder", years:"b. 1902", status:"confirmed", note:"Scotland", parents:[13,14]},
+
+            {id:7, gen:3, name:"Joseph Harrow", years:"1879-?", status:"probable", note:"Scotland", parents:[15,16]},
+            {id:8, gen:3, name:"Catherine Merriwether", years:"b. 1883", status:"probable", note:"Ireland -> Scotland", parents:[15,16]},
+            {id:9, gen:3, name:"Edward Marsh", years:"1868-?", status:"probable", note:"Kelmscott", parents:[17,18]},
+            {id:10, gen:3, name:"Mary Ashdown", years:"1865-?", status:"probable", note:"Angus, Scotland", parents:[17,18]},
+            {id:11, gen:3, name:"James George R. Fenwick", years:"1872-?", status:"probable", note:"England -> Kelmscott", parents:[19,20]},
+            {id:12, gen:3, name:"Agnes Dow Fenwick", years:"?", status:"brickwall", note:"Parents unknown", parents:null},
+            {id:13, gen:3, name:"Patrick Elder", years:"1872-?", status:"probable", note:"Scotland", parents:[21,22]},
+            {id:14, gen:3, name:"Rose Anna Ashford", years:"1872-?", status:"probable", note:"Scotland", parents:[21,22]},
+
+            {id:15, gen:4, name:"Thomas Harrow", years:"1862-1911", status:"probable", note:"Ireland -> Kelmscott", parents:[23,24]},
+            {id:16, gen:4, name:"Catherine Marsh", years:"1858-?", status:"probable", note:"Scotland", parents:[25,26]},
+            {id:17, gen:4, name:"Owen Marsh", years:"1833-?", status:"probable", note:"Kelmscott", parents:[25,26]},
+            {id:18, gen:4, name:"Alice Waverley", years:"1831-?", status:"probable", note:"Scotland", parents:[27,28]},
+            {id:19, gen:4, name:"William Fenwick", years:"1841-?", status:"probable", note:"Fife, Scotland", parents:[29,30]},
+            {id:20, gen:4, name:"Elizabeth (Betsy)", years:"1842-?", status:"probable", note:"Scotland", parents:[31,32]},
+            {id:21, gen:4, name:"Francis Elder", years:"1850-?", status:"probable", note:"Scotland", parents:[33,34]},
+            {id:22, gen:4, name:"Eliza Dunmore", years:"1852-?", status:"probable", note:"Kelmscott", parents:[35,36]},
+
+            {id:23, gen:5, name:"? Father", years:"?", status:"brickwall", note:"Father of Thomas 1862\nNot in any record", parents:null},
+            {id:24, gen:5, name:"Hannah Harrow", years:"1833-1862", status:"probable", note:"Scotland", parents:[37,38]},
+            {id:25, gen:5, name:"Thomas Marsh", years:"1815-?", status:"probable", note:"Ireland", parents:null},
+            {id:26, gen:5, name:"Catherine Calloway", years:"1820-?", status:"probable", note:"Ireland", parents:null},
+            {id:27, gen:5, name:"? Father", years:"?", status:"brickwall", note:"Alice Waverley father\nNo record found", parents:null},
+            {id:28, gen:5, name:"? Mother", years:"?", status:"brickwall", note:"Alice Waverley mother\nNo record found", parents:null},
+            {id:29, gen:5, name:"Alex Fenwick", years:"1814-?", status:"probable", note:"Fife, Scotland", parents:null},
+            {id:30, gen:5, name:"Ann", years:"1822-?", status:"probable", note:"Fife, Scotland", parents:null},
+            {id:31, gen:5, name:"? Father", years:"?", status:"brickwall", note:"Elizabeths father\nNo record found", parents:null},
+            {id:32, gen:5, name:"? Mother", years:"?", status:"brickwall", note:"Elizabeths mother\nNo record found", parents:null},
+            {id:33, gen:5, name:"Francis Elder", years:"?", status:"probable", note:"Scotland", parents:null},
+            {id:34, gen:5, name:"Alice", years:"?", status:"probable", note:"Scotland", parents:null},
+            {id:35, gen:5, name:"Peter Dunmore", years:"?", status:"probable", note:"Ireland -> Kelmscott", parents:null},
+            {id:36, gen:5, name:"Margaret", years:"?", status:"probable", note:"Ireland", parents:null},
+
+            {id:37, gen:6, name:"Michael Harrow", years:"1788-1875", status:"probable", note:"Cavan, Ireland -> Scotland", parents:[39,40]},
+            {id:38, gen:6, name:"Agnes Underhill", years:"1799-1887", status:"probable", note:"Ireland -> Scotland", parents:[41,42]},
+            {id:39, gen:7, name:"? Harrow Sr.", years:"?", status:"brickwall", note:"Gen 8 unknown\nIrish records pre-1800", parents:null},
+            {id:40, gen:7, name:"? Mother", years:"?", status:"brickwall", note:"Gen 8 unknown\nIrish records pre-1800", parents:null},
+            {id:41, gen:7, name:"? Underhill Sr.", years:"?", status:"brickwall", note:"Gen 8 unknown", parents:null},
+            {id:42, gen:7, name:"? Underhill Mother", years:"?", status:"brickwall", note:"Gen 8 unknown", parents:null},
+
+            // Additional Gen 4 ancestors from Harrow tree (Ashdown/Easton branch)
+            {id:43, gen:4, name:"James Ashdown", years:"1835-?", status:"probable", note:"Angus, Scotland", parents:[44,45]},
+            {id:44, gen:5, name:"David Ashdown", years:"1805-?", status:"probable", note:"Scotland", parents:[46,47]},
+            {id:45, gen:5, name:"Elizabeth Brindle", years:"1810-?", status:"probable", note:"Kelmscott, Forfarshire", parents:[48,49]},
+            {id:46, gen:6, name:"David Ashdown", years:"?", status:"probable", note:"Scotland", parents:null},
+            {id:47, gen:6, name:"Elisabeth Kingsley", years:"?", status:"probable", note:"Scotland", parents:null},
+            {id:48, gen:6, name:"George Brindle", years:"?", status:"probable", note:"Forfarshire", parents:null},
+            {id:49, gen:6, name:"? Brindle", years:"?", status:"brickwall", note:"No record found", parents:null},
+
+            {id:50, gen:4, name:"Ann Easton", years:"1844-?", status:"probable", note:"Ireland", parents:[51,52]},
+            {id:51, gen:5, name:"John Easton", years:"1821-?", status:"probable", note:"Ireland", parents:null},
+            {id:52, gen:5, name:"Catherine", years:"1822-?", status:"probable", note:"Ireland", parents:null},
+
+            // Additional Gen 4 ancestors from Fenwick tree
+            {id:53, gen:4, name:"James Merriwether", years:"?", status:"probable", note:"Scotland", parents:null},
+            {id:54, gen:4, name:"Helen Dewhurst", years:"?", status:"probable", note:"Scotland", parents:null},
+
+            // Connecting orphaned parents
+            {id:55, gen:5, name:"? Father", years:"?", status:"brickwall", note:"James Merriwether father", parents:null},
+            {id:56, gen:5, name:"? Mother", years:"?", status:"brickwall", note:"James Merriwether mother", parents:null},
+            {id:57, gen:5, name:"? Father", years:"?", status:"brickwall", note:"Helen Dewhurst father", parents:null},
+            {id:58, gen:5, name:"? Mother", years:"?", status:"brickwall", note:"Helen Dewhurst mother", parents:null},
+
+            // Ashford branch
+            {id:59, gen:4, name:"John Ashford", years:"?", status:"brickwall", note:"No record found", parents:null},
+            {id:60, gen:4, name:"Mary Kenward", years:"?", status:"brickwall", note:"No record found", parents:null},
+
+            // Additional brick walls for completeness
+            {id:61, gen:5, name:"? Father", years:"?", status:"brickwall", note:"John Ashford father", parents:null},
+            {id:62, gen:5, name:"? Mother", years:"?", status:"brickwall", note:"John Ashford mother", parents:null},
         ];
 
-        // === CONFIG ===
+        // Link correct parents
+        people.find(p => p.id === 3).parents = [7, 8];
+        people.find(p => p.id === 4).parents = [9, 10];
+        people.find(p => p.id === 5).parents = [11, 12];
+        people.find(p => p.id === 6).parents = [13, 14];
+        people.find(p => p.id === 7).parents = [15, 16];
+        people.find(p => p.id === 8).parents = [15, 16];
+        people.find(p => p.id === 9).parents = [17, 18];
+        people.find(p => p.id === 10).parents = [17, 18];
+        people.find(p => p.id === 11).parents = [19, 20];
+        people.find(p => p.id === 13).parents = [21, 22];
+        people.find(p => p.id === 14).parents = [21, 22];
+        people.find(p => p.id === 15).parents = [23, 24];
+        people.find(p => p.id === 16).parents = [25, 26];
+        people.find(p => p.id === 17).parents = [25, 26];
+        people.find(p => p.id === 18).parents = [27, 28];
+        people.find(p => p.id === 19).parents = [29, 30];
+        people.find(p => p.id === 20).parents = [31, 32];
+        people.find(p => p.id === 21).parents = [33, 34];
+        people.find(p => p.id === 22).parents = [35, 36];
+        people.find(p => p.id === 24).parents = [37, 38];
+        people.find(p => p.id === 37).parents = [39, 40];
+        people.find(p => p.id === 38).parents = [41, 42];
+        people.find(p => p.id === 43).parents = [44, 45];
+        people.find(p => p.id === 44).parents = [46, 47];
+        people.find(p => p.id === 45).parents = [48, 49];
+        people.find(p => p.id === 50).parents = [51, 52];
+
         const CARD_W = 124;
-        const GAP_X = 36;  // horizontal gap
-        const GAP_Y = 10;  // vertical gap between cards
-        const JUNCT_DIST = 14; // how far left of parent column the junction sits
+        const GAP_X = 36;
+        const GAP_Y = 10;
+        const JUNCT_DIST = 14;
 
         const wrap = document.getElementById('treeWrap');
         const svg = document.getElementById('linesSvg');
         const scroll = document.getElementById('treeScroll');
         const svgNS = 'http://www.w3.org/2000/svg';
 
-        // === STEP 1: Group by generation ===
-        const gens = [[], [], [], [], []];
-        people.forEach(p => gens[p.gen].push(p));
+        const maxGen = Math.max(...people.map(p => p.gen));
+        const gens = [];
+        for (let g = 0; g <= maxGen; g++) gens[g] = people.filter(p => p.gen === g);
 
-        // === STEP 2: Render all cards (hidden, to measure) ===
-        const els = new Map(); // id -> element
-        const colLeft = [0, 1, 2, 3, 4].map(g => g * (CARD_W + GAP_X));
+        const els = new Map();
+        const colLeft = gens.map((_, g) => g * (CARD_W + GAP_X));
 
         people.forEach(p => {
             const el = document.createElement('div');
-            el.className = `person-card ${p.status} ${p.id === 0 ? 'you' : ''}`;
-            el.innerHTML = `<div class="name">${p.name}</div><div class="years">${p.years}</div>`;
+            el.className = 'person-card ' + p.status + (p.id === 0 ? ' you' : '');
+            let html = '<div class="name">' + p.name + '</div><div class="years">' + p.years + '</div>';
+            if (p.note && p.status === 'brickwall') html += '<div class="note-tag">' + p.note.split('\n')[0] + '</div>';
+            el.innerHTML = html;
             el.style.left = colLeft[p.gen] + 'px';
             el.style.top = '0px';
-            el.style.opacity = '0'; // measure-only
-            el.onclick = () => openPanel(p);
+            el.style.opacity = '0';
+            el.onclick = function() { openPanel(p); };
             wrap.appendChild(el);
             els.set(p.id, el);
         });
 
-        // Force layout
         document.body.offsetHeight;
 
-        // === STEP 3: Measure ===
         const hMap = new Map();
         els.forEach((el, id) => hMap.set(id, el.offsetHeight));
 
-        // === STEP 4: Position each column independently, centered on viewport center ===
         const viewH = scroll.clientHeight;
         const viewMid = viewH / 2;
 
-        const colHeights = gens.map(gen =
+        const colHeights = gens.map(gen =>
             gen.reduce((sum, p) => sum + hMap.get(p.id) + GAP_Y, 0) - GAP_Y
         );
 
         const topMap = new Map();
         gens.forEach((gen, gi) => {
             const colH = colHeights[gi];
-            let y = viewMid - colH / 2; // column top, centered vertically
-            if (y < 20) y = 20; // keep top padding
+            let y = viewMid - colH / 2;
+            if (y < 20) y = 20;
             gen.forEach(p => {
                 topMap.set(p.id, y);
                 y += hMap.get(p.id) + GAP_Y;
             });
         });
 
-        // Apply positions
         els.forEach((el, id) => {
             el.style.top = topMap.get(id) + 'px';
             el.style.opacity = '1';
         });
 
-        // Size container
-        const maxW = colLeft[4] + CARD_W + 20;
+        const maxW = colLeft[maxGen] + CARD_W + 20;
         const maxH = Math.max(viewH, ...people.map(p => topMap.get(p.id) + hMap.get(p.id))) + 40;
         wrap.style.width = maxW + 'px';
         wrap.style.height = maxH + 'px';
 
-        // === STEP 5: Draw connectors ===
         function drawLines() {
             const wrapRect = wrap.getBoundingClientRect();
-
             svg.setAttribute('width', wrap.scrollWidth);
             svg.setAttribute('height', wrap.scrollHeight);
             svg.innerHTML = '';
@@ -246,12 +320,11 @@
                 if (!childEl || !fatherEl) return;
 
                 const cRect = childEl.getBoundingClientRect();
-                // Child right edge position relative to wrap
                 const cx = (cRect.right - wrapRect.left);
                 const cy = (cRect.top - wrapRect.top) + cRect.height / 2;
 
                 const fRect = fatherEl.getBoundingClientRect();
-                const fx = (fRect.left - wrapRect.left); // father left edge
+                const fx = (fRect.left - wrapRect.left);
                 const fy = (fRect.top - wrapRect.top) + fRect.height / 2;
 
                 const jx = fx - JUNCT_DIST;
@@ -259,19 +332,17 @@
                 if (child.parents.length > 1 && els.get(child.parents[1])) {
                     const motherEl = els.get(child.parents[1]);
                     const mRect = motherEl.getBoundingClientRect();
-                    const mx = (mRect.left - wrapRect.left); // mother left edge
+                    const mx = (mRect.left - wrapRect.left);
                     const my = (mRect.top - wrapRect.top) + mRect.height / 2;
                     const midY = (fy + my) / 2;
 
-                    // Curve: child right edge -> junction point
                     const curve = document.createElementNS(svgNS, 'path');
-                    curve.setAttribute('d', `M${cx},${cy} C${cx+12},${cy} ${jx-6},${midY} ${jx},${midY}`);
+                    curve.setAttribute('d', 'M' + cx + ',' + cy + ' C' + (cx+12) + ',' + cy + ' ' + (jx-6) + ',' + midY + ' ' + jx + ',' + midY);
                     curve.setAttribute('stroke', '#c4c4c4');
                     curve.setAttribute('stroke-width', '1.5');
                     curve.setAttribute('fill', 'none');
                     svg.appendChild(curve);
 
-                    // Vertical line between parents' junction
                     const vLine = document.createElementNS(svgNS, 'line');
                     vLine.setAttribute('x1', jx); vLine.setAttribute('y1', fy);
                     vLine.setAttribute('x2', jx); vLine.setAttribute('y2', my);
@@ -279,7 +350,6 @@
                     vLine.setAttribute('stroke-width', '1.5');
                     svg.appendChild(vLine);
 
-                    // Horizontal to father
                     const fLine = document.createElementNS(svgNS, 'line');
                     fLine.setAttribute('x1', jx); fLine.setAttribute('y1', fy);
                     fLine.setAttribute('x2', fx); fLine.setAttribute('y2', fy);
@@ -287,7 +357,6 @@
                     fLine.setAttribute('stroke-width', '1.5');
                     svg.appendChild(fLine);
 
-                    // Horizontal to mother
                     const mLine = document.createElementNS(svgNS, 'line');
                     mLine.setAttribute('x1', jx); mLine.setAttribute('y1', my);
                     mLine.setAttribute('x2', mx); mLine.setAttribute('y2', my);
@@ -295,7 +364,6 @@
                     mLine.setAttribute('stroke-width', '1.5');
                     svg.appendChild(mLine);
                 } else {
-                    // Single parent
                     const line = document.createElementNS(svgNS, 'line');
                     line.setAttribute('x1', cx); line.setAttribute('y1', cy);
                     line.setAttribute('x2', fx); line.setAttribute('y2', fy);
@@ -310,39 +378,16 @@
         scroll.addEventListener('scroll', drawLines);
         window.addEventListener('resize', drawLines);
 
-        // Center horizontally on Gen 0 initially
-        setTimeout(() => {
-            const rootEl = els.get(0);
-            if (rootEl) {
-                const rRect = rootEl.getBoundingClientRect();
-                scroll.scrollLeft = 0;
-            }
-        }, 50);
-
-        // === PANEL ===
         window.openPanel = function(person) {
             document.getElementById('panelName').textContent = person.name;
-            document.getElementById('panelYears').textContent = person.years + (person.note ? ` · ${person.note}` : '');
-            const labels = {confirmed:'Confirmed', probable:'Probable', brickwall:'Brick Wall', you:'You'};
-            const colors = {confirmed:'badge-confirmed', probable:'badge-probable', brickwall:'badge-brickwall', you:'badge-confirmed'};
-            document.getElementById('panelBody').innerHTML = `
-                <div class="detail-section">
-                    <h3>Status</h3>
-                    <span class="badge ${colors[person.status]||'badge-probable'}">${labels[person.status]||person.status}</span>
-                </div>
-                <div class="detail-section">
-                    <h3>Sources</h3>
-                    <div class="detail-row">
-                        <span class="detail-label">Confidence</span>
-                        <span class="detail-value">${person.status==='confirmed'||person.status==='you'?'High':person.status==='probable'?'Medium':'Unknown'}</span>
-                    </div>
-                </div>
-                ${person.status==='brickwall'?`
-                <div class="detail-section">
-                    <h3>Next Step</h3>
-                    <p style="font-size:12px;color:#666;line-height:1.5;">Order the child's marriage cert to reveal both parents (£2 via ScotlandsPeople).</p>
-                </div>`:''}
-            `;
+            document.getElementById('panelYears').textContent = person.years + (person.note ? ' \u00b7 ' + person.note : '');
+            var labels = {confirmed:'Confirmed', probable:'Probable', brickwall:'Brick Wall', you:'You'};
+            var colors = {confirmed:'badge-confirmed', probable:'badge-probable', brickwall:'badge-brickwall', you:'badge-confirmed'};
+            var confidence = (person.status==='confirmed'||person.status==='you')?'High':(person.status==='probable')?'Medium':'Unknown';
+            document.getElementById('panelBody').innerHTML =
+                '<div class="detail-section"><h3>Status</h3><span class="badge ' + (colors[person.status]||'badge-probable') + '">' + (labels[person.status]||person.status) + '</span></div>' +
+                '<div class="detail-section"><h3>Sources</h3><div class="detail-row"><span>Confidence</span><span>' + confidence + '</span></div></div>' +
+                (person.status==='brickwall'?'<div class="detail-section"><h3>Next Step</h3><p style="font-size:12px;color:#666;line-height:1.5;">Order the child\'s marriage cert to reveal both parents (\u00a32 via ScotlandsPeople).</p></div>':'');
             document.getElementById('overlay').classList.add('active');
             document.getElementById('detailPanel').classList.add('active');
         };
