@@ -3,9 +3,9 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Family Tree — 8 Generations</title>
+<title>Family Tree — Grid Setup</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=IM+Fell+English:ital@0;1&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
@@ -31,165 +31,150 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   box-shadow: 0 0 50px rgba(0,0,0,0.8);
 }
 
+/* Grid overlay */
+.grid-overlay {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.grid-overlay.active { opacity: 1; }
+.grid-line-h {
+  position: absolute; left: 0; right: 0;
+  border-top: 1px dashed rgba(255,0,0,0.4);
+}
+.grid-line-v {
+  position: absolute; top: 0; bottom: 0;
+  border-left: 1px dashed rgba(255,0,0,0.4);
+}
+.grid-label-x {
+  position: absolute; bottom: -20px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 11px; color: rgba(255,0,0,0.7);
+  transform: translateX(-50%);
+}
+.grid-label-y {
+  position: absolute; left: -24px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 11px; color: rgba(255,0,0,0.7);
+  transform: translateY(-50%);
+}
+.grid-toggle {
+  position: fixed; top: 20px; left: 20px;
+  z-index: 200;
+  padding: 8px 16px;
+  background: #e8dcc8; border: 2px solid #6b5537;
+  border-radius: 6px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 13px; color: #1e140a;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+.grid-toggle:active { transform: scale(0.95); }
+
 .slot {
-  position: absolute;
-  width: 88px; height: 48px;
+  position: absolute; width: 88px; height: 48px;
   background: rgba(245,236,216,0.88);
-  border: 1.5px solid #7a5e3a;
-  border-radius: 50%;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
+  border: 1.5px solid #7a5e3a; border-radius: 50%;
+  display: flex; flex-direction: column;
+  align-items: center; justify-content: center;
   text-align: center;
   font-family: 'Cormorant Garamond', serif;
-  font-size: 10px;
-  color: #1e140a;
-  line-height: 1.2;
+  font-size: 10px; color: #1e140a; line-height: 1.2;
   box-shadow: 0 2px 8px rgba(60,40,10,0.25), inset 0 1px 2px rgba(255,255,255,0.4);
-  z-index: 5;
-  cursor: pointer;
+  z-index: 5; cursor: pointer;
   transition: all 0.2s ease;
   transform: translate(-50%, -50%);
-  padding: 2px;
-  overflow: hidden;
+  padding: 2px; overflow: hidden;
 }
 .slot:hover {
   transform: translate(-50%, -50%) scale(1.2);
   background: rgba(255,248,232,0.96);
-  box-shadow: 0 5px 16px rgba(60,40,10,0.35);
-  z-index: 50;
+  box-shadow: 0 5px 16px rgba(60,40,10,0.35); z-index: 50;
 }
 .slot.empty {
   background: rgba(245,236,216,0.3);
-  border-style: dashed;
-  border-color: #b0a080;
-  color: #a09070;
+  border-style: dashed; border-color: #b0a080; color: #a09070;
 }
 .slot .surname { font-weight: 600; font-size: 10.5px; display: block; }
 .slot .years { font-size: 8px; color: #7a6545; display: block; margin-top: 1px; }
 
 .zoom-controls {
-  position: fixed;
-  bottom: 20px;
-  left: 20px;
-  z-index: 100;
-  display: flex;
-  flex-direction: column;
-  gap: 8px;
+  position: fixed; bottom: 20px; left: 20px;
+  z-index: 200; display: flex; flex-direction: column; gap: 8px;
 }
 .zoom-btn {
-  width: 44px;
-  height: 44px;
-  border-radius: 50%;
-  border: 2px solid #6b5537;
-  background: #e8dcc8;
-  color: #1e140a;
-  font-size: 20px;
-  font-family: 'Cinzel Decorative', serif;
-  cursor: pointer;
-  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-  display: flex;
-  align-items: center;
-  justify-content: center;
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 2px solid #6b5537; background: #e8dcc8; color: #1e140a;
+  font-size: 20px; font-family: 'Cinzel Decorative', serif;
+  cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
   user-select: none;
 }
 .zoom-btn:active { transform: scale(0.92); }
 .zoom-level {
-  text-align: center;
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 13px;
-  color: #e8dcc8;
-  font-weight: 600;
+  text-align: center; font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; color: #e8dcc8; font-weight: 600;
 }
 
 .overlay {
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5);
-  z-index: 150;
-  opacity: 0;
-  pointer-events: none;
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 150;
+  opacity: 0; pointer-events: none;
   transition: opacity 0.2s;
 }
 .overlay.active { opacity: 1; pointer-events: auto; }
 
 .detail-popup {
-  position: fixed;
-  top: 50%; left: 50%;
+  position: fixed; top: 50%; left: 50%;
   transform: translate(-50%, -50%) scale(0.9);
-  background: #f5e6c8;
-  border: 3px solid #6b5537;
-  border-radius: 12px;
-  padding: 24px 32px;
-  z-index: 200;
+  background: #f5e6c8; border: 3px solid #6b5537;
+  border-radius: 12px; padding: 24px 32px; z-index: 200;
   box-shadow: 0 10px 40px rgba(0,0,0,0.5);
   font-family: 'Cormorant Garamond', serif;
-  color: #1e140a;
-  min-width: 280px;
-  opacity: 0;
-  pointer-events: none;
+  color: #1e140a; min-width: 280px;
+  opacity: 0; pointer-events: none;
   transition: all 0.25s ease;
 }
 .detail-popup.active {
-  opacity: 1;
-  pointer-events: auto;
+  opacity: 1; pointer-events: auto;
   transform: translate(-50%, -50%) scale(1);
 }
 .detail-popup h3 {
   font-family: 'Cinzel Decorative', serif;
-  font-size: 20px;
-  margin-bottom: 8px;
-  border-bottom: 1px solid #a08b6a;
-  padding-bottom: 8px;
+  font-size: 20px; margin-bottom: 8px;
+  border-bottom: 1px solid #a08b6a; padding-bottom: 8px;
 }
 .detail-popup .detail-row {
-  display: flex;
-  justify-content: space-between;
-  margin: 6px 0;
-  font-size: 14px;
+  display: flex; justify-content: space-between;
+  margin: 6px 0; font-size: 14px;
 }
 .detail-popup .detail-row .label { color: #5a4428; }
 .detail-popup .detail-row .value { font-weight: 600; }
 .detail-popup .close-btn {
-  position: absolute;
-  top: 8px;
-  right: 12px;
-  background: none;
-  border: none;
-  font-size: 24px;
-  cursor: pointer;
-  color: #5a4428;
+  position: absolute; top: 8px; right: 12px;
+  background: none; border: none; font-size: 24px;
+  cursor: pointer; color: #5a4428;
 }
 </style>
 </head>
 <body>
 
+<button class="grid-toggle" id="gridToggle">Show Grid</button>
+
 <div class="viewport" id="viewport">
 <div class="scroll-wrapper">
 <div class="poster" id="poster">
 
-<!-- GEN 8 (top row) -->
+<!-- Grid overlay (generated by JS) -->
+<div class="grid-overlay" id="gridOverlay"></div>
+
+<!-- Only YOUR ancestors — left side of tree where data exists -->
+<!-- GEN 8 -->
 <div class="slot" style="left: 63px; top: 186px;" data-person="thomas-harrow-8"><span class="surname">Thomas Harrow</span><span class="years">~1770–?</span></div>
 <div class="slot" style="left: 147px; top: 157px;" data-person="bridget-easton"><span class="surname">Bridget Easton</span><span class="years">~1775–?</span></div>
-<div class="slot empty" style="left: 231px; top: 137px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 315px; top: 123px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 399px; top: 113px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 483px; top: 108px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 567px; top: 113px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 651px; top: 123px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 735px; top: 137px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 819px; top: 157px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 903px; top: 137px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 987px; top: 123px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1071px; top: 113px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1155px; top: 108px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1239px; top: 113px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1323px; top: 123px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1407px; top: 137px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1491px; top: 157px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1575px; top: 186px;"><span class="surname">Unknown</span></div>
-
 <!-- GEN 7 -->
 <div class="slot" style="left: 36px; top: 275px;" data-person="patrick-dewhurst"><span class="surname">Patrick Dewhurst</span><span class="years">~1818–?</span></div>
 <div class="slot" style="left: 120px; top: 245px;" data-person="barbara-bramwell"><span class="surname">Barbara Bramwell</span><span class="years">~1820–?</span></div>
@@ -201,18 +186,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="slot" style="left: 624px; top: 210px;" data-person="catherine-loxley"><span class="surname">Catherine Loxley</span><span class="years">~1816–?</span></div>
 <div class="slot" style="left: 708px; top: 225px;" data-person="john-underhill"><span class="surname">John Underhill</span><span class="years">~1785–?</span></div>
 <div class="slot" style="left: 792px; top: 245px;" data-person="betsy-ravenhill"><span class="surname">Betsy Ravenhill</span><span class="years">~1787–?</span></div>
-<div class="slot empty" style="left: 876px; top: 265px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 960px; top: 245px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1044px; top: 225px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1128px; top: 210px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1212px; top: 200px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1296px; top: 195px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1380px; top: 200px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1464px; top: 210px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1548px; top: 225px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1632px; top: 245px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1716px; top: 275px;"><span class="surname">Unknown</span></div>
-
 <!-- GEN 6 -->
 <div class="slot" style="left: 54px; top: 363px;" data-person="james-ashdown"><span class="surname">James Ashdown</span><span class="years">~1818–?</span></div>
 <div class="slot" style="left: 138px; top: 333px;" data-person="ann-ashdown"><span class="surname">Ann</span><span class="years">~1821–?</span></div>
@@ -224,18 +197,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="slot" style="left: 642px; top: 298px;" data-person="elizabeth-hawksley"><span class="surname">Elizabeth Hawksley</span><span class="years">~1815–?</span></div>
 <div class="slot" style="left: 726px; top: 313px;" data-person="andrew-maddox"><span class="surname">Andrew Maddox</span><span class="years">~1818–?</span></div>
 <div class="slot" style="left: 810px; top: 333px;" data-person="eliza-maddox"><span class="surname">Eliza</span><span class="years">~1817–?</span></div>
-<div class="slot empty" style="left: 894px; top: 353px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 978px; top: 333px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1062px; top: 313px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1146px; top: 298px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1230px; top: 288px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1314px; top: 283px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1398px; top: 288px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1482px; top: 298px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1566px; top: 313px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1650px; top: 333px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1734px; top: 363px;"><span class="surname">Unknown</span></div>
-
 <!-- GEN 5 -->
 <div class="slot" style="left: 90px; top: 451px;" data-person="francis-elder"><span class="surname">Francis Elder</span><span class="years">1845–~1904</span></div>
 <div class="slot" style="left: 174px; top: 421px;" data-person="eliza-dunmore"><span class="surname">Eliza Dunmore</span><span class="years">~1852–?</span></div>
@@ -245,20 +206,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="slot" style="left: 510px; top: 371px;" data-person="helen-dewhurst"><span class="surname">Helen Dewhurst</span><span class="years">~1843–~1924</span></div>
 <div class="slot" style="left: 594px; top: 376px;" data-person="owen-marsh"><span class="surname">Owen Marsh</span><span class="years">~1841–?</span></div>
 <div class="slot" style="left: 678px; top: 386px;" data-person="alice-waverley"><span class="surname">Alice Waverley</span><span class="years">~1840–~1895</span></div>
-<div class="slot empty" style="left: 762px; top: 401px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 846px; top: 421px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 930px; top: 441px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1014px; top: 421px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1098px; top: 401px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1182px; top: 386px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1266px; top: 376px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1350px; top: 371px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1434px; top: 376px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1518px; top: 386px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1602px; top: 401px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1686px; top: 421px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1770px; top: 451px;"><span class="surname">Unknown</span></div>
-
 <!-- GEN 4 -->
 <div class="slot" style="left: 126px; top: 539px;" data-person="joseph-harrow-4"><span class="surname">Joseph Harrow</span><span class="years">1873–1940</span></div>
 <div class="slot" style="left: 210px; top: 509px;" data-person="catherine-merriwether"><span class="surname">Catherine Merriwether</span><span class="years">1873–1939</span></div>
@@ -266,52 +213,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="slot" style="left: 378px; top: 474px;" data-person="mary-ashdown"><span class="surname">Mary J. Ashdown</span><span class="years">~1873–?</span></div>
 <div class="slot" style="left: 462px; top: 464px;" data-person="james-fenwick"><span class="surname">James Fenwick</span><span class="years">~1874–?</span></div>
 <div class="slot" style="left: 546px; top: 459px;" data-person="agnes-maddox"><span class="surname">Agnes Maddox</span><span class="years">1877–1915</span></div>
-<div class="slot empty" style="left: 630px; top: 464px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 714px; top: 474px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 798px; top: 489px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 882px; top: 509px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 966px; top: 529px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1050px; top: 509px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1134px; top: 489px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1218px; top: 474px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1302px; top: 464px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1386px; top: 459px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1470px; top: 464px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1554px; top: 474px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1638px; top: 489px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1722px; top: 509px;"><span class="surname">Unknown</span></div>
-
 <!-- GEN 3 -->
 <div class="slot" style="left: 180px; top: 627px;" data-person="joseph-harrow-3"><span class="surname">Joseph Harrow</span><span class="years">1898–1974</span></div>
 <div class="slot" style="left: 264px; top: 597px;" data-person="alice-marsh"><span class="surname">Alice Marsh</span><span class="years">1898–1984</span></div>
 <div class="slot" style="left: 348px; top: 577px;" data-person="andrew-fenwick"><span class="surname">Andrew H. Fenwick</span><span class="years">1904–1977</span></div>
 <div class="slot" style="left: 432px; top: 562px;" data-person="agnes-elder"><span class="surname">Agnes Elder</span><span class="years">1907–1995</span></div>
-<div class="slot empty" style="left: 516px; top: 552px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 600px; top: 547px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 684px; top: 552px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 768px; top: 562px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 852px; top: 577px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 936px; top: 597px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1020px; top: 617px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1104px; top: 597px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1188px; top: 577px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1272px; top: 562px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1356px; top: 552px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1440px; top: 547px;"><span class="surname">Unknown</span></div>
-
 <!-- GEN 2 -->
 <div class="slot" style="left: 252px; top: 715px;" data-person="joseph-harrow-2"><span class="surname">Joseph Harrow</span><span class="years">1931–2004</span></div>
 <div class="slot" style="left: 336px; top: 685px;" data-person="rose-fenwick"><span class="surname">Rose Fenwick</span><span class="years">1931–2006</span></div>
-<div class="slot empty" style="left: 420px; top: 665px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 504px; top: 650px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 588px; top: 640px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 672px; top: 635px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 756px; top: 640px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 840px; top: 650px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 924px; top: 665px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1008px; top: 685px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1092px; top: 705px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1176px; top: 685px;"><span class="surname">Unknown</span></div>
 
 </div>
 </div>
@@ -335,23 +244,66 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 </div>
 
 <script>
-let scale = 1;
+// Grid overlay
+const gridOverlay = document.getElementById('gridOverlay');
+const gridToggle = document.getElementById('gridToggle');
 const poster = document.getElementById('poster');
+
+// Create grid: 20 columns x 12 rows
+const cols = 20;
+const rows = 12;
+const w = 1800;
+const h = 981;
+
+for (let i = 0; i <= cols; i++) {
+  const x = (i / cols) * w;
+  const line = document.createElement('div');
+  line.className = 'grid-line-v';
+  line.style.left = x + 'px';
+  gridOverlay.appendChild(line);
+  
+  if (i < cols) {
+    const label = document.createElement('div');
+    label.className = 'grid-label-x';
+    label.style.left = (x + (w/cols)/2) + 'px';
+    label.textContent = i;
+    gridOverlay.appendChild(label);
+  }
+}
+
+for (let i = 0; i <= rows; i++) {
+  const y = (i / rows) * h;
+  const line = document.createElement('div');
+  line.className = 'grid-line-h';
+  line.style.top = y + 'px';
+  gridOverlay.appendChild(line);
+  
+  if (i < rows) {
+    const label = document.createElement('div');
+    label.className = 'grid-label-y';
+    label.style.top = (y + (h/rows)/2) + 'px';
+    label.textContent = i;
+    gridOverlay.appendChild(label);
+  }
+}
+
+gridToggle.addEventListener('click', () => {
+  gridOverlay.classList.toggle('active');
+  gridToggle.textContent = gridOverlay.classList.contains('active') ? 'Hide Grid' : 'Show Grid';
+});
+
+// Zoom
+let scale = 1;
 const zoomLevel = document.getElementById('zoomLevel');
 function updateZoom() {
   poster.style.zoom = scale;
   zoomLevel.textContent = Math.round(scale * 100) + '%';
 }
-document.getElementById('zoomIn').addEventListener('click', () => {
-  scale = Math.min(scale + 0.2, 3); updateZoom();
-});
-document.getElementById('zoomOut').addEventListener('click', () => {
-  scale = Math.max(scale - 0.2, 0.3); updateZoom();
-});
-document.getElementById('zoomReset').addEventListener('click', () => {
-  scale = 1; updateZoom();
-});
+document.getElementById('zoomIn').addEventListener('click', () => { scale = Math.min(scale + 0.2, 3); updateZoom(); });
+document.getElementById('zoomOut').addEventListener('click', () => { scale = Math.max(scale - 0.2, 0.3); updateZoom(); });
+document.getElementById('zoomReset').addEventListener('click', () => { scale = 1; updateZoom(); });
 
+// Popup data
 const peopleData = {
   'joseph-harrow-2': { name: 'Joseph Harrow', birth: '1931, Kelmscott', death: '2004', gen: 'Generation 2', origin: 'Kelmscott, Scotland' },
   'rose-fenwick': { name: 'Rose Fenwick', birth: '1931, Kelmscott', death: '2006', gen: 'Generation 2', origin: 'Kelmscott, Scotland' },
