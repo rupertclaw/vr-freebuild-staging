@@ -23,82 +23,32 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 }
 .poster {
   position: relative;
-  width: 1800px; height: 1100px;
+  width: 1800px; height: 981px;
   flex-shrink: 0;
-  background:
-    url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='300' height='300'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.35' numOctaves='5' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.12'/%3E%3C/svg%3E"),
-    linear-gradient(175deg, #fdf3d8 0%, #f5e6c0 20%, #ead4a8 45%, #dec894 70%, #d0ba80 100%);
-  background-blend-mode: multiply, normal;
+  background: url('family-tree-bg-v2.jpeg') no-repeat center center;
+  background-size: 100% 100%;
   border: 14px solid #1e140a;
-  box-shadow: inset 0 0 100px rgba(30,18,6,0.5), 0 0 50px rgba(0,0,0,0.8);
-}
-.poster::before {
-  content: ''; position: absolute;
-  top: 18px; left: 18px; right: 18px; bottom: 18px;
-  border: 2px solid #5a4228;
-  pointer-events: none; z-index: 10;
-}
-.poster::after {
-  content: ''; position: absolute;
-  top: 24px; left: 24px; right: 24px; bottom: 24px;
-  border: 1px solid #8b7355;
-  pointer-events: none; z-index: 10;
-}
-
-.corner {
-  position: absolute; width: 100px; height: 100px; z-index: 11;
-}
-.corner-tl { top: 12px; left: 12px; }
-.corner-tr { top: 12px; right: 12px; transform: scaleX(-1); }
-.corner-bl { bottom: 12px; left: 12px; transform: scaleY(-1); }
-.corner-br { bottom: 12px; right: 12px; transform: scale(-1); }
-
-.title-banner {
-  position: absolute; top: 28px; left: 50%; transform: translateX(-50%);
-  z-index: 20; text-align: center;
-}
-.banner-scroll { position: relative; display: inline-block; }
-.banner-main {
-  padding: 16px 100px; background: #e8dcc8;
-  border: 2px solid #6b5537; border-radius: 4px;
-  box-shadow: 0 3px 14px rgba(60,40,10,0.3), inset 0 1px 2px rgba(255,255,255,0.4);
-}
-.banner-curl {
-  position: absolute; top: 50%; margin-top: -22px; width: 50px; height: 44px;
-}
-.banner-curl.left {
-  left: -32px; border-left: 3px solid #6b5537; border-top: 2px solid transparent;
-  border-radius: 50% 0 0 50%; transform: rotate(-25deg);
-}
-.banner-curl.right {
-  right: -32px; border-right: 3px solid #6b5537; border-top: 2px solid transparent;
-  border-radius: 0 50% 50% 0; transform: rotate(25deg);
-}
-.title-text {
-  font-family: 'Cinzel Decorative', serif; font-size: 38px;
-  color: #1e140a; letter-spacing: 5px; text-transform: uppercase;
-}
-.title-sub {
-  font-family: 'IM Fell English', serif; font-size: 17px;
-  color: #5a4428; font-style: italic; margin-top: 4px;
-}
-
-.tree-svg {
-  position: absolute; top: 0; left: 0;
-  width: 100%; height: 100%; z-index: 1;
+  box-shadow: 0 0 50px rgba(0,0,0,0.8);
 }
 
 .slot {
-  position: absolute; width: 88px; height: 48px;
-  background: rgba(245,236,216,0.92);
-  border: 1.5px solid #7a5e3a; border-radius: 50%;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
+  position: absolute;
+  width: 88px; height: 48px;
+  background: rgba(245,236,216,0.88);
+  border: 1.5px solid #7a5e3a;
+  border-radius: 50%;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
   text-align: center;
   font-family: 'Cormorant Garamond', serif;
-  font-size: 10px; color: #1e140a; line-height: 1.2;
-  box-shadow: 0 2px 8px rgba(60,40,10,0.2), inset 0 1px 2px rgba(255,255,255,0.5);
-  z-index: 5; cursor: pointer;
+  font-size: 10px;
+  color: #1e140a;
+  line-height: 1.2;
+  box-shadow: 0 2px 8px rgba(60,40,10,0.25), inset 0 1px 2px rgba(255,255,255,0.4);
+  z-index: 5;
+  cursor: pointer;
   transition: all 0.2s ease;
   transform: translate(-50%, -50%);
   padding: 2px;
@@ -106,127 +56,111 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 }
 .slot:hover {
   transform: translate(-50%, -50%) scale(1.2);
-  background: rgba(255,248,232,0.98);
-  box-shadow: 0 5px 16px rgba(60,40,10,0.35); z-index: 50;
+  background: rgba(255,248,232,0.96);
+  box-shadow: 0 5px 16px rgba(60,40,10,0.35);
+  z-index: 50;
 }
 .slot.empty {
-  background: rgba(245,236,216,0.35);
-  border-style: dashed; border-color: #b0a080; color: #a09070;
+  background: rgba(245,236,216,0.3);
+  border-style: dashed;
+  border-color: #b0a080;
+  color: #a09070;
 }
 .slot .surname { font-weight: 600; font-size: 10.5px; display: block; }
 .slot .years { font-size: 8px; color: #7a6545; display: block; margin-top: 1px; }
 
-.gen-ribbon {
-  position: absolute; left: 50%; transform: translateX(-50%);
-  padding: 5px 28px; background: #e0d4bc;
-  border: 1px solid #a08b6a; border-radius: 3px;
-  font-family: 'Cinzel Decorative', serif; font-size: 12px;
-  color: #4a3725; letter-spacing: 2px; z-index: 8;
-  box-shadow: 0 2px 6px rgba(60,40,10,0.2);
-  white-space: nowrap;
-}
-
-.you-badge {
-  position: absolute; bottom: 70px; left: 50%;
-  transform: translateX(-50%); z-index: 20;
-}
-.you-oval {
-  width: 140px; height: 84px; background: #e8dcc8;
-  border: 2.5px solid #6b5537; border-radius: 50%;
-  display: flex; flex-direction: column;
-  align-items: center; justify-content: center;
-  box-shadow: 0 4px 14px rgba(60,40,10,0.3), inset 0 1px 2px rgba(255,255,255,0.4);
-}
-.you-label { font-family: 'Cinzel Decorative', serif; font-size: 22px; color: #1e140a; }
-.you-gen { font-family: 'IM Fell English', serif; font-size: 13px; color: #5a4428; font-style: italic; margin-top: 3px; }
-
-.shield {
-  position: absolute; bottom: 28px; left: 50%;
-  transform: translateX(-50%);
-  width: 55px; height: 66px;
-  background: #3d5a87; border: 2px solid #6b5537;
-  clip-path: polygon(50% 0%, 100% 15%, 100% 55%, 50% 100%, 0% 55%, 0% 15%);
-  z-index: 20; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
-}
-
-.compass {
-  position: absolute; bottom: 45px; right: 55px;
-  width: 80px; height: 80px; z-index: 20; opacity: 0.65;
-}
-
-.side-ribbon {
-  position: absolute; bottom: 125px; right: 45px;
-  padding: 7px 22px; background: #e0d4bc;
-  border: 1px solid #a08b6a;
-  font-family: 'IM Fell English', serif; font-size: 11px;
-  color: #4a3725; font-style: italic; z-index: 20;
-  box-shadow: 0 2px 6px rgba(60,40,10,0.2);
-}
-
-.flowers {
-  position: absolute; bottom: 18px; width: 140px; height: 65px;
-  z-index: 15; opacity: 0.5;
-}
-.flowers-left { left: 95px; }
-.flowers-right { right: 95px; transform: scaleX(-1); }
-
 .zoom-controls {
-  position: fixed; bottom: 20px; left: 20px;
-  z-index: 100; display: flex; flex-direction: column; gap: 8px;
+  position: fixed;
+  bottom: 20px;
+  left: 20px;
+  z-index: 100;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
 }
 .zoom-btn {
-  width: 44px; height: 44px; border-radius: 50%;
-  border: 2px solid #6b5537; background: #e8dcc8; color: #1e140a;
-  font-size: 20px; font-family: 'Cinzel Decorative', serif;
-  cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.3);
-  display: flex; align-items: center; justify-content: center;
+  width: 44px;
+  height: 44px;
+  border-radius: 50%;
+  border: 2px solid #6b5537;
+  background: #e8dcc8;
+  color: #1e140a;
+  font-size: 20px;
+  font-family: 'Cinzel Decorative', serif;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  display: flex;
+  align-items: center;
+  justify-content: center;
   user-select: none;
 }
 .zoom-btn:active { transform: scale(0.92); }
 .zoom-level {
-  text-align: center; font-family: 'Cormorant Garamond', serif;
-  font-size: 13px; color: #e8dcc8; font-weight: 600;
+  text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+  color: #e8dcc8;
+  font-weight: 600;
 }
 
-/* Detail popup */
+.overlay {
+  position: fixed;
+  top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5);
+  z-index: 150;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 0.2s;
+}
+.overlay.active { opacity: 1; pointer-events: auto; }
+
 .detail-popup {
-  position: fixed; top: 50%; left: 50%;
+  position: fixed;
+  top: 50%; left: 50%;
   transform: translate(-50%, -50%) scale(0.9);
-  background: #f5e6c8; border: 3px solid #6b5537; border-radius: 12px;
-  padding: 24px 32px; z-index: 200;
+  background: #f5e6c8;
+  border: 3px solid #6b5537;
+  border-radius: 12px;
+  padding: 24px 32px;
+  z-index: 200;
   box-shadow: 0 10px 40px rgba(0,0,0,0.5);
   font-family: 'Cormorant Garamond', serif;
-  color: #1e140a; min-width: 280px;
-  opacity: 0; pointer-events: none;
+  color: #1e140a;
+  min-width: 280px;
+  opacity: 0;
+  pointer-events: none;
   transition: all 0.25s ease;
 }
 .detail-popup.active {
-  opacity: 1; pointer-events: auto;
+  opacity: 1;
+  pointer-events: auto;
   transform: translate(-50%, -50%) scale(1);
 }
 .detail-popup h3 {
   font-family: 'Cinzel Decorative', serif;
-  font-size: 20px; margin-bottom: 8px;
-  border-bottom: 1px solid #a08b6a; padding-bottom: 8px;
+  font-size: 20px;
+  margin-bottom: 8px;
+  border-bottom: 1px solid #a08b6a;
+  padding-bottom: 8px;
 }
 .detail-popup .detail-row {
-  display: flex; justify-content: space-between;
-  margin: 6px 0; font-size: 14px;
+  display: flex;
+  justify-content: space-between;
+  margin: 6px 0;
+  font-size: 14px;
 }
 .detail-popup .detail-row .label { color: #5a4428; }
 .detail-popup .detail-row .value { font-weight: 600; }
 .detail-popup .close-btn {
-  position: absolute; top: 8px; right: 12px;
-  background: none; border: none; font-size: 24px;
-  cursor: pointer; color: #5a4428;
+  position: absolute;
+  top: 8px;
+  right: 12px;
+  background: none;
+  border: none;
+  font-size: 24px;
+  cursor: pointer;
+  color: #5a4428;
 }
-.overlay {
-  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.5); z-index: 150;
-  opacity: 0; pointer-events: none;
-  transition: opacity 0.2s;
-}
-.overlay.active { opacity: 1; pointer-events: auto; }
 </style>
 </head>
 <body>
@@ -235,344 +169,149 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="scroll-wrapper">
 <div class="poster" id="poster">
 
-<svg class="corner corner-tl" viewBox="0 0 100 100">
-  <path d="M8,8 Q40,8 40,40 Q40,8 8,8" fill="none" stroke="#5a4228" stroke-width="2.5"/>
-  <path d="M15,15 Q32,15 32,32" fill="none" stroke="#8b7355" stroke-width="1.2"/>
-  <circle cx="40" cy="40" r="6" fill="#6b5537"/>
-  <path d="M8,50 Q18,42 25,50 Q18,58 8,50" fill="none" stroke="#7a5e3a" stroke-width="1"/>
-</svg>
-<svg class="corner corner-tr" viewBox="0 0 100 100">
-  <path d="M8,8 Q40,8 40,40 Q40,8 8,8" fill="none" stroke="#5a4228" stroke-width="2.5"/>
-  <path d="M15,15 Q32,15 32,32" fill="none" stroke="#8b7355" stroke-width="1.2"/>
-  <circle cx="40" cy="40" r="6" fill="#6b5537"/>
-  <path d="M8,50 Q18,42 25,50 Q18,58 8,50" fill="none" stroke="#7a5e3a" stroke-width="1"/>
-</svg>
-<svg class="corner corner-bl" viewBox="0 0 100 100">
-  <path d="M8,8 Q40,8 40,40 Q40,8 8,8" fill="none" stroke="#5a4228" stroke-width="2.5"/>
-  <path d="M15,15 Q32,15 32,32" fill="none" stroke="#8b7355" stroke-width="1.2"/>
-  <circle cx="40" cy="40" r="6" fill="#6b5537"/>
-  <path d="M8,50 Q18,42 25,50 Q18,58 8,50" fill="none" stroke="#7a5e3a" stroke-width="1"/>
-</svg>
-<svg class="corner corner-br" viewBox="0 0 100 100">
-  <path d="M8,8 Q40,8 40,40 Q40,8 8,8" fill="none" stroke="#5a4228" stroke-width="2.5"/>
-  <path d="M15,15 Q32,15 32,32" fill="none" stroke="#8b7355" stroke-width="1.2"/>
-  <circle cx="40" cy="40" r="6" fill="#6b5537"/>
-  <path d="M8,50 Q18,42 25,50 Q18,58 8,50" fill="none" stroke="#7a5e3a" stroke-width="1"/>
-</svg>
+<!-- GEN 8 (top row) -->
+<div class="slot" style="left: 63px; top: 186px;" data-person="thomas-mooney-8"><span class="surname">Thomas Mooney</span><span class="years">~1770–?</span></div>
+<div class="slot" style="left: 147px; top: 157px;" data-person="bridget-reilly"><span class="surname">Bridget Reilly</span><span class="years">~1775–?</span></div>
+<div class="slot empty" style="left: 231px; top: 137px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 315px; top: 123px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 399px; top: 113px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 483px; top: 108px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 567px; top: 113px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 651px; top: 123px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 735px; top: 137px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 819px; top: 157px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 903px; top: 137px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 987px; top: 123px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1071px; top: 113px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1155px; top: 108px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1239px; top: 113px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1323px; top: 123px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1407px; top: 137px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1491px; top: 157px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1575px; top: 186px;"><span class="surname">Unknown</span></div>
 
-<div class="title-banner">
-  <div class="banner-scroll">
-    <div class="banner-curl left"></div>
-    <div class="banner-main">
-      <div class="title-text">My Family Tree</div>
-      <div class="title-sub">(8 Generations)</div>
-    </div>
-    <div class="banner-curl right"></div>
-  </div>
-</div>
+<!-- GEN 7 -->
+<div class="slot" style="left: 36px; top: 275px;" data-person="patrick-mcdonald"><span class="surname">Patrick McDonald</span><span class="years">~1818–?</span></div>
+<div class="slot" style="left: 120px; top: 245px;" data-person="barbara-gordon"><span class="surname">Barbara Gordon</span><span class="years">~1820–?</span></div>
+<div class="slot" style="left: 204px; top: 225px;" data-person="john-farrell"><span class="surname">John Farrell</span><span class="years">~1815–?</span></div>
+<div class="slot" style="left: 288px; top: 210px;" data-person="ann-quinn"><span class="surname">Ann Quinn</span><span class="years">~1815–?</span></div>
+<div class="slot" style="left: 372px; top: 200px;" data-person="michael-mooney"><span class="surname">Michael Mooney</span><span class="years">~1796–1870</span></div>
+<div class="slot" style="left: 456px; top: 195px;" data-person="agnes-harrington"><span class="surname">Agnes Harrington</span><span class="years">~1801–1867</span></div>
+<div class="slot" style="left: 540px; top: 200px;" data-person="thomas-lynch-7"><span class="surname">Thomas Lynch</span><span class="years">~1815–?</span></div>
+<div class="slot" style="left: 624px; top: 210px;" data-person="catherine-welsh"><span class="surname">Catherine Welsh</span><span class="years">~1816–?</span></div>
+<div class="slot" style="left: 708px; top: 225px;" data-person="john-harrington"><span class="surname">John Harrington</span><span class="years">~1785–?</span></div>
+<div class="slot" style="left: 792px; top: 245px;" data-person="betsy-mcknight"><span class="surname">Betsy McKnight</span><span class="years">~1787–?</span></div>
+<div class="slot empty" style="left: 876px; top: 265px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 960px; top: 245px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1044px; top: 225px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1128px; top: 210px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1212px; top: 200px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1296px; top: 195px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1380px; top: 200px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1464px; top: 210px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1548px; top: 225px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1632px; top: 245px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1716px; top: 275px;"><span class="surname">Unknown</span></div>
 
-<svg class="tree-svg" viewBox="0 0 1800 1100" preserveAspectRatio="xMidYMax slice">
-  <defs>
-    <linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="0%">
-      <stop offset="0%" stop-color="#3d2b1a"/><stop offset="40%" stop-color="#6b4f35"/>
-      <stop offset="60%" stop-color="#5a4228"/><stop offset="100%" stop-color="#2e1f10"/>
-    </linearGradient>
-    <linearGradient id="bg" x1="0%" y1="100%" x2="0%" y2="0%">
-      <stop offset="0%" stop-color="#4a3725"/><stop offset="100%" stop-color="#2e1f10"/>
-    </linearGradient>
-    <radialGradient id="lc" cx="50%" cy="50%" r="50%">
-      <stop offset="0%" stop-color="#6a8a4a"/><stop offset="70%" stop-color="#4a6a2e"/>
-      <stop offset="100%" stop-color="#3a5a1e"/>
-    </radialGradient>
-    <filter id="ls">
-      <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#1a1209" flood-opacity="0.35"/>
-    </filter>
-    <pattern id="bark" x="0" y="0" width="20" height="40" patternUnits="userSpaceOnUse">
-      <rect width="20" height="40" fill="#4a3725"/>
-      <line x1="8" y1="0" x2="8" y2="40" stroke="#3d2b1a" stroke-width="1.5" opacity="0.6"/>
-      <line x1="14" y1="0" x2="14" y2="40" stroke="#2e1f10" stroke-width="1" opacity="0.4"/>
-      <ellipse cx="10" cy="20" rx="4" ry="3" fill="#3d2b1a" opacity="0.5"/>
-    </pattern>
-  </defs>
+<!-- GEN 6 -->
+<div class="slot" style="left: 54px; top: 363px;" data-person="james-graham"><span class="surname">James Graham</span><span class="years">~1818–?</span></div>
+<div class="slot" style="left: 138px; top: 333px;" data-person="ann-graham"><span class="surname">Ann</span><span class="years">~1821–?</span></div>
+<div class="slot" style="left: 222px; top: 313px;" data-person="william-craigie"><span class="surname">William Craigie</span><span class="years">~1818–?</span></div>
+<div class="slot" style="left: 306px; top: 298px;" data-person="betsy-craigie"><span class="surname">Betsy</span><span class="years">~1821–?</span></div>
+<div class="slot" style="left: 390px; top: 288px;" data-person="john-lynch-6"><span class="surname">John Lynch</span><span class="years">~1815–?</span></div>
+<div class="slot" style="left: 474px; top: 283px;" data-person="betty-dillon"><span class="surname">Betty Dillon</span><span class="years">~1816–?</span></div>
+<div class="slot" style="left: 558px; top: 288px;" data-person="patrick-welsh"><span class="surname">Patrick Welsh</span><span class="years">~1814–?</span></div>
+<div class="slot" style="left: 642px; top: 298px;" data-person="elizabeth-currie"><span class="surname">Elizabeth Currie</span><span class="years">~1815–?</span></div>
+<div class="slot" style="left: 726px; top: 313px;" data-person="andrew-henderson"><span class="surname">Andrew Henderson</span><span class="years">~1818–?</span></div>
+<div class="slot" style="left: 810px; top: 333px;" data-person="eliza-henderson"><span class="surname">Eliza</span><span class="years">~1817–?</span></div>
+<div class="slot empty" style="left: 894px; top: 353px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 978px; top: 333px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1062px; top: 313px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1146px; top: 298px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1230px; top: 288px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1314px; top: 283px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1398px; top: 288px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1482px; top: 298px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1566px; top: 313px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1650px; top: 333px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1734px; top: 363px;"><span class="surname">Unknown</span></div>
 
-  <!-- ROOTS -->
-  <g opacity="0.9">
-    <path d="M870,1100 Q850,1060 830,1040 Q800,1020 760,1010" fill="none" stroke="#4a3725" stroke-width="14" stroke-linecap="round"/>
-    <path d="M880,1100 Q860,1060 840,1035 Q810,1010 770,995" fill="none" stroke="#3d2b1a" stroke-width="10" stroke-linecap="round"/>
-    <path d="M890,1100 Q900,1060 920,1035 Q950,1010 990,995" fill="none" stroke="#3d2b1a" stroke-width="10" stroke-linecap="round"/>
-    <path d="M900,1100 Q920,1060 940,1040 Q970,1020 1010,1010" fill="none" stroke="#4a3725" stroke-width="14" stroke-linecap="round"/>
-    <path d="M860,1100 Q840,1070 810,1050 Q770,1030 730,1025" fill="none" stroke="#3d2b1a" stroke-width="7" stroke-linecap="round"/>
-    <path d="M910,1100 Q930,1070 960,1050 Q1000,1030 1040,1025" fill="none" stroke="#3d2b1a" stroke-width="7" stroke-linecap="round"/>
-  </g>
+<!-- GEN 5 -->
+<div class="slot" style="left: 90px; top: 451px;" data-person="francis-crawford"><span class="surname">Francis Crawford</span><span class="years">1845–~1904</span></div>
+<div class="slot" style="left: 174px; top: 421px;" data-person="eliza-mcginley"><span class="surname">Eliza McGinley</span><span class="years">~1852–?</span></div>
+<div class="slot" style="left: 258px; top: 401px;" data-person="thomas-mooney-5"><span class="surname">Thomas Mooney</span><span class="years">~1844–?</span></div>
+<div class="slot" style="left: 342px; top: 386px;" data-person="catherine-lynch-5"><span class="surname">Catherine Lynch</span><span class="years">~1843–?</span></div>
+<div class="slot" style="left: 426px; top: 376px;" data-person="james-farrell-5"><span class="surname">James Farrell</span><span class="years">~1843–~1916</span></div>
+<div class="slot" style="left: 510px; top: 371px;" data-person="helen-mcdonald"><span class="surname">Helen McDonald</span><span class="years">~1843–~1924</span></div>
+<div class="slot" style="left: 594px; top: 376px;" data-person="owen-lynch"><span class="surname">Owen Lynch</span><span class="years">~1841–?</span></div>
+<div class="slot" style="left: 678px; top: 386px;" data-person="alice-rogers"><span class="surname">Alice Rogers</span><span class="years">~1840–~1895</span></div>
+<div class="slot empty" style="left: 762px; top: 401px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 846px; top: 421px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 930px; top: 441px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1014px; top: 421px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1098px; top: 401px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1182px; top: 386px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1266px; top: 376px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1350px; top: 371px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1434px; top: 376px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1518px; top: 386px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1602px; top: 401px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1686px; top: 421px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1770px; top: 451px;"><span class="surname">Unknown</span></div>
 
-  <!-- CURVED TRUNK with bark texture -->
-  <path d="M850,1100 Q840,1020 860,940 Q880,860 885,780 Q888,720 890,660" fill="none" stroke="url(#bark)" stroke-width="46" stroke-linecap="round"/>
-  <path d="M875,1100 Q870,1020 880,940 Q895,860 895,780 Q898,720 898,660" fill="none" stroke="url(#bark)" stroke-width="40" stroke-linecap="round"/>
-  <path d="M900,1100 Q905,1020 900,940 Q910,860 905,780 Q908,720 906,660" fill="none" stroke="url(#bark)" stroke-width="34" stroke-linecap="round"/>
+<!-- GEN 4 -->
+<div class="slot" style="left: 126px; top: 539px;" data-person="joseph-mooney-4"><span class="surname">Joseph Mooney</span><span class="years">1873–1940</span></div>
+<div class="slot" style="left: 210px; top: 509px;" data-person="catherine-farrell"><span class="surname">Catherine Farrell</span><span class="years">1873–1939</span></div>
+<div class="slot" style="left: 294px; top: 489px;" data-person="edward-lynch"><span class="surname">Edward Lynch</span><span class="years">~1871–?</span></div>
+<div class="slot" style="left: 378px; top: 474px;" data-person="mary-graham"><span class="surname">Mary J. Graham</span><span class="years">~1873–?</span></div>
+<div class="slot" style="left: 462px; top: 464px;" data-person="james-craigie"><span class="surname">James Craigie</span><span class="years">~1874–?</span></div>
+<div class="slot" style="left: 546px; top: 459px;" data-person="agnes-henderson"><span class="surname">Agnes Henderson</span><span class="years">1877–1915</span></div>
+<div class="slot empty" style="left: 630px; top: 464px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 714px; top: 474px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 798px; top: 489px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 882px; top: 509px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 966px; top: 529px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1050px; top: 509px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1134px; top: 489px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1218px; top: 474px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1302px; top: 464px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1386px; top: 459px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1470px; top: 464px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1554px; top: 474px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1638px; top: 489px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1722px; top: 509px;"><span class="surname">Unknown</span></div>
 
-  <!-- Trunk curve correction - subtle S-curve -->
-  <path d="M880,1100 Q875,1000 885,920 Q895,840 892,760 Q894,710 898,660" fill="none" stroke="url(#bark)" stroke-width="28" stroke-linecap="round" opacity="0.6"/>
-
-  <!-- Bark grooves -->
-  <path d="M856,1060 Q854,1000 862,940" fill="none" stroke="#2e1f10" stroke-width="1.5" opacity="0.4"/>
-  <path d="M882,1060 Q884,1000 888,940" fill="none" stroke="#2e1f10" stroke-width="1.5" opacity="0.4"/>
-  <path d="M868,1000 Q872,900 878,800" fill="none" stroke="#2e1f10" stroke-width="1" opacity="0.3"/>
-  <ellipse cx="870" cy="980" rx="7" ry="4" fill="#3d2b1a" opacity="0.5"/>
-  <ellipse cx="890" cy="880" rx="6" ry="3" fill="#3d2b1a" opacity="0.4"/>
-  <ellipse cx="878" cy="780" rx="8" ry="4" fill="#3d2b1a" opacity="0.45"/>
-
-  <!-- MAIN BRANCHES - Organic curves, not straight lines -->
-  <!-- Left primary -->
-  <path d="M890,660 Q840,600 760,560 Q680,520 600,490" fill="none" stroke="url(#bg)" stroke-width="22" stroke-linecap="round"/>
-  <path d="M600,490 Q520,460 440,435 Q360,410 280,390" fill="none" stroke="url(#bg)" stroke-width="16" stroke-linecap="round"/>
-  <path d="M280,390 Q200,365 140,340 Q80,315 40,290" fill="none" stroke="url(#bg)" stroke-width="11" stroke-linecap="round"/>
-  <path d="M40,290 Q15,265 5,240" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
-
-  <!-- Right primary -->
-  <path d="M898,660 Q950,600 1030,560 Q1110,520 1190,490" fill="none" stroke="url(#bg)" stroke-width="22" stroke-linecap="round"/>
-  <path d="M1190,490 Q1270,460 1350,435 Q1430,410 1510,390" fill="none" stroke="url(#bg)" stroke-width="16" stroke-linecap="round"/>
-  <path d="M1510,390 Q1590,365 1650,340 Q1710,315 1750,290" fill="none" stroke="url(#bg)" stroke-width="11" stroke-linecap="round"/>
-  <path d="M1750,290 Q1775,265 1785,240" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
-
-  <!-- Secondary left branches -->
-  <path d="M760,560 Q700,540 640,520 Q580,500 520,480" fill="none" stroke="url(#bg)" stroke-width="14" stroke-linecap="round"/>
-  <path d="M520,480 Q460,455 400,430 Q340,405 280,385" fill="none" stroke="url(#bg)" stroke-width="10" stroke-linecap="round"/>
-  <path d="M440,435 Q380,410 320,385 Q260,360 200,340" fill="none" stroke="url(#bg)" stroke-width="8" stroke-linecap="round"/>
-  <path d="M200,340 Q150,315 100,290 Q50,265 20,245" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
-  <path d="M100,290 Q60,265 30,240" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
-
-  <!-- Secondary right branches -->
-  <path d="M1030,560 Q1090,540 1150,520 Q1210,500 1270,480" fill="none" stroke="url(#bg)" stroke-width="14" stroke-linecap="round"/>
-  <path d="M1270,480 Q1330,455 1390,430 Q1450,405 1510,385" fill="none" stroke="url(#bg)" stroke-width="10" stroke-linecap="round"/>
-  <path d="M1350,435 Q1410,410 1470,385 Q1530,360 1590,340" fill="none" stroke="url(#bg)" stroke-width="8" stroke-linecap="round"/>
-  <path d="M1590,340 Q1640,315 1690,290 Q1740,265 1770,245" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
-  <path d="M1690,290 Q1730,265 1760,240" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
-
-  <!-- Tertiary branches -->
-  <path d="M640,520 Q580,490 520,460 Q460,430 400,410" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
-  <path d="M400,410 Q340,385 280,360 Q220,335 160,315" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
-  <path d="M280,360 Q220,335 160,310 Q100,285 50,260" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
-  <path d="M160,315 Q110,290 60,265" fill="none" stroke="url(#bg)" stroke-width="3" stroke-linecap="round"/>
-
-  <path d="M1150,520 Q1210,490 1270,460 Q1330,430 1390,410" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
-  <path d="M1390,410 Q1450,385 1510,360 Q1570,335 1630,315" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
-  <path d="M1510,360 Q1570,335 1630,310 Q1690,285 1740,260" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
-  <path d="M1630,315 Q1680,290 1730,265" fill="none" stroke="url(#bg)" stroke-width="3" stroke-linecap="round"/>
-
-  <!-- Small twigs connecting to canopy -->
-  <g stroke="#5a4228" stroke-width="1.2" fill="none" opacity="0.6">
-    <path d="M5,240 Q-5,210 0,180"/><path d="M20,245 Q10,215 15,185"/>
-    <path d="M30,240 Q25,210 30,180"/><path d="M50,260 Q45,225 50,195"/>
-    <path d="M60,265 Q55,230 60,200"/><path d="M100,290 Q95,255 100,220"/>
-    <path d="M160,310 Q155,275 160,240"/><path d="M200,340 Q195,305 200,270"/>
-    <path d="M280,360 Q275,325 280,290"/><path d="M400,410 Q395,375 400,340"/>
-    <path d="M520,460 Q515,425 520,390"/><path d="M640,520 Q635,485 640,450"/>
-    <path d="M1150,520 Q1155,485 1150,450"/><path d="M1270,460 Q1275,425 1270,390"/>
-    <path d="M1390,410 Q1395,375 1390,340"/><path d="M1510,360 Q1515,325 1510,290"/>
-    <path d="M1590,340 Q1595,305 1590,270"/><path d="M1690,290 Q1695,255 1690,220"/>
-    <path d="M1760,240 Q1765,210 1760,180"/><path d="M1770,245 Q1775,215 1770,185"/>
-    <path d="M1785,240 Q1790,210 1785,180"/>
-  </g>
-
-  <!-- INDIVIDUAL OAK LEAVES at branch tips -->
-  <g filter="url(#ls)" opacity="0.9">
-    <path d="M-5,175 Q0,160 5,175 Q10,190 5,205 Q0,190 -5,175" fill="url(#lc)"/>
-    <path d="M12,178 Q17,163 22,178 Q27,193 22,208 Q17,193 12,178" fill="url(#lc)"/>
-    <path d="M25,175 Q30,160 35,175 Q40,190 35,205 Q30,190 25,175" fill="url(#lc)"/>
-    <path d="M45,190 Q50,175 55,190 Q60,205 55,220 Q50,205 45,190" fill="url(#lc)"/>
-    <path d="M55,195 Q60,180 65,195 Q70,210 65,225 Q60,210 55,195" fill="url(#lc)"/>
-    <path d="M95,215 Q100,200 105,215 Q110,230 105,245 Q100,230 95,215" fill="url(#lc)"/>
-    <path d="M155,235 Q160,220 165,235 Q170,250 165,265 Q160,250 155,235" fill="url(#lc)"/>
-    <path d="M195,265 Q200,250 205,265 Q210,280 205,295 Q200,280 195,265" fill="url(#lc)"/>
-    <path d="M275,285 Q280,270 285,285 Q290,300 285,315 Q280,300 275,285" fill="url(#lc)"/>
-    <path d="M315,305 Q320,290 325,305 Q330,320 325,335 Q320,320 315,305" fill="url(#lc)"/>
-    <path d="M395,335 Q400,320 405,335 Q410,350 405,365 Q400,350 395,335" fill="url(#lc)"/>
-    <path d="M515,385 Q520,370 525,385 Q530,400 525,415 Q520,400 515,385" fill="url(#lc)"/>
-    <path d="M635,445 Q640,430 645,445 Q650,460 645,475 Q640,460 635,445" fill="url(#lc)"/>
-    <path d="M1145,445 Q1150,430 1155,445 Q1160,460 1155,475 Q1150,460 1145,445" fill="url(#lc)"/>
-    <path d="M1265,385 Q1270,370 1275,385 Q1280,400 1275,415 Q1270,400 1265,385" fill="url(#lc)"/>
-    <path d="M1385,335 Q1390,320 1395,335 Q1400,350 1395,365 Q1390,350 1385,335" fill="url(#lc)"/>
-    <path d="M1505,285 Q1510,270 1515,285 Q1520,300 1515,315 Q1510,300 1505,285" fill="url(#lc)"/>
-    <path d="M1585,305 Q1590,290 1595,305 Q1600,320 1595,335 Q1590,320 1585,305" fill="url(#lc)"/>
-    <path d="M1625,265 Q1630,250 1635,265 Q1640,280 1635,295 Q1630,280 1625,265" fill="url(#lc)"/>
-    <path d="M1685,215 Q1690,200 1695,215 Q1700,230 1695,245 Q1690,230 1685,215" fill="url(#lc)"/>
-    <path d="M1745,175 Q1750,160 1755,175 Q1760,190 1755,205 Q1750,190 1745,175" fill="url(#lc)"/>
-    <path d="M1755,178 Q1760,163 1765,178 Q1770,193 1765,208 Q1760,193 1755,178" fill="url(#lc)"/>
-    <path d="M1775,175 Q1780,160 1785,175 Q1790,190 1785,205 Q1780,190 1775,175" fill="url(#lc)"/>
-  </g>
-
-  <!-- LEAF CLUSTERS / CANOPY -->
-  <g filter="url(#ls)" opacity="0.8">
-    <!-- Outer canopy -->
-    <ellipse cx="-5" cy="165" rx="55" ry="32" fill="url(#lc)"/>
-    <ellipse cx="35" cy="155" rx="48" ry="28" fill="url(#lc)"/>
-    <ellipse cx="90" cy="170" rx="52" ry="30" fill="url(#lc)"/>
-    <ellipse cx="155" cy="185" rx="50" ry="28" fill="url(#lc)"/>
-    <ellipse cx="220" cy="195" rx="48" ry="26" fill="url(#lc)"/>
-    <ellipse cx="285" cy="210" rx="46" ry="25" fill="url(#lc)"/>
-    <ellipse cx="355" cy="220" rx="44" ry="24" fill="url(#lc)"/>
-    <ellipse cx="430" cy="235" rx="42" ry="23" fill="url(#lc)"/>
-    <ellipse cx="510" cy="250" rx="40" ry="22" fill="url(#lc)"/>
-    <ellipse cx="595" cy="265" rx="38" ry="21" fill="url(#lc)"/>
-    <ellipse cx="685" cy="275" rx="36" ry="20" fill="url(#lc)"/>
-    <!-- Center top -->
-    <ellipse cx="780" cy="285" rx="42" ry="24" fill="url(#lc)"/>
-    <ellipse cx="890" cy="280" rx="45" ry="26" fill="url(#lc)"/>
-    <ellipse cx="1000" cy="285" rx="42" ry="24" fill="url(#lc)"/>
-    <!-- Right side -->
-    <ellipse cx="1095" cy="275" rx="36" ry="20" fill="url(#lc)"/>
-    <ellipse cx="1185" cy="265" rx="38" ry="21" fill="url(#lc)"/>
-    <ellipse cx="1270" cy="250" rx="40" ry="22" fill="url(#lc)"/>
-    <ellipse cx="1350" cy="235" rx="42" ry="23" fill="url(#lc)"/>
-    <ellipse cx="1425" cy="220" rx="44" ry="24" fill="url(#lc)"/>
-    <ellipse cx="1495" cy="210" rx="46" ry="25" fill="url(#lc)"/>
-    <ellipse cx="1565" cy="195" rx="48" ry="26" fill="url(#lc)"/>
-    <ellipse cx="1630" cy="185" rx="50" ry="28" fill="url(#lc)"/>
-    <ellipse cx="1695" cy="170" rx="52" ry="30" fill="url(#lc)"/>
-    <ellipse cx="1750" cy="155" rx="48" ry="28" fill="url(#lc)"/>
-    <ellipse cx="1795" cy="165" rx="55" ry="32" fill="url(#lc)"/>
-    <!-- Inner canopy layer -->
-    <ellipse cx="40" cy="140" rx="38" ry="22" fill="url(#lc)" opacity="0.6"/>
-    <ellipse cx="120" cy="130" rx="35" ry="20" fill="url(#lc)" opacity="0.55"/>
-    <ellipse cx="200" cy="140" rx="33" ry="19" fill="url(#lc)" opacity="0.5"/>
-    <ellipse cx="280" cy="150" rx="32" ry="18" fill="url(#lc)" opacity="0.5"/>
-    <ellipse cx="365" cy="160" rx="30" ry="17" fill="url(#lc)" opacity="0.45"/>
-    <ellipse cx="450" cy="170" rx="30" ry="17" fill="url(#lc)" opacity="0.45"/>
-    <ellipse cx="540" cy="180" rx="28" ry="16" fill="url(#lc)" opacity="0.45"/>
-    <ellipse cx="635" cy="190" rx="28" ry="16" fill="url(#lc)" opacity="0.45"/>
-    <ellipse cx="735" cy="200" rx="32" ry="18" fill="url(#lc)" opacity="0.5"/>
-    <ellipse cx="835" cy="205" rx="35" ry="20" fill="url(#lc)" opacity="0.55"/>
-    <ellipse cx="935" cy="205" rx="35" ry="20" fill="url(#lc)" opacity="0.55"/>
-    <ellipse cx="1035" cy="200" rx="32" ry="18" fill="url(#lc)" opacity="0.5"/>
-    <ellipse cx="1140" cy="190" rx="28" ry="16" fill="url(#lc)" opacity="0.45"/>
-    <ellipse cx="1235" cy="180" rx="28" ry="16" fill="url(#lc)" opacity="0.45"/>
-    <ellipse cx="1325" cy="170" rx="30" ry="17" fill="url(#lc)" opacity="0.45"/>
-    <ellipse cx="1410" cy="160" rx="30" ry="17" fill="url(#lc)" opacity="0.45"/>
-    <ellipse cx="1490" cy="150" rx="32" ry="18" fill="url(#lc)" opacity="0.5"/>
-    <ellipse cx="1570" cy="140" rx="33" ry="19" fill="url(#lc)" opacity="0.5"/>
-    <ellipse cx="1650" cy="130" rx="35" ry="20" fill="url(#lc)" opacity="0.55"/>
-    <ellipse cx="1730" cy="140" rx="38" ry="22" fill="url(#lc)" opacity="0.6"/>
-    <!-- Top center peak -->
-    <ellipse cx="890" cy="170" rx="55" ry="30" fill="url(#lc)" opacity="0.5"/>
-    <ellipse cx="835" cy="175" rx="45" ry="25" fill="url(#lc)" opacity="0.45"/>
-    <ellipse cx="945" cy="175" rx="45" ry="25" fill="url(#lc)" opacity="0.45"/>
-  </g>
-
-  <!-- Acorns -->
-  <g fill="#8b6914" opacity="0.7">
-    <ellipse cx="720" cy="300" rx="4" ry="6"/><ellipse cx="730" cy="295" rx="3" ry="5"/>
-    <ellipse cx="1060" cy="300" rx="4" ry="6"/><ellipse cx="1050" cy="295" rx="3" ry="5"/>
-    <ellipse cx="480" cy="260" rx="3" ry="5"/><ellipse cx="1300" cy="260" rx="3" ry="5"/>
-  </g>
-</svg>
-
-<div class="you-badge">
-  <div class="you-oval">
-    <div class="you-label">YOU</div>
-    <div class="you-gen">(Generation 1)</div>
-  </div>
-</div>
-
-<div class="shield"></div>
-
-<svg class="compass" viewBox="0 0 80 80">
-  <circle cx="40" cy="40" r="37" fill="none" stroke="#8b7355" stroke-width="1.5"/>
-  <circle cx="40" cy="40" r="30" fill="none" stroke="#a09070" stroke-width="0.8" stroke-dasharray="3,2"/>
-  <line x1="40" y1="5" x2="40" y2="22" stroke="#8b7355" stroke-width="1.5"/>
-  <line x1="40" y1="58" x2="40" y2="75" stroke="#8b7355" stroke-width="1.5"/>
-  <line x1="5" y1="40" x2="22" y2="40" stroke="#8b7355" stroke-width="1.5"/>
-  <line x1="58" y1="40" x2="75" y2="40" stroke="#8b7355" stroke-width="1.5"/>
-  <polygon points="40,14 46,34 40,40 34,34" fill="#8b7355"/>
-  <polygon points="40,66 46,46 40,40 34,46" fill="#a09070"/>
-  <text x="40" y="11" text-anchor="middle" font-family="Cinzel Decorative" font-size="10" fill="#6b5537">N</text>
-</svg>
-
-<div class="side-ribbon">Migration from County Cavan</div>
-
-<svg class="flowers flowers-left" viewBox="0 0 140 65">
-  <ellipse cx="35" cy="48" rx="11" ry="9" fill="#a05050" opacity="0.6"/>
-  <ellipse cx="55" cy="41" rx="10" ry="8" fill="#8b4040" opacity="0.5"/>
-  <ellipse cx="30" cy="30" rx="9" ry="7" fill="#b06060" opacity="0.5"/>
-  <ellipse cx="60" cy="53" rx="8" ry="6" fill="#904040" opacity="0.4"/>
-  <ellipse cx="45" cy="26" rx="7" ry="6" fill="#c07070" opacity="0.4"/>
-  <path d="M35,57 Q37,68 35,75 M55,49 Q57,61 55,69" stroke="#4a6a2e" stroke-width="2" fill="none"/>
-  <path d="M30,37 Q28,48 30,55 M60,59 Q62,68 60,75" stroke="#5a7a3a" stroke-width="1.5" fill="none"/>
-</svg>
-<svg class="flowers flowers-right" viewBox="0 0 140 65">
-  <ellipse cx="35" cy="48" rx="11" ry="9" fill="#a05050" opacity="0.6"/>
-  <ellipse cx="55" cy="41" rx="10" ry="8" fill="#8b4040" opacity="0.5"/>
-  <ellipse cx="30" cy="30" rx="9" ry="7" fill="#b06060" opacity="0.5"/>
-  <ellipse cx="60" cy="53" rx="8" ry="6" fill="#904040" opacity="0.4"/>
-  <ellipse cx="45" cy="26" rx="7" ry="6" fill="#c07070" opacity="0.4"/>
-  <path d="M35,57 Q37,68 35,75 M55,49 Q57,61 55,69" stroke="#4a6a2e" stroke-width="2" fill="none"/>
-  <path d="M30,37 Q28,48 30,55 M60,59 Q62,68 60,75" stroke="#5a7a3a" stroke-width="1.5" fill="none"/>
-</svg>
-
-<div class="gen-ribbon" style="top: 518px;">Generation 2</div>
-<div class="gen-ribbon" style="top: 458px;">Generation 3</div>
-<div class="gen-ribbon" style="top: 398px;">Generation 4</div>
-<div class="gen-ribbon" style="top: 338px;">Generation 5</div>
-<div class="gen-ribbon" style="top: 278px;">Generation 6</div>
-<div class="gen-ribbon" style="top: 218px;">Generation 7</div>
-<div class="gen-ribbon" style="top: 158px;">Generation 8</div>
+<!-- GEN 3 -->
+<div class="slot" style="left: 180px; top: 627px;" data-person="joseph-mooney-3"><span class="surname">Joseph Mooney</span><span class="years">1898–1974</span></div>
+<div class="slot" style="left: 264px; top: 597px;" data-person="alice-lynch"><span class="surname">Alice Lynch</span><span class="years">1898–1984</span></div>
+<div class="slot" style="left: 348px; top: 577px;" data-person="andrew-craigie"><span class="surname">Andrew H. Craigie</span><span class="years">1904–1977</span></div>
+<div class="slot" style="left: 432px; top: 562px;" data-person="agnes-crawford"><span class="surname">Agnes Crawford</span><span class="years">1907–1995</span></div>
+<div class="slot empty" style="left: 516px; top: 552px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 600px; top: 547px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 684px; top: 552px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 768px; top: 562px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 852px; top: 577px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 936px; top: 597px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1020px; top: 617px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1104px; top: 597px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1188px; top: 577px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1272px; top: 562px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1356px; top: 552px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1440px; top: 547px;"><span class="surname">Unknown</span></div>
 
 <!-- GEN 2 -->
-<div class="slot" style="left: 656px; top: 544px;" data-person="joseph-mooney-2"><span class="surname">Joseph Mooney</span><span class="years">1931–2004</span></div>
-<div class="slot" style="left: 1056px; top: 544px;" data-person="rose-craigie"><span class="surname">Rose Craigie</span><span class="years">1931–2006</span></div>
-<!-- GEN 3 -->
-<div class="slot" style="left: 476px; top: 484px;" data-person="joseph-mooney-3"><span class="surname">Joseph Mooney</span><span class="years">1898–1974</span></div>
-<div class="slot" style="left: 556px; top: 484px;" data-person="alice-lynch"><span class="surname">Alice Lynch</span><span class="years">1898–1984</span></div>
-<div class="slot" style="left: 1196px; top: 484px;" data-person="andrew-craigie"><span class="surname">Andrew H. Craigie</span><span class="years">1904–1977</span></div>
-<div class="slot" style="left: 1276px; top: 484px;" data-person="agnes-crawford"><span class="surname">Agnes Crawford</span><span class="years">1907–1995</span></div>
-<!-- GEN 4 -->
-<div class="slot" style="left: 316px; top: 424px;" data-person="joseph-mooney-4"><span class="surname">Joseph Mooney</span><span class="years">1873–1940</span></div>
-<div class="slot" style="left: 396px; top: 424px;" data-person="catherine-farrell"><span class="surname">Catherine Farrell</span><span class="years">1873–1939</span></div>
-<div class="slot" style="left: 716px; top: 424px;" data-person="edward-lynch"><span class="surname">Edward Lynch</span><span class="years">~1871–?</span></div>
-<div class="slot" style="left: 796px; top: 424px;" data-person="mary-graham"><span class="surname">Mary J. Graham</span><span class="years">~1873–?</span></div>
-<div class="slot" style="left: 1036px; top: 424px;" data-person="james-craigie"><span class="surname">James Craigie</span><span class="years">~1874–?</span></div>
-<div class="slot" style="left: 1116px; top: 424px;" data-person="agnes-henderson"><span class="surname">Agnes Henderson</span><span class="years">1877–1915</span></div>
-<!-- GEN 5 -->
-<div class="slot" style="left: 156px; top: 364px;" data-person="francis-crawford"><span class="surname">Francis Crawford</span><span class="years">1845–~1904</span></div>
-<div class="slot" style="left: 236px; top: 364px;" data-person="eliza-mcginley"><span class="surname">Eliza McGinley</span><span class="years">~1852–?</span></div>
-<div class="slot" style="left: 476px; top: 364px;" data-person="thomas-mooney-5"><span class="surname">Thomas Mooney</span><span class="years">~1844–?</span></div>
-<div class="slot" style="left: 556px; top: 364px;" data-person="catherine-lynch-5"><span class="surname">Catherine Lynch</span><span class="years">~1843–?</span></div>
-<div class="slot" style="left: 796px; top: 364px;" data-person="james-farrell-5"><span class="surname">James Farrell</span><span class="years">~1843–~1916</span></div>
-<div class="slot" style="left: 876px; top: 364px;" data-person="helen-mcdonald"><span class="surname">Helen McDonald</span><span class="years">~1843–~1924</span></div>
-<div class="slot" style="left: 1116px; top: 364px;" data-person="owen-lynch"><span class="surname">Owen Lynch</span><span class="years">~1841–?</span></div>
-<div class="slot" style="left: 1196px; top: 364px;" data-person="alice-rogers"><span class="surname">Alice Rogers</span><span class="years">~1840–~1895</span></div>
-<!-- GEN 6 -->
-<div class="slot" style="left: 76px; top: 304px;" data-person="james-graham"><span class="surname">James Graham</span><span class="years">~1818–?</span></div>
-<div class="slot" style="left: 156px; top: 304px;" data-person="ann-graham"><span class="surname">Ann</span><span class="years">~1821–?</span></div>
-<div class="slot" style="left: 316px; top: 304px;" data-person="william-craigie"><span class="surname">William Craigie</span><span class="years">~1818–?</span></div>
-<div class="slot" style="left: 396px; top: 304px;" data-person="betsy-craigie"><span class="surname">Betsy</span><span class="years">~1821–?</span></div>
-<div class="slot" style="left: 556px; top: 304px;" data-person="john-lynch-6"><span class="surname">John Lynch</span><span class="years">~1815–?</span></div>
-<div class="slot" style="left: 636px; top: 304px;" data-person="betty-dillon"><span class="surname">Betty Dillon</span><span class="years">~1816–?</span></div>
-<div class="slot" style="left: 796px; top: 304px;" data-person="patrick-welsh"><span class="surname">Patrick Welsh</span><span class="years">~1814–?</span></div>
-<div class="slot" style="left: 876px; top: 304px;" data-person="elizabeth-currie"><span class="surname">Elizabeth Currie</span><span class="years">~1815–?</span></div>
-<div class="slot" style="left: 1036px; top: 304px;" data-person="andrew-henderson"><span class="surname">Andrew Henderson</span><span class="years">~1818–?</span></div>
-<div class="slot" style="left: 1116px; top: 304px;" data-person="eliza-henderson"><span class="surname">Eliza</span><span class="years">~1817–?</span></div>
-<!-- GEN 7 -->
-<div class="slot" style="left: -4px; top: 244px;" data-person="patrick-mcdonald"><span class="surname">Patrick McDonald</span><span class="years">~1818–?</span></div>
-<div class="slot" style="left: 76px; top: 244px;" data-person="barbara-gordon"><span class="surname">Barbara Gordon</span><span class="years">~1820–?</span></div>
-<div class="slot" style="left: 236px; top: 244px;" data-person="john-farrell"><span class="surname">John Farrell</span><span class="years">~1815–?</span></div>
-<div class="slot" style="left: 316px; top: 244px;" data-person="ann-quinn"><span class="surname">Ann Quinn</span><span class="years">~1815–?</span></div>
-<div class="slot" style="left: 476px; top: 244px;" data-person="michael-mooney"><span class="surname">Michael Mooney</span><span class="years">~1796–1870</span></div>
-<div class="slot" style="left: 556px; top: 244px;" data-person="agnes-harrington"><span class="surname">Agnes Harrington</span><span class="years">~1801–1867</span></div>
-<div class="slot" style="left: 716px; top: 244px;" data-person="thomas-lynch-7"><span class="surname">Thomas Lynch</span><span class="years">~1815–?</span></div>
-<div class="slot" style="left: 796px; top: 244px;" data-person="catherine-welsh"><span class="surname">Catherine Welsh</span><span class="years">~1816–?</span></div>
-<div class="slot" style="left: 956px; top: 244px;" data-person="john-harrington"><span class="surname">John Harrington</span><span class="years">~1785–?</span></div>
-<div class="slot" style="left: 1036px; top: 244px;" data-person="betsy-mcknight"><span class="surname">Betsy McKnight</span><span class="years">~1787–?</span></div>
-<!-- GEN 8 -->
-<div class="slot" style="left: -4px; top: 184px;" data-person="thomas-mooney-8"><span class="surname">Thomas Mooney</span><span class="years">~1770–?</span></div>
-<div class="slot" style="left: 76px; top: 184px;" data-person="bridget-reilly"><span class="surname">Bridget Reilly</span><span class="years">~1775–?</span></div>
-<div class="slot empty" style="left: 236px; top: 184px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 316px; top: 184px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 476px; top: 184px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 556px; top: 184px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 716px; top: 184px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 796px; top: 184px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 956px; top: 184px;"><span class="surname">Unknown</span></div>
-<div class="slot empty" style="left: 1036px; top: 184px;"><span class="surname">Unknown</span></div>
+<div class="slot" style="left: 252px; top: 715px;" data-person="joseph-mooney-2"><span class="surname">Joseph Mooney</span><span class="years">1931–2004</span></div>
+<div class="slot" style="left: 336px; top: 685px;" data-person="rose-craigie"><span class="surname">Rose Craigie</span><span class="years">1931–2006</span></div>
+<div class="slot empty" style="left: 420px; top: 665px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 504px; top: 650px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 588px; top: 640px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 672px; top: 635px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 756px; top: 640px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 840px; top: 650px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 924px; top: 665px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1008px; top: 685px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1092px; top: 705px;"><span class="surname">Unknown</span></div>
+<div class="slot empty" style="left: 1176px; top: 685px;"><span class="surname">Unknown</span></div>
 
 </div>
 </div>
@@ -596,16 +335,13 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 </div>
 
 <script>
-// Zoom controls
 let scale = 1;
 const poster = document.getElementById('poster');
 const zoomLevel = document.getElementById('zoomLevel');
-
 function updateZoom() {
   poster.style.zoom = scale;
   zoomLevel.textContent = Math.round(scale * 100) + '%';
 }
-
 document.getElementById('zoomIn').addEventListener('click', () => {
   scale = Math.min(scale + 0.2, 3); updateZoom();
 });
@@ -616,7 +352,6 @@ document.getElementById('zoomReset').addEventListener('click', () => {
   scale = 1; updateZoom();
 });
 
-// Person data
 const peopleData = {
   'joseph-mooney-2': { name: 'Joseph Mooney', birth: '4 Mar 1931, Dundee', death: '2004', gen: 'Generation 2', origin: 'Dundee, Scotland' },
   'rose-craigie': { name: 'Rose Craigie', birth: '1 Dec 1931, Dundee', death: '2006', gen: 'Generation 2', origin: 'Dundee, Scotland' },
@@ -662,7 +397,6 @@ const peopleData = {
   'bridget-reilly': { name: 'Bridget Reilly', birth: '~1775', death: '?', gen: 'Generation 8', origin: 'County Cavan, Ireland' },
 };
 
-// Click handlers
 const popup = document.getElementById('detailPopup');
 const overlay = document.getElementById('overlay');
 const closeBtn = document.getElementById('closePopup');
@@ -678,7 +412,6 @@ function openPopup(personId) {
   popup.classList.add('active');
   overlay.classList.add('active');
 }
-
 function closePopup() {
   popup.classList.remove('active');
   overlay.classList.remove('active');
