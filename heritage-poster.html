@@ -163,13 +163,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   box-shadow: 0 2px 6px rgba(60,40,10,0.2);
 }
 
-.bottom-text {
-  position: absolute; bottom: 50px; right: 50px;
-  font-family: 'IM Fell English', serif; font-size: 11px;
-  color: #5a4428; font-style: italic; z-index: 20;
-  text-align: right; line-height: 1.4;
-}
-
 .flowers {
   position: absolute; bottom: 18px; width: 140px; height: 65px;
   z-index: 15; opacity: 0.5;
@@ -194,6 +187,46 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   text-align: center; font-family: 'Cormorant Garamond', serif;
   font-size: 13px; color: #e8dcc8; font-weight: 600;
 }
+
+/* Detail popup */
+.detail-popup {
+  position: fixed; top: 50%; left: 50%;
+  transform: translate(-50%, -50%) scale(0.9);
+  background: #f5e6c8; border: 3px solid #6b5537; border-radius: 12px;
+  padding: 24px 32px; z-index: 200;
+  box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+  font-family: 'Cormorant Garamond', serif;
+  color: #1e140a; min-width: 280px;
+  opacity: 0; pointer-events: none;
+  transition: all 0.25s ease;
+}
+.detail-popup.active {
+  opacity: 1; pointer-events: auto;
+  transform: translate(-50%, -50%) scale(1);
+}
+.detail-popup h3 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 20px; margin-bottom: 8px;
+  border-bottom: 1px solid #a08b6a; padding-bottom: 8px;
+}
+.detail-popup .detail-row {
+  display: flex; justify-content: space-between;
+  margin: 6px 0; font-size: 14px;
+}
+.detail-popup .detail-row .label { color: #5a4428; }
+.detail-popup .detail-row .value { font-weight: 600; }
+.detail-popup .close-btn {
+  position: absolute; top: 8px; right: 12px;
+  background: none; border: none; font-size: 24px;
+  cursor: pointer; color: #5a4428;
+}
+.overlay {
+  position: fixed; top: 0; left: 0; right: 0; bottom: 0;
+  background: rgba(0,0,0,0.5); z-index: 150;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.2s;
+}
+.overlay.active { opacity: 1; pointer-events: auto; }
 </style>
 </head>
 <body>
@@ -254,7 +287,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
     <filter id="ls">
       <feDropShadow dx="1" dy="2" stdDeviation="2" flood-color="#1a1209" flood-opacity="0.35"/>
     </filter>
-    <!-- Bark texture pattern -->
     <pattern id="bark" x="0" y="0" width="20" height="40" patternUnits="userSpaceOnUse">
       <rect width="20" height="40" fill="#4a3725"/>
       <line x1="8" y1="0" x2="8" y2="40" stroke="#3d2b1a" stroke-width="1.5" opacity="0.6"/>
@@ -271,180 +303,166 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
     <path d="M900,1100 Q920,1060 940,1040 Q970,1020 1010,1010" fill="none" stroke="#4a3725" stroke-width="14" stroke-linecap="round"/>
     <path d="M860,1100 Q840,1070 810,1050 Q770,1030 730,1025" fill="none" stroke="#3d2b1a" stroke-width="7" stroke-linecap="round"/>
     <path d="M910,1100 Q930,1070 960,1050 Q1000,1030 1040,1025" fill="none" stroke="#3d2b1a" stroke-width="7" stroke-linecap="round"/>
-    <path d="M760,1010 Q730,1020 710,1030" fill="none" stroke="#4a3725" stroke-width="5" stroke-linecap="round"/>
-    <path d="M770,995 Q740,1000 720,1005" fill="none" stroke="#3d2b1a" stroke-width="4" stroke-linecap="round"/>
-    <path d="M990,995 Q1020,1000 1040,1005" fill="none" stroke="#3d2b1a" stroke-width="4" stroke-linecap="round"/>
-    <path d="M1010,1010 Q1040,1020 1060,1030" fill="none" stroke="#4a3725" stroke-width="5" stroke-linecap="round"/>
   </g>
 
-  <!-- TRUNK with bark texture -->
-  <path d="M870,1100 Q865,1020 870,940 Q875,860 880,780 Q885,720 888,660" fill="none" stroke="url(#bark)" stroke-width="42" stroke-linecap="round"/>
-  <path d="M885,1100 Q880,1020 885,940 Q890,860 892,780 Q895,720 895,660" fill="none" stroke="url(#bark)" stroke-width="38" stroke-linecap="round"/>
-  <path d="M900,1100 Q895,1020 900,940 Q905,860 905,780 Q905,720 902,660" fill="none" stroke="url(#bark)" stroke-width="34" stroke-linecap="round"/>
+  <!-- CURVED TRUNK with bark texture -->
+  <path d="M850,1100 Q840,1020 860,940 Q880,860 885,780 Q888,720 890,660" fill="none" stroke="url(#bark)" stroke-width="46" stroke-linecap="round"/>
+  <path d="M875,1100 Q870,1020 880,940 Q895,860 895,780 Q898,720 898,660" fill="none" stroke="url(#bark)" stroke-width="40" stroke-linecap="round"/>
+  <path d="M900,1100 Q905,1020 900,940 Q910,860 905,780 Q908,720 906,660" fill="none" stroke="url(#bark)" stroke-width="34" stroke-linecap="round"/>
 
-  <!-- Bark grooves overlay -->
-  <path d="M876,1060 Q874,1000 876,940" fill="none" stroke="#2e1f10" stroke-width="1.5" opacity="0.4"/>
-  <path d="M892,1060 Q894,1000 892,940" fill="none" stroke="#2e1f10" stroke-width="1.5" opacity="0.4"/>
-  <path d="M884,1000 Q882,900 884,800" fill="none" stroke="#2e1f10" stroke-width="1" opacity="0.3"/>
-  <path d="M888,950 Q890,850 888,750" fill="none" stroke="#2e1f10" stroke-width="1" opacity="0.25"/>
-  <ellipse cx="882" cy="980" rx="7" ry="4" fill="#3d2b1a" opacity="0.5"/>
-  <ellipse cx="894" cy="880" rx="6" ry="3" fill="#3d2b1a" opacity="0.4"/>
-  <ellipse cx="886" cy="780" rx="8" ry="4" fill="#3d2b1a" opacity="0.45"/>
+  <!-- Trunk curve correction - subtle S-curve -->
+  <path d="M880,1100 Q875,1000 885,920 Q895,840 892,760 Q894,710 898,660" fill="none" stroke="url(#bark)" stroke-width="28" stroke-linecap="round" opacity="0.6"/>
 
-  <!-- GEN 2 branches -->
-  <path d="M880,660 Q800,610 720,580" fill="none" stroke="url(#bg)" stroke-width="22" stroke-linecap="round"/>
-  <path d="M720,580 Q640,550 560,535" fill="none" stroke="url(#bg)" stroke-width="16" stroke-linecap="round"/>
-  <path d="M900,660 Q980,610 1060,580" fill="none" stroke="url(#bg)" stroke-width="22" stroke-linecap="round"/>
-  <path d="M1060,580 Q1140,550 1220,535" fill="none" stroke="url(#bg)" stroke-width="16" stroke-linecap="round"/>
+  <!-- Bark grooves -->
+  <path d="M856,1060 Q854,1000 862,940" fill="none" stroke="#2e1f10" stroke-width="1.5" opacity="0.4"/>
+  <path d="M882,1060 Q884,1000 888,940" fill="none" stroke="#2e1f10" stroke-width="1.5" opacity="0.4"/>
+  <path d="M868,1000 Q872,900 878,800" fill="none" stroke="#2e1f10" stroke-width="1" opacity="0.3"/>
+  <ellipse cx="870" cy="980" rx="7" ry="4" fill="#3d2b1a" opacity="0.5"/>
+  <ellipse cx="890" cy="880" rx="6" ry="3" fill="#3d2b1a" opacity="0.4"/>
+  <ellipse cx="878" cy="780" rx="8" ry="4" fill="#3d2b1a" opacity="0.45"/>
 
-  <!-- GEN 3 branches -->
-  <path d="M560,535 Q480,495 400,465" fill="none" stroke="url(#bg)" stroke-width="13" stroke-linecap="round"/>
-  <path d="M400,465 Q320,435 240,415" fill="none" stroke="url(#bg)" stroke-width="10" stroke-linecap="round"/>
-  <path d="M560,535 Q600,495 660,465" fill="none" stroke="url(#bg)" stroke-width="12" stroke-linecap="round"/>
-  <path d="M660,465 Q720,435 800,415" fill="none" stroke="url(#bg)" stroke-width="9" stroke-linecap="round"/>
-  <path d="M1060,580 Q1100,495 1160,465" fill="none" stroke="url(#bg)" stroke-width="12" stroke-linecap="round"/>
-  <path d="M1160,465 Q1220,435 1300,415" fill="none" stroke="url(#bg)" stroke-width="9" stroke-linecap="round"/>
-  <path d="M1220,535 Q1300,495 1380,465" fill="none" stroke="url(#bg)" stroke-width="13" stroke-linecap="round"/>
-  <path d="M1380,465 Q1460,435 1540,415" fill="none" stroke="url(#bg)" stroke-width="10" stroke-linecap="round"/>
+  <!-- MAIN BRANCHES - Organic curves, not straight lines -->
+  <!-- Left primary -->
+  <path d="M890,660 Q840,600 760,560 Q680,520 600,490" fill="none" stroke="url(#bg)" stroke-width="22" stroke-linecap="round"/>
+  <path d="M600,490 Q520,460 440,435 Q360,410 280,390" fill="none" stroke="url(#bg)" stroke-width="16" stroke-linecap="round"/>
+  <path d="M280,390 Q200,365 140,340 Q80,315 40,290" fill="none" stroke="url(#bg)" stroke-width="11" stroke-linecap="round"/>
+  <path d="M40,290 Q15,265 5,240" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
 
-  <!-- GEN 4 branches -->
-  <path d="M240,415 Q160,375 120,345" fill="none" stroke="url(#bg)" stroke-width="8" stroke-linecap="round"/>
-  <path d="M240,415 Q280,375 320,345" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
-  <path d="M400,465 Q360,425 340,395" fill="none" stroke="url(#bg)" stroke-width="6" stroke-linecap="round"/>
-  <path d="M800,415 Q740,375 700,345" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
-  <path d="M800,415 Q840,375 880,345" fill="none" stroke="url(#bg)" stroke-width="6" stroke-linecap="round"/>
-  <path d="M1160,465 Q1120,425 1100,395" fill="none" stroke="url(#bg)" stroke-width="6" stroke-linecap="round"/>
-  <path d="M1300,415 Q1360,375 1400,345" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
-  <path d="M1300,415 Q1260,375 1220,345" fill="none" stroke="url(#bg)" stroke-width="6" stroke-linecap="round"/>
-  <path d="M1540,415 Q1620,375 1660,345" fill="none" stroke="url(#bg)" stroke-width="8" stroke-linecap="round"/>
-  <path d="M1540,415 Q1500,375 1460,345" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
+  <!-- Right primary -->
+  <path d="M898,660 Q950,600 1030,560 Q1110,520 1190,490" fill="none" stroke="url(#bg)" stroke-width="22" stroke-linecap="round"/>
+  <path d="M1190,490 Q1270,460 1350,435 Q1430,410 1510,390" fill="none" stroke="url(#bg)" stroke-width="16" stroke-linecap="round"/>
+  <path d="M1510,390 Q1590,365 1650,340 Q1710,315 1750,290" fill="none" stroke="url(#bg)" stroke-width="11" stroke-linecap="round"/>
+  <path d="M1750,290 Q1775,265 1785,240" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
 
-  <!-- GEN 5 branches -->
-  <path d="M120,345 Q80,305 60,275" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
-  <path d="M120,345 Q150,305 170,275" fill="none" stroke="url(#bg)" stroke-width="4.5" stroke-linecap="round"/>
-  <path d="M320,345 Q290,305 270,275" fill="none" stroke="url(#bg)" stroke-width="4.5" stroke-linecap="round"/>
-  <path d="M320,345 Q350,305 370,275" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
-  <path d="M700,345 Q670,305 650,275" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
-  <path d="M700,345 Q730,305 750,275" fill="none" stroke="url(#bg)" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M880,345 Q910,305 930,275" fill="none" stroke="url(#bg)" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M1100,395 Q1070,305 1050,275" fill="none" stroke="url(#bg)" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M1400,345 Q1430,305 1450,275" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
-  <path d="M1220,345 Q1190,305 1170,275" fill="none" stroke="url(#bg)" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M1460,345 Q1430,305 1410,275" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
-  <path d="M1660,345 Q1690,305 1710,275" fill="none" stroke="url(#bg)" stroke-width="4.5" stroke-linecap="round"/>
+  <!-- Secondary left branches -->
+  <path d="M760,560 Q700,540 640,520 Q580,500 520,480" fill="none" stroke="url(#bg)" stroke-width="14" stroke-linecap="round"/>
+  <path d="M520,480 Q460,455 400,430 Q340,405 280,385" fill="none" stroke="url(#bg)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M440,435 Q380,410 320,385 Q260,360 200,340" fill="none" stroke="url(#bg)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M200,340 Q150,315 100,290 Q50,265 20,245" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M100,290 Q60,265 30,240" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
 
-  <!-- GEN 6 branches -->
-  <path d="M60,275 Q35,235 25,205" fill="none" stroke="url(#bg)" stroke-width="3.5" stroke-linecap="round"/>
-  <path d="M170,275 Q160,235 155,205" fill="none" stroke="url(#bg)" stroke-width="3" stroke-linecap="round"/>
-  <path d="M270,275 Q260,235 255,205" fill="none" stroke="url(#bg)" stroke-width="3" stroke-linecap="round"/>
-  <path d="M370,275 Q380,235 385,205" fill="none" stroke="url(#bg)" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M650,275 Q640,235 635,205" fill="none" stroke="url(#bg)" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M750,275 Q760,235 765,205" fill="none" stroke="url(#bg)" stroke-width="2.2" stroke-linecap="round"/>
-  <path d="M930,275 Q940,235 945,205" fill="none" stroke="url(#bg)" stroke-width="2.2" stroke-linecap="round"/>
-  <path d="M1050,275 Q1040,235 1035,205" fill="none" stroke="url(#bg)" stroke-width="2.2" stroke-linecap="round"/>
-  <path d="M1170,275 Q1160,235 1155,205" fill="none" stroke="url(#bg)" stroke-width="2.2" stroke-linecap="round"/>
-  <path d="M1450,275 Q1460,235 1465,205" fill="none" stroke="url(#bg)" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M1410,275 Q1400,235 1395,205" fill="none" stroke="url(#bg)" stroke-width="2.5" stroke-linecap="round"/>
-  <path d="M1710,275 Q1720,235 1725,205" fill="none" stroke="url(#bg)" stroke-width="2.5" stroke-linecap="round"/>
+  <!-- Secondary right branches -->
+  <path d="M1030,560 Q1090,540 1150,520 Q1210,500 1270,480" fill="none" stroke="url(#bg)" stroke-width="14" stroke-linecap="round"/>
+  <path d="M1270,480 Q1330,455 1390,430 Q1450,405 1510,385" fill="none" stroke="url(#bg)" stroke-width="10" stroke-linecap="round"/>
+  <path d="M1350,435 Q1410,410 1470,385 Q1530,360 1590,340" fill="none" stroke="url(#bg)" stroke-width="8" stroke-linecap="round"/>
+  <path d="M1590,340 Q1640,315 1690,290 Q1740,265 1770,245" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M1690,290 Q1730,265 1760,240" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
 
-  <!-- GEN 7 branches -->
-  <path d="M25,205 Q15,165 10,135" fill="none" stroke="url(#bg)" stroke-width="2.2" stroke-linecap="round"/>
-  <path d="M155,205 Q150,165 148,135" fill="none" stroke="url(#bg)" stroke-width="2.2" stroke-linecap="round"/>
-  <path d="M255,205 Q250,165 248,135" fill="none" stroke="url(#bg)" stroke-width="2.2" stroke-linecap="round"/>
-  <path d="M385,205 Q390,165 392,135" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M635,205 Q630,165 628,135" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M765,205 Q770,165 772,135" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M945,205 Q950,165 952,135" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M1035,205 Q1030,165 1028,135" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M1155,205 Q1150,165 1148,135" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M1465,205 Q1470,165 1472,135" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M1395,205 Q1390,165 1388,135" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M1725,205 Q1730,165 1732,135" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
+  <!-- Tertiary branches -->
+  <path d="M640,520 Q580,490 520,460 Q460,430 400,410" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
+  <path d="M400,410 Q340,385 280,360 Q220,335 160,315" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M280,360 Q220,335 160,310 Q100,285 50,260" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M160,315 Q110,290 60,265" fill="none" stroke="url(#bg)" stroke-width="3" stroke-linecap="round"/>
 
-  <!-- GEN 8 branch tips -->
-  <path d="M10,135 Q5,100 2,75" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M148,135 Q145,100 144,75" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M248,135 Q245,100 244,75" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
-  <path d="M392,135 Q395,100 396,75" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M628,135 Q625,100 624,75" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M772,135 Q775,100 776,75" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M952,135 Q955,100 956,75" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M1028,135 Q1025,100 1024,75" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M1148,135 Q1145,100 1144,75" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M1472,135 Q1475,100 1476,75" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M1388,135 Q1385,100 1384,75" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
-  <path d="M1732,135 Q1735,100 1736,75" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
+  <path d="M1150,520 Q1210,490 1270,460 Q1330,430 1390,410" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
+  <path d="M1390,410 Q1450,385 1510,360 Q1570,335 1630,315" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
+  <path d="M1510,360 Q1570,335 1630,310 Q1690,285 1740,260" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
+  <path d="M1630,315 Q1680,290 1730,265" fill="none" stroke="url(#bg)" stroke-width="3" stroke-linecap="round"/>
 
-  <!-- LEAVES - individual oak leaves at branch tips -->
+  <!-- Small twigs connecting to canopy -->
+  <g stroke="#5a4228" stroke-width="1.2" fill="none" opacity="0.6">
+    <path d="M5,240 Q-5,210 0,180"/><path d="M20,245 Q10,215 15,185"/>
+    <path d="M30,240 Q25,210 30,180"/><path d="M50,260 Q45,225 50,195"/>
+    <path d="M60,265 Q55,230 60,200"/><path d="M100,290 Q95,255 100,220"/>
+    <path d="M160,310 Q155,275 160,240"/><path d="M200,340 Q195,305 200,270"/>
+    <path d="M280,360 Q275,325 280,290"/><path d="M400,410 Q395,375 400,340"/>
+    <path d="M520,460 Q515,425 520,390"/><path d="M640,520 Q635,485 640,450"/>
+    <path d="M1150,520 Q1155,485 1150,450"/><path d="M1270,460 Q1275,425 1270,390"/>
+    <path d="M1390,410 Q1395,375 1390,340"/><path d="M1510,360 Q1515,325 1510,290"/>
+    <path d="M1590,340 Q1595,305 1590,270"/><path d="M1690,290 Q1695,255 1690,220"/>
+    <path d="M1760,240 Q1765,210 1760,180"/><path d="M1770,245 Q1775,215 1770,185"/>
+    <path d="M1785,240 Q1790,210 1785,180"/>
+  </g>
+
+  <!-- INDIVIDUAL OAK LEAVES at branch tips -->
   <g filter="url(#ls)" opacity="0.9">
-    <!-- Left side leaves -->
-    <path d="M-8,68 Q-3,58 2,68 Q7,78 2,88 Q-3,78 -8,68" fill="url(#lc)"/>
-    <path d="M18,62 Q23,52 28,62 Q33,72 28,82 Q23,72 18,62" fill="url(#lc)"/>
-    <path d="M132,65 Q137,55 142,65 Q147,75 142,85 Q137,75 132,65" fill="url(#lc)"/>
-    <path d="M162,60 Q167,50 172,60 Q177,70 172,80 Q167,70 162,60" fill="url(#lc)"/>
-    <path d="M232,67 Q237,57 242,67 Q247,77 242,87 Q237,77 232,67" fill="url(#lc)"/>
-    <path d="M262,61 Q267,51 272,61 Q277,71 272,81 Q267,71 262,61" fill="url(#lc)"/>
-    <path d="M382,65 Q387,55 392,65 Q397,75 392,85 Q387,75 382,65" fill="url(#lc)"/>
-    <path d="M412,59 Q417,49 422,59 Q427,69 422,79 Q417,69 412,59" fill="url(#lc)"/>
-    <path d="M612,66 Q617,56 622,66 Q627,76 622,86 Q617,76 612,66" fill="url(#lc)"/>
-    <path d="M642,62 Q647,52 652,62 Q657,72 652,82 Q647,72 642,62" fill="url(#lc)"/>
-    <path d="M762,65 Q767,55 772,65 Q777,75 772,85 Q767,75 762,65" fill="url(#lc)"/>
-    <path d="M792,60 Q797,50 802,60 Q807,70 802,80 Q797,70 792,60" fill="url(#lc)"/>
-    <!-- Right side leaves -->
-    <path d="M942,66 Q947,56 952,66 Q957,76 952,86 Q947,76 942,66" fill="url(#lc)"/>
-    <path d="M972,61 Q977,51 982,61 Q987,71 982,81 Q977,71 972,61" fill="url(#lc)"/>
-    <path d="M1012,65 Q1017,55 1022,65 Q1027,75 1022,85 Q1017,75 1012,65" fill="url(#lc)"/>
-    <path d="M1042,59 Q1047,49 1052,59 Q1057,69 1052,79 Q1047,69 1042,59" fill="url(#lc)"/>
-    <path d="M1132,67 Q1137,57 1142,67 Q1147,77 1142,87 Q1137,77 1132,67" fill="url(#lc)"/>
-    <path d="M1162,62 Q1167,52 1172,62 Q1177,72 1172,82 Q1167,72 1162,62" fill="url(#lc)"/>
-    <path d="M1462,65 Q1467,55 1472,65 Q1477,75 1472,85 Q1467,75 1462,65" fill="url(#lc)"/>
-    <path d="M1492,60 Q1497,50 1502,60 Q1507,70 1502,80 Q1497,70 1492,60" fill="url(#lc)"/>
-    <path d="M1372,67 Q1377,57 1382,67 Q1387,77 1382,87 Q1377,77 1372,67" fill="url(#lc)"/>
-    <path d="M1402,62 Q1407,52 1412,62 Q1417,72 1412,82 Q1407,72 1402,62" fill="url(#lc)"/>
-    <path d="M1722,65 Q1727,55 1732,65 Q1737,75 1732,85 Q1727,75 1722,65" fill="url(#lc)"/>
-    <path d="M1752,60 Q1757,50 1762,60 Q1767,70 1762,80 Q1757,70 1752,60" fill="url(#lc)"/>
+    <path d="M-5,175 Q0,160 5,175 Q10,190 5,205 Q0,190 -5,175" fill="url(#lc)"/>
+    <path d="M12,178 Q17,163 22,178 Q27,193 22,208 Q17,193 12,178" fill="url(#lc)"/>
+    <path d="M25,175 Q30,160 35,175 Q40,190 35,205 Q30,190 25,175" fill="url(#lc)"/>
+    <path d="M45,190 Q50,175 55,190 Q60,205 55,220 Q50,205 45,190" fill="url(#lc)"/>
+    <path d="M55,195 Q60,180 65,195 Q70,210 65,225 Q60,210 55,195" fill="url(#lc)"/>
+    <path d="M95,215 Q100,200 105,215 Q110,230 105,245 Q100,230 95,215" fill="url(#lc)"/>
+    <path d="M155,235 Q160,220 165,235 Q170,250 165,265 Q160,250 155,235" fill="url(#lc)"/>
+    <path d="M195,265 Q200,250 205,265 Q210,280 205,295 Q200,280 195,265" fill="url(#lc)"/>
+    <path d="M275,285 Q280,270 285,285 Q290,300 285,315 Q280,300 275,285" fill="url(#lc)"/>
+    <path d="M315,305 Q320,290 325,305 Q330,320 325,335 Q320,320 315,305" fill="url(#lc)"/>
+    <path d="M395,335 Q400,320 405,335 Q410,350 405,365 Q400,350 395,335" fill="url(#lc)"/>
+    <path d="M515,385 Q520,370 525,385 Q530,400 525,415 Q520,400 515,385" fill="url(#lc)"/>
+    <path d="M635,445 Q640,430 645,445 Q650,460 645,475 Q640,460 635,445" fill="url(#lc)"/>
+    <path d="M1145,445 Q1150,430 1155,445 Q1160,460 1155,475 Q1150,460 1145,445" fill="url(#lc)"/>
+    <path d="M1265,385 Q1270,370 1275,385 Q1280,400 1275,415 Q1270,400 1265,385" fill="url(#lc)"/>
+    <path d="M1385,335 Q1390,320 1395,335 Q1400,350 1395,365 Q1390,350 1385,335" fill="url(#lc)"/>
+    <path d="M1505,285 Q1510,270 1515,285 Q1520,300 1515,315 Q1510,300 1505,285" fill="url(#lc)"/>
+    <path d="M1585,305 Q1590,290 1595,305 Q1600,320 1595,335 Q1590,320 1585,305" fill="url(#lc)"/>
+    <path d="M1625,265 Q1630,250 1635,265 Q1640,280 1635,295 Q1630,280 1625,265" fill="url(#lc)"/>
+    <path d="M1685,215 Q1690,200 1695,215 Q1700,230 1695,245 Q1690,230 1685,215" fill="url(#lc)"/>
+    <path d="M1745,175 Q1750,160 1755,175 Q1760,190 1755,205 Q1750,190 1745,175" fill="url(#lc)"/>
+    <path d="M1755,178 Q1760,163 1765,178 Q1770,193 1765,208 Q1760,193 1755,178" fill="url(#lc)"/>
+    <path d="M1775,175 Q1780,160 1785,175 Q1790,190 1785,205 Q1780,190 1775,175" fill="url(#lc)"/>
   </g>
 
-  <!-- Leaf clusters (canopy) -->
-  <g filter="url(#ls)" opacity="0.75">
-    <ellipse cx="95" cy="52" rx="58" ry="34" fill="url(#lc)"/>
-    <ellipse cx="245" cy="42" rx="50" ry="30" fill="url(#lc)"/>
-    <ellipse cx="395" cy="48" rx="48" ry="28" fill="url(#lc)"/>
-    <ellipse cx="545" cy="40" rx="45" ry="26" fill="url(#lc)"/>
-    <ellipse cx="695" cy="46" rx="42" ry="24" fill="url(#lc)"/>
-    <ellipse cx="845" cy="36" rx="48" ry="28" fill="url(#lc)"/>
-    <ellipse cx="995" cy="46" rx="42" ry="24" fill="url(#lc)"/>
-    <ellipse cx="1145" cy="40" rx="45" ry="26" fill="url(#lc)"/>
-    <ellipse cx="1295" cy="48" rx="48" ry="28" fill="url(#lc)"/>
-    <ellipse cx="1445" cy="42" rx="50" ry="30" fill="url(#lc)"/>
-    <ellipse cx="1595" cy="52" rx="58" ry="34" fill="url(#lc)"/>
-    <!-- Inner canopy -->
-    <ellipse cx="175" cy="32" rx="40" ry="24" fill="url(#lc)" opacity="0.6"/>
-    <ellipse cx="325" cy="27" rx="37" ry="22" fill="url(#lc)" opacity="0.55"/>
-    <ellipse cx="475" cy="30" rx="34" ry="20" fill="url(#lc)" opacity="0.5"/>
-    <ellipse cx="615" cy="25" rx="36" ry="20" fill="url(#lc)" opacity="0.5"/>
-    <ellipse cx="775" cy="22" rx="40" ry="24" fill="url(#lc)" opacity="0.55"/>
-    <ellipse cx="915" cy="25" rx="36" ry="20" fill="url(#lc)" opacity="0.5"/>
-    <ellipse cx="1075" cy="30" rx="34" ry="20" fill="url(#lc)" opacity="0.5"/>
-    <ellipse cx="1225" cy="27" rx="37" ry="22" fill="url(#lc)" opacity="0.55"/>
-    <ellipse cx="1375" cy="32" rx="40" ry="24" fill="url(#lc)" opacity="0.6"/>
-    <ellipse cx="1515" cy="27" rx="38" ry="22" fill="url(#lc)" opacity="0.55"/>
+  <!-- LEAF CLUSTERS / CANOPY -->
+  <g filter="url(#ls)" opacity="0.8">
+    <!-- Outer canopy -->
+    <ellipse cx="-5" cy="165" rx="55" ry="32" fill="url(#lc)"/>
+    <ellipse cx="35" cy="155" rx="48" ry="28" fill="url(#lc)"/>
+    <ellipse cx="90" cy="170" rx="52" ry="30" fill="url(#lc)"/>
+    <ellipse cx="155" cy="185" rx="50" ry="28" fill="url(#lc)"/>
+    <ellipse cx="220" cy="195" rx="48" ry="26" fill="url(#lc)"/>
+    <ellipse cx="285" cy="210" rx="46" ry="25" fill="url(#lc)"/>
+    <ellipse cx="355" cy="220" rx="44" ry="24" fill="url(#lc)"/>
+    <ellipse cx="430" cy="235" rx="42" ry="23" fill="url(#lc)"/>
+    <ellipse cx="510" cy="250" rx="40" ry="22" fill="url(#lc)"/>
+    <ellipse cx="595" cy="265" rx="38" ry="21" fill="url(#lc)"/>
+    <ellipse cx="685" cy="275" rx="36" ry="20" fill="url(#lc)"/>
+    <!-- Center top -->
+    <ellipse cx="780" cy="285" rx="42" ry="24" fill="url(#lc)"/>
+    <ellipse cx="890" cy="280" rx="45" ry="26" fill="url(#lc)"/>
+    <ellipse cx="1000" cy="285" rx="42" ry="24" fill="url(#lc)"/>
+    <!-- Right side -->
+    <ellipse cx="1095" cy="275" rx="36" ry="20" fill="url(#lc)"/>
+    <ellipse cx="1185" cy="265" rx="38" ry="21" fill="url(#lc)"/>
+    <ellipse cx="1270" cy="250" rx="40" ry="22" fill="url(#lc)"/>
+    <ellipse cx="1350" cy="235" rx="42" ry="23" fill="url(#lc)"/>
+    <ellipse cx="1425" cy="220" rx="44" ry="24" fill="url(#lc)"/>
+    <ellipse cx="1495" cy="210" rx="46" ry="25" fill="url(#lc)"/>
+    <ellipse cx="1565" cy="195" rx="48" ry="26" fill="url(#lc)"/>
+    <ellipse cx="1630" cy="185" rx="50" ry="28" fill="url(#lc)"/>
+    <ellipse cx="1695" cy="170" rx="52" ry="30" fill="url(#lc)"/>
+    <ellipse cx="1750" cy="155" rx="48" ry="28" fill="url(#lc)"/>
+    <ellipse cx="1795" cy="165" rx="55" ry="32" fill="url(#lc)"/>
+    <!-- Inner canopy layer -->
+    <ellipse cx="40" cy="140" rx="38" ry="22" fill="url(#lc)" opacity="0.6"/>
+    <ellipse cx="120" cy="130" rx="35" ry="20" fill="url(#lc)" opacity="0.55"/>
+    <ellipse cx="200" cy="140" rx="33" ry="19" fill="url(#lc)" opacity="0.5"/>
+    <ellipse cx="280" cy="150" rx="32" ry="18" fill="url(#lc)" opacity="0.5"/>
+    <ellipse cx="365" cy="160" rx="30" ry="17" fill="url(#lc)" opacity="0.45"/>
+    <ellipse cx="450" cy="170" rx="30" ry="17" fill="url(#lc)" opacity="0.45"/>
+    <ellipse cx="540" cy="180" rx="28" ry="16" fill="url(#lc)" opacity="0.45"/>
+    <ellipse cx="635" cy="190" rx="28" ry="16" fill="url(#lc)" opacity="0.45"/>
+    <ellipse cx="735" cy="200" rx="32" ry="18" fill="url(#lc)" opacity="0.5"/>
+    <ellipse cx="835" cy="205" rx="35" ry="20" fill="url(#lc)" opacity="0.55"/>
+    <ellipse cx="935" cy="205" rx="35" ry="20" fill="url(#lc)" opacity="0.55"/>
+    <ellipse cx="1035" cy="200" rx="32" ry="18" fill="url(#lc)" opacity="0.5"/>
+    <ellipse cx="1140" cy="190" rx="28" ry="16" fill="url(#lc)" opacity="0.45"/>
+    <ellipse cx="1235" cy="180" rx="28" ry="16" fill="url(#lc)" opacity="0.45"/>
+    <ellipse cx="1325" cy="170" rx="30" ry="17" fill="url(#lc)" opacity="0.45"/>
+    <ellipse cx="1410" cy="160" rx="30" ry="17" fill="url(#lc)" opacity="0.45"/>
+    <ellipse cx="1490" cy="150" rx="32" ry="18" fill="url(#lc)" opacity="0.5"/>
+    <ellipse cx="1570" cy="140" rx="33" ry="19" fill="url(#lc)" opacity="0.5"/>
+    <ellipse cx="1650" cy="130" rx="35" ry="20" fill="url(#lc)" opacity="0.55"/>
+    <ellipse cx="1730" cy="140" rx="38" ry="22" fill="url(#lc)" opacity="0.6"/>
+    <!-- Top center peak -->
+    <ellipse cx="890" cy="170" rx="55" ry="30" fill="url(#lc)" opacity="0.5"/>
+    <ellipse cx="835" cy="175" rx="45" ry="25" fill="url(#lc)" opacity="0.45"/>
+    <ellipse cx="945" cy="175" rx="45" ry="25" fill="url(#lc)" opacity="0.45"/>
   </g>
 
-  <!-- Small twigs -->
-  <g stroke="#5a4228" stroke-width="0.8" fill="none" opacity="0.5">
-    <path d="M28,118 Q33,98 38,83"/>
-    <path d="M128,113 Q133,93 138,78"/>
-    <path d="M278,108 Q283,88 288,73"/>
-    <path d="M428,116 Q433,96 438,80"/>
-    <path d="M578,110 Q583,90 588,76"/>
-    <path d="M728,116 Q733,96 738,80"/>
-    <path d="M878,108 Q883,88 888,73"/>
-    <path d="M1028,113 Q1033,93 1038,78"/>
-    <path d="M1178,110 Q1183,90 1188,76"/>
-    <path d="M1328,116 Q1333,96 1338,80"/>
-    <path d="M1478,113 Q1483,93 1488,78"/>
-    <path d="M1628,118 Q1633,98 1638,83"/>
+  <!-- Acorns -->
+  <g fill="#8b6914" opacity="0.7">
+    <ellipse cx="720" cy="300" rx="4" ry="6"/><ellipse cx="730" cy="295" rx="3" ry="5"/>
+    <ellipse cx="1060" cy="300" rx="4" ry="6"/><ellipse cx="1050" cy="295" rx="3" ry="5"/>
+    <ellipse cx="480" cy="260" rx="3" ry="5"/><ellipse cx="1300" cy="260" rx="3" ry="5"/>
   </g>
 </svg>
 
@@ -470,7 +488,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 </svg>
 
 <div class="side-ribbon">Migration from County Cavan</div>
-<div class="bottom-text">Migration from the<br/>Haunnings...</div>
 
 <svg class="flowers flowers-left" viewBox="0 0 140 65">
   <ellipse cx="35" cy="48" rx="11" ry="9" fill="#a05050" opacity="0.6"/>
@@ -500,54 +517,54 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="gen-ribbon" style="top: 158px;">Generation 8</div>
 
 <!-- GEN 2 -->
-<div class="slot" style="left: 656px; top: 544px;"><span class="surname">Joseph Mooney</span><span class="years">1931–2004</span></div>
-<div class="slot" style="left: 1056px; top: 544px;"><span class="surname">Rose Craigie</span><span class="years">1931–2006</span></div>
+<div class="slot" style="left: 656px; top: 544px;" data-person="joseph-mooney-2"><span class="surname">Joseph Mooney</span><span class="years">1931–2004</span></div>
+<div class="slot" style="left: 1056px; top: 544px;" data-person="rose-craigie"><span class="surname">Rose Craigie</span><span class="years">1931–2006</span></div>
 <!-- GEN 3 -->
-<div class="slot" style="left: 476px; top: 484px;"><span class="surname">Joseph Mooney</span><span class="years">1898–1974</span></div>
-<div class="slot" style="left: 556px; top: 484px;"><span class="surname">Alice Lynch</span><span class="years">1898–1984</span></div>
-<div class="slot" style="left: 1196px; top: 484px;"><span class="surname">Andrew H. Craigie</span><span class="years">1904–1977</span></div>
-<div class="slot" style="left: 1276px; top: 484px;"><span class="surname">Agnes Crawford</span><span class="years">1907–1995</span></div>
+<div class="slot" style="left: 476px; top: 484px;" data-person="joseph-mooney-3"><span class="surname">Joseph Mooney</span><span class="years">1898–1974</span></div>
+<div class="slot" style="left: 556px; top: 484px;" data-person="alice-lynch"><span class="surname">Alice Lynch</span><span class="years">1898–1984</span></div>
+<div class="slot" style="left: 1196px; top: 484px;" data-person="andrew-craigie"><span class="surname">Andrew H. Craigie</span><span class="years">1904–1977</span></div>
+<div class="slot" style="left: 1276px; top: 484px;" data-person="agnes-crawford"><span class="surname">Agnes Crawford</span><span class="years">1907–1995</span></div>
 <!-- GEN 4 -->
-<div class="slot" style="left: 316px; top: 424px;"><span class="surname">Joseph Mooney</span><span class="years">1873–1940</span></div>
-<div class="slot" style="left: 396px; top: 424px;"><span class="surname">Catherine Farrell</span><span class="years">1873–1939</span></div>
-<div class="slot" style="left: 716px; top: 424px;"><span class="surname">Edward Lynch</span><span class="years">~1871–?</span></div>
-<div class="slot" style="left: 796px; top: 424px;"><span class="surname">Mary J. Graham</span><span class="years">~1873–?</span></div>
-<div class="slot" style="left: 1036px; top: 424px;"><span class="surname">James Craigie</span><span class="years">~1874–?</span></div>
-<div class="slot" style="left: 1116px; top: 424px;"><span class="surname">Agnes Henderson</span><span class="years">1877–1915</span></div>
+<div class="slot" style="left: 316px; top: 424px;" data-person="joseph-mooney-4"><span class="surname">Joseph Mooney</span><span class="years">1873–1940</span></div>
+<div class="slot" style="left: 396px; top: 424px;" data-person="catherine-farrell"><span class="surname">Catherine Farrell</span><span class="years">1873–1939</span></div>
+<div class="slot" style="left: 716px; top: 424px;" data-person="edward-lynch"><span class="surname">Edward Lynch</span><span class="years">~1871–?</span></div>
+<div class="slot" style="left: 796px; top: 424px;" data-person="mary-graham"><span class="surname">Mary J. Graham</span><span class="years">~1873–?</span></div>
+<div class="slot" style="left: 1036px; top: 424px;" data-person="james-craigie"><span class="surname">James Craigie</span><span class="years">~1874–?</span></div>
+<div class="slot" style="left: 1116px; top: 424px;" data-person="agnes-henderson"><span class="surname">Agnes Henderson</span><span class="years">1877–1915</span></div>
 <!-- GEN 5 -->
-<div class="slot" style="left: 156px; top: 364px;"><span class="surname">Francis Crawford</span><span class="years">1845–~1904</span></div>
-<div class="slot" style="left: 236px; top: 364px;"><span class="surname">Eliza McGinley</span><span class="years">~1852–?</span></div>
-<div class="slot" style="left: 476px; top: 364px;"><span class="surname">Thomas Mooney</span><span class="years">~1844–?</span></div>
-<div class="slot" style="left: 556px; top: 364px;"><span class="surname">Catherine Lynch</span><span class="years">~1843–?</span></div>
-<div class="slot" style="left: 796px; top: 364px;"><span class="surname">James Farrell</span><span class="years">~1843–~1916</span></div>
-<div class="slot" style="left: 876px; top: 364px;"><span class="surname">Helen McDonald</span><span class="years">~1843–~1924</span></div>
-<div class="slot" style="left: 1116px; top: 364px;"><span class="surname">Owen Lynch</span><span class="years">~1841–?</span></div>
-<div class="slot" style="left: 1196px; top: 364px;"><span class="surname">Alice Rogers</span><span class="years">~1840–~1895</span></div>
+<div class="slot" style="left: 156px; top: 364px;" data-person="francis-crawford"><span class="surname">Francis Crawford</span><span class="years">1845–~1904</span></div>
+<div class="slot" style="left: 236px; top: 364px;" data-person="eliza-mcginley"><span class="surname">Eliza McGinley</span><span class="years">~1852–?</span></div>
+<div class="slot" style="left: 476px; top: 364px;" data-person="thomas-mooney-5"><span class="surname">Thomas Mooney</span><span class="years">~1844–?</span></div>
+<div class="slot" style="left: 556px; top: 364px;" data-person="catherine-lynch-5"><span class="surname">Catherine Lynch</span><span class="years">~1843–?</span></div>
+<div class="slot" style="left: 796px; top: 364px;" data-person="james-farrell-5"><span class="surname">James Farrell</span><span class="years">~1843–~1916</span></div>
+<div class="slot" style="left: 876px; top: 364px;" data-person="helen-mcdonald"><span class="surname">Helen McDonald</span><span class="years">~1843–~1924</span></div>
+<div class="slot" style="left: 1116px; top: 364px;" data-person="owen-lynch"><span class="surname">Owen Lynch</span><span class="years">~1841–?</span></div>
+<div class="slot" style="left: 1196px; top: 364px;" data-person="alice-rogers"><span class="surname">Alice Rogers</span><span class="years">~1840–~1895</span></div>
 <!-- GEN 6 -->
-<div class="slot" style="left: 76px; top: 304px;"><span class="surname">James Graham</span><span class="years">~1818–?</span></div>
-<div class="slot" style="left: 156px; top: 304px;"><span class="surname">Ann</span><span class="years">~1821–?</span></div>
-<div class="slot" style="left: 316px; top: 304px;"><span class="surname">William Craigie</span><span class="years">~1818–?</span></div>
-<div class="slot" style="left: 396px; top: 304px;"><span class="surname">Betsy</span><span class="years">~1821–?</span></div>
-<div class="slot" style="left: 556px; top: 304px;"><span class="surname">John Lynch</span><span class="years">~1815–?</span></div>
-<div class="slot" style="left: 636px; top: 304px;"><span class="surname">Betty Dillon</span><span class="years">~1816–?</span></div>
-<div class="slot" style="left: 796px; top: 304px;"><span class="surname">Patrick Welsh</span><span class="years">~1814–?</span></div>
-<div class="slot" style="left: 876px; top: 304px;"><span class="surname">Elizabeth Currie</span><span class="years">~1815–?</span></div>
-<div class="slot" style="left: 1036px; top: 304px;"><span class="surname">Andrew Henderson</span><span class="years">~1818–?</span></div>
-<div class="slot" style="left: 1116px; top: 304px;"><span class="surname">Eliza</span><span class="years">~1817–?</span></div>
+<div class="slot" style="left: 76px; top: 304px;" data-person="james-graham"><span class="surname">James Graham</span><span class="years">~1818–?</span></div>
+<div class="slot" style="left: 156px; top: 304px;" data-person="ann-graham"><span class="surname">Ann</span><span class="years">~1821–?</span></div>
+<div class="slot" style="left: 316px; top: 304px;" data-person="william-craigie"><span class="surname">William Craigie</span><span class="years">~1818–?</span></div>
+<div class="slot" style="left: 396px; top: 304px;" data-person="betsy-craigie"><span class="surname">Betsy</span><span class="years">~1821–?</span></div>
+<div class="slot" style="left: 556px; top: 304px;" data-person="john-lynch-6"><span class="surname">John Lynch</span><span class="years">~1815–?</span></div>
+<div class="slot" style="left: 636px; top: 304px;" data-person="betty-dillon"><span class="surname">Betty Dillon</span><span class="years">~1816–?</span></div>
+<div class="slot" style="left: 796px; top: 304px;" data-person="patrick-welsh"><span class="surname">Patrick Welsh</span><span class="years">~1814–?</span></div>
+<div class="slot" style="left: 876px; top: 304px;" data-person="elizabeth-currie"><span class="surname">Elizabeth Currie</span><span class="years">~1815–?</span></div>
+<div class="slot" style="left: 1036px; top: 304px;" data-person="andrew-henderson"><span class="surname">Andrew Henderson</span><span class="years">~1818–?</span></div>
+<div class="slot" style="left: 1116px; top: 304px;" data-person="eliza-henderson"><span class="surname">Eliza</span><span class="years">~1817–?</span></div>
 <!-- GEN 7 -->
-<div class="slot" style="left: -4px; top: 244px;"><span class="surname">Patrick McDonald</span><span class="years">~1818–?</span></div>
-<div class="slot" style="left: 76px; top: 244px;"><span class="surname">Barbara Gordon</span><span class="years">~1820–?</span></div>
-<div class="slot" style="left: 236px; top: 244px;"><span class="surname">John Farrell</span><span class="years">~1815–?</span></div>
-<div class="slot" style="left: 316px; top: 244px;"><span class="surname">Ann Quinn</span><span class="years">~1815–?</span></div>
-<div class="slot" style="left: 476px; top: 244px;"><span class="surname">Michael Mooney</span><span class="years">~1796–1870</span></div>
-<div class="slot" style="left: 556px; top: 244px;"><span class="surname">Agnes Harrington</span><span class="years">~1801–1867</span></div>
-<div class="slot" style="left: 716px; top: 244px;"><span class="surname">Thomas Lynch</span><span class="years">~1815–?</span></div>
-<div class="slot" style="left: 796px; top: 244px;"><span class="surname">Catherine Welsh</span><span class="years">~1816–?</span></div>
-<div class="slot" style="left: 956px; top: 244px;"><span class="surname">John Harrington</span><span class="years">~1785–?</span></div>
-<div class="slot" style="left: 1036px; top: 244px;"><span class="surname">Betsy McKnight</span><span class="years">~1787–?</span></div>
+<div class="slot" style="left: -4px; top: 244px;" data-person="patrick-mcdonald"><span class="surname">Patrick McDonald</span><span class="years">~1818–?</span></div>
+<div class="slot" style="left: 76px; top: 244px;" data-person="barbara-gordon"><span class="surname">Barbara Gordon</span><span class="years">~1820–?</span></div>
+<div class="slot" style="left: 236px; top: 244px;" data-person="john-farrell"><span class="surname">John Farrell</span><span class="years">~1815–?</span></div>
+<div class="slot" style="left: 316px; top: 244px;" data-person="ann-quinn"><span class="surname">Ann Quinn</span><span class="years">~1815–?</span></div>
+<div class="slot" style="left: 476px; top: 244px;" data-person="michael-mooney"><span class="surname">Michael Mooney</span><span class="years">~1796–1870</span></div>
+<div class="slot" style="left: 556px; top: 244px;" data-person="agnes-harrington"><span class="surname">Agnes Harrington</span><span class="years">~1801–1867</span></div>
+<div class="slot" style="left: 716px; top: 244px;" data-person="thomas-lynch-7"><span class="surname">Thomas Lynch</span><span class="years">~1815–?</span></div>
+<div class="slot" style="left: 796px; top: 244px;" data-person="catherine-welsh"><span class="surname">Catherine Welsh</span><span class="years">~1816–?</span></div>
+<div class="slot" style="left: 956px; top: 244px;" data-person="john-harrington"><span class="surname">John Harrington</span><span class="years">~1785–?</span></div>
+<div class="slot" style="left: 1036px; top: 244px;" data-person="betsy-mcknight"><span class="surname">Betsy McKnight</span><span class="years">~1787–?</span></div>
 <!-- GEN 8 -->
-<div class="slot" style="left: -4px; top: 184px;"><span class="surname">Thomas Mooney</span><span class="years">~1770–?</span></div>
-<div class="slot" style="left: 76px; top: 184px;"><span class="surname">Bridget Reilly</span><span class="years">~1775–?</span></div>
+<div class="slot" style="left: -4px; top: 184px;" data-person="thomas-mooney-8"><span class="surname">Thomas Mooney</span><span class="years">~1770–?</span></div>
+<div class="slot" style="left: 76px; top: 184px;" data-person="bridget-reilly"><span class="surname">Bridget Reilly</span><span class="years">~1775–?</span></div>
 <div class="slot empty" style="left: 236px; top: 184px;"><span class="surname">Unknown</span></div>
 <div class="slot empty" style="left: 316px; top: 184px;"><span class="surname">Unknown</span></div>
 <div class="slot empty" style="left: 476px; top: 184px;"><span class="surname">Unknown</span></div>
@@ -568,14 +585,27 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <button class="zoom-btn" id="zoomReset">↻</button>
 </div>
 
+<div class="overlay" id="overlay"></div>
+<div class="detail-popup" id="detailPopup">
+  <button class="close-btn" id="closePopup">&times;</button>
+  <h3 id="popupName">Name</h3>
+  <div class="detail-row"><span class="label">Birth:</span><span class="value" id="popupBirth">-</span></div>
+  <div class="detail-row"><span class="label">Death:</span><span class="value" id="popupDeath">-</span></div>
+  <div class="detail-row"><span class="label">Generation:</span><span class="value" id="popupGen">-</span></div>
+  <div class="detail-row"><span class="label">Origin:</span><span class="value" id="popupOrigin">-</span></div>
+</div>
+
 <script>
+// Zoom controls
 let scale = 1;
 const poster = document.getElementById('poster');
 const zoomLevel = document.getElementById('zoomLevel');
+
 function updateZoom() {
   poster.style.zoom = scale;
   zoomLevel.textContent = Math.round(scale * 100) + '%';
 }
+
 document.getElementById('zoomIn').addEventListener('click', () => {
   scale = Math.min(scale + 0.2, 3); updateZoom();
 });
@@ -585,6 +615,80 @@ document.getElementById('zoomOut').addEventListener('click', () => {
 document.getElementById('zoomReset').addEventListener('click', () => {
   scale = 1; updateZoom();
 });
+
+// Person data
+const peopleData = {
+  'joseph-mooney-2': { name: 'Joseph Mooney', birth: '4 Mar 1931, Dundee', death: '2004', gen: 'Generation 2', origin: 'Dundee, Scotland' },
+  'rose-craigie': { name: 'Rose Craigie', birth: '1 Dec 1931, Dundee', death: '2006', gen: 'Generation 2', origin: 'Dundee, Scotland' },
+  'joseph-mooney-3': { name: 'Joseph Mooney', birth: '1898', death: '1974', gen: 'Generation 3', origin: 'Dundee, Scotland' },
+  'alice-lynch': { name: 'Alice Lynch', birth: '1898', death: '1984', gen: 'Generation 3', origin: 'Dundee, Scotland' },
+  'andrew-craigie': { name: 'Andrew H. Craigie', birth: '1904', death: '1977', gen: 'Generation 3', origin: 'Dundee, Scotland' },
+  'agnes-crawford': { name: 'Agnes Crawford', birth: '1907', death: '1995', gen: 'Generation 3', origin: 'Dundee, Scotland' },
+  'joseph-mooney-4': { name: 'Joseph Mooney', birth: '1873', death: '1940', gen: 'Generation 4', origin: 'Dundee, Scotland' },
+  'catherine-farrell': { name: 'Catherine Farrell', birth: '1873', death: '1939', gen: 'Generation 4', origin: 'Dundee, Scotland' },
+  'edward-lynch': { name: 'Edward Lynch', birth: '~1871', death: '?', gen: 'Generation 4', origin: 'Ireland' },
+  'mary-graham': { name: 'Mary J. Graham', birth: '~1873', death: '?', gen: 'Generation 4', origin: 'Dundee, Scotland' },
+  'james-craigie': { name: 'James Craigie', birth: '~1874', death: '?', gen: 'Generation 4', origin: 'Dundee, Scotland' },
+  'agnes-henderson': { name: 'Agnes Henderson', birth: '1877', death: '1915', gen: 'Generation 4', origin: 'Dundee, Scotland' },
+  'francis-crawford': { name: 'Francis Crawford', birth: '1845', death: '~1904', gen: 'Generation 5', origin: 'Dundee, Scotland' },
+  'eliza-mcginley': { name: 'Eliza McGinley', birth: '~1852', death: '?', gen: 'Generation 5', origin: 'Ireland' },
+  'thomas-mooney-5': { name: 'Thomas Mooney', birth: '~1844', death: '?', gen: 'Generation 5', origin: 'Ireland' },
+  'catherine-lynch-5': { name: 'Catherine Lynch', birth: '~1843', death: '?', gen: 'Generation 5', origin: 'Ireland' },
+  'james-farrell-5': { name: 'James Farrell', birth: '~1843', death: '~1916', gen: 'Generation 5', origin: 'Ireland' },
+  'helen-mcdonald': { name: 'Helen McDonald', birth: '~1843', death: '~1924', gen: 'Generation 5', origin: 'Ireland' },
+  'owen-lynch': { name: 'Owen Lynch', birth: '~1841', death: '?', gen: 'Generation 5', origin: 'Ireland' },
+  'alice-rogers': { name: 'Alice Rogers', birth: '~1840', death: '~1895', gen: 'Generation 5', origin: 'Ireland' },
+  'james-graham': { name: 'James Graham', birth: '~1818', death: '?', gen: 'Generation 6', origin: 'Ireland' },
+  'ann-graham': { name: 'Ann', birth: '~1821', death: '?', gen: 'Generation 6', origin: 'Ireland' },
+  'william-craigie': { name: 'William Craigie', birth: '~1818', death: '?', gen: 'Generation 6', origin: 'Scotland' },
+  'betsy-craigie': { name: 'Betsy', birth: '~1821', death: '?', gen: 'Generation 6', origin: 'Scotland' },
+  'john-lynch-6': { name: 'John Lynch', birth: '~1815', death: '?', gen: 'Generation 6', origin: 'Ireland' },
+  'betty-dillon': { name: 'Betty Dillon', birth: '~1816', death: '?', gen: 'Generation 6', origin: 'Ireland' },
+  'patrick-welsh': { name: 'Patrick Welsh', birth: '~1814', death: '?', gen: 'Generation 6', origin: 'Ireland' },
+  'elizabeth-currie': { name: 'Elizabeth Currie', birth: '~1815', death: '?', gen: 'Generation 6', origin: 'Ireland' },
+  'andrew-henderson': { name: 'Andrew Henderson', birth: '~1818', death: '?', gen: 'Generation 6', origin: 'Scotland' },
+  'eliza-henderson': { name: 'Eliza', birth: '~1817', death: '?', gen: 'Generation 6', origin: 'Scotland' },
+  'patrick-mcdonald': { name: 'Patrick McDonald', birth: '~1818', death: '?', gen: 'Generation 7', origin: 'Ireland' },
+  'barbara-gordon': { name: 'Barbara Gordon', birth: '~1820', death: '?', gen: 'Generation 7', origin: 'Ireland' },
+  'john-farrell': { name: 'John Farrell', birth: '~1815', death: '?', gen: 'Generation 7', origin: 'Ireland' },
+  'ann-quinn': { name: 'Ann Quinn', birth: '~1815', death: '?', gen: 'Generation 7', origin: 'Ireland' },
+  'michael-mooney': { name: 'Michael Mooney', birth: '~1796', death: '1870', gen: 'Generation 7', origin: 'County Cavan, Ireland' },
+  'agnes-harrington': { name: 'Agnes Harrington', birth: '~1801', death: '1867', gen: 'Generation 7', origin: 'County Cavan, Ireland' },
+  'thomas-lynch-7': { name: 'Thomas Lynch', birth: '~1815', death: '?', gen: 'Generation 7', origin: 'Ireland' },
+  'catherine-welsh': { name: 'Catherine Welsh', birth: '~1816', death: '?', gen: 'Generation 7', origin: 'Ireland' },
+  'john-harrington': { name: 'John Harrington', birth: '~1785', death: '?', gen: 'Generation 7', origin: 'Ireland' },
+  'betsy-mcknight': { name: 'Betsy McKnight', birth: '~1787', death: '?', gen: 'Generation 7', origin: 'Ireland' },
+  'thomas-mooney-8': { name: 'Thomas Mooney', birth: '~1770', death: '?', gen: 'Generation 8', origin: 'County Cavan, Ireland' },
+  'bridget-reilly': { name: 'Bridget Reilly', birth: '~1775', death: '?', gen: 'Generation 8', origin: 'County Cavan, Ireland' },
+};
+
+// Click handlers
+const popup = document.getElementById('detailPopup');
+const overlay = document.getElementById('overlay');
+const closeBtn = document.getElementById('closePopup');
+
+function openPopup(personId) {
+  const data = peopleData[personId];
+  if (!data) return;
+  document.getElementById('popupName').textContent = data.name;
+  document.getElementById('popupBirth').textContent = data.birth;
+  document.getElementById('popupDeath').textContent = data.death;
+  document.getElementById('popupGen').textContent = data.gen;
+  document.getElementById('popupOrigin').textContent = data.origin;
+  popup.classList.add('active');
+  overlay.classList.add('active');
+}
+
+function closePopup() {
+  popup.classList.remove('active');
+  overlay.classList.remove('active');
+}
+
+document.querySelectorAll('.slot[data-person]').forEach(slot => {
+  slot.addEventListener('click', () => openPopup(slot.dataset.person));
+});
+closeBtn.addEventListener('click', closePopup);
+overlay.addEventListener('click', closePopup);
 </script>
 
 </body>
