@@ -12,8 +12,16 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 
 .viewport {
   width: 100vw; height: 100vh; overflow: auto;
-  display: flex; align-items: flex-end; justify-content: center;
   background: radial-gradient(ellipse at center bottom, #3a2a15 0%, #0c0803 70%);
+  /* Native touch scrolling */
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+
+.scroll-wrapper {
+  display: flex; align-items: center; justify-content: center;
+  min-width: 100vw; min-height: 100vh;
+  padding: 20px;
 }
 
 .poster {
@@ -28,7 +36,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   box-shadow: inset 0 0 100px rgba(30,18,6,0.5), 0 0 50px rgba(0,0,0,0.8);
 }
 
-/* Double inner border */
 .poster::before {
   content: ''; position: absolute;
   top: 18px; left: 18px; right: 18px; bottom: 18px;
@@ -42,7 +49,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   pointer-events: none; z-index: 10;
 }
 
-/* Corner scroll ornaments */
 .corner {
   position: absolute; width: 90px; height: 90px; z-index: 11;
 }
@@ -51,33 +57,25 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 .corner-bl { bottom: 10px; left: 10px; transform: scaleY(-1); }
 .corner-br { bottom: 10px; right: 10px; transform: scale(-1); }
 
-/* Title */
 .title-banner {
   position: absolute; top: 22px; left: 50%; transform: translateX(-50%);
   z-index: 20; text-align: center;
 }
-.banner-scroll {
-  position: relative; display: inline-block;
-}
+.banner-scroll { position: relative; display: inline-block; }
 .banner-main {
-  padding: 14px 90px;
-  background: #e8dcc8;
-  border: 2px solid #6b5537;
-  border-radius: 4px;
+  padding: 14px 90px; background: #e8dcc8;
+  border: 2px solid #6b5537; border-radius: 4px;
   box-shadow: 0 3px 14px rgba(60,40,10,0.3), inset 0 1px 2px rgba(255,255,255,0.4);
 }
 .banner-curl {
-  position: absolute; top: 50%; margin-top: -20px;
-  width: 45px; height: 40px;
+  position: absolute; top: 50%; margin-top: -20px; width: 45px; height: 40px;
 }
 .banner-curl.left {
-  left: -30px;
-  border-left: 3px solid #6b5537; border-top: 2px solid transparent;
+  left: -30px; border-left: 3px solid #6b5537; border-top: 2px solid transparent;
   border-radius: 50% 0 0 50%; transform: rotate(-25deg);
 }
 .banner-curl.right {
-  right: -30px;
-  border-right: 3px solid #6b5537; border-top: 2px solid transparent;
+  right: -30px; border-right: 3px solid #6b5537; border-top: 2px solid transparent;
   border-radius: 0 50% 50% 0; transform: rotate(25deg);
 }
 .title-text {
@@ -89,7 +87,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   color: #5a4428; font-style: italic; margin-top: 3px;
 }
 
-/* Tree area */
 .tree-area {
   position: absolute; top: 100px; left: 0; right: 0; bottom: 0;
 }
@@ -98,12 +95,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   width: 100%; height: 100%; z-index: 1;
 }
 
-/* Name slots */
 .slot {
   position: absolute; width: 88px; height: 48px;
   background: #f5ecd8;
-  border: 1.5px solid #7a5e3a;
-  border-radius: 50%;
+  border: 1.5px solid #7a5e3a; border-radius: 50%;
   display: flex; flex-direction: column;
   align-items: center; justify-content: center;
   text-align: center;
@@ -124,7 +119,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 .slot .surname { font-weight: 600; font-size: 10px; display: block; }
 .slot .years { font-size: 8px; color: #7a6545; display: block; margin-top: 1px; }
 
-/* Generation center ribbons */
 .gen-ribbon {
   position: absolute; left: 50%; transform: translateX(-50%);
   padding: 4px 24px; background: #e0d4bc;
@@ -135,7 +129,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   white-space: nowrap;
 }
 
-/* YOU badge */
 .you-badge {
   position: absolute; bottom: 55px; left: 50%;
   transform: translateX(-50%); z-index: 20;
@@ -150,7 +143,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 .you-label { font-family: 'Cinzel Decorative', serif; font-size: 20px; color: #1e140a; }
 .you-gen { font-family: 'IM Fell English', serif; font-size: 12px; color: #5a4428; font-style: italic; margin-top: 2px; }
 
-/* Shield */
 .shield {
   position: absolute; bottom: 20px; left: 50%;
   transform: translateX(-50%);
@@ -160,13 +152,11 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   z-index: 20; box-shadow: 0 2px 8px rgba(0,0,0,0.3);
 }
 
-/* Compass */
 .compass {
   position: absolute; bottom: 40px; right: 50px;
   width: 75px; height: 75px; z-index: 20; opacity: 0.65;
 }
 
-/* Side ribbon */
 .side-ribbon {
   position: absolute; bottom: 115px; right: 40px;
   padding: 6px 20px; background: #e0d4bc;
@@ -176,7 +166,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   box-shadow: 0 2px 6px rgba(60,40,10,0.2);
 }
 
-/* Bottom text */
 .bottom-text {
   position: absolute; bottom: 45px; right: 45px;
   font-family: 'IM Fell English', serif; font-size: 10px;
@@ -184,7 +173,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   text-align: right; line-height: 1.4;
 }
 
-/* Flowers */
 .flowers {
   position: absolute; bottom: 15px; width: 130px; height: 60px;
   z-index: 15; opacity: 0.5;
@@ -192,7 +180,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 .flowers-left { left: 90px; }
 .flowers-right { right: 90px; transform: scaleX(-1); }
 
-/* Zoom */
 .zoom-controls {
   position: fixed; bottom: 20px; left: 20px;
   z-index: 100; display: flex; flex-direction: column; gap: 8px;
@@ -203,6 +190,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   font-size: 20px; font-family: 'Cinzel Decorative', serif;
   cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.3);
   display: flex; align-items: center; justify-content: center;
+  user-select: none; -webkit-user-select: none;
 }
 .zoom-btn:active { transform: scale(0.92); }
 .zoom-level {
@@ -214,9 +202,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <body>
 
 <div class="viewport" id="viewport">
+<div class="scroll-wrapper" id="wrapper">
 <div class="poster" id="poster">
 
-<!-- Corners -->
 <svg class="corner corner-tl" viewBox="0 0 90 90">
   <path d="M8,8 Q35,8 35,35 Q35,8 8,8" fill="none" stroke="#5a4228" stroke-width="2.5"/>
   <path d="M14,14 Q30,14 30,30" fill="none" stroke="#8b7355" stroke-width="1.2"/>
@@ -242,7 +230,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <path d="M8,45 Q15,40 20,45 Q15,50 8,45" fill="none" stroke="#7a5e3a" stroke-width="1"/>
 </svg>
 
-<!-- Title -->
 <div class="title-banner">
   <div class="banner-scroll">
     <div class="banner-curl left"></div>
@@ -254,7 +241,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   </div>
 </div>
 
-<!-- TREE SVG -->
 <svg class="tree-svg" viewBox="0 0 1800 1100" preserveAspectRatio="xMidYMax slice">
   <defs>
     <linearGradient id="tg" x1="0%" y1="0%" x2="100%" y2="0%">
@@ -273,7 +259,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
     </filter>
   </defs>
 
-  <!-- ROOTS -->
   <g opacity="0.9">
     <path d="M870,1100 Q850,1060 830,1040 Q800,1020 760,1010" fill="none" stroke="#4a3725" stroke-width="12" stroke-linecap="round"/>
     <path d="M880,1100 Q860,1060 840,1035 Q810,1010 770,995" fill="none" stroke="#3d2b1a" stroke-width="9" stroke-linecap="round"/>
@@ -281,49 +266,41 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
     <path d="M900,1100 Q920,1060 940,1040 Q970,1020 1010,1010" fill="none" stroke="#4a3725" stroke-width="12" stroke-linecap="round"/>
     <path d="M860,1100 Q840,1070 810,1050 Q770,1030 730,1025" fill="none" stroke="#3d2b1a" stroke-width="6" stroke-linecap="round"/>
     <path d="M910,1100 Q930,1070 960,1050 Q1000,1030 1040,1025" fill="none" stroke="#3d2b1a" stroke-width="6" stroke-linecap="round"/>
-    <!-- Root tendrils -->
     <path d="M760,1010 Q730,1020 710,1030" fill="none" stroke="#4a3725" stroke-width="4" stroke-linecap="round"/>
     <path d="M770,995 Q740,1000 720,1005" fill="none" stroke="#3d2b1a" stroke-width="3" stroke-linecap="round"/>
     <path d="M990,995 Q1020,1000 1040,1005" fill="none" stroke="#3d2b1a" stroke-width="3" stroke-linecap="round"/>
     <path d="M1010,1010 Q1040,1020 1060,1030" fill="none" stroke="#4a3725" stroke-width="4" stroke-linecap="round"/>
   </g>
 
-  <!-- MAIN TRUNK -->
   <path d="M870,1100 Q865,1020 870,940 Q875,860 880,780 Q885,720 888,660" fill="none" stroke="url(#tg)" stroke-width="38" stroke-linecap="round"/>
   <path d="M885,1100 Q880,1020 885,940 Q890,860 892,780 Q895,720 895,660" fill="none" stroke="url(#tg)" stroke-width="34" stroke-linecap="round"/>
   <path d="M900,1100 Q895,1020 900,940 Q905,860 905,780 Q905,720 902,660" fill="none" stroke="url(#tg)" stroke-width="30" stroke-linecap="round"/>
 
-  <!-- Trunk bark texture -->
   <path d="M876,1060 Q874,1000 876,940" fill="none" stroke="#2e1f10" stroke-width="1.5" opacity="0.4"/>
   <path d="M892,1060 Q894,1000 892,940" fill="none" stroke="#2e1f10" stroke-width="1.5" opacity="0.4"/>
   <path d="M884,1000 Q882,900 884,800" fill="none" stroke="#2e1f10" stroke-width="1" opacity="0.3"/>
   <path d="M888,950 Q890,850 888,750" fill="none" stroke="#2e1f10" stroke-width="1" opacity="0.25"/>
-  <!-- Knots -->
   <ellipse cx="882" cy="980" rx="6" ry="4" fill="#3d2b1a" opacity="0.5"/>
   <ellipse cx="894" cy="880" rx="5" ry="3" fill="#3d2b1a" opacity="0.4"/>
   <ellipse cx="886" cy="780" rx="7" ry="4" fill="#3d2b1a" opacity="0.45"/>
 
-  <!-- GEN 2 BRANCHES (parents - thick, low) -->
-  <!-- Left -->
+  <!-- GEN 2 -->
   <path d="M880,660 Q800,610 720,580" fill="none" stroke="url(#bg)" stroke-width="20" stroke-linecap="round"/>
   <path d="M720,580 Q640,550 560,535" fill="none" stroke="url(#bg)" stroke-width="14" stroke-linecap="round"/>
-  <!-- Right -->
   <path d="M900,660 Q980,610 1060,580" fill="none" stroke="url(#bg)" stroke-width="20" stroke-linecap="round"/>
   <path d="M1060,580 Q1140,550 1220,535" fill="none" stroke="url(#bg)" stroke-width="14" stroke-linecap="round"/>
 
-  <!-- GEN 3 BRANCHES (grandparents) -->
-  <!-- Left side -->
+  <!-- GEN 3 -->
   <path d="M560,535 Q480,495 400,465" fill="none" stroke="url(#bg)" stroke-width="11" stroke-linecap="round"/>
   <path d="M400,465 Q320,435 240,415" fill="none" stroke="url(#bg)" stroke-width="8" stroke-linecap="round"/>
   <path d="M560,535 Q600,495 660,465" fill="none" stroke="url(#bg)" stroke-width="10" stroke-linecap="round"/>
   <path d="M660,465 Q720,435 800,415" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
-  <!-- Right side -->
   <path d="M1060,580 Q1100,495 1160,465" fill="none" stroke="url(#bg)" stroke-width="10" stroke-linecap="round"/>
   <path d="M1160,465 Q1220,435 1300,415" fill="none" stroke="url(#bg)" stroke-width="7" stroke-linecap="round"/>
   <path d="M1220,535 Q1300,495 1380,465" fill="none" stroke="url(#bg)" stroke-width="11" stroke-linecap="round"/>
   <path d="M1380,465 Q1460,435 1540,415" fill="none" stroke="url(#bg)" stroke-width="8" stroke-linecap="round"/>
 
-  <!-- GEN 4 BRANCHES -->
+  <!-- GEN 4 -->
   <path d="M240,415 Q160,375 120,345" fill="none" stroke="url(#bg)" stroke-width="6" stroke-linecap="round"/>
   <path d="M240,415 Q280,375 320,345" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
   <path d="M400,465 Q360,425 340,395" fill="none" stroke="url(#bg)" stroke-width="4.5" stroke-linecap="round"/>
@@ -335,7 +312,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <path d="M1540,415 Q1620,375 1660,345" fill="none" stroke="url(#bg)" stroke-width="6" stroke-linecap="round"/>
   <path d="M1540,415 Q1500,375 1460,345" fill="none" stroke="url(#bg)" stroke-width="5" stroke-linecap="round"/>
 
-  <!-- GEN 5 BRANCHES -->
+  <!-- GEN 5 -->
   <path d="M120,345 Q80,305 60,275" fill="none" stroke="url(#bg)" stroke-width="4" stroke-linecap="round"/>
   <path d="M120,345 Q150,305 170,275" fill="none" stroke="url(#bg)" stroke-width="3.5" stroke-linecap="round"/>
   <path d="M320,345 Q290,305 270,275" fill="none" stroke="url(#bg)" stroke-width="3.5" stroke-linecap="round"/>
@@ -349,7 +326,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <path d="M1460,345 Q1430,305 1410,275" fill="none" stroke="url(#bg)" stroke-width="3" stroke-linecap="round"/>
   <path d="M1660,345 Q1690,305 1710,275" fill="none" stroke="url(#bg)" stroke-width="3.5" stroke-linecap="round"/>
 
-  <!-- GEN 6 BRANCHES -->
+  <!-- GEN 6 -->
   <path d="M60,275 Q35,235 25,205" fill="none" stroke="url(#bg)" stroke-width="2.8" stroke-linecap="round"/>
   <path d="M170,275 Q160,235 155,205" fill="none" stroke="url(#bg)" stroke-width="2.5" stroke-linecap="round"/>
   <path d="M270,275 Q260,235 255,205" fill="none" stroke="url(#bg)" stroke-width="2.5" stroke-linecap="round"/>
@@ -363,7 +340,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <path d="M1410,275 Q1400,235 1395,205" fill="none" stroke="url(#bg)" stroke-width="2" stroke-linecap="round"/>
   <path d="M1710,275 Q1720,235 1725,205" fill="none" stroke="url(#bg)" stroke-width="2.2" stroke-linecap="round"/>
 
-  <!-- GEN 7 BRANCHES -->
+  <!-- GEN 7 -->
   <path d="M25,205 Q15,165 10,135" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
   <path d="M155,205 Q150,165 148,135" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
   <path d="M255,205 Q250,165 248,135" fill="none" stroke="url(#bg)" stroke-width="1.8" stroke-linecap="round"/>
@@ -377,7 +354,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <path d="M1395,205 Q1390,165 1388,135" fill="none" stroke="url(#bg)" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M1725,205 Q1730,165 1732,135" fill="none" stroke="url(#bg)" stroke-width="1.5" stroke-linecap="round"/>
 
-  <!-- GEN 8 BRANCHES (tips) -->
+  <!-- GEN 8 -->
   <path d="M10,135 Q5,100 2,75" fill="none" stroke="url(#bg)" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M148,135 Q145,100 144,75" fill="none" stroke="url(#bg)" stroke-width="1.5" stroke-linecap="round"/>
   <path d="M248,135 Q245,100 244,75" fill="none" stroke="url(#bg)" stroke-width="1.5" stroke-linecap="round"/>
@@ -391,11 +368,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <path d="M1388,135 Q1385,100 1384,75" fill="none" stroke="url(#bg)" stroke-width="1.2" stroke-linecap="round"/>
   <path d="M1732,135 Q1735,100 1736,75" fill="none" stroke="url(#bg)" stroke-width="1.2" stroke-linecap="round"/>
 
-  <!-- OAK LEAVES scattered along branches -->
   <g filter="url(#ls)" opacity="0.85">
-    <!-- Simple oak leaf shape repeated -->
     <g fill="url(#lc)">
-      <!-- Gen 8 tips -->
       <ellipse cx="-5" cy="70" rx="18" ry="12" transform="rotate(-15 -5 70)"/>
       <ellipse cx="25" cy="65" rx="16" ry="10" transform="rotate(10 25 65)"/>
       <ellipse cx="140" cy="68" rx="17" ry="11" transform="rotate(-20 140 68)"/>
@@ -423,7 +397,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
     </g>
   </g>
 
-  <!-- Canopy top layer -->
   <g filter="url(#ls)" opacity="0.75">
     <ellipse cx="100" cy="55" rx="55" ry="32" fill="url(#lc)"/>
     <ellipse cx="250" cy="45" rx="48" ry="28" fill="url(#lc)"/>
@@ -436,7 +409,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
     <ellipse cx="1300" cy="50" rx="45" ry="26" fill="url(#lc)"/>
     <ellipse cx="1450" cy="45" rx="48" ry="28" fill="url(#lc)"/>
     <ellipse cx="1600" cy="55" rx="55" ry="32" fill="url(#lc)"/>
-    <!-- Overlapping top -->
     <ellipse cx="180" cy="35" rx="38" ry="22" fill="url(#lc)" opacity="0.6"/>
     <ellipse cx="330" cy="30" rx="35" ry="20" fill="url(#lc)" opacity="0.55"/>
     <ellipse cx="480" cy="32" rx="32" ry="18" fill="url(#lc)" opacity="0.5"/>
@@ -449,7 +421,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
     <ellipse cx="1520" cy="30" rx="36" ry="20" fill="url(#lc)" opacity="0.55"/>
   </g>
 
-  <!-- Small branch twigs with leaves -->
   <g stroke="#5a4228" stroke-width="0.8" fill="none" opacity="0.5">
     <path d="M30,120 Q35,100 40,85"/>
     <path d="M130,115 Q135,95 140,80"/>
@@ -466,7 +437,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   </g>
 </svg>
 
-<!-- YOU badge -->
 <div class="you-badge">
   <div class="you-oval">
     <div class="you-label">YOU</div>
@@ -474,10 +444,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   </div>
 </div>
 
-<!-- Shield -->
 <div class="shield"></div>
 
-<!-- Compass -->
 <svg class="compass" viewBox="0 0 75 75">
   <circle cx="37.5" cy="37.5" r="35" fill="none" stroke="#8b7355" stroke-width="1.5"/>
   <circle cx="37.5" cy="37.5" r="28" fill="none" stroke="#a09070" stroke-width="0.8" stroke-dasharray="3,2"/>
@@ -490,13 +458,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <text x="37.5" y="10" text-anchor="middle" font-family="Cinzel Decorative" font-size="9" fill="#6b5537">N</text>
 </svg>
 
-<!-- Side ribbon -->
 <div class="side-ribbon">Migration from County Cavan</div>
-
-<!-- Bottom text -->
 <div class="bottom-text">Migration from the<br/>Haunnings...</div>
 
-<!-- Flowers -->
 <svg class="flowers flowers-left" viewBox="0 0 130 60">
   <ellipse cx="32" cy="45" rx="10" ry="8" fill="#a05050" opacity="0.6"/>
   <ellipse cx="52" cy="38" rx="9" ry="7" fill="#8b4040" opacity="0.5"/>
@@ -516,7 +480,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <path d="M27,34 Q25,44 27,51 M57,55 Q59,63 57,70" stroke="#5a7a3a" stroke-width="1.5" fill="none"/>
 </svg>
 
-<!-- Generation ribbons center -->
 <div class="gen-ribbon" style="top: 518px;">Generation 2</div>
 <div class="gen-ribbon" style="top: 458px;">Generation 3</div>
 <div class="gen-ribbon" style="top: 398px;">Generation 4</div>
@@ -525,17 +488,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="gen-ribbon" style="top: 218px;">Generation 7</div>
 <div class="gen-ribbon" style="top: 158px;">Generation 8</div>
 
-<!-- NAME SLOTS -->
 <!-- Gen 2 -->
 <div class="slot" style="left: 656px; top: 544px;"><span class="surname">Joseph Harrow</span><span class="years">1931–2004</span></div>
 <div class="slot" style="left: 1056px; top: 544px;"><span class="surname">Rose Fenwick</span><span class="years">1931–2006</span></div>
-
 <!-- Gen 3 -->
 <div class="slot" style="left: 476px; top: 484px;"><span class="surname">Joseph Harrow</span><span class="years">1898–1974</span></div>
 <div class="slot" style="left: 556px; top: 484px;"><span class="surname">Alice Marsh</span><span class="years">1898–1984</span></div>
 <div class="slot" style="left: 1196px; top: 484px;"><span class="surname">Andrew H. Fenwick</span><span class="years">1904–1977</span></div>
 <div class="slot" style="left: 1276px; top: 484px;"><span class="surname">Agnes Elder</span><span class="years">1907–1995</span></div>
-
 <!-- Gen 4 -->
 <div class="slot" style="left: 316px; top: 424px;"><span class="surname">Joseph Harrow</span><span class="years">1873–1940</span></div>
 <div class="slot" style="left: 396px; top: 424px;"><span class="surname">Catherine Merriwether</span><span class="years">1873–1939</span></div>
@@ -543,7 +503,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="slot" style="left: 796px; top: 424px;"><span class="surname">Mary J. Ashdown</span><span class="years">≈1873–?</span></div>
 <div class="slot" style="left: 1036px; top: 424px;"><span class="surname">James Fenwick</span><span class="years">≈1874–?</span></div>
 <div class="slot" style="left: 1116px; top: 424px;"><span class="surname">Agnes Maddox</span><span class="years">1877–1915</span></div>
-
 <!-- Gen 5 -->
 <div class="slot" style="left: 156px; top: 364px;"><span class="surname">Francis Elder</span><span class="years">1845–~1904</span></div>
 <div class="slot" style="left: 236px; top: 364px;"><span class="surname">Eliza Dunmore</span><span class="years">≈1852–?</span></div>
@@ -553,7 +512,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="slot" style="left: 876px; top: 364px;"><span class="surname">Helen Dewhurst</span><span class="years">≈1843–~1924</span></div>
 <div class="slot" style="left: 1116px; top: 364px;"><span class="surname">Owen Marsh</span><span class="years">≈1841–?</span></div>
 <div class="slot" style="left: 1196px; top: 364px;"><span class="surname">Alice Waverley</span><span class="years">≈1840–~1895</span></div>
-
 <!-- Gen 6 -->
 <div class="slot" style="left: 76px; top: 304px;"><span class="surname">James Ashdown</span><span class="years">≈1818–?</span></div>
 <div class="slot" style="left: 156px; top: 304px;"><span class="surname">Ann</span><span class="years">≈1821–?</span></div>
@@ -565,7 +523,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="slot" style="left: 876px; top: 304px;"><span class="surname">Elizabeth Hawksley</span><span class="years">≈1815–?</span></div>
 <div class="slot" style="left: 1036px; top: 304px;"><span class="surname">Andrew Maddox</span><span class="years">≈1818–?</span></div>
 <div class="slot" style="left: 1116px; top: 304px;"><span class="surname">Eliza</span><span class="years">≈1817–?</span></div>
-
 <!-- Gen 7 -->
 <div class="slot" style="left: -4px; top: 244px;"><span class="surname">Patrick Dewhurst</span><span class="years">≈1818–?</span></div>
 <div class="slot" style="left: 76px; top: 244px;"><span class="surname">Barbara Bramwell</span><span class="years">≈1820–?</span></div>
@@ -577,8 +534,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="slot" style="left: 796px; top: 244px;"><span class="surname">Catherine Loxley</span><span class="years">≈1816–?</span></div>
 <div class="slot" style="left: 956px; top: 244px;"><span class="surname">John Underhill</span><span class="years">≈1785–?</span></div>
 <div class="slot" style="left: 1036px; top: 244px;"><span class="surname">Betsy Ravenhill</span><span class="years">≈1787–?</span></div>
-
-<!-- Gen 8 (top) -->
+<!-- Gen 8 -->
 <div class="slot" style="left: -4px; top: 184px;"><span class="surname">Thomas Harrow</span><span class="years">≈1770–?</span></div>
 <div class="slot" style="left: 76px; top: 184px;"><span class="surname">Bridget Easton</span><span class="years">≈1775–?</span></div>
 <div class="slot empty" style="left: 236px; top: 184px;"><span class="surname">Unknown</span><span class="years">?</span></div>
@@ -590,6 +546,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="slot empty" style="left: 956px; top: 184px;"><span class="surname">Unknown</span><span class="years">?</span></div>
 <div class="slot empty" style="left: 1036px; top: 184px;"><span class="surname">Unknown</span><span class="years">?</span></div>
 
+</div>
 </div>
 </div>
 
@@ -606,8 +563,7 @@ const poster = document.getElementById('poster');
 const zoomLevel = document.getElementById('zoomLevel');
 
 function updateZoom() {
-  poster.style.transform = `scale(${scale})`;
-  poster.style.transformOrigin = 'center bottom';
+  poster.style.zoom = scale;
   zoomLevel.textContent = Math.round(scale * 100) + '%';
 }
 
@@ -620,26 +576,6 @@ document.getElementById('zoomOut').addEventListener('click', () => {
 document.getElementById('zoomReset').addEventListener('click', () => {
   scale = 1; updateZoom();
 });
-
-const viewport = document.getElementById('viewport');
-let isDown = false, startX, startY, scrollLeft, scrollTop;
-viewport.addEventListener('mousedown', (e) => {
-  isDown = true; viewport.style.cursor = 'grabbing';
-  startX = e.pageX - viewport.offsetLeft;
-  startY = e.pageY - viewport.offsetTop;
-  scrollLeft = viewport.scrollLeft;
-  scrollTop = viewport.scrollTop;
-});
-viewport.addEventListener('mouseleave', () => { isDown = false; viewport.style.cursor = 'grab'; });
-viewport.addEventListener('mouseup', () => { isDown = false; viewport.style.cursor = 'grab'; });
-viewport.addEventListener('mousemove', (e) => {
-  if (!isDown) return; e.preventDefault();
-  const x = e.pageX - viewport.offsetLeft;
-  const y = e.pageY - viewport.offsetTop;
-  viewport.scrollLeft = scrollLeft - (x - startX) * 1.5;
-  viewport.scrollTop = scrollTop - (y - startY) * 1.5;
-});
-viewport.style.cursor = 'grab';
 </script>
 
 </body>
