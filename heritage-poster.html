@@ -106,34 +106,34 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 .nameplate {
   position: absolute;
   background: rgba(250, 244, 230, 0.94);
-  border: 2.5px solid #4a3a22;
+  border: 2px solid #4a3a22;
   border-radius: 2px;
-  padding: 8px 18px;
+  padding: 6px 14px;
   text-align: center;
   z-index: 50;
-  box-shadow: 0 3px 12px rgba(0,0,0,0.25);
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
   transform: translate(-50%, -50%);
 }
 .nameplate::before {
   content: '';
   position: absolute;
-  top: 3px; left: 3px; right: 3px; bottom: 3px;
+  top: 2px; left: 2px; right: 2px; bottom: 2px;
   border: 1px solid #8a7a5a;
   pointer-events: none;
   border-radius: 1px;
 }
 .nameplate .name {
   font-family: 'Cinzel Decorative', serif;
-  font-size: 15px;
+  font-size: 11px;
   color: #2a1f10;
   letter-spacing: 0.5px;
   white-space: nowrap;
 }
 .nameplate .years {
   font-family: 'Cormorant Garamond', serif;
-  font-size: 12px;
+  font-size: 9px;
   color: #7a6545;
-  margin-top: 2px;
+  margin-top: 1px;
   font-style: italic;
   white-space: nowrap;
 }
@@ -166,17 +166,17 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div class="grid-overlay active" id="gridOverlay"></div>
 
 <!-- Gen 0 (root) -->
-<div class="nameplate" style="left: 900px; top: 777px;">
+<div class="nameplate" style="left: 540px; top: 500px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
 
 <!-- Gen 1 (parents) -->
-<div class="nameplate" style="left: 869px; top: 729px;">
+<div class="nameplate" style="left: 500px; top: 440px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 931px; top: 729px;">
+<div class="nameplate" style="left: 576px; top: 440px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
