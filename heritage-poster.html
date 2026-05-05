@@ -181,6 +181,12 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <div class="years">YYYY — YYYY</div>
 </div>
 
+<!-- TEST: col 20 / row 21 -->
+<div class="nameplate" style="left: 900px; top: 824px;">
+  <div class="name">Col20Row21</div>
+  <div class="years">TEST — TEST</div>
+</div>
+
 <!-- NO PRE-PLACED NAMEPLATES — tell me where they go -->
 
 </div>
@@ -249,8 +255,8 @@ gridToggle.addEventListener('click', () => {
 const coordReadout = document.getElementById('coordReadout');
 poster.addEventListener('mousemove', (e) => {
   const rect = poster.getBoundingClientRect();
-  const x = e.clientX - rect.left;
-  const y = e.clientY - rect.top;
+  const x = (e.clientX - rect.left) / scale;
+  const y = (e.clientY - rect.top) / scale;
   const col = Math.round(x / cellW);
   const row = Math.round(y / cellH);
   coordReadout.textContent = `Col: ${col}, Row: ${row} | Pixel: ${Math.round(x)}, ${Math.round(y)}`;
