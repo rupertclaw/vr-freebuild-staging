@@ -17,20 +17,18 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   overscroll-behavior: contain;
 }
 .scroll-wrapper {
-  display: block;
+  display: inline-flex;
   padding: 20px;
 }
 .poster-wrap {
   display: flex;
   align-items: center;
   justify-content: center;
-  min-width: calc(100vw - 40px);
-  min-height: calc(100vh - 40px);
 }
 .poster {
   position: relative;
   width: 1800px; height: 981px;
-  transform-origin: top left;
+  flex-shrink: 0;
   background: url('family-tree-bg-v7.png') no-repeat center center;
   background-size: 100% 100%;
   border: 14px solid #1e140a;
@@ -423,11 +421,8 @@ poster.addEventListener('mousemove', (e) => {
 // Zoom
 let scale = 1;
 const zoomLevel = document.getElementById('zoomLevel');
-const posterWrap = document.querySelector('.poster-wrap');
 function updateZoom() {
-  poster.style.transform = 'scale(' + scale + ')';
-  posterWrap.style.width = (1800 * scale) + 'px';
-  posterWrap.style.height = (981 * scale) + 'px';
+  poster.style.zoom = scale;
   zoomLevel.textContent = Math.round(scale * 100) + '%';
 }
 document.getElementById('zoomIn').addEventListener('click', () => { scale = Math.min(scale + 0.2, 3); updateZoom(); });
