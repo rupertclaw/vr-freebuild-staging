@@ -420,7 +420,7 @@ function updateZoom() {
   zoomLevel.textContent = Math.round(scale * 100) + '%';
 }
 document.getElementById('zoomIn').addEventListener('click', () => { scale = Math.min(scale + 0.2, 3); updateZoom(); });
-document.getElementById('zoomOut').addEventListener('click', () => { scale = Math.max(scale - 0.2, 0.3); updateZoom(); });
+document.getElementById('zoomOut').addEventListener('click', () => { scale = Math.max(scale - 0.2, 0.15); updateZoom(); });
 document.getElementById('zoomReset').addEventListener('click', () => { scale = 1; updateZoom(); });
 </script>
 
