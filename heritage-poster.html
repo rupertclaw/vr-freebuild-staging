@@ -609,85 +609,21 @@ function closeDetail() {
   detailOverlay.classList.remove('active');
 }
 
-// Gen 6+ reveal logic
-let activeGen5 = null;
-
-function clearAncestors() {
-  document.querySelectorAll('.gen6-card').forEach(el => el.remove());
-  activeGen5 = null;
-}
-
-function createAncestorCard(x, y, name, years, label) {
-  const card = document.createElement('div');
-  card.className = 'nameplate gen6-card';
-  card.style.left = x + 'px';
-  card.style.top = y + 'px';
-  const labelHtml = label ? `<div class="years" style="font-size:8px;color:#9a8565;margin-bottom:1px;">${label}</div>` : '';
-  card.innerHTML = `${labelHtml}<div class="name">${name}</div><div class="years">${years}</div>`;
-  poster.appendChild(card);
-}
-
-function showAncestors(gen5Card) {
-  const cx = parseInt(gen5Card.style.left);
-  const cy = parseInt(gen5Card.style.top);
-  const personName = gen5Card.querySelector('.name').textContent;
-
-  // Vertical spacing
-  const genGap = 64;    // between generations
-  const stackGap = 42;  // between stacked pair
-
-  // Gen 6 (2 cards, 1 column) — Parents
-  const g6y = cy - genGap;
-  createAncestorCard(cx, g6y - stackGap/2, personName + ' Sr.', 'YYYY \u2014 YYYY', 'Father');
-  createAncestorCard(cx, g6y + stackGap/2, 'Mother of ' + personName, 'YYYY \u2014 YYYY', 'Mother');
-
-  // Gen 7 (4 cards, 2 columns) — Grandparents
-  const g7y = cy - genGap * 2;
-  const g7offset = 50;
-  createAncestorCard(cx - g7offset, g7y - stackGap/2, 'Grandfather', 'YYYY \u2014 YYYY', 'FF');
-  createAncestorCard(cx - g7offset, g7y + stackGap/2, 'Grandmother', 'YYYY \u2014 YYYY', 'FM');
-  createAncestorCard(cx + g7offset, g7y - stackGap/2, 'Grandfather', 'YYYY \u2014 YYYY', 'MF');
-  createAncestorCard(cx + g7offset, g7y + stackGap/2, 'Grandmother', 'YYYY \u2014 YYYY', 'MM');
-
-  // Gen 8 (8 cards, 4 columns) — Great-grandparents
-  const g8y = cy - genGap * 3;
-  const g8offsets = [-90, -30, 30, 90];
-  const g8labels = ['FFF', 'FFM', 'FMF', 'FMM', 'MFF', 'MFM', 'MMF', 'MMM'];
-  g8offsets.forEach((offset, i) => {
-    createAncestorCard(cx + offset, g8y - stackGap/2, 'Great-GF', 'YYYY \u2014 YYYY', g8labels[i*2]);
-    createAncestorCard(cx + offset, g8y + stackGap/2, 'Great-GM', 'YYYY \u2014 YYYY', g8labels[i*2+1]);
-  });
-
-  activeGen5 = gen5Card;
-}
-
+// Gen 5 cards navigate to branch page; others open detail panel
 document.querySelectorAll('.nameplate').forEach((np) => {
   np.addEventListener('click', (e) => {
     e.stopPropagation();
     const topVal = parseInt(np.style.top);
     const isGen5 = (topVal === 426 || topVal === 468);
+    const name = np.querySelector('.name').textContent;
+    const years = np.querySelector('.years').textContent;
 
     if (isGen5) {
-      if (activeGen5 === np) {
-        clearAncestors();
-      } else {
-        clearAncestors();
-        showAncestors(np);
-      }
+      window.location.href = `branch-tree.html?name=${encodeURIComponent(name)}&years=${encodeURIComponent(years)}`;
     } else {
-      clearAncestors();
-      const name = np.querySelector('.name').textContent;
-      const years = np.querySelector('.years').textContent;
       openDetail(name, years);
     }
   });
-});
-
-// Clicking empty poster area clears ancestors
-poster.addEventListener('click', (e) => {
-  if (e.target === poster || e.target.classList.contains('grid-overlay')) {
-    clearAncestors();
-  }
 });
 
 detailClose.addEventListener('click', closeDetail);

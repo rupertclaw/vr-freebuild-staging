@@ -1,0 +1,428 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Tree Branch</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
+
+.breadcrumb {
+  position: fixed;
+  top: 0; left: 0; right: 0;
+  z-index: 400;
+  background: #1e140a;
+  border-bottom: 2px solid #4a3a22;
+  padding: 12px 20px;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+.back-btn {
+  padding: 6px 14px;
+  background: #e8dcc8;
+  border: 2px solid #6b5537;
+  border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 12px;
+  color: #1e140a;
+  cursor: pointer;
+  text-decoration: none;
+}
+.back-btn:active { transform: scale(0.95); }
+.breadcrumb-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 14px;
+  color: #e8dcc8;
+  letter-spacing: 0.5px;
+}
+.breadcrumb-subject {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px;
+  color: #c4a875;
+  font-weight: 600;
+}
+
+.viewport {
+  width: 100vw; height: 100vh; overflow: auto;
+  background: radial-gradient(ellipse at center bottom, #3a2a15 0%, #0c0803 70%);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+  padding-top: 50px;
+}
+.scroll-wrapper {
+  display: inline-flex;
+  padding: 20px;
+}
+.poster-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poster {
+  position: relative;
+  width: 1800px; height: 981px;
+  flex-shrink: 0;
+  background: url('family-tree-bg-v7.png') no-repeat center center;
+  background-size: 100% 100%;
+  border: 14px solid #1e140a;
+  box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+
+/* Grid overlay */
+.grid-overlay {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.grid-overlay.active { opacity: 1; }
+.grid-line-h {
+  position: absolute; left: 0; right: 0;
+  border-top: 1.5px dashed rgba(255,30,30,0.55);
+}
+.grid-line-v {
+  position: absolute; top: 0; bottom: 0;
+  border-left: 1.5px dashed rgba(255,30,30,0.55);
+}
+.grid-label-x {
+  position: absolute; bottom: -22px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; color: rgba(255,30,30,0.85);
+  font-weight: 600;
+  transform: translateX(-50%);
+  background: rgba(253,243,216,0.85);
+  padding: 1px 5px;
+  border-radius: 3px;
+  line-height: 1;
+}
+.grid-label-y {
+  position: absolute; left: -28px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; color: rgba(255,30,30,0.85);
+  font-weight: 600;
+  transform: translateY(-50%);
+  background: rgba(253,243,216,0.85);
+  padding: 1px 5px;
+  border-radius: 3px;
+  line-height: 1;
+}
+.grid-toggle {
+  position: fixed; top: 58px; left: 20px;
+  z-index: 200;
+  padding: 10px 20px;
+  background: #e8dcc8; border: 2px solid #6b5537;
+  border-radius: 6px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 14px; color: #1e140a;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+.grid-toggle:active { transform: scale(0.95); }
+
+.zoom-controls {
+  position: fixed; bottom: 20px; left: 20px;
+  z-index: 200; display: flex; flex-direction: column; gap: 8px;
+}
+.zoom-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 2px solid #6b5537; background: #e8dcc8; color: #1e140a;
+  font-size: 20px; font-family: 'Cinzel Decorative', serif;
+  cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  user-select: none;
+}
+.zoom-btn:active { transform: scale(0.92); }
+.zoom-level {
+  text-align: center; font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; color: #e8dcc8; font-weight: 600;
+}
+
+/* Nameplate Style B — Ornate Border */
+.nameplate {
+  position: absolute;
+  background: rgba(250, 244, 230, 0.94);
+  border: 2px solid #4a3a22;
+  border-radius: 2px;
+  padding: 6px 14px;
+  text-align: center;
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+.nameplate::before {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px; right: 2px; bottom: 2px;
+  border: 1px solid #8a7a5a;
+  pointer-events: none;
+  border-radius: 1px;
+}
+.nameplate .name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 11px;
+  color: #2a1f10;
+  letter-spacing: 0.5px;
+  white-space: nowrap;
+}
+.nameplate .years {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 9px;
+  color: #7a6545;
+  margin-top: 1px;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* Subject nameplate — highlighted */
+.subject-card {
+  border-color: #8a6a3a;
+  background: rgba(255, 248, 225, 0.97);
+  box-shadow: 0 2px 12px rgba(138, 106, 58, 0.35);
+}
+.subject-card::before {
+  border-color: #b89a6a;
+}
+.subject-card .name {
+  color: #1a1005;
+  font-weight: 700;
+}
+
+/* Coord readout */
+.coord-readout {
+  position: fixed; top: 58px; right: 20px;
+  z-index: 200;
+  background: rgba(0,0,0,0.75);
+  color: #e8dcc8;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+</style>
+</head>
+<body>
+
+<div class="breadcrumb">
+  <a class="back-btn" href="heritage-poster.html">&larr; Back to Main Tree</a>
+  <span class="breadcrumb-title">Branch:</span>
+  <span class="breadcrumb-subject" id="subjectName">Loading...</span>
+</div>
+
+<button class="grid-toggle" id="gridToggle">Hide Grid</button>
+<div class="coord-readout" id="coordReadout">Hover to see coordinates</div>
+
+<div class="viewport" id="viewport">
+<div class="scroll-wrapper">
+<div class="poster-wrap">
+<div class="poster" id="poster">
+
+<!-- Grid overlay (generated by JS) -->
+<div class="grid-overlay active" id="gridOverlay"></div>
+
+<!-- Gen 0: Subject -->
+<div class="nameplate subject-card" style="left: 890px; top: 774px;">
+  <div class="name" id="gen0Name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+
+<!-- Gen 1: Parents -->
+<div class="nameplate" style="left: 830px; top: 710px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" style="left: 955px; top: 710px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+
+<!-- Gen 2: Grandparents -->
+<div class="nameplate" style="left: 292px; top: 646px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 692px; top: 646px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1092px; top: 646px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1492px; top: 646px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+
+<!-- Gen 3: Great-grandparents -->
+<div class="nameplate" style="left: 192px; top: 582px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 392px; top: 582px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 592px; top: 582px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 792px; top: 582px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 992px; top: 582px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1192px; top: 582px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1392px; top: 582px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1592px; top: 582px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+
+<!-- Gen 4: Great-great-grandparents -->
+<div class="nameplate" style="left: 142px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 242px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 342px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 442px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 542px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 642px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 742px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 842px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 942px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1042px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1142px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1242px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1342px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1442px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1542px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1642px; top: 518px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+
+<!-- Gen 5: Double-stacked great-great-great-grandparents -->
+<!-- Upper row -->
+<div class="nameplate" style="left: 142px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 242px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 342px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 442px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 542px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 642px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 742px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 842px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 942px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1042px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1142px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1242px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1342px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1442px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1542px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1642px; top: 426px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<!-- Lower row -->
+<div class="nameplate" style="left: 142px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 242px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 342px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 442px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 542px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 642px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 742px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 842px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 942px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1042px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1142px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1242px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1342px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1442px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1542px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" style="left: 1642px; top: 468px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="zoom-controls">
+  <button class="zoom-btn" id="zoomIn">+</button>
+  <div class="zoom-level" id="zoomLevel">100%</div>
+  <button class="zoom-btn" id="zoomOut">&minus;</button>
+  <button class="zoom-btn" id="zoomReset">&#x21bb;</button>
+</div>
+
+<script>
+// Parse URL params
+const params = new URLSearchParams(window.location.search);
+const subjectName = params.get('name') || 'Unknown';
+const subjectYears = params.get('years') || 'YYYY — YYYY';
+
+// Update subject display
+document.getElementById('gen0Name').textContent = subjectName;
+document.getElementById('subjectName').textContent = subjectName;
+
+// Grid config
+const cols = 40;
+const rows = 25;
+const w = 1800;
+const h = 981;
+const cellW = w / cols;
+const cellH = h / rows;
+
+const gridOverlay = document.getElementById('gridOverlay');
+const gridToggle = document.getElementById('gridToggle');
+const poster = document.getElementById('poster');
+
+// Build grid
+for (let i = 0; i <= cols; i++) {
+  const x = i * cellW;
+  const line = document.createElement('div');
+  line.className = 'grid-line-v';
+  line.style.left = x + 'px';
+  gridOverlay.appendChild(line);
+
+  if (i < cols && i % 5 === 0) {
+    const label = document.createElement('div');
+    label.className = 'grid-label-x';
+    label.style.left = (x + cellW/2) + 'px';
+    label.textContent = i;
+    gridOverlay.appendChild(label);
+  }
+}
+
+for (let i = 0; i <= rows; i++) {
+  const y = i * cellH;
+  const line = document.createElement('div');
+  line.className = 'grid-line-h';
+  line.style.top = y + 'px';
+  gridOverlay.appendChild(line);
+
+  if (i < rows && i % 5 === 0) {
+    const label = document.createElement('div');
+    label.className = 'grid-label-y';
+    label.style.top = (y + cellH/2) + 'px';
+    label.textContent = i;
+    gridOverlay.appendChild(label);
+  }
+}
+
+gridToggle.addEventListener('click', () => {
+  gridOverlay.classList.toggle('active');
+  gridToggle.textContent = gridOverlay.classList.contains('active') ? 'Hide Grid' : 'Show Grid';
+});
+
+// Coordinate readout on hover
+const coordReadout = document.getElementById('coordReadout');
+poster.addEventListener('mousemove', (e) => {
+  const rect = poster.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / scale;
+  const y = (e.clientY - rect.top) / scale;
+  const col = Math.round(x / cellW);
+  const row = Math.round(y / cellH);
+  coordReadout.textContent = `Col: ${col}, Row: ${row} | Pixel: ${Math.round(x)}, ${Math.round(y)}`;
+});
+
+// Zoom
+let scale = 1;
+const zoomLevel = document.getElementById('zoomLevel');
+function updateZoom() {
+  poster.style.zoom = scale;
+  zoomLevel.textContent = Math.round(scale * 100) + '%';
+}
+document.getElementById('zoomIn').addEventListener('click', () => { scale = Math.min(scale + 0.2, 3); updateZoom(); });
+document.getElementById('zoomOut').addEventListener('click', () => { scale = Math.max(scale - 0.2, 0.15); updateZoom(); });
+document.getElementById('zoomReset').addEventListener('click', () => { scale = 1; updateZoom(); });
+
+// Gen 5 cards on branch can open their own branch (infinite drill-down)
+document.querySelectorAll('.nameplate').forEach((np) => {
+  np.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const topVal = parseInt(np.style.top);
+    const isGen5 = (topVal === 426 || topVal === 468);
+    const name = np.querySelector('.name').textContent;
+    const years = np.querySelector('.years').textContent;
+
+    if (isGen5) {
+      window.location.href = `branch-tree.html?name=${encodeURIComponent(name)}&years=${encodeURIComponent(years)}`;
+    }
+  });
+});
+</script>
+
+</body>
+</html>
