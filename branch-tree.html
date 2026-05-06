@@ -397,9 +397,12 @@ poster.addEventListener('mousemove', (e) => {
 // Zoom
 let scale = 1;
 const zoomLevel = document.getElementById('zoomLevel');
+const posterWrap = document.querySelector('.poster-wrap');
 function updateZoom() {
   poster.style.transform = 'scale(' + scale + ')';
   poster.style.transformOrigin = 'top left';
+  posterWrap.style.width = (1800 * scale) + 'px';
+  posterWrap.style.height = (981 * scale) + 'px';
   zoomLevel.textContent = Math.round(scale * 100) + '%';
 }
 document.getElementById('zoomIn').addEventListener('click', () => { scale = Math.min(scale + 0.2, 3); updateZoom(); });
