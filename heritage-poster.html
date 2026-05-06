@@ -574,8 +574,6 @@ poster.addEventListener('mousemove', (e) => {
 // Zoom
 let scale = 1;
 const zoomLevel = document.getElementById('zoomLevel');
-const posterWrap = document.querySelector('.poster-wrap');
-const scrollWrapper = document.querySelector('.scroll-wrapper');
 
 function updateZoom() {
   zoomLevel.textContent = Math.round(scale * 100) + '%';
@@ -590,14 +588,10 @@ function updateZoom() {
     zoomLevel.style.padding = '0';
   }, 200);
 
-  // Use transform for all browsers, with explicit wrapper sizing to create scroll overflow
-  poster.style.zoom = '';
-  poster.style.transform = 'scale(' + scale + ')';
-  poster.style.transformOrigin = 'top left';
-  posterWrap.style.width = (1800 * scale) + 'px';
-  posterWrap.style.height = (981 * scale) + 'px';
-  scrollWrapper.style.minWidth = '';
-  scrollWrapper.style.minHeight = '';
+  // Use CSS zoom — reflows layout so scroll area expands naturally
+  // Works on Safari and Chrome 128+. Fallback: native pinch-to-zoom.
+  poster.style.zoom = scale;
+  poster.style.transform = 'none';
 }
 
 const zoomInBtn = document.getElementById('zoomIn');
@@ -615,7 +609,7 @@ zoomOutBtn.addEventListener('touchstart', doZoomOut, {passive: false});
 zoomResetBtn.addEventListener('click', doZoomReset);
 zoomResetBtn.addEventListener('touchstart', doZoomReset, {passive: false});
 
-// Pinch-to-zoom on the poster
+// Pinch-to-zoom on the poster (for browsers where CSS zoom doesn't work)
 let pinchStartDist = 0;
 let pinchStartScale = 1;
 let pinchActive = false;
