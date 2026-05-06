@@ -575,8 +575,11 @@ poster.addEventListener('mousemove', (e) => {
 });
 
 // Zoom
+window.__canary_preZoom = 'before zoom';
 let scale = 1;
+window.__canary_scaleSet = 'scale is ' + scale;
 const zoomLevel = document.getElementById('zoomLevel');
+window.__canary_zoomLevel = 'zoomLevel: ' + (zoomLevel ? zoomLevel.id : 'null');
 
 function updateZoom() {
   poster.style.zoom = scale;
@@ -584,6 +587,8 @@ function updateZoom() {
   window.__lastZoomScale = scale;
   window.__lastZoomError = null;
 }
+window.__canary_updateZoom = 'updateZoom defined';
+
 function zoomHandler(delta) {
   try {
     scale = Math.min(Math.max(scale + delta, 0.15), 3);
@@ -592,13 +597,17 @@ function zoomHandler(delta) {
     window.__lastZoomError = err.message;
   }
 }
-document.getElementById('zoomIn').addEventListener('click', () => { zoomHandler(0.2); });
+window.__canary_zoomHandler = 'zoomHandler defined';
+
+document.getElementById('zoomIn').addEventListener('click', () => { window.__canary_zoomInClick = 'fired'; zoomHandler(0.2); });
 document.getElementById('zoomOut').addEventListener('click', () => { zoomHandler(-0.2); });
 document.getElementById('zoomReset').addEventListener('click', () => { zoomHandler(0); scale = 1; updateZoom(); });
+window.__canary_listeners = 'click listeners attached';
 // Touch support for zoom buttons on mobile
 document.getElementById('zoomIn').addEventListener('touchstart', (e) => { e.preventDefault(); zoomHandler(0.2); }, {passive: false});
 document.getElementById('zoomOut').addEventListener('touchstart', (e) => { e.preventDefault(); zoomHandler(-0.2); }, {passive: false});
 document.getElementById('zoomReset').addEventListener('touchstart', (e) => { e.preventDefault(); scale = 1; updateZoom(); }, {passive: false});
+window.__canary_touchListeners = 'touch listeners attached';
 
 // Pinch-to-zoom on the poster (for browsers where CSS zoom doesn't work)
 let pinchStartDist = 0;
