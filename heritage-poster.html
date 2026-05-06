@@ -289,6 +289,188 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   pointer-events: none;
   border: 1px solid rgba(255,255,255,0.15);
 }
+
+/* Edit mode */
+.edit-toggle {
+  position: fixed; top: 20px; left: 140px;
+  z-index: 200;
+  padding: 10px 20px;
+  background: #e8dcc8; border: 2px solid #6b5537;
+  border-radius: 6px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 14px; color: #1e140a;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+.edit-toggle.active {
+  background: #4a3a22; color: #e8dcc8; border-color: #8a7a5a;
+}
+.edit-toggle:active { transform: scale(0.95); }
+
+/* Cert upload panel */
+.cert-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 400;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.cert-overlay.active { opacity: 1; pointer-events: auto; }
+
+.cert-panel {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 380px; max-width: 90vw;
+  background: #f5eedc;
+  border-left: 4px solid #4a3a22;
+  z-index: 410;
+  transform: translateX(100%);
+  transition: transform 0.35s ease;
+  display: flex; flex-direction: column;
+  box-shadow: -5px 0 30px rgba(0,0,0,0.5);
+  overflow-y: auto;
+}
+.cert-panel.active { transform: translateX(0); }
+
+.cert-header {
+  padding: 20px 24px;
+  text-align: center;
+  border-bottom: 2px solid #4a3a22;
+  background: rgba(250,244,230,0.6);
+}
+.cert-header h2 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 16px; color: #2a1f10;
+  letter-spacing: 0.5px;
+}
+.cert-header p {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; color: #7a6545;
+  margin-top: 4px; font-style: italic;
+}
+
+.cert-body { padding: 20px 24px; flex: 1; }
+
+.cert-type-selector {
+  display: flex; gap: 8px; margin-bottom: 16px;
+}
+.cert-type-btn {
+  flex: 1; padding: 8px 4px;
+  background: #e8dcc8; border: 2px solid #6b5537;
+  border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 11px; color: #1e140a;
+  cursor: pointer; text-align: center;
+}
+.cert-type-btn.active {
+  background: #4a3a22; color: #e8dcc8; border-color: #8a7a5a;
+}
+
+.cert-upload-area {
+  border: 2px dashed #6b5537;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 16px;
+  background: rgba(232,220,200,0.3);
+  transition: background 0.2s;
+}
+.cert-upload-area:hover { background: rgba(232,220,200,0.6); }
+.cert-upload-area input { display: none; }
+.cert-upload-icon { font-size: 32px; margin-bottom: 8px; }
+.cert-upload-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px; color: #4a3a22;
+}
+.cert-upload-hint {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 11px; color: #7a6545; margin-top: 4px;
+}
+
+.cert-preview-img {
+  width: 100%; border: 2px solid #6b5537;
+  border-radius: 4px; margin-bottom: 16px;
+}
+
+.cert-status {
+  text-align: center; padding: 16px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px; color: #7a6545;
+}
+.cert-status.scan {
+  color: #4a3a22;
+  font-weight: 600;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.cert-results {
+  margin-top: 12px;
+}
+.cert-result-card {
+  background: rgba(250,244,230,0.94);
+  border: 2px solid #4a3a22;
+  border-radius: 2px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  position: relative;
+}
+.cert-result-card::before {
+  content: ''; position: absolute;
+  top: 2px; left: 2px; right: 2px; bottom: 2px;
+  border: 1px solid #8a7a5a;
+  pointer-events: none; border-radius: 1px;
+}
+.cert-result-card .field {
+  display: flex; justify-content: space-between;
+  align-items: baseline; padding: 3px 0;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+}
+.cert-result-card .field-label {
+  color: #7a6545; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cert-result-card .field-value {
+  color: #2a1f10; font-weight: 600; text-align: right;
+}
+.cert-result-card .field-value.low {
+  color: #b85c00; background: rgba(255,200,100,0.2);
+  padding: 1px 4px; border-radius: 2px;
+}
+
+.cert-actions {
+  display: flex; gap: 10px; margin-top: 16px;
+}
+.cert-btn {
+  flex: 1; padding: 10px 16px;
+  border: 2px solid #6b5537;
+  border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 12px; cursor: pointer; text-align: center;
+}
+.cert-btn.primary {
+  background: #4a3a22; color: #e8dcc8;
+}
+.cert-btn.secondary {
+  background: #e8dcc8; color: #1e140a;
+}
+.cert-btn:active { transform: scale(0.95); }
+.cert-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.cert-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid #6b5537; background: #e8dcc8;
+  color: #1e140a; font-size: 20px;
+  font-family: 'Cinzel Decorative', serif;
+  cursor: pointer; z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+}
+.cert-close:active { transform: scale(0.92); }
 </style>
 </head>
 <body>
@@ -513,6 +695,41 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <button class="zoom-btn" id="zoomReset">↻</button>
 </div>
 
+<button class="edit-toggle" id="editToggle">✎ Upload Cert</button>
+
+<!-- Cert upload panel -->
+<div class="cert-overlay" id="certOverlay"></div>
+<div class="cert-panel" id="certPanel">
+  <button class="cert-close" id="certClose">×</button>
+  <div class="cert-header">
+    <h2>Scan Certificate</h2>
+    <p>Snap a photo or upload an image</p>
+  </div>
+  <div class="cert-body">
+    <div class="cert-type-selector">
+      <button class="cert-type-btn active" data-type="auto">Auto</button>
+      <button class="cert-type-btn" data-type="birth">Birth</button>
+      <button class="cert-type-btn" data-type="marriage">Marriage</button>
+      <button class="cert-type-btn" data-type="death">Death</button>
+    </div>
+    <div class="cert-upload-area" id="certUploadArea">
+      <input type="file" id="certFileInput" accept="image/*" capture="environment">
+      <div class="cert-upload-icon">📷</div>
+      <div class="cert-upload-text">Tap to upload certificate</div>
+      <div class="cert-upload-hint">Camera or photo library</div>
+    </div>
+    <div id="certPreviewArea" style="display:none;">
+      <img class="cert-preview-img" id="certPreviewImg">
+    </div>
+    <div class="cert-status" id="certStatus" style="display:none;"></div>
+    <div class="cert-results" id="certResults"></div>
+    <div class="cert-actions" id="certActions" style="display:none;">
+      <button class="cert-btn secondary" id="certCancel">Cancel</button>
+      <button class="cert-btn primary" id="certConfirm" disabled>Apply to Tree</button>
+    </div>
+  </div>
+</div>
+
 <script>
 // Grid config
 const cols = 40;
@@ -675,6 +892,219 @@ detailOverlay.addEventListener('click', closeDetail);
 // Parent cards are also clickable (prototype)
 parent1.addEventListener('click', () => openDetail(parent1.querySelector('.p-name').textContent, parent1.querySelector('.p-years').textContent));
 parent2.addEventListener('click', () => openDetail(parent2.querySelector('.p-name').textContent, parent2.querySelector('.p-years').textContent));
+
+// ========== Cert Upload & Transcription ==========
+const API_URL = 'https://genealogy-api.vercel.app/api/transcribe';
+let selectedCertType = 'auto';
+let lastTranscription = null;
+
+const certPanel = document.getElementById('certPanel');
+const certOverlay = document.getElementById('certOverlay');
+const certClose = document.getElementById('certClose');
+const certUploadArea = document.getElementById('certUploadArea');
+const certFileInput = document.getElementById('certFileInput');
+const certPreviewArea = document.getElementById('certPreviewArea');
+const certPreviewImg = document.getElementById('certPreviewImg');
+const certStatus = document.getElementById('certStatus');
+const certResults = document.getElementById('certResults');
+const certActions = document.getElementById('certActions');
+const certConfirm = document.getElementById('certConfirm');
+const certCancel = document.getElementById('certCancel');
+const editToggle = document.getElementById('editToggle');
+
+function openCertPanel() {
+  certPanel.classList.add('active');
+  certOverlay.classList.add('active');
+}
+function closeCertPanel() {
+  certPanel.classList.remove('active');
+  certOverlay.classList.remove('active');
+  resetCertPanel();
+}
+function resetCertPanel() {
+  certPreviewArea.style.display = 'none';
+  certStatus.style.display = 'none';
+  certResults.innerHTML = '';
+  certActions.style.display = 'none';
+  lastTranscription = null;
+}
+
+editToggle.addEventListener('click', openCertPanel);
+certClose.addEventListener('click', closeCertPanel);
+certOverlay.addEventListener('click', closeCertPanel);
+certCancel.addEventListener('click', closeCertPanel);
+
+// Cert type selector
+document.querySelectorAll('.cert-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cert-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCertType = btn.dataset.type;
+  });
+});
+
+// Click upload area → trigger file input
+certUploadArea.addEventListener('click', () => certFileInput.click());
+
+// File selected
+certFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+
+  // Show preview
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    certPreviewImg.src = ev.target.result;
+    certPreviewArea.style.display = 'block';
+    certUploadArea.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+
+  // Convert to base64 for API
+  const base64 = await new Promise((resolve) => {
+    const r = new FileReader();
+    r.onload = () => resolve(r.result);
+    r.readAsDataURL(file);
+  });
+
+  // Send to transcription API
+  certStatus.style.display = 'block';
+  certStatus.className = 'cert-status scan';
+  certStatus.textContent = 'Scanning certificate...';
+  certResults.innerHTML = '';
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64, certType: selectedCertType })
+    });
+    const json = await resp.json();
+
+    if (!json.success) {
+      certStatus.className = 'cert-status';
+      certStatus.textContent = 'Scan failed — try again or enter manually';
+      if (json.raw) {
+        certStatus.textContent += ' (raw output received)';
+      }
+      return;
+    }
+
+    lastTranscription = json.data;
+    certStatus.className = 'cert-status';
+    certStatus.textContent = '✓ Cert type: ' + json.data.type.toUpperCase();
+
+    // Build result cards
+    renderTranscriptionResults(json.data);
+
+    certActions.style.display = 'flex';
+    certConfirm.disabled = false;
+
+  } catch (err) {
+    certStatus.className = 'cert-status';
+    certStatus.textContent = 'Error: ' + err.message;
+  }
+});
+
+function renderTranscriptionResults(data) {
+  certResults.innerHTML = '';
+
+  const fields = [];
+  const confidence = data.confidence || {};
+
+  if (data.type === 'marriage') {
+    if (data.groom?.name) fields.push({ label: 'Groom', value: data.groom.name, conf: confidence.fields?.groom_name });
+    if (data.groom?.age) fields.push({ label: 'Groom Age', value: data.groom.age, conf: confidence.fields?.groom_age });
+    if (data.groom?.occupation) fields.push({ label: 'Groom Occupation', value: data.groom.occupation, conf: confidence.fields?.groom_occupation });
+    if (data.bride?.name) fields.push({ label: 'Bride', value: data.bride.name, conf: confidence.fields?.bride_name });
+    if (data.bride?.age) fields.push({ label: 'Bride Age', value: data.bride.age, conf: confidence.fields?.bride_age });
+    if (data.groomFather?.name) fields.push({ label: "Groom's Father", value: data.groomFather.name, conf: confidence.fields?.groomFather_name });
+    if (data.groomMother?.maidenName) fields.push({ label: "Groom's Mother", value: data.groomMother.maidenName, conf: confidence.fields?.groomMother_maidenName });
+    if (data.brideFather?.name) fields.push({ label: "Bride's Father", value: data.brideFather.name, conf: confidence.fields?.brideFather_name });
+    if (data.brideMother?.maidenName) fields.push({ label: "Bride's Mother", value: data.brideMother.maidenName, conf: confidence.fields?.brideMother_maidenName });
+    if (data.date) fields.push({ label: 'Date', value: data.date, conf: confidence.fields?.date });
+    if (data.place) fields.push({ label: 'Place', value: data.place, conf: confidence.fields?.place });
+    if (data.district) fields.push({ label: 'District', value: data.district, conf: confidence.fields?.district });
+  } else if (data.type === 'birth') {
+    if (data.child?.name) fields.push({ label: 'Child', value: data.child.name, conf: confidence.fields?.child_name });
+    if (data.child?.birthDate) fields.push({ label: 'Birth Date', value: data.child.birthDate, conf: confidence.fields?.child_birthDate });
+    if (data.father?.name) fields.push({ label: 'Father', value: data.father.name, conf: confidence.fields?.father_name });
+    if (data.mother?.name) fields.push({ label: 'Mother', value: data.mother.name, conf: confidence.fields?.mother_name });
+    if (data.mother?.maidenSurname) fields.push({ label: 'Mother Maiden', value: data.mother.maidenSurname, conf: confidence.fields?.mother_maidenSurname });
+    if (data.parentsMarriage?.date) fields.push({ label: 'Parents Married', value: data.parentsMarriage.date, conf: confidence.fields?.parentsMarriage_date });
+    if (data.district) fields.push({ label: 'District', value: data.district, conf: confidence.fields?.district });
+  } else if (data.type === 'death') {
+    if (data.deceased?.name) fields.push({ label: 'Deceased', value: data.deceased.name, conf: confidence.fields?.deceased_name });
+    if (data.deceased?.age) fields.push({ label: 'Age', value: data.deceased.age, conf: confidence.fields?.deceased_age });
+    if (data.deceased?.spouseName) fields.push({ label: 'Spouse', value: data.deceased.spouseName, conf: confidence.fields?.spouseName });
+    if (data.father?.name) fields.push({ label: 'Father', value: data.father.name, conf: confidence.fields?.father_name });
+    if (data.mother?.maidenName) fields.push({ label: 'Mother Maiden', value: data.mother.maidenName, conf: confidence.fields?.mother_maidenName });
+    if (data.deathDate) fields.push({ label: 'Death Date', value: data.deathDate, conf: confidence.fields?.deathDate });
+    if (data.district) fields.push({ label: 'District', value: data.district, conf: confidence.fields?.district });
+  }
+
+  const card = document.createElement('div');
+  card.className = 'cert-result-card';
+
+  fields.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'field';
+    const label = document.createElement('span');
+    label.className = 'field-label';
+    label.textContent = f.label;
+    const value = document.createElement('span');
+    value.className = 'field-value';
+    if (f.conf !== undefined && f.conf < 0.6) value.classList.add('low');
+    value.textContent = f.value || '—';
+    row.appendChild(label);
+    row.appendChild(value);
+    card.appendChild(row);
+  });
+
+  certResults.appendChild(card);
+}
+
+// Apply transcription to tree nameplates
+certConfirm.addEventListener('click', () => {
+  if (!lastTranscription) return;
+  const data = lastTranscription;
+
+  // Collect all person names from the transcription
+  const people = [];
+  if (data.type === 'marriage') {
+    if (data.groom?.name) people.push({ name: data.groom.name, years: data.groom.age ? 'b. ~' + data.groom.age : '' });
+    if (data.bride?.name) people.push({ name: data.bride.name, years: data.bride.age ? 'b. ~' + data.bride.age : '' });
+    if (data.groomFather?.name) people.push({ name: data.groomFather.name, years: '' });
+    if (data.brideFather?.name) people.push({ name: data.brideFather.name, years: '' });
+  } else if (data.type === 'birth') {
+    if (data.child?.name) people.push({ name: data.child.name, years: data.child.birthDate || '' });
+    if (data.father?.name) people.push({ name: data.father.name, years: '' });
+    if (data.mother?.name) people.push({ name: data.mother.name, years: '' });
+  } else if (data.type === 'death') {
+    if (data.deceased?.name) people.push({ name: data.deceased.name, years: data.deceased.age ? 'd. age ' + data.deceased.age : data.deathDate || '' });
+    if (data.father?.name) people.push({ name: data.father.name, years: '' });
+  }
+
+  // Fill empty nameplates with extracted people
+  const emptyPlates = document.querySelectorAll('.nameplate .name');
+  let filled = 0;
+  emptyPlates.forEach((nameEl) => {
+    if (filled >= people.length) return;
+    if (nameEl.textContent === 'Name') {
+      const person = people[filled];
+      nameEl.textContent = person.name;
+      const yearsEl = nameEl.nextElementSibling;
+      if (yearsEl && person.years) yearsEl.textContent = person.years;
+      filled++;
+    }
+  });
+
+  certStatus.className = 'cert-status';
+  certStatus.textContent = '✓ Applied ' + filled + ' of ' + people.length + ' people to tree';
+  certActions.style.display = 'none';
+
+  setTimeout(closeCertPanel, 1500);
+});
 </script>
 
 </body>
