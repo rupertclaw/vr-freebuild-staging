@@ -609,35 +609,55 @@ function closeDetail() {
   detailOverlay.classList.remove('active');
 }
 
-// Gen 6 reveal logic
+// Gen 6+ reveal logic
 let activeGen5 = null;
 
-function clearGen6() {
+function clearAncestors() {
   document.querySelectorAll('.gen6-card').forEach(el => el.remove());
   activeGen5 = null;
 }
 
-function showGen6Parents(gen5Card) {
-  const left = gen5Card.style.left;
-  const topVal = parseInt(gen5Card.style.top);
-  const name = gen5Card.querySelector('.name').textContent;
+function createAncestorCard(x, y, name, years, label) {
+  const card = document.createElement('div');
+  card.className = 'nameplate gen6-card';
+  card.style.left = x + 'px';
+  card.style.top = y + 'px';
+  const labelHtml = label ? `<div class="years" style="font-size:8px;color:#9a8565;margin-bottom:1px;">${label}</div>` : '';
+  card.innerHTML = `${labelHtml}<div class="name">${name}</div><div class="years">${years}</div>`;
+  poster.appendChild(card);
+}
 
-  // Father
-  const father = document.createElement('div');
-  father.className = 'nameplate gen6-card';
-  father.style.left = left;
-  father.style.top = (topVal - 64) + 'px';
-  father.innerHTML = '<div class="name">Father</div><div class="years">YYYY \u2014 YYYY</div>';
+function showAncestors(gen5Card) {
+  const cx = parseInt(gen5Card.style.left);
+  const cy = parseInt(gen5Card.style.top);
+  const personName = gen5Card.querySelector('.name').textContent;
 
-  // Mother
-  const mother = document.createElement('div');
-  mother.className = 'nameplate gen6-card';
-  mother.style.left = left;
-  mother.style.top = (topVal - 36) + 'px';
-  mother.innerHTML = '<div class="name">Mother</div><div class="years">YYYY \u2014 YYYY</div>';
+  // Vertical spacing
+  const genGap = 64;    // between generations
+  const stackGap = 42;  // between stacked pair
 
-  poster.appendChild(father);
-  poster.appendChild(mother);
+  // Gen 6 (2 cards, 1 column) — Parents
+  const g6y = cy - genGap;
+  createAncestorCard(cx, g6y - stackGap/2, personName + ' Sr.', 'YYYY \u2014 YYYY', 'Father');
+  createAncestorCard(cx, g6y + stackGap/2, 'Mother of ' + personName, 'YYYY \u2014 YYYY', 'Mother');
+
+  // Gen 7 (4 cards, 2 columns) — Grandparents
+  const g7y = cy - genGap * 2;
+  const g7offset = 25;
+  createAncestorCard(cx - g7offset, g7y - stackGap/2, 'Grandfather', 'YYYY \u2014 YYYY', 'FF');
+  createAncestorCard(cx - g7offset, g7y + stackGap/2, 'Grandmother', 'YYYY \u2014 YYYY', 'FM');
+  createAncestorCard(cx + g7offset, g7y - stackGap/2, 'Grandfather', 'YYYY \u2014 YYYY', 'MF');
+  createAncestorCard(cx + g7offset, g7y + stackGap/2, 'Grandmother', 'YYYY \u2014 YYYY', 'MM');
+
+  // Gen 8 (8 cards, 4 columns) — Great-grandparents
+  const g8y = cy - genGap * 3;
+  const g8offsets = [-50, -20, 20, 50];
+  const g8labels = ['FFF', 'FFM', 'FMF', 'FMM', 'MFF', 'MFM', 'MMF', 'MMM'];
+  g8offsets.forEach((offset, i) => {
+    createAncestorCard(cx + offset, g8y - stackGap/2, 'Great-GF', 'YYYY \u2014 YYYY', g8labels[i*2]);
+    createAncestorCard(cx + offset, g8y + stackGap/2, 'Great-GM', 'YYYY \u2014 YYYY', g8labels[i*2+1]);
+  });
+
   activeGen5 = gen5Card;
 }
 
@@ -649,13 +669,13 @@ document.querySelectorAll('.nameplate').forEach((np) => {
 
     if (isGen5) {
       if (activeGen5 === np) {
-        clearGen6();
+        clearAncestors();
       } else {
-        clearGen6();
-        showGen6Parents(np);
+        clearAncestors();
+        showAncestors(np);
       }
     } else {
-      clearGen6();
+      clearAncestors();
       const name = np.querySelector('.name').textContent;
       const years = np.querySelector('.years').textContent;
       openDetail(name, years);
@@ -663,10 +683,10 @@ document.querySelectorAll('.nameplate').forEach((np) => {
   });
 });
 
-// Clicking empty poster area clears Gen 6
+// Clicking empty poster area clears ancestors
 poster.addEventListener('click', (e) => {
   if (e.target === poster || e.target.classList.contains('grid-overlay')) {
-    clearGen6();
+    clearAncestors();
   }
 });
 
