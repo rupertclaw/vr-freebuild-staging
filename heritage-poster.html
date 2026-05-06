@@ -21,7 +21,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   padding: 20px;
 }
 .poster-wrap {
-  display: inline-block;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 .poster {
   position: relative;
@@ -576,38 +578,16 @@ let scale = 1;
 const zoomLevel = document.getElementById('zoomLevel');
 
 function updateZoom() {
-  zoomLevel.textContent = Math.round(scale * 100) + '%';
-  zoomLevel.style.background = '#4a3a22';
-  zoomLevel.style.color = '#e8dcc8';
-  zoomLevel.style.padding = '4px 8px';
-  zoomLevel.style.borderRadius = '4px';
-  zoomLevel.style.fontSize = '14px';
-  setTimeout(() => {
-    zoomLevel.style.background = 'transparent';
-    zoomLevel.style.color = '#e8dcc8';
-    zoomLevel.style.padding = '0';
-  }, 200);
-
-  // Use CSS zoom — reflows layout so scroll area expands naturally
-  // Works on Safari and Chrome 128+. Fallback: native pinch-to-zoom.
   poster.style.zoom = scale;
-  poster.style.transform = 'none';
+  zoomLevel.textContent = Math.round(scale * 100) + '%';
 }
-
-const zoomInBtn = document.getElementById('zoomIn');
-const zoomOutBtn = document.getElementById('zoomOut');
-const zoomResetBtn = document.getElementById('zoomReset');
-
-function doZoomIn(e) { if(e) e.preventDefault(); scale = Math.min(scale + 0.2, 3); updateZoom(); }
-function doZoomOut(e) { if(e) e.preventDefault(); scale = Math.max(scale - 0.2, 0.15); updateZoom(); }
-function doZoomReset(e) { if(e) e.preventDefault(); scale = 1; updateZoom(); }
-
-zoomInBtn.addEventListener('click', doZoomIn);
-zoomInBtn.addEventListener('touchstart', doZoomIn, {passive: false});
-zoomOutBtn.addEventListener('click', doZoomOut);
-zoomOutBtn.addEventListener('touchstart', doZoomOut, {passive: false});
-zoomResetBtn.addEventListener('click', doZoomReset);
-zoomResetBtn.addEventListener('touchstart', doZoomReset, {passive: false});
+document.getElementById('zoomIn').addEventListener('click', () => { scale = Math.min(scale + 0.2, 3); updateZoom(); });
+document.getElementById('zoomOut').addEventListener('click', () => { scale = Math.max(scale - 0.2, 0.15); updateZoom(); });
+document.getElementById('zoomReset').addEventListener('click', () => { scale = 1; updateZoom(); });
+// Touch support for zoom buttons on mobile
+document.getElementById('zoomIn').addEventListener('touchstart', (e) => { e.preventDefault(); scale = Math.min(scale + 0.2, 3); updateZoom(); }, {passive: false});
+document.getElementById('zoomOut').addEventListener('touchstart', (e) => { e.preventDefault(); scale = Math.max(scale - 0.2, 0.15); updateZoom(); }, {passive: false});
+document.getElementById('zoomReset').addEventListener('touchstart', (e) => { e.preventDefault(); scale = 1; updateZoom(); }, {passive: false});
 
 // Pinch-to-zoom on the poster (for browsers where CSS zoom doesn't work)
 let pinchStartDist = 0;
