@@ -264,6 +264,16 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 }
 .detail-parent-card:active { transform: scale(0.98); }
 
+/* Gen 6 reveal cards */
+.gen6-card {
+  border-style: dashed;
+  opacity: 0;
+  animation: gen6fade 0.3s ease forwards;
+}
+@keyframes gen6fade {
+  to { opacity: 1; }
+}
+
 /* Coord readout */
 .coord-readout {
   position: fixed; top: 20px; right: 20px;
@@ -599,12 +609,65 @@ function closeDetail() {
   detailOverlay.classList.remove('active');
 }
 
+// Gen 6 reveal logic
+let activeGen5 = null;
+
+function clearGen6() {
+  document.querySelectorAll('.gen6-card').forEach(el => el.remove());
+  activeGen5 = null;
+}
+
+function showGen6Parents(gen5Card) {
+  const left = gen5Card.style.left;
+  const topVal = parseInt(gen5Card.style.top);
+  const name = gen5Card.querySelector('.name').textContent;
+
+  // Father
+  const father = document.createElement('div');
+  father.className = 'nameplate gen6-card';
+  father.style.left = left;
+  father.style.top = (topVal - 64) + 'px';
+  father.innerHTML = '<div class="name">Father</div><div class="years">YYYY \u2014 YYYY</div>';
+
+  // Mother
+  const mother = document.createElement('div');
+  mother.className = 'nameplate gen6-card';
+  mother.style.left = left;
+  mother.style.top = (topVal - 36) + 'px';
+  mother.innerHTML = '<div class="name">Mother</div><div class="years">YYYY \u2014 YYYY</div>';
+
+  poster.appendChild(father);
+  poster.appendChild(mother);
+  activeGen5 = gen5Card;
+}
+
 document.querySelectorAll('.nameplate').forEach((np) => {
-  np.addEventListener('click', () => {
-    const name = np.querySelector('.name').textContent;
-    const years = np.querySelector('.years').textContent;
-    openDetail(name, years);
+  np.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const topVal = parseInt(np.style.top);
+    const isGen5 = (topVal === 426 || topVal === 468);
+
+    if (isGen5) {
+      if (activeGen5 === np) {
+        clearGen6();
+      } else {
+        clearGen6();
+        showGen6Parents(np);
+      }
+    } else {
+      clearGen6();
+      const name = np.querySelector('.name').textContent;
+      const years = np.querySelector('.years').textContent;
+      openDetail(name, years);
+    }
   });
+});
+
+// Clicking empty poster area clears Gen 6
+poster.addEventListener('click', (e) => {
+  if (e.target === poster || e.target.classList.contains('grid-overlay')) {
+    clearGen6();
+  }
 });
 
 detailClose.addEventListener('click', closeDetail);
