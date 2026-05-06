@@ -580,13 +580,23 @@ const zoomLevel = document.getElementById('zoomLevel');
 function updateZoom() {
   poster.style.zoom = scale;
   zoomLevel.textContent = Math.round(scale * 100) + '%';
+  window.__lastZoomScale = scale;
+  window.__lastZoomError = null;
 }
-document.getElementById('zoomIn').addEventListener('click', () => { scale = Math.min(scale + 0.2, 3); updateZoom(); });
-document.getElementById('zoomOut').addEventListener('click', () => { scale = Math.max(scale - 0.2, 0.15); updateZoom(); });
-document.getElementById('zoomReset').addEventListener('click', () => { scale = 1; updateZoom(); });
+function zoomHandler(delta) {
+  try {
+    scale = Math.min(Math.max(scale + delta, 0.15), 3);
+    updateZoom();
+  } catch(err) {
+    window.__lastZoomError = err.message;
+  }
+}
+document.getElementById('zoomIn').addEventListener('click', () => { zoomHandler(0.2); });
+document.getElementById('zoomOut').addEventListener('click', () => { zoomHandler(-0.2); });
+document.getElementById('zoomReset').addEventListener('click', () => { zoomHandler(0); scale = 1; updateZoom(); });
 // Touch support for zoom buttons on mobile
-document.getElementById('zoomIn').addEventListener('touchstart', (e) => { e.preventDefault(); scale = Math.min(scale + 0.2, 3); updateZoom(); }, {passive: false});
-document.getElementById('zoomOut').addEventListener('touchstart', (e) => { e.preventDefault(); scale = Math.max(scale - 0.2, 0.15); updateZoom(); }, {passive: false});
+document.getElementById('zoomIn').addEventListener('touchstart', (e) => { e.preventDefault(); zoomHandler(0.2); }, {passive: false});
+document.getElementById('zoomOut').addEventListener('touchstart', (e) => { e.preventDefault(); zoomHandler(-0.2); }, {passive: false});
 document.getElementById('zoomReset').addEventListener('touchstart', (e) => { e.preventDefault(); scale = 1; updateZoom(); }, {passive: false});
 
 // Pinch-to-zoom on the poster (for browsers where CSS zoom doesn't work)
