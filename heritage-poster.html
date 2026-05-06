@@ -577,17 +577,6 @@ const zoomLevel = document.getElementById('zoomLevel');
 const posterWrap = document.querySelector('.poster-wrap');
 const scrollWrapper = document.querySelector('.scroll-wrapper');
 
-// Detect if zoom property actually reflows layout (Safari yes, older Chrome no)
-function supportsZoom() {
-  const test = document.createElement('div');
-  test.style.cssText = 'width:100px;height:100px;position:absolute;visibility:hidden;zoom:2;';
-  document.body.appendChild(test);
-  const w = test.getBoundingClientRect().width;
-  document.body.removeChild(test);
-  return w === 200;
-}
-const useZoom = supportsZoom();
-
 function updateZoom() {
   zoomLevel.textContent = Math.round(scale * 100) + '%';
   zoomLevel.style.background = '#4a3a22';
@@ -601,25 +590,16 @@ function updateZoom() {
     zoomLevel.style.padding = '0';
   }, 200);
 
-  if (useZoom) {
-    // Safari / modern WebKit: zoom reflows everything perfectly
-    poster.style.zoom = scale;
-    poster.style.transform = 'none';
-    posterWrap.style.width = '';
-    posterWrap.style.height = '';
-    scrollWrapper.style.minWidth = '';
-    scrollWrapper.style.minHeight = '';
-  } else {
-    // Chrome/Blink fallback: transform does not reflow, so we size the scroll container
-    poster.style.zoom = '';
-    poster.style.transform = 'scale(' + scale + ')';
-    poster.style.transformOrigin = 'top left';
-    posterWrap.style.width = '';
-    posterWrap.style.height = '';
-    scrollWrapper.style.minWidth = (1800 * scale + 40) + 'px';
-    scrollWrapper.style.minHeight = (981 * scale + 40) + 'px';
-  }
+  // Use transform for all browsers, with explicit wrapper sizing to create scroll overflow
+  poster.style.zoom = '';
+  poster.style.transform = 'scale(' + scale + ')';
+  poster.style.transformOrigin = 'top left';
+  posterWrap.style.width = (1800 * scale) + 'px';
+  posterWrap.style.height = (981 * scale) + 'px';
+  scrollWrapper.style.minWidth = '';
+  scrollWrapper.style.minHeight = '';
 }
+
 const zoomInBtn = document.getElementById('zoomIn');
 const zoomOutBtn = document.getElementById('zoomOut');
 const zoomResetBtn = document.getElementById('zoomReset');
@@ -634,6 +614,38 @@ zoomOutBtn.addEventListener('click', doZoomOut);
 zoomOutBtn.addEventListener('touchstart', doZoomOut, {passive: false});
 zoomResetBtn.addEventListener('click', doZoomReset);
 zoomResetBtn.addEventListener('touchstart', doZoomReset, {passive: false});
+
+// Pinch-to-zoom on the poster
+let pinchStartDist = 0;
+let pinchStartScale = 1;
+let pinchActive = false;
+
+poster.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    pinchActive = true;
+    pinchStartDist = Math.hypot(
+      e.touches[0].pageX - e.touches[1].pageX,
+      e.touches[0].pageY - e.touches[1].pageY
+    );
+    pinchStartScale = scale;
+  }
+}, {passive: true});
+
+poster.addEventListener('touchmove', (e) => {
+  if (pinchActive && e.touches.length === 2) {
+    e.preventDefault();
+    const dist = Math.hypot(
+      e.touches[0].pageX - e.touches[1].pageX,
+      e.touches[0].pageY - e.touches[1].pageY
+    );
+    const ratio = dist / pinchStartDist;
+    scale = Math.min(Math.max(pinchStartScale * ratio, 0.15), 3);
+    updateZoom();
+  }
+}, {passive: false});
+
+poster.addEventListener('touchend', () => { pinchActive = false; });
+poster.addEventListener('touchcancel', () => { pinchActive = false; });
 
 // Detail panel
 const detailPanel = document.getElementById('detailPanel');
