@@ -1419,6 +1419,33 @@ const SLOT_PARENT_MAP = {
   'paternal-grandmother':   { fatherSlot: 'pat-pat-grandfather', motherSlot: 'pat-pat-grandmother' },
   'maternal-grandfather':   { fatherSlot: 'mat-pat-grandfather', motherSlot: 'mat-pat-grandmother' },
   'maternal-grandmother':   { fatherSlot: 'mat-pat-grandfather', motherSlot: 'mat-pat-grandmother' },
+  'pat-pat-grandfather':    { fatherSlot: 'pat-pat-pat-grandfather', motherSlot: 'pat-pat-pat-grandmother' },
+  'pat-pat-grandmother':    { fatherSlot: 'pat-pat-pat-grandfather', motherSlot: 'pat-pat-pat-grandmother' },
+  'pat-mat-grandfather':    { fatherSlot: 'pat-mat-pat-grandfather', motherSlot: 'pat-mat-pat-grandmother' },
+  'pat-mat-grandmother':    { fatherSlot: 'pat-mat-pat-grandfather', motherSlot: 'pat-mat-pat-grandmother' },
+  'mat-pat-grandfather':    { fatherSlot: 'mat-pat-pat-grandfather', motherSlot: 'mat-pat-pat-grandmother' },
+  'mat-pat-grandmother':    { fatherSlot: 'mat-pat-pat-grandfather', motherSlot: 'mat-pat-pat-grandmother' },
+  'mat-mat-grandfather':    { fatherSlot: 'mat-mat-pat-grandfather', motherSlot: 'mat-mat-pat-grandmother' },
+  'mat-mat-grandmother':    { fatherSlot: 'mat-mat-pat-grandfather', motherSlot: 'mat-mat-pat-grandmother' },
+};
+
+// Spouse map: given a slot, where does the spouse go?
+// Paternal line slots → corresponding maternal line slot, and vice versa.
+const SPOUSE_MAP = {
+  'father': 'mother',
+  'mother': 'father',
+  'paternal-grandfather': 'paternal-grandmother',
+  'paternal-grandmother': 'paternal-grandfather',
+  'maternal-grandfather': 'maternal-grandmother',
+  'maternal-grandmother': 'maternal-grandfather',
+  'pat-pat-grandfather': 'pat-pat-grandmother',
+  'pat-pat-grandmother': 'pat-pat-grandfather',
+  'pat-mat-grandfather': 'pat-mat-grandmother',
+  'pat-mat-grandmother': 'pat-mat-grandfather',
+  'mat-pat-grandfather': 'mat-pat-grandmother',
+  'mat-pat-grandmother': 'mat-pat-grandfather',
+  'mat-mat-grandfather': 'mat-mat-grandmother',
+  'mat-mat-grandmother': 'mat-mat-grandfather',
 };
 
 certConfirm.addEventListener('click', () => {
@@ -1652,14 +1679,57 @@ certConfirm.addEventListener('click', () => {
     if (!groomPlate) groomPlate = findNameplateBySurname(groomName, groomBirthYear);
     if (!bridePlate) bridePlate = findNameplateBySurname(brideName, brideBirthYear);
 
+    // Helper: place a person and their parents into the tree
+    function placePersonAndParents(name, age, pData, personSlot) {
+      if (!name) return 0;
+      let count = 0;
+      const years = marriageYear ? birthYearFromAge(age, marriageYear) : '';
+      const plate = findSlot(personSlot);
+      if (plate && plate.querySelector('.name').textContent === 'Name') {
+        fillPlate(plate, name, years);
+        addDocBadge(plate, 'marriage');
+        count++;
+        messages.push(name + ' → ' + personSlot);
+      }
+
+      // Place parents one generation up
+      if (personSlot && SLOT_PARENT_MAP[personSlot]) {
+        const { fatherSlot, motherSlot } = SLOT_PARENT_MAP[personSlot];
+        if (pData?.groomFather?.name || pData?.brideFather?.name) {
+          const fName = pData?.groomFather?.name || pData?.brideFather?.name;
+          const gp = findSlot(fatherSlot);
+          if (gp && gp.querySelector('.name').textContent === 'Name') {
+            fillPlate(gp, fName, '');
+            addDocBadge(gp, 'marriage');
+            count++;
+            messages.push("Father → " + fatherSlot);
+          }
+        }
+        const motherData = pData?.groomMother || pData?.brideMother;
+        if (motherData?.name || motherData?.maidenName) {
+          const mName = motherData?.name || motherData.maidenName;
+          const gp = findSlot(motherSlot);
+          if (gp && gp.querySelector('.name').textContent === 'Name') {
+            fillPlate(gp, mName, '');
+            addDocBadge(gp, 'marriage');
+            count++;
+            messages.push("Mother → " + motherSlot);
+          }
+        }
+      }
+      return count;
+    }
+
+    // Resolve groom and bride slots
+    let groomSlot = null, brideSlot = null;
+
     if (groomPlate) {
-      const groomSlot = groomPlate.dataset.slot;
-      const groomYears = marriageYear ? birthYearFromAge(data.groom?.age, marriageYear) : '';
-      fillPlate(groomPlate, groomName, groomYears);
+      groomSlot = groomPlate.dataset.slot;
+      fillPlate(groomPlate, groomName, marriageYear ? birthYearFromAge(data.groom?.age, marriageYear) : '');
       addDocBadge(groomPlate, 'marriage');
       filled++;
-      messages.push('Groom matched');
-
+      messages.push('Groom matched (existing)');
+      // Place groom's parents
       if (groomSlot && SLOT_PARENT_MAP[groomSlot]) {
         const { fatherSlot, motherSlot } = SLOT_PARENT_MAP[groomSlot];
         if (data.groomFather?.name) {
@@ -1671,12 +1741,11 @@ certConfirm.addEventListener('click', () => {
             messages.push("Groom's father → " + fatherSlot);
           }
         }
-        if (data.groomMother?.name || data.groomMother?.maidenName) {
+        const groomMotherName = data.groomMother?.name || data.groomMother?.maidenName;
+        if (groomMotherName) {
           const gp = findSlot(motherSlot);
           if (gp && gp.querySelector('.name').textContent === 'Name') {
-            // Use full name if available, otherwise construct from maiden name
-            const motherName = data.groomMother?.name || data.groomMother.maidenName;
-            fillPlate(gp, motherName, '');
+            fillPlate(gp, groomMotherName, '');
             addDocBadge(gp, 'marriage');
             filled++;
             messages.push("Groom's mother → " + motherSlot);
@@ -1686,13 +1755,12 @@ certConfirm.addEventListener('click', () => {
     }
 
     if (bridePlate) {
-      const brideSlot = bridePlate.dataset.slot;
-      const brideYears = marriageYear ? birthYearFromAge(data.bride?.age, marriageYear) : '';
-      fillPlate(bridePlate, brideName, brideYears);
+      brideSlot = bridePlate.dataset.slot;
+      fillPlate(bridePlate, brideName, marriageYear ? birthYearFromAge(data.bride?.age, marriageYear) : '');
       addDocBadge(bridePlate, 'marriage');
       filled++;
-      messages.push('Bride matched');
-
+      messages.push('Bride matched (existing)');
+      // Place bride's parents
       if (brideSlot && SLOT_PARENT_MAP[brideSlot]) {
         const { fatherSlot, motherSlot } = SLOT_PARENT_MAP[brideSlot];
         if (data.brideFather?.name) {
@@ -1704,12 +1772,11 @@ certConfirm.addEventListener('click', () => {
             messages.push("Bride's father → " + fatherSlot);
           }
         }
-        if (data.brideMother?.name || data.brideMother?.maidenName) {
+        const brideMotherName = data.brideMother?.name || data.brideMother?.maidenName;
+        if (brideMotherName) {
           const gp = findSlot(motherSlot);
           if (gp && gp.querySelector('.name').textContent === 'Name') {
-            // Use full name if available, otherwise construct from maiden name
-            const motherName = data.brideMother?.name || data.brideMother.maidenName;
-            fillPlate(gp, motherName, '');
+            fillPlate(gp, brideMotherName, '');
             addDocBadge(gp, 'marriage');
             filled++;
             messages.push("Bride's mother → " + motherSlot);
@@ -1718,8 +1785,84 @@ certConfirm.addEventListener('click', () => {
       }
     }
 
-    // Fall back: neither groom nor bride matched
-    if (!groomPlate && !bridePlate) {
+    // Derive missing spouse slot from the matched one
+    if (groomPlate && !bridePlate && groomSlot) {
+      brideSlot = SPOUSE_MAP[groomSlot] || null;
+    }
+    if (bridePlate && !groomPlate && brideSlot) {
+      groomSlot = SPOUSE_MAP[brideSlot] || null;
+    }
+
+    // Place unmatched bride into spouse slot + her parents
+    if (!bridePlate && brideSlot && brideName) {
+      const bp = findSlot(brideSlot);
+      if (bp && bp.querySelector('.name').textContent === 'Name') {
+        fillPlate(bp, brideName, marriageYear ? birthYearFromAge(data.bride?.age, marriageYear) : '');
+        addDocBadge(bp, 'marriage');
+        filled++;
+        messages.push('Bride → ' + brideSlot + ' (from groom slot)');
+      }
+      // Bride's parents
+      if (SLOT_PARENT_MAP[brideSlot]) {
+        const { fatherSlot, motherSlot } = SLOT_PARENT_MAP[brideSlot];
+        if (data.brideFather?.name) {
+          const gp = findSlot(fatherSlot);
+          if (gp && gp.querySelector('.name').textContent === 'Name') {
+            fillPlate(gp, data.brideFather.name, '');
+            addDocBadge(gp, 'marriage');
+            filled++;
+            messages.push("Bride's father → " + fatherSlot);
+          }
+        }
+        const brideMotherName = data.brideMother?.name || data.brideMother?.maidenName;
+        if (brideMotherName) {
+          const gp = findSlot(motherSlot);
+          if (gp && gp.querySelector('.name').textContent === 'Name') {
+            fillPlate(gp, brideMotherName, '');
+            addDocBadge(gp, 'marriage');
+            filled++;
+            messages.push("Bride's mother → " + motherSlot);
+          }
+        }
+      }
+    }
+
+    // Place unmatched groom into spouse slot + his parents
+    if (!groomPlate && groomSlot && groomName) {
+      const gp2 = findSlot(groomSlot);
+      if (gp2 && gp2.querySelector('.name').textContent === 'Name') {
+        fillPlate(gp2, groomName, marriageYear ? birthYearFromAge(data.groom?.age, marriageYear) : '');
+        addDocBadge(gp2, 'marriage');
+        filled++;
+        messages.push('Groom → ' + groomSlot + ' (from bride slot)');
+      }
+      // Groom's parents
+      if (SLOT_PARENT_MAP[groomSlot]) {
+        const { fatherSlot, motherSlot } = SLOT_PARENT_MAP[groomSlot];
+        if (data.groomFather?.name) {
+          const gp = findSlot(fatherSlot);
+          if (gp && gp.querySelector('.name').textContent === 'Name') {
+            fillPlate(gp, data.groomFather.name, '');
+            addDocBadge(gp, 'marriage');
+            filled++;
+            messages.push("Groom's father → " + fatherSlot);
+          }
+        }
+        const groomMotherName = data.groomMother?.name || data.groomMother?.maidenName;
+        if (groomMotherName) {
+          const gp = findSlot(motherSlot);
+          if (gp && gp.querySelector('.name').textContent === 'Name') {
+            fillPlate(gp, groomMotherName, '');
+            addDocBadge(gp, 'marriage');
+            filled++;
+            messages.push("Groom's mother → " + motherSlot);
+          }
+        }
+      }
+    }
+
+    // Total fall back: neither groom nor bride matched and no slot derived
+    if (!groomPlate && !bridePlate && !groomSlot && !brideSlot) {
       if (groomName) {
         const plate = findSlot('father');
         if (plate && plate.querySelector('.name').textContent === 'Name') {
@@ -1728,7 +1871,6 @@ certConfirm.addEventListener('click', () => {
           filled++;
           messages.push('Groom → Gen 1 (father)');
         }
-        // Place groom's parents into Gen 2 paternal grandparents
         if (data.groomFather?.name) {
           const gp = findSlot('paternal-grandfather');
           if (gp && gp.querySelector('.name').textContent === 'Name') {
@@ -1738,10 +1880,11 @@ certConfirm.addEventListener('click', () => {
             messages.push("Groom's father → paternal-grandfather");
           }
         }
-        if (data.groomMother?.name || data.groomMother?.maidenName) {
+        const groomMotherName = data.groomMother?.name || data.groomMother?.maidenName;
+        if (groomMotherName) {
           const gp = findSlot('paternal-grandmother');
           if (gp && gp.querySelector('.name').textContent === 'Name') {
-            fillPlate(gp, data.groomMother?.name || data.groomMother.maidenName, '');
+            fillPlate(gp, groomMotherName, '');
             addDocBadge(gp, 'marriage');
             filled++;
             messages.push("Groom's mother → paternal-grandmother");
@@ -1756,7 +1899,6 @@ certConfirm.addEventListener('click', () => {
           filled++;
           messages.push('Bride → Gen 1 (mother)');
         }
-        // Place bride's parents into Gen 2 maternal grandparents
         if (data.brideFather?.name) {
           const gp = findSlot('maternal-grandfather');
           if (gp && gp.querySelector('.name').textContent === 'Name') {
@@ -1766,10 +1908,11 @@ certConfirm.addEventListener('click', () => {
             messages.push("Bride's father → maternal-grandfather");
           }
         }
-        if (data.brideMother?.name || data.brideMother?.maidenName) {
+        const brideMotherName = data.brideMother?.name || data.brideMother?.maidenName;
+        if (brideMotherName) {
           const gp = findSlot('maternal-grandmother');
           if (gp && gp.querySelector('.name').textContent === 'Name') {
-            fillPlate(gp, data.brideMother?.name || data.brideMother.maidenName, '');
+            fillPlate(gp, brideMotherName, '');
             addDocBadge(gp, 'marriage');
             filled++;
             messages.push("Bride's mother → maternal-grandmother");
