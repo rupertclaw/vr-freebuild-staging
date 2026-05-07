@@ -1243,9 +1243,11 @@ function extractEntryFields(entry, type) {
     if (entry.bride?.name) fields.push({ label: 'Bride', value: entry.bride.name, conf: confidence.fields?.bride_name, path: 'bride.name' });
     if (entry.bride?.age) fields.push({ label: 'Bride Age', value: entry.bride.age, conf: confidence.fields?.bride_age, path: 'bride.age' });
     if (entry.groomFather?.name) fields.push({ label: "Groom's Father", value: entry.groomFather.name, conf: confidence.fields?.groomFather_name, path: 'groomFather.name' });
-    if (entry.groomMother?.maidenName) fields.push({ label: "Groom's Mother", value: entry.groomMother.maidenName, conf: confidence.fields?.groomMother_maidenName, path: 'groomMother.maidenName' });
+    if (entry.groomMother?.name) fields.push({ label: "Groom's Mother", value: entry.groomMother.name, conf: confidence.fields?.groomMother_name, path: 'groomMother.name' });
+    if (entry.groomMother?.maidenName) fields.push({ label: "Groom's Mother Maiden", value: entry.groomMother.maidenName, conf: confidence.fields?.groomMother_maidenName, path: 'groomMother.maidenName' });
     if (entry.brideFather?.name) fields.push({ label: "Bride's Father", value: entry.brideFather.name, conf: confidence.fields?.brideFather_name, path: 'brideFather.name' });
-    if (entry.brideMother?.maidenName) fields.push({ label: "Bride's Mother", value: entry.brideMother.maidenName, conf: confidence.fields?.brideMother_maidenName, path: 'brideMother.maidenName' });
+    if (entry.brideMother?.name) fields.push({ label: "Bride's Mother", value: entry.brideMother.name, conf: confidence.fields?.brideMother_name, path: 'brideMother.name' });
+    if (entry.brideMother?.maidenName) fields.push({ label: "Bride's Mother Maiden", value: entry.brideMother.maidenName, conf: confidence.fields?.brideMother_maidenName, path: 'brideMother.maidenName' });
     if (entry.date) fields.push({ label: 'Date', value: entry.date, conf: confidence.fields?.date, path: 'date' });
     if (entry.place) fields.push({ label: 'Place', value: entry.place, conf: confidence.fields?.place, path: 'place' });
     if (entry.district) fields.push({ label: 'District', value: entry.district, conf: confidence.fields?.district, path: 'district' });
@@ -1669,10 +1671,12 @@ certConfirm.addEventListener('click', () => {
             messages.push("Groom's father → " + fatherSlot);
           }
         }
-        if (data.groomMother?.maidenName) {
+        if (data.groomMother?.name || data.groomMother?.maidenName) {
           const gp = findSlot(motherSlot);
           if (gp && gp.querySelector('.name').textContent === 'Name') {
-            fillPlate(gp, data.groomMother.maidenName, '');
+            // Use full name if available, otherwise construct from maiden name
+            const motherName = data.groomMother?.name || data.groomMother.maidenName;
+            fillPlate(gp, motherName, '');
             addDocBadge(gp, 'marriage');
             filled++;
             messages.push("Groom's mother → " + motherSlot);
@@ -1700,10 +1704,12 @@ certConfirm.addEventListener('click', () => {
             messages.push("Bride's father → " + fatherSlot);
           }
         }
-        if (data.brideMother?.maidenName) {
+        if (data.brideMother?.name || data.brideMother?.maidenName) {
           const gp = findSlot(motherSlot);
           if (gp && gp.querySelector('.name').textContent === 'Name') {
-            fillPlate(gp, data.brideMother.maidenName, '');
+            // Use full name if available, otherwise construct from maiden name
+            const motherName = data.brideMother?.name || data.brideMother.maidenName;
+            fillPlate(gp, motherName, '');
             addDocBadge(gp, 'marriage');
             filled++;
             messages.push("Bride's mother → " + motherSlot);
@@ -1722,6 +1728,25 @@ certConfirm.addEventListener('click', () => {
           filled++;
           messages.push('Groom → Gen 1 (father)');
         }
+        // Place groom's parents into Gen 2 paternal grandparents
+        if (data.groomFather?.name) {
+          const gp = findSlot('paternal-grandfather');
+          if (gp && gp.querySelector('.name').textContent === 'Name') {
+            fillPlate(gp, data.groomFather.name, '');
+            addDocBadge(gp, 'marriage');
+            filled++;
+            messages.push("Groom's father → paternal-grandfather");
+          }
+        }
+        if (data.groomMother?.name || data.groomMother?.maidenName) {
+          const gp = findSlot('paternal-grandmother');
+          if (gp && gp.querySelector('.name').textContent === 'Name') {
+            fillPlate(gp, data.groomMother?.name || data.groomMother.maidenName, '');
+            addDocBadge(gp, 'marriage');
+            filled++;
+            messages.push("Groom's mother → paternal-grandmother");
+          }
+        }
       }
       if (brideName) {
         const plate = findSlot('mother');
@@ -1730,6 +1755,25 @@ certConfirm.addEventListener('click', () => {
           addDocBadge(plate, 'marriage');
           filled++;
           messages.push('Bride → Gen 1 (mother)');
+        }
+        // Place bride's parents into Gen 2 maternal grandparents
+        if (data.brideFather?.name) {
+          const gp = findSlot('maternal-grandfather');
+          if (gp && gp.querySelector('.name').textContent === 'Name') {
+            fillPlate(gp, data.brideFather.name, '');
+            addDocBadge(gp, 'marriage');
+            filled++;
+            messages.push("Bride's father → maternal-grandfather");
+          }
+        }
+        if (data.brideMother?.name || data.brideMother?.maidenName) {
+          const gp = findSlot('maternal-grandmother');
+          if (gp && gp.querySelector('.name').textContent === 'Name') {
+            fillPlate(gp, data.brideMother?.name || data.brideMother.maidenName, '');
+            addDocBadge(gp, 'marriage');
+            filled++;
+            messages.push("Bride's mother → maternal-grandmother");
+          }
         }
       }
     }
