@@ -1953,6 +1953,16 @@ certConfirm.addEventListener('click', () => {
   certStatus.textContent = '✓ Applied ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' to tree';
   certActions.style.display = 'none';
 
+  // Debug: show placement details
+  console.log('[CERT APPLY] type:', type, 'filled:', filled);
+  console.log('[CERT APPLY] groomPlate:', groomPlate ? groomPlate.dataset.slot : null, 'bridePlate:', bridePlate ? bridePlate.dataset.slot : null);
+  console.log('[CERT APPLY] groomSlot:', groomSlot, 'brideSlot:', brideSlot);
+  console.log('[CERT APPLY] messages:', messages);
+  if (type === 'marriage') {
+    console.log('[CERT APPLY] data.groomMother:', data.groomMother);
+    console.log('[CERT APPLY] data.brideMother:', data.brideMother);
+  }
+
   setTimeout(closeCertPanel, 1500);
 });
 </script>
