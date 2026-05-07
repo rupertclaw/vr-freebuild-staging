@@ -196,14 +196,27 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   font-size: 18px;
   color: #2a1f10;
   letter-spacing: 0.5px;
+  cursor: pointer; border-bottom: 1px dashed transparent; transition: border-color 0.2s;
 }
+.detail-header .detail-name:hover { border-bottom-color: #8a7a5a; }
 .detail-header .detail-years {
   font-family: 'Cormorant Garamond', serif;
   font-size: 14px;
   color: #7a6545;
   margin-top: 4px;
   font-style: italic;
+  cursor: pointer; border-bottom: 1px dashed transparent; transition: border-color 0.2s;
 }
+.detail-header .detail-years:hover { border-bottom-color: #8a7a5a; }
+.detail-edit-input {
+  width: 90%; padding: 4px 8px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px; font-weight: 600;
+  color: #2a1f10; background: #fdf7e8;
+  border: 1px solid #8a7a5a; border-radius: 2px;
+  text-align: center; outline: none;
+}
+.detail-edit-input:focus { border-color: #4a3a22; box-shadow: 0 0 3px rgba(74,58,34,0.3); }
 
 .detail-body {
   flex: 1;
@@ -688,6 +701,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <div class="detail-header">
     <div class="detail-name" id="detailName">Name</div>
     <div class="detail-years" id="detailYears">YYYY — YYYY</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;text-align:center;margin-top:4px;font-style:italic;">Tap name or dates to edit</div>
   </div>
   <div class="detail-body">
     <div class="detail-section-title">Parents</div>
@@ -873,12 +887,41 @@ const detailYears = document.getElementById('detailYears');
 const parent1 = document.getElementById('parent1');
 const parent2 = document.getElementById('parent2');
 
-function openDetail(name, years) {
+// Slot parent mapping: given a slot, which slots are the father and mother?
+const SLOT_PARENTS = {
+  'subject':         { father: 'father',              mother: 'mother' },
+  'father':          { father: 'paternal-grandfather', mother: 'paternal-grandmother' },
+  'mother':          { father: 'maternal-grandfather', mother: 'maternal-grandmother' },
+  'paternal-grandfather':   { father: 'pat-pat-grandfather',   mother: 'pat-pat-grandmother' },
+  'paternal-grandmother':   { father: 'pat-pat-grandfather',   mother: 'pat-pat-grandmother' },
+  'maternal-grandfather':   { father: 'mat-pat-grandfather',  mother: 'mat-pat-grandmother' },
+  'maternal-grandmother':   { father: 'mat-pat-grandfather',  mother: 'mat-pat-grandmother' },
+};
+
+function openDetail(name, years, slot) {
   detailName.textContent = name;
   detailYears.textContent = years || 'YYYY — YYYY';
-  // For prototype, show placeholder parents
-  parent1.querySelector('.p-name').textContent = name + ' Sr.';
-  parent2.querySelector('.p-name').textContent = 'Mother of ' + name;
+
+  // Look up actual parents from the tree using slot hierarchy
+  if (slot && SLOT_PARENTS[slot]) {
+    const { father, mother } = SLOT_PARENTS[slot];
+    const fatherPlate = document.querySelector(`.nameplate[data-slot="${father}"]`);
+    const motherPlate = document.querySelector(`.nameplate[data-slot="${mother}"]`);
+    parent1.querySelector('.p-name').textContent = fatherPlate ? fatherPlate.querySelector('.name').textContent : 'Name';
+    parent1.querySelector('.p-years').textContent = fatherPlate ? fatherPlate.querySelector('.years').textContent : 'YYYY — YYYY';
+    parent1.dataset.parentSlot = father;
+    parent2.querySelector('.p-name').textContent = motherPlate ? motherPlate.querySelector('.name').textContent : 'Name';
+    parent2.querySelector('.p-years').textContent = motherPlate ? motherPlate.querySelector('.years').textContent : 'YYYY — YYYY';
+    parent2.dataset.parentSlot = mother;
+  } else {
+    parent1.querySelector('.p-name').textContent = 'Name';
+    parent1.querySelector('.p-years').textContent = 'YYYY — YYYY';
+    parent1.dataset.parentSlot = '';
+    parent2.querySelector('.p-name').textContent = 'Name';
+    parent2.querySelector('.p-years').textContent = 'YYYY — YYYY';
+    parent2.dataset.parentSlot = '';
+  }
+
   detailPanel.classList.add('active');
   detailOverlay.classList.add('active');
 }
@@ -895,11 +938,12 @@ document.querySelectorAll('.nameplate').forEach((np) => {
     const isGen5 = np.dataset.gen === '5';
     const name = np.querySelector('.name').textContent;
     const years = np.querySelector('.years').textContent;
+    const slot = np.dataset.slot || '';
 
     if (isGen5) {
       window.location.href = `branch-tree.html?name=${encodeURIComponent(name)}&years=${encodeURIComponent(years)}`;
     } else {
-      openDetail(name, years);
+      openDetail(name, years, slot);
     }
   });
 });
@@ -907,9 +951,114 @@ document.querySelectorAll('.nameplate').forEach((np) => {
 detailClose.addEventListener('click', closeDetail);
 detailOverlay.addEventListener('click', closeDetail);
 
-// Parent cards are also clickable (prototype)
-parent1.addEventListener('click', () => openDetail(parent1.querySelector('.p-name').textContent, parent1.querySelector('.p-years').textContent));
-parent2.addEventListener('click', () => openDetail(parent2.querySelector('.p-name').textContent, parent2.querySelector('.p-years').textContent));
+// Parent cards are also clickable — drill into that person's detail
+parent1.addEventListener('click', () => {
+  const slot = parent1.dataset.parentSlot;
+  if (slot) {
+    const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
+    if (plate) openDetail(plate.querySelector('.name').textContent, plate.querySelector('.years').textContent, slot);
+  }
+});
+parent2.addEventListener('click', () => {
+  const slot = parent2.dataset.parentSlot;
+  if (slot) {
+    const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
+    if (plate) openDetail(plate.querySelector('.name').textContent, plate.querySelector('.years').textContent, slot);
+  }
+});
+
+// ========== Inline Editing ==========
+
+// Make a text element tap-to-edit; on commit, write back to the linked nameplate
+function makeEditable(el, targetPlate, targetSelector) {
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const currentValue = el.textContent === 'Name' || el.textContent === 'YYYY — YYYY' ? '' : el.textContent;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'detail-edit-input';
+    input.value = currentValue;
+    el.style.display = 'none';
+    el.parentNode.insertBefore(input, el.nextSibling);
+    input.focus();
+    input.select();
+    const commit = () => {
+      const newVal = input.value.trim();
+      el.textContent = newVal || (el.classList.contains('detail-years') ? 'YYYY — YYYY' : 'Name');
+      el.style.display = '';
+      input.remove();
+      // Write back to the tree nameplate
+      if (targetPlate && targetSelector) {
+        const targetEl = targetPlate.querySelector(targetSelector);
+        if (targetEl) targetEl.textContent = el.textContent;
+      }
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (ke) => { if (ke.key === 'Enter') { ke.preventDefault(); commit(); } });
+  });
+}
+
+// Wire up detail panel name + years editing
+detailName.addEventListener('click', (e) => {
+  e.stopPropagation();
+  // Find which nameplate this detail refers to
+  const currentSlot = detailPanel.dataset.currentSlot;
+  const targetPlate = currentSlot ? document.querySelector(`.nameplate[data-slot="${currentSlot}"]`) : null;
+  makeEditableInline(detailName, targetPlate, '.name');
+});
+
+detailYears.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const currentSlot = detailPanel.dataset.currentSlot;
+  const targetPlate = currentSlot ? document.querySelector(`.nameplate[data-slot="${currentSlot}"]`) : null;
+  makeEditableInline(detailYears, targetPlate, '.years');
+});
+
+// Helper for inline editing (avoids nested stopPropagation issues)
+function makeEditableInline(el, targetPlate, targetSelector) {
+  const currentValue = el.textContent === 'Name' || el.textContent === 'YYYY — YYYY' ? '' : el.textContent;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'detail-edit-input';
+  input.value = currentValue;
+  el.style.display = 'none';
+  el.parentNode.insertBefore(input, el.nextSibling);
+  input.focus();
+  input.select();
+  const commit = () => {
+    const newVal = input.value.trim();
+    el.textContent = newVal || (el.classList.contains('detail-years') ? 'YYYY — YYYY' : 'Name');
+    el.style.display = '';
+    input.remove();
+    if (targetPlate && targetSelector) {
+      const targetEl = targetPlate.querySelector(targetSelector);
+      if (targetEl && newVal) targetEl.textContent = newVal;
+    }
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', (ke) => { if (ke.key === 'Enter') { ke.preventDefault(); commit(); } });
+}
+
+// Store current slot when opening detail so edits know which nameplate to update
+const _origOpenDetail = openDetail;
+openDetail = function(name, years, slot) {
+  detailPanel.dataset.currentSlot = slot || '';
+  _origOpenDetail(name, years, slot);
+};
+
+// Wire up parent card editing (once, not on every open)
+function wireParentEdit(cardEl, selector) {
+  cardEl.querySelector(selector).addEventListener('click', (e) => {
+    e.stopPropagation();
+    const pSlot = cardEl.dataset.parentSlot;
+    const targetPlate = pSlot ? document.querySelector(`.nameplate[data-slot="${pSlot}"]`) : null;
+    makeEditableInline(cardEl.querySelector(selector), targetPlate, selector === '.p-name' ? '.name' : '.years');
+  });
+}
+wireParentEdit(parent1, '.p-name');
+wireParentEdit(parent1, '.p-years');
+wireParentEdit(parent2, '.p-name');
+wireParentEdit(parent2, '.p-years');
 
 // ========== Cert Upload & Transcription ==========
 const API_URL = 'https://genealogy-api.vercel.app/api/transcribe';
