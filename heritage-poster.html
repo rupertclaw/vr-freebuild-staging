@@ -1428,17 +1428,34 @@ certConfirm.addEventListener('click', () => {
   const messages = [];
 
   // Helper: find a nameplate by current name text (case-insensitive, searches .name text and data-fullname)
-  function findNameplate(name) {
+  // If refYear provided, picks the best match when multiple exist (prefers closest birth year)
+  function findNameplate(name, refYear) {
     if (!name) return null;
     const plates = document.querySelectorAll('.nameplate');
     const searchName = name.toLowerCase().trim();
+    let candidates = [];
     for (const plate of plates) {
       const nameEl = plate.querySelector('.name');
       const fullName = (plate.dataset.fullname || '').toLowerCase().trim();
       const display = nameEl ? nameEl.textContent.toLowerCase().trim() : '';
-      if (display === searchName || fullName === searchName) return plate;
+      if (display === searchName || fullName === searchName) {
+        candidates.push(plate);
+      }
     }
-    return null;
+    if (!candidates.length) return null;
+    if (candidates.length === 1) return candidates[0];
+    // Multiple exact matches — pick closest to refYear
+    if (refYear) {
+      candidates.sort((a, b) => {
+        const aY = (a.querySelector('.years')?.textContent || '').match(/\d{4}/);
+        const bY = (b.querySelector('.years')?.textContent || '').match(/\d{4}/);
+        const aDiff = aY ? Math.abs(parseInt(aY[0]) - refYear) : 9999;
+        const bDiff = bY ? Math.abs(parseInt(bY[0]) - refYear) : 9999;
+        return aDiff - bDiff;
+      });
+      return candidates[0];
+    }
+    return candidates[0]; // fallback
   }
 
   // Helper: find nameplate by surname (fuzzy) — prefers nameplates with matching or close birth year
@@ -1541,7 +1558,7 @@ certConfirm.addEventListener('click', () => {
     const birthYear = extractYear(data.child?.birthDate);
 
     // Try to find the child in the tree
-    let childPlate = findNameplate(childName);
+    let childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null);
     if (!childPlate) childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null);
 
     if (childPlate && childPlate.dataset.slot) {
@@ -1624,11 +1641,12 @@ certConfirm.addEventListener('click', () => {
     const brideName = data.bride?.name || '';
     const marriageYear = extractYear(data.date);
 
-    let groomPlate = findNameplate(groomName);
-    let bridePlate = findNameplate(brideName);
-    // Estimate birth year from age at marriage for better surname matching
+    let groomPlate, bridePlate;
+    // Estimate birth year from age at marriage for better matching
     const groomBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.groom?.age || 0)) : null;
     const brideBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.bride?.age || 0)) : null;
+    groomPlate = findNameplate(groomName, groomBirthYear);
+    bridePlate = findNameplate(brideName, brideBirthYear);
     if (!groomPlate) groomPlate = findNameplateBySurname(groomName, groomBirthYear);
     if (!bridePlate) bridePlate = findNameplateBySurname(brideName, brideBirthYear);
 
@@ -1718,7 +1736,7 @@ certConfirm.addEventListener('click', () => {
   } else if (type === 'death') {
     const deceasedName = data.deceased?.name;
     if (deceasedName) {
-      let plate = findNameplate(deceasedName);
+      let plate = findNameplate(deceasedName, extractYear(data.deathDate));
       if (!plate) plate = findNameplateBySurname(deceasedName, extractYear(data.deathDate));
       if (plate) {
         // Update death year
