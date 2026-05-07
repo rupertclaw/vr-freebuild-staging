@@ -1411,22 +1411,26 @@ function setNestedValue(obj, path, value) {
 
 // Apply transcription to tree nameplates
 // Shared slot parent map (used by both birth and marriage cert logic)
-const SLOT_PARENT_MAP = {
-  'subject': { fatherSlot: 'paternal-grandfather', motherSlot: 'paternal-grandmother', parentSlot: 'father', motherParentSlot: 'mother' },
+// OWN_PARENT_MAP: gives the ACTUAL parents of the person in each slot
+// This replaces the old OWN_PARENT_MAP which was wrong for "maternal" line slots
+// Convention: pat-X = X's father's line, mat-X = X's mother's line
+// So paternal-grandmother's own parents = pat-mat-grandfather/mother (her maternal line)
+const OWN_PARENT_MAP = {
+  'subject': { fatherSlot: 'father', motherSlot: 'mother' },
   'father':  { fatherSlot: 'paternal-grandfather', motherSlot: 'paternal-grandmother' },
   'mother':  { fatherSlot: 'maternal-grandfather', motherSlot: 'maternal-grandmother' },
   'paternal-grandfather':   { fatherSlot: 'pat-pat-grandfather', motherSlot: 'pat-pat-grandmother' },
-  'paternal-grandmother':   { fatherSlot: 'pat-pat-grandfather', motherSlot: 'pat-pat-grandmother' },
+  'paternal-grandmother':   { fatherSlot: 'pat-mat-grandfather', motherSlot: 'pat-mat-grandmother' },
   'maternal-grandfather':   { fatherSlot: 'mat-pat-grandfather', motherSlot: 'mat-pat-grandmother' },
-  'maternal-grandmother':   { fatherSlot: 'mat-pat-grandfather', motherSlot: 'mat-pat-grandmother' },
+  'maternal-grandmother':   { fatherSlot: 'mat-mat-grandfather', motherSlot: 'mat-mat-grandmother' },
   'pat-pat-grandfather':    { fatherSlot: 'pat-pat-pat-grandfather', motherSlot: 'pat-pat-pat-grandmother' },
-  'pat-pat-grandmother':    { fatherSlot: 'pat-pat-pat-grandfather', motherSlot: 'pat-pat-pat-grandmother' },
+  'pat-pat-grandmother':    { fatherSlot: 'pat-pat-mat-grandfather', motherSlot: 'pat-pat-mat-grandmother' },
   'pat-mat-grandfather':    { fatherSlot: 'pat-mat-pat-grandfather', motherSlot: 'pat-mat-pat-grandmother' },
-  'pat-mat-grandmother':    { fatherSlot: 'pat-mat-pat-grandfather', motherSlot: 'pat-mat-pat-grandmother' },
+  'pat-mat-grandmother':    { fatherSlot: 'pat-mat-mat-grandfather', motherSlot: 'pat-mat-mat-grandmother' },
   'mat-pat-grandfather':    { fatherSlot: 'mat-pat-pat-grandfather', motherSlot: 'mat-pat-pat-grandmother' },
-  'mat-pat-grandmother':    { fatherSlot: 'mat-pat-pat-grandfather', motherSlot: 'mat-pat-pat-grandmother' },
+  'mat-pat-grandmother':    { fatherSlot: 'mat-pat-mat-grandfather', motherSlot: 'mat-pat-mat-grandmother' },
   'mat-mat-grandfather':    { fatherSlot: 'mat-mat-pat-grandfather', motherSlot: 'mat-mat-pat-grandmother' },
-  'mat-mat-grandmother':    { fatherSlot: 'mat-mat-pat-grandfather', motherSlot: 'mat-mat-pat-grandmother' },
+  'mat-mat-grandmother':    { fatherSlot: 'mat-mat-mat-grandfather', motherSlot: 'mat-mat-mat-grandmother' },
 };
 
 // Spouse map: given a slot, where does the spouse go?
@@ -1448,19 +1452,7 @@ const SPOUSE_MAP = {
   'mat-mat-grandmother': 'mat-mat-grandfather',
 };
 
-// Spouse-parent map: where do the SPOUSE's parents go?
-// The spouse's OWN parents — NOT their in-laws.
-// In family tree convention:
-//   paternal-grandfather's parents → pat-pat-grand (his own line) — use SLOT_PARENT_MAP
-//   paternal-grandmother's parents → pat-mat-grand (her own line) — use SPOUSE_PARENT_MAP
-const SPOUSE_PARENT_MAP = {
-  'father':  { fatherSlot: 'maternal-grandfather', motherSlot: 'maternal-grandmother' },
-  'mother':  { fatherSlot: 'paternal-grandfather', motherSlot: 'paternal-grandmother' },
-  'paternal-grandfather':   { fatherSlot: 'pat-mat-grandfather', motherSlot: 'pat-mat-grandmother' },
-  'paternal-grandmother':   { fatherSlot: 'pat-mat-grandfather', motherSlot: 'pat-mat-grandmother' },
-  'maternal-grandfather':   { fatherSlot: 'mat-mat-grandfather', motherSlot: 'mat-mat-grandmother' },
-  'maternal-grandmother':   { fatherSlot: 'mat-mat-grandfather', motherSlot: 'mat-mat-grandmother' },
-};
+// SPOUSE_PARENT_MAP removed — use OWN_PARENT_MAP[SPOUSE_MAP[slot]] instead
 
 certConfirm.addEventListener('click', () => {
   if (!lastTranscription) return;
@@ -1629,7 +1621,7 @@ certConfirm.addEventListener('click', () => {
 
       // Also try to match parents from BC to existing slots (cross-verify)
       const slot = childPlate.dataset.slot;
-      const pMap = SLOT_PARENT_MAP[slot];
+      const pMap = OWN_PARENT_MAP[slot];
       if (pMap && pMap.fatherSlot && data.father?.name) {
         // Already have parents from marriage cert? Just verify — don't overwrite
         const fPlate = findSlot(pMap.fatherSlot);
@@ -1696,9 +1688,8 @@ certConfirm.addEventListener('click', () => {
     }
   } else if (type === 'marriage') {
     // Marriage cert: find groom/bride in the tree, then place their parents one generation up
-    // KEY INSIGHT: SLOT_PARENT_MAP gives the IN-LAWS for "maternal" slots (e.g. paternal-grandmother → her husband's parents)
-    // SPOUSE_PARENT_MAP gives the PERSON's OWN parents for the spousal slot
-    // Rule: groom's parents via SLOT_PARENT_MAP[groomSlot], bride's parents via SPOUSE_PARENT_MAP[groomSlot]
+    // OWN_PARENT_MAP gives ACTUAL parents for each slot (not in-laws)
+    // Bride's parents = OWN_PARENT_MAP[brideSlot], groom's parents = OWN_PARENT_MAP[groomSlot]
     const groomName = data.groom?.name || '';
     const brideName = data.bride?.name || '';
     const marriageYear = extractYear(data.date);
@@ -1725,7 +1716,7 @@ certConfirm.addEventListener('click', () => {
     }
 
     // Helper: place parents into the correct slots
-    // parentMap = { fatherSlot, motherSlot } from either SLOT_PARENT_MAP or SPOUSE_PARENT_MAP
+    // parentMap = { fatherSlot, motherSlot } from OWN_PARENT_MAP
     function placeParents(fatherName, motherData, parentMap) {
       if (!parentMap) return;
       const { fatherSlot, motherSlot } = parentMap;
@@ -1742,8 +1733,8 @@ certConfirm.addEventListener('click', () => {
       addDocBadge(groomPlate, 'marriage');
       filled++;
       messages.push('Groom matched (existing) → ' + groomSlot);
-      // Groom's OWN parents → SLOT_PARENT_MAP
-      placeParents(data.groomFather?.name, data.groomMother, SLOT_PARENT_MAP[groomSlot]);
+      // Groom's OWN parents → OWN_PARENT_MAP
+      placeParents(data.groomFather?.name, data.groomMother, OWN_PARENT_MAP[groomSlot]);
       // Bride (spouse) → SPOUSE_MAP
       brideSlot = SPOUSE_MAP[groomSlot] || null;
     }
@@ -1754,8 +1745,8 @@ certConfirm.addEventListener('click', () => {
       addDocBadge(bridePlate, 'marriage');
       filled++;
       messages.push('Bride matched (existing) → ' + brideSlot);
-      // Bride's OWN parents → SPOUSE_PARENT_MAP (her own line, not in-laws)
-      placeParents(data.brideFather?.name, data.brideMother, SPOUSE_PARENT_MAP[brideSlot]);
+      // Bride's OWN parents → OWN_PARENT_MAP[her slot] (her own line, not in-laws)
+      placeParents(data.brideFather?.name, data.brideMother, OWN_PARENT_MAP[brideSlot]);
       // Groom (spouse) → SPOUSE_MAP
       if (!groomPlate) groomSlot = SPOUSE_MAP[brideSlot] || null;
     }
@@ -1763,16 +1754,16 @@ certConfirm.addEventListener('click', () => {
     // If only groom matched, derive bride slot and place bride + her parents
     if (groomPlate && !bridePlate && brideSlot && brideName) {
       fillEmptySlot(brideSlot, brideName, 'marriage');
-      // Bride's parents → SPOUSE_PARENT_MAP[groomSlot] (her own line)
-      placeParents(data.brideFather?.name, data.brideMother, SPOUSE_PARENT_MAP[groomSlot]);
+      // Bride's parents → OWN_PARENT_MAP[brideSlot] (her own line)
+      placeParents(data.brideFather?.name, data.brideMother, OWN_PARENT_MAP[brideSlot]);
       messages.push('Bride → ' + brideSlot + ' (derived from groom)');
     }
 
     // If only bride matched, derive groom slot and place groom + his parents
     if (bridePlate && !groomPlate && groomSlot && groomName) {
       fillEmptySlot(groomSlot, groomName, 'marriage');
-      // Groom's parents → SLOT_PARENT_MAP[groomSlot] (his own line)
-      placeParents(data.groomFather?.name, data.groomMother, SLOT_PARENT_MAP[groomSlot]);
+      // Groom's parents → OWN_PARENT_MAP[groomSlot] (his own line)
+      placeParents(data.groomFather?.name, data.groomMother, OWN_PARENT_MAP[groomSlot]);
       // Also place groom's updated birth year if we can derive it
       const gPlate = findSlot(groomSlot);
       if (gPlate && marriageYear) {
@@ -1787,13 +1778,13 @@ certConfirm.addEventListener('click', () => {
     if (!groomPlate && !bridePlate && !groomSlot && !brideSlot) {
       if (groomName) {
         fillEmptySlot('father', groomName, 'marriage');
-        // Groom's parents → SLOT_PARENT_MAP['father']
-        placeParents(data.groomFather?.name, data.groomMother, SLOT_PARENT_MAP['father']);
+        // Groom's parents → OWN_PARENT_MAP['father']
+        placeParents(data.groomFather?.name, data.groomMother, OWN_PARENT_MAP['father']);
       }
       if (brideName) {
         fillEmptySlot('mother', brideName, 'marriage');
-        // Bride's parents → SPOUSE_PARENT_MAP['father'] (same as SLOT_PARENT_MAP['mother'] in Gen 1)
-        placeParents(data.brideFather?.name, data.brideMother, SPOUSE_PARENT_MAP['father']);
+        // Bride's parents → OWN_PARENT_MAP[SPOUSE_MAP['father']] = OWN_PARENT_MAP['mother']
+        placeParents(data.brideFather?.name, data.brideMother, OWN_PARENT_MAP['mother']);
       }
     }
   } else if (type === 'death') {
