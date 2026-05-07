@@ -131,13 +131,13 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 }
 .nameplate .name {
   font-family: 'Cinzel Decorative', serif;
-  font-size: 11px;
+  font-size: 10px;
   color: #2a1f10;
   letter-spacing: 0.5px;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
-  max-width: 120px;
+  max-width: 140px;
 }
 .nameplate .years {
   font-family: 'Cormorant Garamond', serif;
@@ -772,6 +772,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
       <img class="cert-preview-img" id="certPreviewImg">
     </div>
     <div class="cert-status" id="certStatus" style="display:none;"></div>
+    <button class="cert-btn secondary" id="certRetry" style="display:none;margin-top:8px;">Try Again</button>
     <div class="cert-results" id="certResults"></div>
     <div class="cert-actions" id="certActions" style="display:none;">
       <button class="cert-btn secondary" id="certCancel">Cancel</button>
@@ -1115,6 +1116,7 @@ const certResults = document.getElementById('certResults');
 const certActions = document.getElementById('certActions');
 const certConfirm = document.getElementById('certConfirm');
 const certCancel = document.getElementById('certCancel');
+const certRetry = document.getElementById('certRetry');
 const editToggle = document.getElementById('editToggle');
 
 function openCertPanel() {
@@ -1129,6 +1131,7 @@ function closeCertPanel() {
 function resetCertPanel() {
   certPreviewArea.style.display = 'none';
   certStatus.style.display = 'none';
+  certRetry.style.display = 'none';
   certResults.innerHTML = '';
   certActions.style.display = 'none';
   certUploadArea.style.display = '';
@@ -1141,6 +1144,18 @@ editToggle.addEventListener('click', openCertPanel);
 certClose.addEventListener('click', closeCertPanel);
 certOverlay.addEventListener('click', closeCertPanel);
 certCancel.addEventListener('click', closeCertPanel);
+certRetry.addEventListener('click', () => {
+  certRetry.style.display = 'none';
+  certStatus.style.display = 'none';
+  certResults.innerHTML = '';
+  certActions.style.display = 'none';
+  certPreviewArea.style.display = 'none';
+  certUploadArea.style.display = '';
+  lastTranscription = null;
+  selectedEntryIndex = null;
+  certFileInput.value = '';
+  certFileInput.click();
+});
 
 // Cert type selector
 document.querySelectorAll('.cert-type-btn').forEach(btn => {
@@ -1179,6 +1194,7 @@ certFileInput.addEventListener('change', async (e) => {
   certStatus.style.display = 'block';
   certStatus.className = 'cert-status scan';
   certStatus.textContent = 'Scanning certificate...';
+  certRetry.style.display = 'none';
   certResults.innerHTML = '';
 
   try {
@@ -1195,6 +1211,7 @@ certFileInput.addEventListener('change', async (e) => {
       if (json.raw) {
         certStatus.textContent += ' (raw output received)';
       }
+      certRetry.style.display = 'block';
       return;
     }
 
@@ -1211,6 +1228,7 @@ certFileInput.addEventListener('change', async (e) => {
   } catch (err) {
     certStatus.className = 'cert-status';
     certStatus.textContent = 'Error: ' + err.message;
+    certRetry.style.display = 'block';
   }
 });
 
