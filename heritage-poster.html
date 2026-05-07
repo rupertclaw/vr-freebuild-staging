@@ -717,6 +717,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <div class="detail-header">
     <div class="detail-name" id="detailName">Name</div>
     <div class="detail-years" id="detailYears">YYYY — YYYY</div>
+    <div class="detail-maiden" id="detailMaiden" style="display:none;font-family:'Cormorant Garamond',serif;font-size:11px;color:#9a8565;text-align:center;margin-top:2px;font-style:italic;"></div>
     <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;text-align:center;margin-top:4px;font-style:italic;">Tap name or dates to edit</div>
   </div>
   <div class="detail-body">
@@ -903,6 +904,7 @@ const detailOverlay = document.getElementById('detailOverlay');
 const detailClose = document.getElementById('detailClose');
 const detailName = document.getElementById('detailName');
 const detailYears = document.getElementById('detailYears');
+const detailMaiden = document.getElementById('detailMaiden');
 const parent1 = document.getElementById('parent1');
 const parent2 = document.getElementById('parent2');
 
@@ -914,9 +916,9 @@ const SLOT_PARENTS = {
   'father':          { father: 'paternal-grandfather', mother: 'paternal-grandmother' },
   'mother':          { father: 'maternal-grandfather', mother: 'maternal-grandmother' },
   'paternal-grandfather':   { father: 'pat-pat-grandfather',   mother: 'pat-pat-grandmother' },
-  'paternal-grandmother':   { father: 'pat-pat-grandfather',   mother: 'pat-pat-grandmother' },
+  'paternal-grandmother':   { father: 'pat-mat-grandfather',   mother: 'pat-mat-grandmother' },
   'maternal-grandfather':   { father: 'mat-pat-grandfather',  mother: 'mat-pat-grandmother' },
-  'maternal-grandmother':   { father: 'mat-pat-grandfather',  mother: 'mat-pat-grandmother' },
+  'maternal-grandmother':   { father: 'mat-mat-grandfather',  mother: 'mat-mat-grandmother' },
 };
 
 function openDetail(name, years, slot) {
@@ -925,6 +927,21 @@ function openDetail(name, years, slot) {
   const fullName = plate?.dataset.fullname || name;
   detailName.textContent = fullName;
   detailYears.textContent = years || 'YYYY — YYYY';
+
+  // Show maiden name if available
+  const maidenName = plate?.dataset.maiden || '';
+  if (maidenName && maidenName.toLowerCase() !== fullName.toLowerCase()) {
+    const maidenSurname = maidenName.includes(' ') ? maidenName.split(' ').pop() : maidenName;
+    const fullSurname = fullName.includes(' ') ? fullName.split(' ').pop() : fullName;
+    if (maidenSurname !== fullSurname) {
+      detailMaiden.textContent = 'née ' + maidenSurname;
+      detailMaiden.style.display = '';
+    } else {
+      detailMaiden.style.display = 'none';
+    }
+  } else {
+    detailMaiden.style.display = 'none';
+  }
 
   // Show doc badges
   detailDocs.innerHTML = '';
@@ -1474,7 +1491,9 @@ certConfirm.addEventListener('click', () => {
       const nameEl = plate.querySelector('.name');
       const fullName = (plate.dataset.fullname || '').toLowerCase().trim();
       const display = nameEl ? nameEl.textContent.toLowerCase().trim() : '';
-      if (display === searchName || fullName === searchName) {
+      const maiden = (plate.dataset.maiden || '').toLowerCase().trim();
+      // Match against display name, full name, or maiden name (e.g. cert says "Alice Lynch", card has maiden "Lynch")
+      if (display === searchName || fullName === searchName || maiden === searchName) {
         candidates.push(plate);
       }
     }
@@ -1518,7 +1537,8 @@ certConfirm.addEventListener('click', () => {
     for (const plate of plates) {
       const nameText = plate.querySelector('.name')?.textContent || '';
       const fullText = plate.dataset.fullname || nameText;
-      if (fullText.toLowerCase().includes(surname) && nameText !== 'Name') {
+      const maidenText = plate.dataset.maiden || '';
+      if ((fullText.toLowerCase().includes(surname) || maidenText.toLowerCase().includes(surname)) && nameText !== 'Name') {
         candidates.push(plate);
       }
     }
@@ -1540,6 +1560,34 @@ certConfirm.addEventListener('click', () => {
     return candidates[0]; // fallback: first match
   }
 
+  // Helper: find a nameplate by first name (for MC matching where bride changed surname)
+  // Only matches already-filled nameplates (not "Name" placeholders)
+  function findNameplateByFirstName(firstName, refYear) {
+    if (!firstName) return null;
+    const search = firstName.toLowerCase().trim();
+    const plates = document.querySelectorAll('.nameplate');
+    let candidates = [];
+    for (const plate of plates) {
+      const nameText = plate.querySelector('.name')?.textContent || '';
+      if (nameText === 'Name') continue; // skip unfilled
+      const first = nameText.split(' ')[0].toLowerCase().trim();
+      if (first === search) candidates.push(plate);
+    }
+    if (!candidates.length) return null;
+    if (candidates.length === 1) return candidates[0];
+    // Multiple — prefer closest to refYear
+    if (refYear) {
+      candidates.sort((a, b) => {
+        const aY = (a.querySelector('.years')?.textContent || '').match(/\d{4}/);
+        const bY = (b.querySelector('.years')?.textContent || '').match(/\d{4}/);
+        const aDiff = aY ? Math.abs(parseInt(aY[0]) - refYear) : 9999;
+        const bDiff = bY ? Math.abs(parseInt(bY[0]) - refYear) : 9999;
+        return aDiff - bDiff;
+      });
+    }
+    return candidates[0];
+  }
+
   // Helper: find a nameplate by slot attribute
   function findSlot(slotName) {
     return document.querySelector(`.nameplate[data-slot="${slotName}"]`);
@@ -1557,11 +1605,13 @@ certConfirm.addEventListener('click', () => {
   }
 
   // Helper: fill a nameplate with name + years; stores full name in data-fullname, displays short
-  function fillPlate(plate, name, years) {
+  // If maidenName provided, stores in data-maiden for later matching
+  function fillPlate(plate, name, years, maidenName) {
     if (!plate) return false;
     const nameEl = plate.querySelector('.name');
     if (!nameEl) return false;
     plate.dataset.fullname = name;
+    if (maidenName) plate.dataset.maiden = maidenName;
     nameEl.textContent = shortName(name);
     if (years) {
       const yearsEl = plate.querySelector('.years');
@@ -1701,12 +1751,22 @@ certConfirm.addEventListener('click', () => {
     bridePlate = findNameplate(brideName, brideBirthYear);
     if (!groomPlate) groomPlate = findNameplateBySurname(groomName, groomBirthYear);
     if (!bridePlate) bridePlate = findNameplateBySurname(brideName, brideBirthYear);
+    // Last resort for MC: match by first name only (bride may have changed surname on marriage)
+    // e.g. cert says "Alice Lynch" but tree card says "Alice Mooney"
+    if (!bridePlate && brideName) {
+      const brideFirst = brideName.split(' ')[0];
+      bridePlate = findNameplateByFirstName(brideFirst, brideBirthYear);
+    }
+    if (!groomPlate && groomName) {
+      const groomFirst = groomName.split(' ')[0];
+      groomPlate = findNameplateByFirstName(groomFirst, groomBirthYear);
+    }
 
     // Helper: fill a slot only if empty
-    function fillEmptySlot(slotName, name, badge) {
+    function fillEmptySlot(slotName, name, badge, maidenName) {
       const plate = findSlot(slotName);
       if (plate && plate.querySelector('.name').textContent === 'Name') {
-        fillPlate(plate, name, '');
+        fillPlate(plate, name, '', maidenName);
         addDocBadge(plate, badge);
         filled++;
         messages.push(name + ' → ' + slotName);
@@ -1722,7 +1782,8 @@ certConfirm.addEventListener('click', () => {
       const { fatherSlot, motherSlot } = parentMap;
       if (fatherName) fillEmptySlot(fatherSlot, fatherName, 'marriage');
       const mName = motherData?.name || motherData?.maidenName;
-      if (mName) fillEmptySlot(motherSlot, mName, 'marriage');
+      const mMaiden = motherData?.maidenName || null;
+      if (mName) fillEmptySlot(motherSlot, mName, 'marriage', mMaiden);
     }
 
     let groomSlot = null, brideSlot = null;
@@ -1741,7 +1802,15 @@ certConfirm.addEventListener('click', () => {
 
     if (bridePlate) {
       brideSlot = bridePlate.dataset.slot;
-      fillPlate(bridePlate, brideName, marriageYear ? birthYearFromAge(data.bride?.age, marriageYear) : '');
+      // Store bride's maiden name from cert (cert always uses maiden name)
+      // This enables future MC matching by maiden name
+      const brideCertSurname = brideName.includes(' ') ? brideName.split(' ').pop() : '';
+      const brideCardSurname = (bridePlate.dataset.fullname || '').includes(' ') ? bridePlate.dataset.fullname.split(' ').pop() : '';
+      if (brideCertSurname && brideCardSurname && brideCertSurname !== brideCardSurname) {
+        // Cert says "Alice Lynch", card says "Alice Mooney" — store "Alice Lynch" as maiden
+        bridePlate.dataset.maiden = brideName;
+      }
+      fillPlate(bridePlate, bridePlate.dataset.fullname || brideName, marriageYear ? birthYearFromAge(data.bride?.age, marriageYear) : '');
       addDocBadge(bridePlate, 'marriage');
       filled++;
       messages.push('Bride matched (existing) → ' + brideSlot);
