@@ -1762,6 +1762,51 @@ certConfirm.addEventListener('click', () => {
       groomPlate = findNameplateByFirstName(groomFirst, groomBirthYear);
     }
 
+    // Sanity check: a groom/bride cannot be born AFTER their marriage year
+    // If the matched card's birth year > marriage year, it's the wrong person
+    function getBirthYear(plate) {
+      const y = plate?.querySelector('.years')?.textContent?.match(/\d{4}/);
+      return y ? parseInt(y[0]) : null;
+    }
+    if (groomPlate && marriageYear) {
+      const by = getBirthYear(groomPlate);
+      if (by && by > parseInt(marriageYear)) {
+        // Groom matched someone born after the wedding — wrong person
+        // Try to find another candidate with the same name born before the wedding
+        const all = document.querySelectorAll('.nameplate');
+        const search = groomName.toLowerCase().trim();
+        let alt = null;
+        for (const p of all) {
+          const fn = (p.dataset.fullname || '').toLowerCase().trim();
+          const disp = (p.querySelector('.name')?.textContent || '').toLowerCase().trim();
+          const md = (p.dataset.maiden || '').toLowerCase().trim();
+          if (fn === search || disp === search || md === search) {
+            const b = getBirthYear(p);
+            if (b && b <= parseInt(marriageYear)) { alt = p; break; }
+          }
+        }
+        groomPlate = alt; // may be null if no valid candidate
+      }
+    }
+    if (bridePlate && marriageYear) {
+      const by = getBirthYear(bridePlate);
+      if (by && by > parseInt(marriageYear)) {
+        const all = document.querySelectorAll('.nameplate');
+        const search = brideName.toLowerCase().trim();
+        let alt = null;
+        for (const p of all) {
+          const fn = (p.dataset.fullname || '').toLowerCase().trim();
+          const disp = (p.querySelector('.name')?.textContent || '').toLowerCase().trim();
+          const md = (p.dataset.maiden || '').toLowerCase().trim();
+          if (fn === search || disp === search || md === search) {
+            const b = getBirthYear(p);
+            if (b && b <= parseInt(marriageYear)) { alt = p; break; }
+          }
+        }
+        bridePlate = alt;
+      }
+    }
+
     // Helper: fill a slot only if empty
     function fillEmptySlot(slotName, name, badge, maidenName) {
       const plate = findSlot(slotName);
