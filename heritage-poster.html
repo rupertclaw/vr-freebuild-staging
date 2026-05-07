@@ -135,6 +135,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   color: #2a1f10;
   letter-spacing: 0.5px;
   white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  max-width: 120px;
 }
 .nameplate .years {
   font-family: 'Cormorant Garamond', serif;
@@ -278,6 +281,19 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   margin-bottom: 4px;
 }
 .detail-parent-card:active { transform: scale(0.98); }
+.doc-badge {
+  display: inline-block;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #2a1f10;
+  background: #ede4ce;
+  border: 1px solid #8a7a5a;
+  border-radius: 2px;
+  padding: 3px 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
 
 /* Gen 6 reveal cards */
 .gen6-card {
@@ -717,6 +733,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
         <div class="p-years">YYYY — YYYY</div>
       </div>
     </div>
+    <div class="detail-section-title" style="margin-top:16px;">Documents</div>
+    <div id="detailDocs" style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;"></div>
   </div>
 </div>
 
@@ -887,6 +905,8 @@ const detailYears = document.getElementById('detailYears');
 const parent1 = document.getElementById('parent1');
 const parent2 = document.getElementById('parent2');
 
+const detailDocs = document.getElementById('detailDocs');
+
 // Slot parent mapping: given a slot, which slots are the father and mother?
 const SLOT_PARENTS = {
   'subject':         { father: 'father',              mother: 'mother' },
@@ -899,18 +919,35 @@ const SLOT_PARENTS = {
 };
 
 function openDetail(name, years, slot) {
-  detailName.textContent = name;
+  // Use full name from data-fullname if available
+  const plate = slot ? document.querySelector(`.nameplate[data-slot="${slot}"]`) : null;
+  const fullName = plate?.dataset.fullname || name;
+  detailName.textContent = fullName;
   detailYears.textContent = years || 'YYYY — YYYY';
+
+  // Show doc badges
+  detailDocs.innerHTML = '';
+  const docs = (plate?.dataset.docs || '').split(',').filter(Boolean);
+  if (docs.length) {
+    docs.forEach(code => {
+      const badge = document.createElement('span');
+      badge.className = 'doc-badge';
+      badge.textContent = code;
+      detailDocs.appendChild(badge);
+    });
+  } else {
+    detailDocs.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No documents yet</span>';
+  }
 
   // Look up actual parents from the tree using slot hierarchy
   if (slot && SLOT_PARENTS[slot]) {
     const { father, mother } = SLOT_PARENTS[slot];
     const fatherPlate = document.querySelector(`.nameplate[data-slot="${father}"]`);
     const motherPlate = document.querySelector(`.nameplate[data-slot="${mother}"]`);
-    parent1.querySelector('.p-name').textContent = fatherPlate ? fatherPlate.querySelector('.name').textContent : 'Name';
+    parent1.querySelector('.p-name').textContent = fatherPlate ? (fatherPlate.dataset.fullname || fatherPlate.querySelector('.name').textContent) : 'Name';
     parent1.querySelector('.p-years').textContent = fatherPlate ? fatherPlate.querySelector('.years').textContent : 'YYYY — YYYY';
     parent1.dataset.parentSlot = father;
-    parent2.querySelector('.p-name').textContent = motherPlate ? motherPlate.querySelector('.name').textContent : 'Name';
+    parent2.querySelector('.p-name').textContent = motherPlate ? (motherPlate.dataset.fullname || motherPlate.querySelector('.name').textContent) : 'Name';
     parent2.querySelector('.p-years').textContent = motherPlate ? motherPlate.querySelector('.years').textContent : 'YYYY — YYYY';
     parent2.dataset.parentSlot = mother;
   } else {
@@ -1353,6 +1390,17 @@ function setNestedValue(obj, path, value) {
 }
 
 // Apply transcription to tree nameplates
+// Shared slot parent map (used by both birth and marriage cert logic)
+const SLOT_PARENT_MAP = {
+  'subject': { fatherSlot: 'paternal-grandfather', motherSlot: 'paternal-grandmother', parentSlot: 'father', motherParentSlot: 'mother' },
+  'father':  { fatherSlot: 'paternal-grandfather', motherSlot: 'paternal-grandmother' },
+  'mother':  { fatherSlot: 'maternal-grandfather', motherSlot: 'maternal-grandmother' },
+  'paternal-grandfather':   { fatherSlot: 'pat-pat-grandfather', motherSlot: 'pat-pat-grandmother' },
+  'paternal-grandmother':   { fatherSlot: 'pat-pat-grandfather', motherSlot: 'pat-pat-grandmother' },
+  'maternal-grandfather':   { fatherSlot: 'mat-pat-grandfather', motherSlot: 'mat-pat-grandmother' },
+  'maternal-grandmother':   { fatherSlot: 'mat-pat-grandfather', motherSlot: 'mat-pat-grandmother' },
+};
+
 certConfirm.addEventListener('click', () => {
   if (!lastTranscription) return;
   const data = lastTranscription;
@@ -1361,16 +1409,49 @@ certConfirm.addEventListener('click', () => {
   let filled = 0;
   const messages = [];
 
-  // Helper: find a nameplate by current name text (case-insensitive)
+  // Helper: find a nameplate by current name text (case-insensitive, searches .name text and data-fullname)
   function findNameplate(name) {
     if (!name) return null;
     const plates = document.querySelectorAll('.nameplate');
     const searchName = name.toLowerCase().trim();
     for (const plate of plates) {
       const nameEl = plate.querySelector('.name');
-      if (nameEl && nameEl.textContent.toLowerCase().trim() === searchName) return plate;
+      const fullName = (plate.dataset.fullname || '').toLowerCase().trim();
+      const display = nameEl ? nameEl.textContent.toLowerCase().trim() : '';
+      if (display === searchName || fullName === searchName) return plate;
     }
     return null;
+  }
+
+  // Helper: find nameplate by surname (fuzzy) — prefers nameplates with matching or close birth year
+  function findNameplateBySurname(name, refYear) {
+    if (!name) return null;
+    const surname = name.split(' ').pop().toLowerCase();
+    const plates = document.querySelectorAll('.nameplate');
+    let candidates = [];
+    for (const plate of plates) {
+      const nameText = plate.querySelector('.name')?.textContent || '';
+      const fullText = plate.dataset.fullname || nameText;
+      if (fullText.toLowerCase().includes(surname) && nameText !== 'Name') {
+        candidates.push(plate);
+      }
+    }
+    if (!candidates.length) return null;
+    if (candidates.length === 1) return candidates[0];
+    // Multiple candidates — prefer one closest to the reference year
+    if (refYear) {
+      candidates.sort((a, b) => {
+        const aYears = a.querySelector('.years')?.textContent || '';
+        const bYears = b.querySelector('.years')?.textContent || '';
+        const aYear = aYears.match(/\d{4}/);
+        const bYear = bYears.match(/\d{4}/);
+        const aDiff = aYear ? Math.abs(parseInt(aYear[0]) - refYear) : 9999;
+        const bDiff = bYear ? Math.abs(parseInt(bYear[0]) - refYear) : 9999;
+        return aDiff - bDiff;
+      });
+      return candidates[0];
+    }
+    return candidates[0]; // fallback: first match
   }
 
   // Helper: find a nameplate by slot attribute
@@ -1378,12 +1459,24 @@ certConfirm.addEventListener('click', () => {
     return document.querySelector(`.nameplate[data-slot="${slotName}"]`);
   }
 
-  // Helper: fill a nameplate with name + years
+  // Helper: shorten a full name for nameplate display (e.g. "Andrew Henderson Craigie" → "Andrew H. Craigie")
+  function shortName(fullName) {
+    if (!fullName) return fullName;
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 2) return fullName; // "Joseph Mooney" stays as is
+    // First name + initials + surname
+    const surname = parts.pop();
+    const initials = parts.slice(1).map(p => p.charAt(0) + '.').join(' ');
+    return parts[0] + (initials ? ' ' + initials : '') + ' ' + surname;
+  }
+
+  // Helper: fill a nameplate with name + years; stores full name in data-fullname, displays short
   function fillPlate(plate, name, years) {
     if (!plate) return false;
     const nameEl = plate.querySelector('.name');
     if (!nameEl) return false;
-    nameEl.textContent = name;
+    plate.dataset.fullname = name;
+    nameEl.textContent = shortName(name);
     if (years) {
       const yearsEl = plate.querySelector('.years');
       if (yearsEl) yearsEl.textContent = years;
@@ -1391,11 +1484,21 @@ certConfirm.addEventListener('click', () => {
     return true;
   }
 
-  // Helper: get years string from age at marriage
-  function birthYearFromAge(age, marriageYear) {
-    if (!age || !marriageYear) return '';
-    const year = parseInt(marriageYear) - parseInt(age);
-    return year + ' —';
+  // Helper: add a doc badge to a nameplate
+  function addDocBadge(plate, docType) {
+    if (!plate) return;
+    const docs = (plate.dataset.docs || '').split(',').filter(Boolean);
+    const code = docType === 'birth' ? 'BC' : docType === 'marriage' ? 'MC' : docType === 'death' ? 'DC' : '?';
+    if (!docs.includes(code)) {
+      docs.push(code);
+      plate.dataset.docs = docs.join(',');
+    }
+  }
+
+  // Helper: get years string from age at marriage/birth
+  function birthYearFromAge(age, year) {
+    if (!age || !year) return '';
+    return (parseInt(year) - parseInt(age)) + ' —';
   }
 
   // Helper: extract year from date string
@@ -1405,29 +1508,96 @@ certConfirm.addEventListener('click', () => {
     return m ? m[0] : null;
   }
 
+  // Helper: format a date to just the year for years field
+  function dateToYear(dateStr) {
+    const y = extractYear(dateStr);
+    return y ? y + ' —' : '';
+  }
+
+  // === BIRTH CERT ===
+  // Smart: try matching child to existing nameplate first. If found, update dates and add BC doc.
+  // If not found, check parents against existing tree — if parents match, this is a sibling/relative.
+  // Fall back to Gen 0 only if child is genuinely new (the tree subject).
   if (type === 'birth') {
-    // Birth cert: child → Gen 0, father → Gen 1 father, mother → Gen 1 mother
-    if (data.child?.name) {
+    const childName = data.child?.name || '';
+    const birthYear = extractYear(data.child?.birthDate);
+
+    // Try to find the child in the tree
+    let childPlate = findNameplate(childName);
+    if (!childPlate) childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null);
+
+    if (childPlate && childPlate.dataset.slot) {
+      // Child found in tree — update their birth date and add BC badge
+      fillPlate(childPlate, childName, data.child.birthDate || '');
+      addDocBadge(childPlate, 'birth');
+      filled++;
+      messages.push('BC → matched ' + (childPlate.dataset.slot || 'nameplate'));
+
+      // Also try to match parents from BC to existing slots (cross-verify)
+      const slot = childPlate.dataset.slot;
+      const pMap = SLOT_PARENT_MAP[slot];
+      if (pMap && pMap.fatherSlot && data.father?.name) {
+        // Already have parents from marriage cert? Just verify — don't overwrite
+        const fPlate = findSlot(pMap.fatherSlot);
+        if (fPlate) {
+          // Cross-verify: does BC father match what's already there?
+          const existing = fPlate.dataset.fullname || fPlate.querySelector('.name').textContent;
+          const bcFather = data.father.name;
+          if (existing === 'Name') {
+            fillPlate(fPlate, bcFather, '');
+            addDocBadge(fPlate, 'birth');
+            filled++;
+            messages.push("BC father → " + pMap.fatherSlot);
+          }
+          // If already filled, we just note it matched (verification)
+        }
+      }
+      if (pMap && pMap.motherSlot && data.mother?.name) {
+        const mPlate = findSlot(pMap.motherSlot);
+        if (mPlate) {
+          const existing = mPlate.dataset.fullname || mPlate.querySelector('.name').textContent;
+          const bcMother = data.mother.name;
+          if (existing === 'Name') {
+            fillPlate(mPlate, bcMother, data.mother?.maidenSurname ? '(' + data.mother.maidenSurname + ')' : '');
+            addDocBadge(mPlate, 'birth');
+            filled++;
+            messages.push("BC mother → " + pMap.motherSlot);
+          }
+        }
+      }
+    } else if (childPlate) {
+      // Found the child but on a generic nameplate (no slot) — just update
+      fillPlate(childPlate, childName, data.child.birthDate || '');
+      addDocBadge(childPlate, 'birth');
+      filled++;
+    } else {
+      // No match — this is a new person. Place as Gen 0 (subject)
       const plate = findSlot('subject');
-      if (plate && fillPlate(plate, data.child.name, data.child.birthDate || '')) {
+      if (plate) {
+        fillPlate(plate, childName, data.child.birthDate || '');
+        addDocBadge(plate, 'birth');
         filled++;
-        messages.push('Child → Gen 0');
-      }
-    }
-    if (data.father?.name) {
-      const plate = findSlot('father');
-      if (plate && plate.querySelector('.name').textContent === 'Name') {
-        fillPlate(plate, data.father.name, '');
-        filled++;
-        messages.push('Father → Gen 1');
-      }
-    }
-    if (data.mother?.name) {
-      const plate = findSlot('mother');
-      if (plate && plate.querySelector('.name').textContent === 'Name') {
-        fillPlate(plate, data.mother.name, '');
-        filled++;
-        messages.push('Mother → Gen 1');
+        messages.push('Child → Subject');
+
+        // Place parents if slots are empty
+        if (data.father?.name) {
+          const fPlate = findSlot('father');
+          if (fPlate && fPlate.querySelector('.name').textContent === 'Name') {
+            fillPlate(fPlate, data.father.name, '');
+            addDocBadge(fPlate, 'birth');
+            filled++;
+            messages.push('Father → Gen 1');
+          }
+        }
+        if (data.mother?.name) {
+          const mPlate = findSlot('mother');
+          if (mPlate && mPlate.querySelector('.name').textContent === 'Name') {
+            fillPlate(mPlate, data.mother.name, '');
+            addDocBadge(mPlate, 'birth');
+            filled++;
+            messages.push('Mother → Gen 1');
+          }
+        }
       }
     }
   } else if (type === 'marriage') {
@@ -1436,62 +1606,29 @@ certConfirm.addEventListener('click', () => {
     const brideName = data.bride?.name || '';
     const marriageYear = extractYear(data.date);
 
-    // Find which nameplate the groom matches
     let groomPlate = findNameplate(groomName);
     let bridePlate = findNameplate(brideName);
+    // Estimate birth year from age at marriage for better surname matching
+    const groomBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.groom?.age || 0)) : null;
+    const brideBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.bride?.age || 0)) : null;
+    if (!groomPlate) groomPlate = findNameplateBySurname(groomName, groomBirthYear);
+    if (!bridePlate) bridePlate = findNameplateBySurname(brideName, brideBirthYear);
 
-    // If not found by exact match, try surname-only match (e.g. "Joseph Mooney" matches a "Mooney" slot)
-    if (!groomPlate) {
-      const groomSurname = groomName.split(' ').pop();
-      const plates = document.querySelectorAll('.nameplate');
-      for (const plate of plates) {
-        const nameText = plate.querySelector('.name')?.textContent || '';
-        if (nameText.toLowerCase().includes(groomSurname.toLowerCase()) && nameText !== 'Name') {
-          groomPlate = plate;
-          break;
-        }
-      }
-    }
-    if (!bridePlate) {
-      const brideSurname = brideName.split(' ').pop();
-      const plates = document.querySelectorAll('.nameplate');
-      for (const plate of plates) {
-        const nameText = plate.querySelector('.name')?.textContent || '';
-        if (nameText.toLowerCase().includes(brideSurname.toLowerCase()) && nameText !== 'Name') {
-          bridePlate = plate;
-          break;
-        }
-      }
-    }
-
-    // Determine which side of the tree groom/bride are on
-    // Map their parents to the correct grandparent slots
     if (groomPlate) {
       const groomSlot = groomPlate.dataset.slot;
-      const groomAge = data.groom?.age;
-      const groomYears = marriageYear ? birthYearFromAge(groomAge, marriageYear) : '';
-
-      // Update groom nameplate with full name + years if it was a partial match
+      const groomYears = marriageYear ? birthYearFromAge(data.groom?.age, marriageYear) : '';
       fillPlate(groomPlate, groomName, groomYears);
+      addDocBadge(groomPlate, 'marriage');
       filled++;
       messages.push('Groom matched');
 
-      // Parent slot mapping: which grandparent slots belong to this person's parents?
-      const parentSlotMap = {
-        'father': { fatherSlot: 'paternal-grandfather', motherSlot: 'paternal-grandmother' },
-        'mother': { fatherSlot: 'maternal-grandfather', motherSlot: 'maternal-grandmother' },
-        'paternal-grandfather': { fatherSlot: 'pat-pat-grandfather', motherSlot: 'pat-pat-grandmother' },
-        'paternal-grandmother': { fatherSlot: 'pat-pat-grandfather', motherSlot: 'pat-pat-grandmother' },
-        'maternal-grandfather': { fatherSlot: 'mat-pat-grandfather', motherSlot: 'mat-pat-grandmother' },
-        'maternal-grandmother': { fatherSlot: 'mat-pat-grandfather', motherSlot: 'mat-pat-grandmother' },
-      };
-
-      if (groomSlot && parentSlotMap[groomSlot]) {
-        const { fatherSlot, motherSlot } = parentSlotMap[groomSlot];
+      if (groomSlot && SLOT_PARENT_MAP[groomSlot]) {
+        const { fatherSlot, motherSlot } = SLOT_PARENT_MAP[groomSlot];
         if (data.groomFather?.name) {
           const gp = findSlot(fatherSlot);
           if (gp && gp.querySelector('.name').textContent === 'Name') {
             fillPlate(gp, data.groomFather.name, '');
+            addDocBadge(gp, 'marriage');
             filled++;
             messages.push("Groom's father → " + fatherSlot);
           }
@@ -1500,6 +1637,7 @@ certConfirm.addEventListener('click', () => {
           const gp = findSlot(motherSlot);
           if (gp && gp.querySelector('.name').textContent === 'Name') {
             fillPlate(gp, data.groomMother.maidenName, '');
+            addDocBadge(gp, 'marriage');
             filled++;
             messages.push("Groom's mother → " + motherSlot);
           }
@@ -1509,28 +1647,19 @@ certConfirm.addEventListener('click', () => {
 
     if (bridePlate) {
       const brideSlot = bridePlate.dataset.slot;
-      const brideAge = data.bride?.age;
-      const brideYears = marriageYear ? birthYearFromAge(brideAge, marriageYear) : '';
-
+      const brideYears = marriageYear ? birthYearFromAge(data.bride?.age, marriageYear) : '';
       fillPlate(bridePlate, brideName, brideYears);
+      addDocBadge(bridePlate, 'marriage');
       filled++;
       messages.push('Bride matched');
 
-      const parentSlotMap = {
-        'father': { fatherSlot: 'paternal-grandfather', motherSlot: 'paternal-grandmother' },
-        'mother': { fatherSlot: 'maternal-grandfather', motherSlot: 'maternal-grandmother' },
-        'paternal-grandfather': { fatherSlot: 'pat-pat-grandfather', motherSlot: 'pat-pat-grandmother' },
-        'paternal-grandmother': { fatherSlot: 'pat-pat-grandfather', motherSlot: 'pat-pat-grandmother' },
-        'maternal-grandfather': { fatherSlot: 'mat-pat-grandfather', motherSlot: 'mat-pat-grandmother' },
-        'maternal-grandmother': { fatherSlot: 'mat-pat-grandfather', motherSlot: 'mat-pat-grandmother' },
-      };
-
-      if (brideSlot && parentSlotMap[brideSlot]) {
-        const { fatherSlot, motherSlot } = parentSlotMap[brideSlot];
+      if (brideSlot && SLOT_PARENT_MAP[brideSlot]) {
+        const { fatherSlot, motherSlot } = SLOT_PARENT_MAP[brideSlot];
         if (data.brideFather?.name) {
           const gp = findSlot(fatherSlot);
           if (gp && gp.querySelector('.name').textContent === 'Name') {
             fillPlate(gp, data.brideFather.name, '');
+            addDocBadge(gp, 'marriage');
             filled++;
             messages.push("Bride's father → " + fatherSlot);
           }
@@ -1539,6 +1668,7 @@ certConfirm.addEventListener('click', () => {
           const gp = findSlot(motherSlot);
           if (gp && gp.querySelector('.name').textContent === 'Name') {
             fillPlate(gp, data.brideMother.maidenName, '');
+            addDocBadge(gp, 'marriage');
             filled++;
             messages.push("Bride's mother → " + motherSlot);
           }
@@ -1546,12 +1676,13 @@ certConfirm.addEventListener('click', () => {
       }
     }
 
-    // If neither groom nor bride matched nameplates, fall back to Gen 1
+    // Fall back: neither groom nor bride matched
     if (!groomPlate && !bridePlate) {
       if (groomName) {
         const plate = findSlot('father');
         if (plate && plate.querySelector('.name').textContent === 'Name') {
           fillPlate(plate, groomName, marriageYear ? birthYearFromAge(data.groom?.age, marriageYear) : '');
+          addDocBadge(plate, 'marriage');
           filled++;
           messages.push('Groom → Gen 1 (father)');
         }
@@ -1560,25 +1691,37 @@ certConfirm.addEventListener('click', () => {
         const plate = findSlot('mother');
         if (plate && plate.querySelector('.name').textContent === 'Name') {
           fillPlate(plate, brideName, marriageYear ? birthYearFromAge(data.bride?.age, marriageYear) : '');
+          addDocBadge(plate, 'marriage');
           filled++;
           messages.push('Bride → Gen 1 (mother)');
         }
       }
     }
   } else if (type === 'death') {
-    // Death cert: match deceased to existing nameplate, add parents if found
     const deceasedName = data.deceased?.name;
     if (deceasedName) {
-      const plate = findNameplate(deceasedName);
+      let plate = findNameplate(deceasedName);
+      if (!plate) plate = findNameplateBySurname(deceasedName, extractYear(data.deathDate));
       if (plate) {
-        const years = data.deathDate || (data.deceased?.age ? 'd. age ' + data.deceased.age : '');
-        // If nameplate has "YYYY — YYYY" placeholder, replace with death info
+        // Update death year
+        const deathInfo = data.deathDate || (data.deceased?.age ? 'd. age ' + data.deceased.age : '');
         const yearsEl = plate.querySelector('.years');
-        if (yearsEl && yearsEl.textContent.includes('YYYY')) {
-          yearsEl.textContent = years;
+        if (yearsEl) {
+          const existing = yearsEl.textContent;
+          if (existing.includes('YYYY')) {
+            yearsEl.textContent = deathInfo;
+          } else if (existing.includes('—') && !existing.match(/\d{4}\s*—\s*\d{4}/)) {
+            // Has birth year but no death year (e.g. "1932 —")
+            const birthYear = existing.match(/\d{4}/);
+            if (birthYear && extractYear(data.deathDate)) {
+              yearsEl.textContent = birthYear[0] + ' — ' + extractYear(data.deathDate);
+            }
+          }
         }
+        fillPlate(plate, deceasedName, yearsEl?.textContent || '');
+        addDocBadge(plate, 'death');
         filled++;
-        messages.push('Deceased matched');
+        messages.push('DC → matched');
       }
     }
   }
