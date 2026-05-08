@@ -1824,11 +1824,18 @@ certConfirm.addEventListener('click', () => {
   // Helper: find a nameplate by current name text (case-insensitive, searches .name text and data-fullname)
   // If refYear provided, picks the best match when multiple exist (prefers closest birth year)
   // Among ties, prefers nameplates that are still placeholder ("Name") over already-filled ones
-  function findNameplate(name, refYear) {
+  // opts: { certType, certYear } — filters out impossible generation matches
+  function findNameplate(name, refYear, opts) {
     if (!name) return null;
     const plates = document.querySelectorAll('.nameplate');
     const searchName = name.toLowerCase().trim();
     let candidates = [];
+
+    function getPlateBirthYear(p) {
+      const y = p?.querySelector('.years')?.textContent?.match(/\d{4}/);
+      return y ? parseInt(y[0]) : null;
+    }
+
     for (const plate of plates) {
       const nameEl = plate.querySelector('.name');
       const fullName = (plate.dataset.fullname || '').toLowerCase().trim();
@@ -1839,6 +1846,18 @@ certConfirm.addEventListener('click', () => {
         candidates.push(plate);
       }
     }
+
+    // Filter out impossible generation matches before ranking
+    if (opts && opts.certType && opts.certYear && !isNaN(opts.certYear)) {
+      candidates = candidates.filter(p => {
+        const by = getPlateBirthYear(p);
+        if (!by) return true; // unfilled cards pass through
+        if (opts.certType === 'marriage') return by <= opts.certYear - 16; // can't marry before ~16
+        if (opts.certType === 'death') return by < opts.certYear; // can't die before born
+        return true;
+      });
+    }
+
     if (!candidates.length) return null;
     if (candidates.length === 1) return candidates[0];
     // Multiple exact matches — prefer nameplates that still need filling
@@ -1999,9 +2018,10 @@ certConfirm.addEventListener('click', () => {
   if (type === 'birth') {
     const childName = data.child?.name || '';
     const birthYear = extractYear(data.child?.birthDate);
+    const bcOpts = birthYear ? { certType: 'birth', certYear: parseInt(birthYear) } : null;
 
     // Try to find the child in the tree
-    childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null);
+    childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
     if (!childPlate) childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null);
 
     if (childPlate && childPlate.dataset.slot) {
@@ -2088,8 +2108,9 @@ certConfirm.addEventListener('click', () => {
 
     const groomBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.groom?.age || 0)) : null;
     const brideBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.bride?.age || 0)) : null;
-    groomPlate = findNameplate(groomName, groomBirthYear);
-    bridePlate = findNameplate(brideName, brideBirthYear);
+    const mcOpts = marriageYear ? { certType: 'marriage', certYear: parseInt(marriageYear) } : null;
+    groomPlate = findNameplate(groomName, groomBirthYear, mcOpts);
+    bridePlate = findNameplate(brideName, brideBirthYear, mcOpts);
     if (!groomPlate) groomPlate = findNameplateBySurname(groomName, groomBirthYear);
     if (!bridePlate) bridePlate = findNameplateBySurname(brideName, brideBirthYear);
     // Last resort for MC: match by first name only (bride may have changed surname on marriage)
@@ -2244,9 +2265,11 @@ certConfirm.addEventListener('click', () => {
     }
   } else if (type === 'death') {
     const deceasedName = data.deceased?.name;
+    const deathYear = extractYear(data.deathDate);
+    const dcOpts = deathYear ? { certType: 'death', certYear: parseInt(deathYear) } : null;
     if (deceasedName) {
-      deathPlate = findNameplate(deceasedName, extractYear(data.deathDate));
-      if (!deathPlate) deathPlate = findNameplateBySurname(deceasedName, extractYear(data.deathDate));
+      deathPlate = findNameplate(deceasedName, deathYear, dcOpts);
+      if (!deathPlate) deathPlate = findNameplateBySurname(deceasedName, deathYear);
       if (deathPlate) {
         // Update death year
         const deathInfo = data.deathDate || (data.deceased?.age ? 'd. age ' + data.deceased.age : '');
