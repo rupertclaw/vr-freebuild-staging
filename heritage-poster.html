@@ -801,6 +801,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
     <div class="cert-results" id="certResults"></div>
     <div class="cert-actions" id="certActions" style="display:none;">
       <button class="cert-btn secondary" id="certCancel">Cancel</button>
+      <button class="cert-btn secondary" id="certRetryScan">Retry Scan</button>
       <button class="cert-btn primary" id="certConfirm" disabled>Apply to Tree</button>
     </div>
   </div>
@@ -1305,6 +1306,10 @@ function makeEditableInline(el, targetPlate, targetSelector) {
     if (targetPlate && targetSelector) {
       const targetEl = targetPlate.querySelector(targetSelector);
       if (targetEl && newVal) targetEl.textContent = newVal;
+      // Also update data-fullname when editing a name, so cert matching works later
+      if (targetSelector === '.name' && newVal) {
+        targetPlate.dataset.fullname = newVal;
+      }
     }
   };
   input.addEventListener('blur', commit);
@@ -1351,7 +1356,10 @@ const certActions = document.getElementById('certActions');
 const certConfirm = document.getElementById('certConfirm');
 const certCancel = document.getElementById('certCancel');
 const certRetry = document.getElementById('certRetry');
+const certRetryScan = document.getElementById('certRetryScan');
 const editToggle = document.getElementById('editToggle');
+
+let pendingDocFile = null; // Store the last uploaded file for retries
 
 function openCertPanel() {
   certPanel.classList.add('active');
@@ -1498,16 +1506,35 @@ sessionFileInput.addEventListener('change', (e) => {
 });
 
 certRetry.addEventListener('click', () => {
-  certRetry.style.display = 'none';
-  certStatus.style.display = 'none';
-  certResults.innerHTML = '';
-  certActions.style.display = 'none';
-  certPreviewArea.style.display = 'none';
-  certUploadArea.style.display = '';
-  lastTranscription = null;
-  selectedEntryIndex = null;
-  certFileInput.value = '';
-  certFileInput.click();
+  if (pendingDocFile) {
+    // Retry the same file without making user re-pick it
+    processDocFile(pendingDocFile);
+  } else {
+    // No file in memory — fall back to file picker
+    certRetry.style.display = 'none';
+    certStatus.style.display = 'none';
+    certResults.innerHTML = '';
+    certActions.style.display = 'none';
+    certPreviewArea.style.display = 'none';
+    certUploadArea.style.display = '';
+    lastTranscription = null;
+    selectedEntryIndex = null;
+    certFileInput.value = '';
+    certFileInput.click();
+  }
+});
+
+// Re-scan button: re-run transcription on the same image (for when transcription looks wrong)
+certRetryScan.addEventListener('click', () => {
+  if (pendingDocImage) {
+    lastTranscription = null;
+    selectedEntryIndex = null;
+    certConfirm.disabled = true;
+    certResults.innerHTML = '';
+    sendToTranscriptionAPI(pendingDocImage);
+  } else {
+    showToast('No image to re-scan. Upload a document first.');
+  }
 });
 
 // Cert type selector
@@ -1526,7 +1553,12 @@ certUploadArea.addEventListener('click', () => certFileInput.click());
 certFileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
+  pendingDocFile = file;
+  await processDocFile(file);
+});
 
+// Shared processing function — used for initial upload AND retries
+async function processDocFile(file) {
   // Show preview
   const reader = new FileReader();
   reader.onload = (ev) => {
@@ -1547,12 +1579,21 @@ certFileInput.addEventListener('change', async (e) => {
   pendingDocImage = base64;
   pendingDocType = selectedCertType;
 
-  // Send to transcription API
+  // Reset UI for new scan
+  certResults.innerHTML = '';
+  certActions.style.display = 'none';
+  certConfirm.disabled = true;
+  lastTranscription = null;
+  selectedEntryIndex = null;
+
+  await sendToTranscriptionAPI(base64);
+}
+
+async function sendToTranscriptionAPI(base64) {
   certStatus.style.display = 'block';
   certStatus.className = 'cert-status scan';
   certStatus.textContent = 'Scanning certificate...';
   certRetry.style.display = 'none';
-  certResults.innerHTML = '';
 
   try {
     const resp = await fetch(API_URL, {
@@ -1564,7 +1605,7 @@ certFileInput.addEventListener('change', async (e) => {
 
     if (!json.success) {
       certStatus.className = 'cert-status';
-      certStatus.textContent = 'Scan failed — try again or enter manually';
+      certStatus.textContent = 'Scan failed — tap Try Again to retry same file';
       if (json.raw) {
         certStatus.textContent += ' (raw output received)';
       }
@@ -1574,7 +1615,7 @@ certFileInput.addEventListener('change', async (e) => {
 
     lastTranscription = json.data;
     certStatus.className = 'cert-status';
-    certStatus.textContent = '✓ Cert type: ' + json.data.type.toUpperCase();
+    certStatus.textContent = '✓ Cert type: ' + (json.data.type || 'unknown').toUpperCase();
 
     // Build result cards
     renderTranscriptionResults(json.data);
@@ -1587,7 +1628,7 @@ certFileInput.addEventListener('change', async (e) => {
     certStatus.textContent = 'Error: ' + err.message;
     certRetry.style.display = 'block';
   }
-});
+}
 
 function extractEntryFields(entry, type) {
   const fields = [];
@@ -1968,6 +2009,41 @@ certConfirm.addEventListener('click', () => {
     return candidates[0];
   }
 
+  // Helper: find the best empty nameplate for a birth year
+  // Uses generation heuristics: assumes ~30 years per generation, subject ~1985
+  function findEmptyNameplateByGeneration(birthYear) {
+    if (!birthYear) return null;
+    const by = parseInt(birthYear);
+    // Try to read subject birth year from tree
+    const subjectPlate = document.querySelector('.nameplate[data-slot="subject"]');
+    const subjectYears = subjectPlate?.querySelector('.years')?.textContent || '';
+    const subjectBirth = subjectYears.match(/(\d{4})/);
+    const subjectBorn = subjectBirth ? parseInt(subjectBirth[1]) : 1985;
+    const genGap = 30; // approximate years per generation
+    // Expected birth year per generation
+    const genCenters = {
+      0: subjectBorn,
+      1: subjectBorn - genGap,
+      2: subjectBorn - genGap * 2,
+      3: subjectBorn - genGap * 3,
+      4: subjectBorn - genGap * 4,
+      5: subjectBorn - genGap * 5,
+    };
+    // Find all empty nameplates and score by generation proximity
+    const emptyPlates = [];
+    document.querySelectorAll('.nameplate').forEach(p => {
+      if (p.querySelector('.name')?.textContent === 'Name') {
+        const gen = parseInt(p.dataset.gen || '0');
+        const diff = Math.abs(by - (genCenters[gen] || subjectBorn - gen * genGap));
+        emptyPlates.push({ plate: p, gen, diff });
+      }
+    });
+    if (!emptyPlates.length) return null;
+    // Sort by closest generation center
+    emptyPlates.sort((a, b) => a.diff - b.diff);
+    return emptyPlates[0].plate;
+  }
+
   // Helper: find a nameplate by slot attribute
   function findSlot(slotName) {
     return document.querySelector(`.nameplate[data-slot="${slotName}"]`);
@@ -2042,6 +2118,13 @@ certConfirm.addEventListener('click', () => {
     // Try to find the child in the tree
     childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
     if (!childPlate) childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null);
+    if (!childPlate && birthYear) {
+      // No name/surname match — tree may be empty. Try generation-based placement.
+      childPlate = findEmptyNameplateByGeneration(parseInt(birthYear));
+      if (childPlate) {
+        messages.push('BC → no name match, placed by generation (' + (childPlate.dataset.gen || '?') + ')');
+      }
+    }
 
     if (childPlate && childPlate.dataset.slot) {
       // Child found in tree — update their birth date and add BC badge
