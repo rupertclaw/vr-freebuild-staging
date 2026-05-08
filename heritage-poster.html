@@ -1680,6 +1680,7 @@ function renderTranscriptionResults(data) {
         lastTranscription = entry;
         lastTranscription._type = type;
         certConfirm.disabled = false;
+        console.log('[CERT SELECT] entry', i, 'lastTranscription set:', !!lastTranscription, 'child:', entry.child?.name);
       });
       certResults.appendChild(card);
     });
@@ -1809,7 +1810,11 @@ const SPOUSE_MAP = {
 // SPOUSE_PARENT_MAP removed — use OWN_PARENT_MAP[SPOUSE_MAP[slot]] instead
 
 certConfirm.addEventListener('click', () => {
-  if (!lastTranscription) return;
+  if (!lastTranscription) {
+    showToast('No entry selected. Tap a card first.');
+    return;
+  }
+  try {
   const data = lastTranscription;
   const type = data._type || 'unknown';
 
@@ -2332,6 +2337,12 @@ certConfirm.addEventListener('click', () => {
   pendingDocType = null;
 
   setTimeout(closeCertPanel, 1500);
+
+  } catch (err) {
+    console.error('[CERT APPLY ERROR]', err);
+    showToast('Apply failed: ' + err.message);
+    return;
+  }
 });
 </script>
 
