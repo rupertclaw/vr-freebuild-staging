@@ -446,6 +446,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   padding: 10px 14px;
   margin-bottom: 10px;
   position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 .cert-result-card::before {
   content: ''; position: absolute;
@@ -1653,13 +1656,25 @@ function renderTranscriptionResults(data) {
   const entries = data.entries || [data];
   const type = data.type || 'unknown';
 
+  // Shared helper: select a card and update state
+  function selectCard(card, entry, idx) {
+    certResults.querySelectorAll('.cert-result-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedEntryIndex = idx;
+    lastTranscription = entry;
+    lastTranscription._type = type;
+    certConfirm.disabled = false;
+    showToast('Selected: ' + entrySummary(entry, type));
+    console.log('[CERT SELECT] entry', idx, 'child:', entry.child?.name || entry.groom?.name || entry.deceased?.name);
+  }
+
   if (entries.length === 1) {
     // Single entry — show directly, auto-select it
     lastTranscription = entries[0];
     lastTranscription._type = type;
     selectedEntryIndex = 0;
     const fields = extractEntryFields(entries[0], type);
-    const card = buildEntryCard(fields, entries[0], type, 0);
+    const card = buildEntryCard(fields, entries[0], type, 0, selectCard);
     card.classList.add('selected');
     certResults.appendChild(card);
     certConfirm.disabled = false;
@@ -1672,22 +1687,14 @@ function renderTranscriptionResults(data) {
 
     entries.forEach((entry, i) => {
       const fields = extractEntryFields(entry, type);
-      const card = buildEntryCard(fields, entry, type, i);
-      card.addEventListener('click', () => {
-        certResults.querySelectorAll('.cert-result-card').forEach(c => c.classList.remove('selected'));
-        card.classList.add('selected');
-        selectedEntryIndex = i;
-        lastTranscription = entry;
-        lastTranscription._type = type;
-        certConfirm.disabled = false;
-        console.log('[CERT SELECT] entry', i, 'lastTranscription set:', !!lastTranscription, 'child:', entry.child?.name);
-      });
+      const card = buildEntryCard(fields, entry, type, i, selectCard);
+      card.addEventListener('click', () => selectCard(card, entry, i));
       certResults.appendChild(card);
     });
   }
 }
 
-function buildEntryCard(fields, entry, type, index) {
+function buildEntryCard(fields, entry, type, index, selectCardFn) {
   const card = document.createElement('div');
   card.className = 'cert-result-card';
   card.dataset.entryIndex = index;
@@ -1716,9 +1723,10 @@ function buildEntryCard(fields, entry, type, index) {
     value.textContent = f.value || '—';
     value.dataset.path = f.path;
     value.dataset.original = f.value || '';
-    // Tap to edit
+    // Tap to edit — also select the card first so Apply works
     value.addEventListener('click', (e) => {
-      e.stopPropagation(); // Don't trigger card selection
+      e.stopPropagation(); // Don't bubble to card click (we handle selection here)
+      if (selectCardFn) selectCardFn(card, entry, index);
       const currentValue = value.textContent === '—' ? '' : value.textContent;
       const input = document.createElement('input');
       input.type = 'text';
@@ -1814,7 +1822,13 @@ certConfirm.addEventListener('click', () => {
     showToast('No entry selected. Tap a card first.');
     return;
   }
+  // Guard: if lastTranscription still has .entries, it's the wrapper object — not a single entry
+  if (lastTranscription.entries) {
+    showToast('Please select an entry first. Tap a card above.');
+    return;
+  }
   try {
+  showToast('Applying...');
   const data = lastTranscription;
   const type = data._type || 'unknown';
 
@@ -2304,6 +2318,7 @@ certConfirm.addEventListener('click', () => {
   certActions.style.display = 'none';
 
   console.log('[CERT APPLY] type:', type, 'filled:', filled, 'messages:', messages);
+  showToast('✓ Applied ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' to tree');
 
   // Save document image to IndexedDB if retention is enabled
   const keepDocs = document.getElementById('keepDocsToggle').checked;
