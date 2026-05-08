@@ -1426,7 +1426,7 @@ async function importSession(file) {
       if (!plate) return;
       if (info.fullname) {
         plate.dataset.fullname = info.fullname;
-        plate.querySelector('.name').textContent = shortName(info.fullname);
+        plate.querySelector('.name').textContent = info.fullname;
       }
       if (info.years) {
         const yEl = plate.querySelector('.years');
