@@ -1794,6 +1794,11 @@ certConfirm.addEventListener('click', () => {
   let filled = 0;
   const messages = [];
 
+  // Hoist slot variables so document save section can reference them
+  let childPlate = null, groomPlate = null, bridePlate = null;
+  let groomSlot = null, brideSlot = null;
+  let deathPlate = null;
+
   // Helper: find a nameplate by current name text (case-insensitive, searches .name text and data-fullname)
   // If refYear provided, picks the best match when multiple exist (prefers closest birth year)
   // Among ties, prefers nameplates that are still placeholder ("Name") over already-filled ones
@@ -1974,7 +1979,7 @@ certConfirm.addEventListener('click', () => {
     const birthYear = extractYear(data.child?.birthDate);
 
     // Try to find the child in the tree
-    let childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null);
+    childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null);
     if (!childPlate) childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null);
 
     if (childPlate && childPlate.dataset.slot) {
@@ -2059,7 +2064,6 @@ certConfirm.addEventListener('click', () => {
     const brideName = data.bride?.name || '';
     const marriageYear = extractYear(data.date);
 
-    let groomPlate, bridePlate;
     const groomBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.groom?.age || 0)) : null;
     const brideBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.bride?.age || 0)) : null;
     groomPlate = findNameplate(groomName, groomBirthYear);
@@ -2146,7 +2150,7 @@ certConfirm.addEventListener('click', () => {
       if (mName) fillEmptySlot(motherSlot, mName, 'marriage', mMaiden);
     }
 
-    let groomSlot = null, brideSlot = null;
+    groomSlot = null; brideSlot = null;
 
     if (groomPlate) {
       groomSlot = groomPlate.dataset.slot;
@@ -2219,12 +2223,12 @@ certConfirm.addEventListener('click', () => {
   } else if (type === 'death') {
     const deceasedName = data.deceased?.name;
     if (deceasedName) {
-      let plate = findNameplate(deceasedName, extractYear(data.deathDate));
-      if (!plate) plate = findNameplateBySurname(deceasedName, extractYear(data.deathDate));
-      if (plate) {
+      deathPlate = findNameplate(deceasedName, extractYear(data.deathDate));
+      if (!deathPlate) deathPlate = findNameplateBySurname(deceasedName, extractYear(data.deathDate));
+      if (deathPlate) {
         // Update death year
         const deathInfo = data.deathDate || (data.deceased?.age ? 'd. age ' + data.deceased.age : '');
-        const yearsEl = plate.querySelector('.years');
+        const yearsEl = deathPlate.querySelector('.years');
         if (yearsEl) {
           const existing = yearsEl.textContent;
           if (existing.includes('YYYY')) {
@@ -2237,8 +2241,8 @@ certConfirm.addEventListener('click', () => {
             }
           }
         }
-        fillPlate(plate, deceasedName, yearsEl?.textContent || '');
-        addDocBadge(plate, 'death');
+        fillPlate(deathPlate, deceasedName, yearsEl?.textContent || '');
+        addDocBadge(deathPlate, 'death');
         filled++;
         messages.push('DC → matched');
       }
@@ -2260,7 +2264,7 @@ certConfirm.addEventListener('click', () => {
       if (groomSlot) primarySlots.push(groomSlot);
       if (brideSlot) primarySlots.push(brideSlot);
     }
-    if (type === 'death' && plate) primarySlots.push(plate.dataset.slot);
+    if (type === 'death' && deathPlate) primarySlots.push(deathPlate.dataset.slot);
     // Also save for parents that were filled
     // Find all slots that got filled from this cert
     const filledSlots = [];
