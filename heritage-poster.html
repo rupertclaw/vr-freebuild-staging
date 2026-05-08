@@ -744,6 +744,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
     </div>
     <div class="detail-section-title" style="margin-top:16px;">Documents</div>
     <div id="detailDocs" style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;"></div>
+    <div id="detailDocThumbs" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px;max-height:120px;overflow-y:auto;"></div>
   </div>
 </div>
 
@@ -755,6 +756,12 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 </div>
 
 <button class="edit-toggle" id="editToggle">✎ Upload Cert</button>
+
+<div style="position:fixed;bottom:16px;left:16px;display:flex;gap:6px;z-index:200;">
+  <button id="saveSessionBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#3e3225;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">⬇ Save Session</button>
+  <button id="loadSessionBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#3e3225;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">⬆ Load Session</button>
+  <input type="file" id="sessionFileInput" accept=".familytree" style="display:none;">
+</div>
 
 <!-- Cert upload panel -->
 <div class="cert-overlay" id="certOverlay"></div>
@@ -770,6 +777,12 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
       <button class="cert-type-btn" data-type="birth">Birth</button>
       <button class="cert-type-btn" data-type="marriage">Marriage</button>
       <button class="cert-type-btn" data-type="death">Death</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0;font-family:Cormorant Garamond,serif;font-size:11px;color:#5a4a32;">
+      <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+        <input type="checkbox" id="keepDocsToggle" checked style="cursor:pointer;">
+        Keep document images with tree
+      </label>
     </div>
     <div class="cert-upload-area" id="certUploadArea">
       <input type="file" id="certFileInput" accept="image/*">
@@ -917,6 +930,7 @@ const parent1 = document.getElementById('parent1');
 const parent2 = document.getElementById('parent2');
 
 const detailDocs = document.getElementById('detailDocs');
+const detailDocThumbs = document.getElementById('detailDocThumbs');
 const detailSiblings = document.getElementById('detailSiblings');
 const siblingInput = document.getElementById('siblingInput');
 const addSiblingBtn = document.getElementById('addSiblingBtn');
@@ -978,10 +992,10 @@ function updateSiblingBadge(slot) {
     if (!badge) {
       badge = document.createElement('span');
       badge.className = 'sibling-badge';
-      badge.style.cssText = 'position:absolute;top:-6px;right:-6px;background:#9a8565;color:#f0e6d2;font-size:8px;font-family:Cormorant Garamond,serif;padding:1px 4px;border-radius:8px;z-index:5;';
+      badge.style.cssText = 'position:absolute;top:-8px;right:-8px;background:#2e7d32;color:#fff;font-size:9px;font-family:Cormorant Garamond,serif;padding:2px 5px;border-radius:10px;z-index:5;box-shadow:0 1px 3px rgba(0,0,0,0.3);display:flex;align-items:center;gap:2px;';
       plate.appendChild(badge);
     }
-    badge.textContent = count;
+    badge.innerHTML = '<span style="font-size:10px;line-height:1;">🍃</span><span>' + count + '</span>';
   } else if (badge) {
     badge.remove();
   }
@@ -989,6 +1003,89 @@ function updateSiblingBadge(slot) {
 
 // Init badges for all slots on load
 Object.keys(slotSiblings).forEach(slot => updateSiblingBadge(slot));
+
+// ========== IndexedDB Document Storage ==========
+const DB_NAME = 'FamilyTreeDocs';
+const DB_VERSION = 1;
+const STORE_NAME = 'documents';
+let db = null;
+
+function openDocDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { db = req.result; resolve(db); };
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE_NAME)) {
+        const store = d.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        store.createIndex('slot', 'slot', { unique: false });
+      }
+    };
+  });
+}
+
+async function saveDoc(slot, type, base64Image, meta) {
+  if (!db) await openDocDB();
+  const id = slot + '_' + type + '_' + Date.now();
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  const store = tx.objectStore(STORE_NAME);
+  await new Promise((resolve, reject) => {
+    const req = store.put({ id, slot, type, image: base64Image, meta, created: Date.now() });
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+  return id;
+}
+
+async function getDocsForSlot(slot) {
+  if (!db) await openDocDB();
+  const tx = db.transaction(STORE_NAME, 'readonly');
+  const store = tx.objectStore(STORE_NAME);
+  const idx = store.index('slot');
+  return new Promise((resolve, reject) => {
+    const req = idx.getAll(slot);
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteDoc(id) {
+  if (!db) await openDocDB();
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  const store = tx.objectStore(STORE_NAME);
+  return new Promise((resolve, reject) => {
+    const req = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getAllDocs() {
+  if (!db) await openDocDB();
+  const tx = db.transaction(STORE_NAME, 'readonly');
+  const store = tx.objectStore(STORE_NAME);
+  return new Promise((resolve, reject) => {
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function clearAllDocs() {
+  if (!db) await openDocDB();
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  const store = tx.objectStore(STORE_NAME);
+  return new Promise((resolve, reject) => {
+    const req = store.clear();
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// Temporary storage for current scan image (before Apply)
+let pendingDocImage = null;
+let pendingDocType = null;
 
 // Slot parent mapping: given a slot, which slots are the father and mother?
 const SLOT_PARENTS = {
@@ -1035,6 +1132,29 @@ function openDetail(name, years, slot) {
     });
   } else {
     detailDocs.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No documents yet</span>';
+  }
+
+  // Show document thumbnails from IndexedDB
+  detailDocThumbs.innerHTML = '';
+  if (slot) {
+    getDocsForSlot(slot).then(docs => {
+      if (docs.length) {
+        docs.forEach(doc => {
+          const thumb = document.createElement('img');
+          thumb.src = doc.image;
+          thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #c9b896;cursor:pointer;';
+          thumb.title = doc.type + ' — ' + (doc.meta?.date || '');
+          thumb.addEventListener('click', () => {
+            const viewer = document.createElement('div');
+            viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+            viewer.innerHTML = '<img src="' + doc.image + '" style="max-width:90vw;max-height:90vh;border-radius:4px;">';
+            viewer.addEventListener('click', () => viewer.remove());
+            document.body.appendChild(viewer);
+          });
+          detailDocThumbs.appendChild(thumb);
+        });
+      }
+    });
   }
 
   // Look up actual parents from the tree using slot hierarchy
@@ -1255,6 +1375,103 @@ editToggle.addEventListener('click', openCertPanel);
 certClose.addEventListener('click', closeCertPanel);
 certOverlay.addEventListener('click', closeCertPanel);
 certCancel.addEventListener('click', closeCertPanel);
+
+// ========== Export / Import Session ==========
+const saveSessionBtn = document.getElementById('saveSessionBtn');
+const loadSessionBtn = document.getElementById('loadSessionBtn');
+const sessionFileInput = document.getElementById('sessionFileInput');
+
+async function exportSession() {
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    slots: {},
+    siblings: slotSiblings,
+    settings: { keepDocs: document.getElementById('keepDocsToggle').checked }
+  };
+  document.querySelectorAll('.nameplate').forEach(np => {
+    const slot = np.dataset.slot;
+    payload.slots[slot] = {
+      name: np.querySelector('.name')?.textContent || '',
+      fullname: np.dataset.fullname || '',
+      years: np.querySelector('.years')?.textContent || '',
+      maiden: np.dataset.maiden || '',
+      docs: np.dataset.docs || ''
+    };
+  });
+  const docs = await getAllDocs();
+  if (docs.length) {
+    payload.documents = docs.map(d => ({ id: d.id, slot: d.slot, type: d.type, image: d.image, meta: d.meta, created: d.created }));
+  }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function importSession(file) {
+  const text = await file.text();
+  const data = JSON.parse(text);
+  if (!data.slots) { alert('Invalid session file'); return; }
+
+  // Restore slot data
+  Object.entries(data.slots).forEach(([slot, info]) => {
+    const plate = document.querySelector('.nameplate[data-slot="' + slot + '"]');
+    if (!plate) return;
+    if (info.fullname) {
+      plate.dataset.fullname = info.fullname;
+      plate.querySelector('.name').textContent = shortName(info.fullname);
+    }
+    if (info.years) {
+      const yEl = plate.querySelector('.years');
+      if (yEl) yEl.textContent = info.years;
+    }
+    if (info.maiden) plate.dataset.maiden = info.maiden;
+    if (info.docs) plate.dataset.docs = info.docs;
+    if (info.name === 'Name' && !info.fullname) {
+      // Empty slot — reset to default
+      plate.dataset.fullname = '';
+      plate.dataset.maiden = '';
+      plate.dataset.docs = '';
+      plate.querySelector('.name').textContent = 'Name';
+      plate.querySelector('.years').textContent = 'YYYY — YYYY';
+    }
+  });
+
+  // Restore siblings
+  if (data.siblings) {
+    slotSiblings = data.siblings;
+    saveSiblings();
+    Object.keys(slotSiblings).forEach(slot => updateSiblingBadge(slot));
+  }
+
+  // Restore settings
+  if (data.settings?.keepDocs !== undefined) {
+    document.getElementById('keepDocsToggle').checked = data.settings.keepDocs;
+  }
+
+  // Restore documents to IndexedDB
+  if (data.documents?.length) {
+    await clearAllDocs();
+    for (const d of data.documents) {
+      await saveDoc(d.slot, d.type, d.image, d.meta || {});
+    }
+  }
+
+  alert('Session restored!');
+}
+
+saveSessionBtn.addEventListener('click', exportSession);
+loadSessionBtn.addEventListener('click', () => sessionFileInput.click());
+sessionFileInput.addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) importSession(file);
+  sessionFileInput.value = '';
+});
+
 certRetry.addEventListener('click', () => {
   certRetry.style.display = 'none';
   certStatus.style.display = 'none';
@@ -1300,6 +1517,10 @@ certFileInput.addEventListener('change', async (e) => {
     r.onload = () => resolve(r.result);
     r.readAsDataURL(file);
   });
+
+  // Store for potential document retention
+  pendingDocImage = base64;
+  pendingDocType = selectedCertType;
 
   // Send to transcription API
   certStatus.style.display = 'block';
@@ -2029,6 +2250,37 @@ certConfirm.addEventListener('click', () => {
   certActions.style.display = 'none';
 
   console.log('[CERT APPLY] type:', type, 'filled:', filled, 'messages:', messages);
+
+  // Save document image to IndexedDB if retention is enabled
+  const keepDocs = document.getElementById('keepDocsToggle').checked;
+  if (keepDocs && pendingDocImage && pendingDocType) {
+    const primarySlots = [];
+    if (type === 'birth' && childPlate) primarySlots.push(childPlate.dataset.slot);
+    if (type === 'marriage') {
+      if (groomSlot) primarySlots.push(groomSlot);
+      if (brideSlot) primarySlots.push(brideSlot);
+    }
+    if (type === 'death' && plate) primarySlots.push(plate.dataset.slot);
+    // Also save for parents that were filled
+    // Find all slots that got filled from this cert
+    const filledSlots = [];
+    document.querySelectorAll('.nameplate').forEach(p => {
+      const docs = (p.dataset.docs || '').split(',').filter(Boolean);
+      if (docs.includes(pendingDocType === 'auto' ? (type === 'birth' ? 'birth' : type === 'marriage' ? 'marriage' : 'death') : pendingDocType)) {
+        filledSlots.push(p.dataset.slot);
+      }
+    });
+    const allSlots = [...new Set([...primarySlots, ...filledSlots])];
+    allSlots.forEach(async (slot) => {
+      if (slot) {
+        try {
+          await saveDoc(slot, pendingDocType, pendingDocImage, { certType: type, date: data.date });
+        } catch (e) { console.error('Doc save failed for', slot, e); }
+      }
+    });
+  }
+  pendingDocImage = null;
+  pendingDocType = null;
 
   setTimeout(closeCertPanel, 1500);
 });
