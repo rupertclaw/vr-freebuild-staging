@@ -734,6 +734,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
         <div class="p-years">YYYY — YYYY</div>
       </div>
     </div>
+    <div class="detail-section-title" style="margin-top:16px;">Siblings</div>
+    <div id="detailSiblings" style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;font-style:italic;">No siblings recorded</div>
+    </div>
+    <div id="addSiblingWrap" style="display:flex;gap:6px;justify-content:center;margin-top:8px;">
+      <input type="text" id="siblingInput" placeholder="Sibling name" style="font-family:'Cormorant Garamond',serif;font-size:11px;padding:4px 8px;border:1px solid #c9b896;border-radius:4px;background:rgba(255,255,255,0.5);color:#3e3225;width:120px;outline:none;">
+      <button id="addSiblingBtn" style="font-family:'Cormorant Garamond',serif;font-size:11px;padding:4px 10px;border:none;border-radius:4px;background:#3e3225;color:#f0e6d2;cursor:pointer;">Add</button>
+    </div>
     <div class="detail-section-title" style="margin-top:16px;">Documents</div>
     <div id="detailDocs" style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;"></div>
   </div>
@@ -909,6 +917,78 @@ const parent1 = document.getElementById('parent1');
 const parent2 = document.getElementById('parent2');
 
 const detailDocs = document.getElementById('detailDocs');
+const detailSiblings = document.getElementById('detailSiblings');
+const siblingInput = document.getElementById('siblingInput');
+const addSiblingBtn = document.getElementById('addSiblingBtn');
+
+// Siblings data: { slotName: ['Name 1', 'Name 2', ...] }
+let slotSiblings = JSON.parse(localStorage.getItem('slotSiblings') || '{}');
+
+function saveSiblings() {
+  localStorage.setItem('slotSiblings', JSON.stringify(slotSiblings));
+}
+
+function getSiblings(slot) {
+  return slotSiblings[slot] || [];
+}
+
+function addSibling(slot, name) {
+  if (!name || !slot) return;
+  if (!slotSiblings[slot]) slotSiblings[slot] = [];
+  slotSiblings[slot].push(name.trim());
+  saveSiblings();
+  updateSiblingBadge(slot);
+}
+
+function removeSibling(slot, index) {
+  if (!slotSiblings[slot]) return;
+  slotSiblings[slot].splice(index, 1);
+  if (slotSiblings[slot].length === 0) delete slotSiblings[slot];
+  saveSiblings();
+  updateSiblingBadge(slot);
+}
+
+function renderSiblings(slot) {
+  const list = getSiblings(slot);
+  detailSiblings.innerHTML = '';
+  if (!list.length) {
+    detailSiblings.innerHTML = '<div style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No siblings recorded</div>';
+    return;
+  }
+  list.forEach((name, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;justify-content:center;';
+    row.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:11px;color:#3e3225;">' + name + '</span>' +
+      '<button data-idx="' + i + '" style="font-size:9px;padding:1px 4px;border:none;border-radius:3px;background:#c9b896;color:#fff;cursor:pointer;line-height:1;">×</button>';
+    row.querySelector('button').addEventListener('click', () => {
+      removeSibling(slot, i);
+      renderSiblings(slot);
+    });
+    detailSiblings.appendChild(row);
+  });
+}
+
+// Sibling count badge on nameplates
+function updateSiblingBadge(slot) {
+  const plate = document.querySelector('.nameplate[data-slot="' + slot + '"]');
+  if (!plate) return;
+  const count = getSiblings(slot).length;
+  let badge = plate.querySelector('.sibling-badge');
+  if (count > 0) {
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'sibling-badge';
+      badge.style.cssText = 'position:absolute;top:-6px;right:-6px;background:#9a8565;color:#f0e6d2;font-size:8px;font-family:Cormorant Garamond,serif;padding:1px 4px;border-radius:8px;z-index:5;';
+      plate.appendChild(badge);
+    }
+    badge.textContent = count;
+  } else if (badge) {
+    badge.remove();
+  }
+}
+
+// Init badges for all slots on load
+Object.keys(slotSiblings).forEach(slot => updateSiblingBadge(slot));
 
 // Slot parent mapping: given a slot, which slots are the father and mother?
 const SLOT_PARENTS = {
@@ -979,6 +1059,20 @@ function openDetail(name, years, slot) {
 
   detailPanel.classList.add('active');
   detailOverlay.classList.add('active');
+
+  // Render siblings for this slot
+  renderSiblings(slot || '');
+
+  // Wire up add sibling button for current slot
+  addSiblingBtn.onclick = () => {
+    const name = siblingInput.value.trim();
+    if (name && slot) {
+      addSibling(slot, name);
+      siblingInput.value = '';
+      renderSiblings(slot);
+    }
+  };
+  siblingInput.onkeydown = (e) => { if (e.key === 'Enter') addSiblingBtn.click(); };
 }
 
 function closeDetail() {
