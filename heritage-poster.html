@@ -1377,6 +1377,20 @@ certOverlay.addEventListener('click', closeCertPanel);
 certCancel.addEventListener('click', closeCertPanel);
 
 // ========== Export / Import Session ==========
+// Custom toast (avoids "rupertclaw.github.io says" browser alert title)
+function showToast(msg, duration) {
+  duration = duration || 2500;
+  const existing = document.getElementById('toastMsg');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'toastMsg';
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(30,25,20,0.92);color:#f0e6d2;padding:14px 24px;border-radius:8px;font-family:Cormorant Garamond,serif;font-size:15px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.4);text-align:center;';
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
+  setTimeout(() => el.remove(), duration + 500);
+}
+
 const saveSessionBtn = document.getElementById('saveSessionBtn');
 const loadSessionBtn = document.getElementById('loadSessionBtn');
 const sessionFileInput = document.getElementById('sessionFileInput');
@@ -1417,7 +1431,7 @@ async function importSession(file) {
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-    if (!data.slots) { alert('Invalid session file — no tree data found'); return; }
+    if (!data.slots) { showToast('Invalid session file — no tree data found'); return; }
 
     // Restore slot data
     Object.entries(data.slots).forEach(([slot, info]) => {
@@ -1426,7 +1440,7 @@ async function importSession(file) {
       if (!plate) return;
       if (info.fullname) {
         plate.dataset.fullname = info.fullname;
-        plate.querySelector('.name').textContent = info.fullname;
+        plate.querySelector('.name').textContent = info.name || info.fullname;
       }
       if (info.years) {
         const yEl = plate.querySelector('.years');
@@ -1465,10 +1479,10 @@ async function importSession(file) {
       }
     }
 
-    alert('Session restored!');
+    showToast('Session restored!');
   } catch (err) {
     console.error('Import failed:', err);
-    alert('Import failed: ' + (err.message || 'Unknown error'));
+    showToast('Import failed: ' + (err.message || 'Unknown error'));
   }
 }
 
