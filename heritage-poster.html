@@ -2272,34 +2272,10 @@ certConfirm.addEventListener('click', () => {
         }
       }
     }
-    // CRITICAL: if we matched an existing nameplate, verify parents are consistent
-    // Prevents "Andrew Henderson Craigie" overwriting "Andrew Craigie" (different people, same first+last)
-    if (childPlate && data.father?.name && data.mother?.name) {
-      const slot = childPlate.dataset.slot;
-      const pMap = OWN_PARENT_MAP[slot];
-      if (pMap) {
-        const dadPlate = findSlot(pMap.fatherSlot);
-        const momPlate = findSlot(pMap.motherSlot);
-        const dadName = dadPlate?.dataset.fullname || dadPlate?.querySelector('.name')?.textContent || '';
-        const momName = momPlate?.dataset.fullname || momPlate?.querySelector('.name')?.textContent || '';
-        // If parents are already filled, check if cert parents match (same surname is enough)
-        const certDadSurname = data.father.name.split(' ').pop().toLowerCase();
-        const certMomSurname = data.mother.name.split(' ').pop().toLowerCase();
-        const treeDadSurname = dadName.split(' ').pop().toLowerCase();
-        const treeMomSurname = momName.split(' ').pop().toLowerCase();
-        if (dadName !== 'Name' && momName !== 'Name') {
-          // Both parents already filled — verify consistency
-          const dadMatch = treeDadSurname === certDadSurname;
-          const momMatch = treeMomSurname === certMomSurname || (momPlate?.dataset.maiden || '').toLowerCase() === certMomSurname;
-          if (!dadMatch || !momMatch) {
-            console.log('[BC] Parent mismatch! Cert parents:', data.father.name, '&', data.mother.name,
-              'but tree has:', dadName, '&', momName, '— rejecting match');
-            showToast('Name matched but parents differ — placing in empty slot instead');
-            childPlate = null; // Reject the match
-          }
-        }
-      }
-    }
+    // NOTE: If findNameplate() matched an existing nameplate, we always update it.
+    // fillPlate() blocks cross-person overwrites (different first+last surname).
+    // Parent consistency is NOT checked here — the birth cert is the source of truth for parents.
+    // If tree parents differ from cert parents, the cert parents win (they're the primary source).
     if (!childPlate && birthYear) {
       // No name/surname match — tree may be empty. Try generation-based placement.
       childPlate = findEmptyNameplateByGeneration(parseInt(birthYear));
@@ -2346,7 +2322,7 @@ certConfirm.addEventListener('click', () => {
           const existing = mPlate.dataset.fullname || mPlate.querySelector('.name').textContent;
           const bcMother = data.mother.name;
           if (existing === 'Name') {
-            fillPlate(mPlate, bcMother, data.mother?.maidenSurname ? '(' + data.mother.maidenSurname + ')' : '');
+            fillPlate(mPlate, bcMother, '', data.mother?.maidenSurname || '');
             addDocBadge(mPlate, 'birth');
             filled++;
             messages.push("BC mother → " + pMap.motherSlot);
