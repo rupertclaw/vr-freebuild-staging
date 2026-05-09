@@ -1892,6 +1892,19 @@ certConfirm.addEventListener('click', () => {
     return parts[0] + ' ' + parts[parts.length - 1];
   }
 
+  // Compute expected generation for a birth year (relative to subject, default 1985)
+  function expectedGen(birthYear) {
+    if (!birthYear) return null;
+    const by = parseInt(birthYear);
+    const subjectPlate = document.querySelector('.nameplate[data-slot="subject"]');
+    const subjectYears = subjectPlate?.querySelector('.years')?.textContent || '';
+    const subjectBirth = subjectYears.match(/(\d{4})/);
+    const subjectBorn = subjectBirth ? parseInt(subjectBirth[1]) : 1985;
+    const genGap = 30;
+    const gen = Math.round((subjectBorn - by) / genGap);
+    return Math.max(0, Math.min(5, gen));
+  }
+
   // Helper: find a nameplate by current name text (case-insensitive, searches .name text and data-fullname)
   // If refYear provided, picks the best match when multiple exist (prefers closest birth year)
   // Among ties, prefers nameplates that are still placeholder ("Name") over already-filled ones
@@ -1902,6 +1915,7 @@ certConfirm.addEventListener('click', () => {
     const searchName = name.toLowerCase().trim();
     const searchNorm = normalizeName(name);
     let candidates = [];
+    const expGen = (opts && opts.certType === 'birth' && refYear) ? expectedGen(refYear) : null;
 
     function getPlateBirthYear(p) {
       const y = p?.querySelector('.years')?.textContent?.match(/\d{4}/);
@@ -1941,7 +1955,7 @@ certConfirm.addEventListener('click', () => {
         if (!by) return true; // unfilled cards pass through
         if (opts.certType === 'marriage') return by <= opts.certYear - 16; // can't marry before ~16
         if (opts.certType === 'death') return by < opts.certYear; // can't die before born
-        // Birth cert: if card already has a birth year, ensure it doesn't contradict (e.g. card says 1850 but cert is 1904)
+        // Birth cert: if card already has a birth year, ensure it doesn't contradict
         if (opts.certType === 'birth' && by && refYear) {
           return Math.abs(by - refYear) < 50; // within 50 years is OK
         }
@@ -1952,9 +1966,17 @@ certConfirm.addEventListener('click', () => {
     if (!candidates.length) return null;
     if (candidates.length === 1) return candidates[0].plate;
 
-    // Sort by score descending, then by empty-preference, then by year proximity
+    // Sort by score descending, then by generation match, then by empty-preference, then by year proximity
     candidates.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
+      // Generation match bonus/penalty for birth certs
+      if (expGen !== null) {
+        const aGen = parseInt(a.plate.dataset.gen || '0');
+        const bGen = parseInt(b.plate.dataset.gen || '0');
+        const aGenDiff = Math.abs(aGen - expGen);
+        const bGenDiff = Math.abs(bGen - expGen);
+        if (aGenDiff !== bGenDiff) return aGenDiff - bGenDiff; // closer generation wins
+      }
       const aEmpty = a.plate.querySelector('.name')?.textContent === 'Name' ? 1 : 0;
       const bEmpty = b.plate.querySelector('.name')?.textContent === 'Name' ? 1 : 0;
       if (bEmpty !== aEmpty) return bEmpty - aEmpty;
@@ -1967,6 +1989,17 @@ certConfirm.addEventListener('click', () => {
       }
       return 0;
     });
+
+    // For birth certs: if best match is from wrong generation by >1, reject it
+    if (expGen !== null && candidates.length > 0) {
+      const best = candidates[0];
+      const bestGen = parseInt(best.plate.dataset.gen || '0');
+      if (Math.abs(bestGen - expGen) > 1) {
+        console.log('[findNameplate] Rejecting match: gen', bestGen, 'vs expected', expGen, 'slot', best.plate.dataset.slot);
+        return null; // Wrong generation — let generation-based placement handle it
+      }
+    }
+
     return candidates[0].plate;
   }
 
@@ -2150,12 +2183,23 @@ certConfirm.addEventListener('click', () => {
 
     // Try to find the child in the tree
     childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
-    if (!childPlate) childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
+    // Surname fallback only if generation makes sense
+    if (!childPlate && birthYear) {
+      childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
+      if (childPlate) {
+        const matchedGen = parseInt(childPlate.dataset.gen || '0');
+        const expGen = expectedGen(parseInt(birthYear));
+        if (expGen !== null && Math.abs(matchedGen - expGen) > 1) {
+          console.log('[BC] Surname match rejected: gen', matchedGen, 'vs expected', expGen);
+          childPlate = null; // Wrong generation — discard
+        }
+      }
+    }
     if (!childPlate && birthYear) {
       // No name/surname match — tree may be empty. Try generation-based placement.
       childPlate = findEmptyNameplateByGeneration(parseInt(birthYear));
       if (childPlate) {
-        messages.push('BC → no name match, placed by generation (' + (childPlate.dataset.gen || '?') + ')');
+        messages.push('BC → placed by generation (' + (childPlate.dataset.gen || '?') + ')');
       }
     }
     // DEBUG: tell user what we matched
