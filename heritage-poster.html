@@ -1605,11 +1605,13 @@ async function sendToTranscriptionAPI(base64) {
 
     if (!json.success) {
       certStatus.className = 'cert-status';
-      certStatus.textContent = 'Scan failed — tap Try Again to retry same file';
+      let errMsg = json.error || json.message || 'Unknown error';
+      certStatus.innerHTML = 'Scan failed: ' + errMsg + '<br><small>Tap Try Again to retry same file</small>';
       if (json.raw) {
-        certStatus.textContent += ' (raw output received)';
+        certStatus.innerHTML += '<br><small>(raw output received)</small>';
       }
       certRetry.style.display = 'block';
+      console.error('[SCAN FAILED]', json);
       return;
     }
 
@@ -1625,8 +1627,9 @@ async function sendToTranscriptionAPI(base64) {
 
   } catch (err) {
     certStatus.className = 'cert-status';
-    certStatus.textContent = 'Error: ' + err.message;
+    certStatus.innerHTML = 'Network error: ' + (err.message || 'Could not reach server') + '<br><small>Tap Try Again to retry</small>';
     certRetry.style.display = 'block';
+    console.error('[SCAN ERROR]', err);
   }
 }
 
@@ -1881,6 +1884,14 @@ certConfirm.addEventListener('click', () => {
   let groomSlot = null, brideSlot = null;
   let deathPlate = null;
 
+  // Normalize a name for fuzzy matching: lowercase, trim, return first+last (drop middle names)
+  function normalizeName(name) {
+    if (!name) return '';
+    const parts = name.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    if (parts.length < 2) return parts.join(' ');
+    return parts[0] + ' ' + parts[parts.length - 1];
+  }
+
   // Helper: find a nameplate by current name text (case-insensitive, searches .name text and data-fullname)
   // If refYear provided, picks the best match when multiple exist (prefers closest birth year)
   // Among ties, prefers nameplates that are still placeholder ("Name") over already-filled ones
@@ -1889,6 +1900,7 @@ certConfirm.addEventListener('click', () => {
     if (!name) return null;
     const plates = document.querySelectorAll('.nameplate');
     const searchName = name.toLowerCase().trim();
+    const searchNorm = normalizeName(name);
     let candidates = [];
 
     function getPlateBirthYear(p) {
@@ -1896,61 +1908,71 @@ certConfirm.addEventListener('click', () => {
       return y ? parseInt(y[0]) : null;
     }
 
-    for (const plate of plates) {
+    function scoreMatch(plate) {
       const nameEl = plate.querySelector('.name');
       const fullName = (plate.dataset.fullname || '').toLowerCase().trim();
       const display = nameEl ? nameEl.textContent.toLowerCase().trim() : '';
       const maiden = (plate.dataset.maiden || '').toLowerCase().trim();
-      // Match against display name, full name, or maiden name (e.g. cert says "Alice Lynch", card has maiden "Lynch")
-      if (display === searchName || fullName === searchName || maiden === searchName) {
-        candidates.push(plate);
+      const displayNorm = normalizeName(display);
+      const fullNorm = normalizeName(fullName);
+
+      // Exact match = highest score
+      if (display === searchName || fullName === searchName || maiden === searchName) return 100;
+      // Full containment = high score (e.g. "Andrew Henderson Craigie" contains "Andrew Craigie")
+      if (searchName.includes(fullName) || fullName.includes(searchName)) return 80;
+      if (searchName.includes(display) || display.includes(searchName)) return 75;
+      // Normalized first+last match = good score
+      if (displayNorm === searchNorm || fullNorm === searchNorm) return 60;
+      if (searchNorm.includes(displayNorm) || displayNorm.includes(searchNorm)) return 50;
+      return 0;
+    }
+
+    for (const plate of plates) {
+      const score = scoreMatch(plate);
+      if (score > 0) {
+        candidates.push({ plate, score });
       }
     }
 
     // Filter out impossible generation matches before ranking
     if (opts && opts.certType && opts.certYear && !isNaN(opts.certYear)) {
-      candidates = candidates.filter(p => {
-        const by = getPlateBirthYear(p);
+      candidates = candidates.filter(({plate}) => {
+        const by = getPlateBirthYear(plate);
         if (!by) return true; // unfilled cards pass through
         if (opts.certType === 'marriage') return by <= opts.certYear - 16; // can't marry before ~16
         if (opts.certType === 'death') return by < opts.certYear; // can't die before born
+        // Birth cert: if card already has a birth year, ensure it doesn't contradict (e.g. card says 1850 but cert is 1904)
+        if (opts.certType === 'birth' && by && refYear) {
+          return Math.abs(by - refYear) < 50; // within 50 years is OK
+        }
         return true;
       });
     }
 
     if (!candidates.length) return null;
-    if (candidates.length === 1) return candidates[0];
-    // Multiple exact matches — prefer nameplates that still need filling
-    // A nameplate with "Name" as display text is unpopulated — highest priority
-    const empty = candidates.filter(p => p.querySelector('.name')?.textContent === 'Name');
-    if (empty.length === 1) return empty[0];
-    if (empty.length > 1 && refYear) {
-      // Multiple empty matches — prefer by slot generation (lower gen = closer to root = more likely current gen)
-      // Fallback: pick by refYear proximity
-      empty.sort((a, b) => {
-        const aY = (a.querySelector('.years')?.textContent || '').match(/\d{4}/);
-        const bY = (b.querySelector('.years')?.textContent || '').match(/\d{4}/);
+    if (candidates.length === 1) return candidates[0].plate;
+
+    // Sort by score descending, then by empty-preference, then by year proximity
+    candidates.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      const aEmpty = a.plate.querySelector('.name')?.textContent === 'Name' ? 1 : 0;
+      const bEmpty = b.plate.querySelector('.name')?.textContent === 'Name' ? 1 : 0;
+      if (bEmpty !== aEmpty) return bEmpty - aEmpty;
+      if (refYear) {
+        const aY = (a.plate.querySelector('.years')?.textContent || '').match(/\d{4}/);
+        const bY = (b.plate.querySelector('.years')?.textContent || '').match(/\d{4}/);
         const aDiff = aY ? Math.abs(parseInt(aY[0]) - refYear) : 9999;
         const bDiff = bY ? Math.abs(parseInt(bY[0]) - refYear) : 9999;
         return aDiff - bDiff;
-      });
-      return empty[0];
-    }
-    // All candidates are already filled — pick closest to refYear but never overwrite hard data
-    if (refYear) {
-      candidates.sort((a, b) => {
-        const aY = (a.querySelector('.years')?.textContent || '').match(/\d{4}/);
-        const bY = (b.querySelector('.years')?.textContent || '').match(/\d{4}/);
-        const aDiff = aY ? Math.abs(parseInt(aY[0]) - refYear) : 9999;
-        const bDiff = bY ? Math.abs(parseInt(bY[0]) - refYear) : 9999;
-        return aDiff - bDiff;
-      });
-    }
-    return candidates[0]; // fallback
+      }
+      return 0;
+    });
+    return candidates[0].plate;
   }
 
   // Helper: find nameplate by surname (fuzzy) — prefers nameplates with matching or close birth year
-  function findNameplateBySurname(name, refYear) {
+  // opts: { certType, certYear } — filters out impossible generation matches
+  function findNameplateBySurname(name, refYear, opts) {
     if (!name) return null;
     const surname = name.split(' ').pop().toLowerCase();
     const plates = document.querySelectorAll('.nameplate');
@@ -1962,6 +1984,17 @@ certConfirm.addEventListener('click', () => {
       if ((fullText.toLowerCase().includes(surname) || maidenText.toLowerCase().includes(surname)) && nameText !== 'Name') {
         candidates.push(plate);
       }
+    }
+    // Filter by generation if opts provided
+    if (opts && opts.certType && opts.certYear && !isNaN(opts.certYear)) {
+      candidates = candidates.filter(p => {
+        const by = (p.querySelector('.years')?.textContent || '').match(/\d{4}/);
+        if (!by) return true;
+        if (opts.certType === 'marriage') return parseInt(by[0]) <= opts.certYear - 16;
+        if (opts.certType === 'death') return parseInt(by[0]) < opts.certYear;
+        if (opts.certType === 'birth' && refYear) return Math.abs(parseInt(by[0]) - refYear) < 50;
+        return true;
+      });
     }
     if (!candidates.length) return null;
     if (candidates.length === 1) return candidates[0];
@@ -2117,13 +2150,19 @@ certConfirm.addEventListener('click', () => {
 
     // Try to find the child in the tree
     childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
-    if (!childPlate) childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null);
+    if (!childPlate) childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
     if (!childPlate && birthYear) {
       // No name/surname match — tree may be empty. Try generation-based placement.
       childPlate = findEmptyNameplateByGeneration(parseInt(birthYear));
       if (childPlate) {
         messages.push('BC → no name match, placed by generation (' + (childPlate.dataset.gen || '?') + ')');
       }
+    }
+    // DEBUG: tell user what we matched
+    if (childPlate) {
+      showToast('Matched child to: ' + (childPlate.dataset.slot || 'unnamed slot'));
+    } else {
+      showToast('No match found for child: ' + childName);
     }
 
     if (childPlate && childPlate.dataset.slot) {
