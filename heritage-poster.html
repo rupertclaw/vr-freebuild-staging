@@ -2708,7 +2708,7 @@ const SPOUSE_MAP = {
       deathPlate = findNameplate(deceasedName, deathYear, dcOpts);
       if (!deathPlate) deathPlate = findNameplateBySurname(deceasedName, deathYear);
       if (deathPlate) {
-        // Update death year
+        // Update death year on the nameplate
         const deathInfo = data.deathDate || (data.deceased?.age ? 'd. age ' + data.deceased.age : '');
         const yearsEl = deathPlate.querySelector('.years');
         if (yearsEl) {
@@ -2721,12 +2721,93 @@ const SPOUSE_MAP = {
             if (birthYear && extractYear(data.deathDate)) {
               yearsEl.textContent = birthYear[0] + ' — ' + extractYear(data.deathDate);
             }
+          } else if (existing.match(/\d{4}\s*—\s*\d{4}/)) {
+            // Already has both years — just update death year
+            const parts = existing.split(/\s*—\s*/);
+            if (parts.length === 2 && extractYear(data.deathDate)) {
+              yearsEl.textContent = parts[0].trim() + ' — ' + extractYear(data.deathDate);
+            }
           }
         }
         fillPlate(deathPlate, deceasedName, yearsEl?.textContent || '');
         addDocBadge(deathPlate, 'death');
         filled++;
-        messages.push('DC → matched');
+        messages.push('DC → matched ' + deceasedName);
+
+        // Place the deceased's parents into the correct slots
+        const deathSlot = deathPlate.dataset.slot;
+        if (deathSlot && OWN_PARENT_MAP[deathSlot]) {
+          const pMap = OWN_PARENT_MAP[deathSlot];
+          // Father
+          if (data.father?.name) {
+            const fPlate = findSlot(pMap.fatherSlot);
+            if (fPlate) {
+              const existing = fPlate.dataset.fullname || fPlate.querySelector('.name').textContent;
+              const dcFather = data.father.name;
+              if (existing === 'Name') {
+                fillPlate(fPlate, dcFather, '', '');
+                addDocBadge(fPlate, 'death');
+                filled++;
+                messages.push('DC father → ' + pMap.fatherSlot);
+                showToast('Father: ' + dcFather + ' → ' + pMap.fatherSlot);
+              } else if (existing.toLowerCase().trim() !== dcFather.toLowerCase().trim()) {
+                // Name already there but different — check if it's the same person (partial match)
+                if (normalizeName(existing) === normalizeName(dcFather) || existing.toLowerCase().includes(dcFather.split(' ')[0].toLowerCase())) {
+                  // Same person, possibly with fuller name — update
+                  if (dcFather.length > existing.length) {
+                    fillPlate(fPlate, dcFather, '', '');
+                    addDocBadge(fPlate, 'death');
+                    filled++;
+                    messages.push('DC father updated ' + pMap.fatherSlot);
+                  }
+                }
+              }
+            }
+          }
+          // Mother
+          if (data.mother?.name) {
+            const mPlate = findSlot(pMap.motherSlot);
+            if (mPlate) {
+              const existing = mPlate.dataset.fullname || mPlate.querySelector('.name').textContent;
+              const dcMother = data.mother.name;
+              const dcMaiden = data.mother?.maidenName || data.mother?.maidenSurname || '';
+              if (existing === 'Name') {
+                fillPlate(mPlate, dcMother, '', dcMaiden);
+                addDocBadge(mPlate, 'death');
+                filled++;
+                messages.push('DC mother → ' + pMap.motherSlot);
+                showToast('Mother: ' + dcMother + (dcMaiden ? ' née ' + dcMaiden : '') + ' → ' + pMap.motherSlot);
+              } else if (existing.toLowerCase().trim() !== dcMother.toLowerCase().trim()) {
+                if (normalizeName(existing) === normalizeName(dcMother) || existing.toLowerCase().includes(dcMother.split(' ')[0].toLowerCase())) {
+                  if (dcMother.length > existing.length) {
+                    fillPlate(mPlate, dcMother, '', dcMaiden);
+                    addDocBadge(mPlate, 'death');
+                    filled++;
+                    messages.push('DC mother updated ' + pMap.motherSlot);
+                  }
+                }
+              }
+            }
+          }
+          // If spouse info from DC, update the spouse nameplate if it exists
+          if (data.deceased?.spouseName) {
+            const spouseSlot = SPOUSE_MAP[deathSlot];
+            if (spouseSlot) {
+              const sPlate = findSlot(spouseSlot);
+              if (sPlate) {
+                const existingSpouse = sPlate.dataset.fullname || sPlate.querySelector('.name').textContent;
+                if (existingSpouse === 'Name') {
+                  fillPlate(sPlate, data.deceased.spouseName, '');
+                  addDocBadge(sPlate, 'death');
+                  filled++;
+                  messages.push('DC spouse → ' + spouseSlot);
+                }
+              }
+            }
+          }
+        } else if (deathSlot) {
+          showToast('DC matched ' + deceasedName + ' but no parent slots for ' + deathSlot);
+        }
       }
     }
   }
