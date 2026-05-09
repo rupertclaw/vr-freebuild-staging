@@ -2163,10 +2163,21 @@ certConfirm.addEventListener('click', () => {
 
   // Helper: fill a nameplate with name + years; stores full name in data-fullname, displays short
   // If maidenName provided, stores in data-maiden for later matching
+  // SAFETY: will NOT overwrite an already-filled nameplate with a DIFFERENT person
   function fillPlate(plate, name, years, maidenName) {
     if (!plate) return false;
     const nameEl = plate.querySelector('.name');
     if (!nameEl) return false;
+    const existing = nameEl.textContent.trim();
+    const existingFull = (plate.dataset.fullname || '').toLowerCase().trim();
+    const newFull = name.toLowerCase().trim();
+    const newNorm = normalizeName(name);
+    const existingNorm = normalizeName(plate.dataset.fullname || existing);
+    // Block cross-person overwrite: if slot has a real name and it's a different person
+    if (existing !== 'Name' && existing !== '' && existingNorm !== newNorm) {
+      console.log('[fillPlate] BLOCKED overwrite of', plate.dataset.slot, ':', existing, '→', name);
+      return false;
+    }
     plate.dataset.fullname = name;
     if (maidenName) plate.dataset.maiden = maidenName;
     nameEl.textContent = shortName(name);
@@ -2258,6 +2269,34 @@ certConfirm.addEventListener('click', () => {
         if (expGen !== null && Math.abs(matchedGen - expGen) > 1) {
           console.log('[BC] Surname match rejected: gen', matchedGen, 'vs expected', expGen);
           childPlate = null; // Wrong generation — discard
+        }
+      }
+    }
+    // CRITICAL: if we matched an existing nameplate, verify parents are consistent
+    // Prevents "Andrew Maddox Fenwick" overwriting "Andrew Fenwick" (different people, same first+last)
+    if (childPlate && data.father?.name && data.mother?.name) {
+      const slot = childPlate.dataset.slot;
+      const pMap = OWN_PARENT_MAP[slot];
+      if (pMap) {
+        const dadPlate = findSlot(pMap.fatherSlot);
+        const momPlate = findSlot(pMap.motherSlot);
+        const dadName = dadPlate?.dataset.fullname || dadPlate?.querySelector('.name')?.textContent || '';
+        const momName = momPlate?.dataset.fullname || momPlate?.querySelector('.name')?.textContent || '';
+        // If parents are already filled, check if cert parents match (same surname is enough)
+        const certDadSurname = data.father.name.split(' ').pop().toLowerCase();
+        const certMomSurname = data.mother.name.split(' ').pop().toLowerCase();
+        const treeDadSurname = dadName.split(' ').pop().toLowerCase();
+        const treeMomSurname = momName.split(' ').pop().toLowerCase();
+        if (dadName !== 'Name' && momName !== 'Name') {
+          // Both parents already filled — verify consistency
+          const dadMatch = treeDadSurname === certDadSurname;
+          const momMatch = treeMomSurname === certMomSurname || (momPlate?.dataset.maiden || '').toLowerCase() === certMomSurname;
+          if (!dadMatch || !momMatch) {
+            console.log('[BC] Parent mismatch! Cert parents:', data.father.name, '&', data.mother.name,
+              'but tree has:', dadName, '&', momName, '— rejecting match');
+            showToast('Name matched but parents differ — placing in empty slot instead');
+            childPlate = null; // Reject the match
+          }
         }
       }
     }
