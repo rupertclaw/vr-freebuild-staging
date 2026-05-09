@@ -1971,24 +1971,37 @@ certConfirm.addEventListener('click', () => {
       const plateGen = parseInt(plate.dataset.gen || '0');
 
       let score = 0;
-      // Exact match = highest score
-      if (display === searchName || fullName === searchName || maiden === searchName) score = 100;
-      // Full containment = high score
-      else if (searchName.includes(fullName) || fullName.includes(searchName)) score = 80;
-      else if (searchName.includes(display) || display.includes(searchName)) score = 75;
-      // Normalized first+last match = good score
-      else if (displayNorm === searchNorm || fullNorm === searchNorm) score = 60;
-      else if (searchNorm.includes(displayNorm) || displayNorm.includes(searchNorm)) score = 50;
+      // SAME PERSON CHECK: if normalized first+last names match, it's the same person
+      // regardless of middle names, initials, or name variations.
+      // "Andrew Fenwick" === "Andrew Maddox Fenwick" after normalization.
+      // This MUST score as high as an exact match so tiebreakers (generation, slot) decide.
+      if (displayNorm === searchNorm || fullNorm === searchNorm) {
+        score = 100; // Same person — exact-match tier
+      }
+      // Exact string match (display/full/maiden matches search exactly)
+      else if (display === searchName || fullName === searchName || maiden === searchName) {
+        score = 100;
+      }
+      // Full containment (one name contains the other)
+      else if (searchName.includes(fullName) || fullName.includes(searchName)) {
+        score = 80;
+      }
+      else if (searchName.includes(display) || display.includes(searchName)) {
+        score = 75;
+      }
+      // Partial normalized match
+      else if (searchNorm.includes(displayNorm) || displayNorm.includes(searchNorm)) {
+        score = 50;
+      }
 
       // Generation penalty/bonus for birth certs
       // If this plate is in a wildly wrong generation, penalize it heavily
-      // This prevents a duplicate in the wrong generation from beating the correct match
       if (score > 0 && opts && opts.certType === 'birth' && expGen !== null) {
         const genDiff = Math.abs(plateGen - expGen);
         if (genDiff > 1) {
-          score -= 50; // Heavy penalty for wrong generation
+          score -= 50;
         } else if (genDiff === 0) {
-          score += 10; // Small bonus for exact generation match
+          score += 10;
         }
       }
 
@@ -2058,8 +2071,12 @@ certConfirm.addEventListener('click', () => {
         const bDiff = bY ? Math.abs(parseInt(bY[0]) - refYear) : 9999;
         if (aDiff !== bDiff) return aDiff - bDiff;
       }
-      // FINAL tiebreaker: for birth certs, prefer the LESS-filled plate
-      // This prevents a duplicate with existing data from beating the empty original
+      // Tiebreaker: prefer slotted plates (they're in the correct position in the tree)
+      const aSlot = a.plate.dataset.slot ? 1 : 0;
+      const bSlot = b.plate.dataset.slot ? 1 : 0;
+      if (aSlot !== bSlot) return bSlot - aSlot; // slotted wins
+      // Final tiebreaker: for birth certs, prefer the LESS-filled plate
+      // so "Andrew Fenwick" (empty) beats "Andrew H. Fenwick" (duplicate with data)
       if (opts && opts.certType === 'birth') {
         const aData = (a.plate.dataset.fullname ? 1 : 0) + (a.plate.dataset.docs ? 1 : 0);
         const bData = (b.plate.dataset.fullname ? 1 : 0) + (b.plate.dataset.docs ? 1 : 0);
