@@ -1572,7 +1572,8 @@ async function processDocFile(file) {
   reader.readAsDataURL(file);
 
   // Compress/resize image before API to stay under Vercel's 4.5MB limit
-  const base64 = await resizeAndCompressImage(file, 1200, 0.85);
+  // Use 1600px max and 90% quality for better OCR of small handwritten text
+  const base64 = await resizeAndCompressImage(file, 1600, 0.90);
 
   // Store for potential document retention
   pendingDocImage = base64;
@@ -1674,21 +1675,20 @@ function extractEntryFields(entry, type) {
 
 // Get a short summary line for an entry (used as card header)
 function entrySummary(entry, type) {
-  if (type === 'marriage') {
-    const groom = entry.groom?.name || 'Unknown';
-    const bride = entry.bride?.name || 'Unknown';
-    const date = entry.date || '';
+  // Try to extract name from various possible structures
+  const name = entry.child?.name || entry.groom?.name || entry.bride?.name || entry.deceased?.name || entry.name || entry.person?.name || 'Unknown';
+  const date = entry.child?.birthDate || entry.date || entry.deathDate || entry.birthDate || '';
+  
+  if (type === 'marriage' || (!type && entry.groom?.name)) {
+    const groom = entry.groom?.name || entry.groom || 'Unknown';
+    const bride = entry.bride?.name || entry.bride || 'Unknown';
     return `${groom} & ${bride}${date ? ' — ' + date : ''}`;
-  } else if (type === 'birth') {
-    const child = entry.child?.name || 'Unknown';
-    const date = entry.child?.birthDate || '';
-    return `${child}${date ? ' — b. ' + date : ''}`;
-  } else if (type === 'death') {
-    const name = entry.deceased?.name || 'Unknown';
-    const date = entry.deathDate || '';
+  } else if (type === 'birth' || (!type && (entry.child?.name || entry.father?.name))) {
+    return `${name}${date ? ' — b. ' + date : ''}`;
+  } else if (type === 'death' || (!type && entry.deceased?.name)) {
     return `${name}${date ? ' — d. ' + date : ''}`;
   }
-  return 'Unknown record';
+  return name !== 'Unknown' ? name : 'Unknown record';
 }
 
 function renderTranscriptionResults(data) {
@@ -1697,7 +1697,18 @@ function renderTranscriptionResults(data) {
 
   // Handle multi-entry format
   const entries = data.entries || [data];
-  const type = data.type || 'unknown';
+  
+  // Auto-detect type if not provided
+  let type = data.type || 'unknown';
+  if (type === 'unknown' && entries.length > 0) {
+    const first = entries[0];
+    if (first.groom?.name || first.bride?.name) type = 'marriage';
+    else if (first.child?.name || first.father?.name || first.mother?.name) type = 'birth';
+    else if (first.deceased?.name) type = 'death';
+    // Also try flat structures
+    else if (first.name && first.age && first.spouseName) type = 'death';
+    else if (first.name && first.father?.name) type = 'birth';
+  }
 
   // Shared helper: select a card and update state
   function selectCard(card, entry, idx) {
