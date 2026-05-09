@@ -2318,6 +2318,70 @@ certConfirm.addEventListener('click', () => {
     const birthYear = extractYear(data.child?.birthDate);
     const bcOpts = birthYear ? { certType: 'birth', certYear: parseInt(birthYear) } : null;
 
+    // PRE-MATCH: Merge duplicate nameplates for the same normalized person.
+    // e.g. "Andrew Fenwick" (slotted, empty) and "Andrew H. Fenwick" (unslotted, with data)
+    // are the same person. Merge: copy data from duplicate into the best plate, then clear it.
+    (function mergeDuplicates() {
+      const allPlates = Array.from(document.querySelectorAll('.nameplate'));
+      const normGroups = new Map();
+      allPlates.forEach(p => {
+        const disp = normalizeName(p.querySelector('.name')?.textContent || '');
+        const full = normalizeName(p.dataset.fullname || '');
+        // Only group non-placeholder plates
+        if (disp && disp !== 'name') {
+          if (!normGroups.has(disp)) normGroups.set(disp, []);
+          normGroups.get(disp).push(p);
+        }
+        if (full && full !== disp && full !== 'name') {
+          if (!normGroups.has(full)) normGroups.set(full, []);
+          // Don't double-add if display norm already matches
+          if (!normGroups.get(full).includes(p)) normGroups.get(full).push(p);
+        }
+      });
+      normGroups.forEach((plates, norm) => {
+        if (plates.length < 2) return; // no duplicates
+        // Sort: prefer the slotted plate with a proper position, then least-filled
+        plates.sort((a, b) => {
+          const aSlot = a.dataset.slot ? 1 : 0;
+          const bSlot = b.dataset.slot ? 1 : 0;
+          if (bSlot !== aSlot) return bSlot - aSlot; // slotted first
+          const aData = (a.dataset.fullname ? 1 : 0) + (a.dataset.docs ? 1 : 0);
+          const bData = (b.dataset.fullname ? 1 : 0) + (b.dataset.docs ? 1 : 0);
+          return aData - bData; // less data first (we'll merge INTO the slotted one)
+        });
+        const keeper = plates[0]; // best plate (slotted, or least-filled)
+        const dups = plates.slice(1);
+        dups.forEach(dup => {
+          // Merge data from duplicate into keeper (if keeper doesn't have it)
+          if (!keeper.dataset.fullname && dup.dataset.fullname) keeper.dataset.fullname = dup.dataset.fullname;
+          if (!keeper.dataset.maiden && dup.dataset.maiden) keeper.dataset.maiden = dup.dataset.maiden;
+          if (!keeper.dataset.docs && dup.dataset.docs) keeper.dataset.docs = dup.dataset.docs;
+          const keeperYears = keeper.querySelector('.years')?.textContent || '';
+          const dupYears = dup.querySelector('.years')?.textContent || '';
+          if ((keeperYears === 'YYYY — YYYY' || !keeperYears.trim()) && dupYears && dupYears !== 'YYYY — YYYY') {
+            keeper.querySelector('.years').textContent = dupYears;
+          }
+          // Update display name to the fuller version
+          const keeperName = keeper.querySelector('.name')?.textContent || '';
+          const dupName = dup.querySelector('.name')?.textContent || '';
+          if (keeperName === 'Name' && dupName !== 'Name') {
+            keeper.querySelector('.name').textContent = dupName;
+          }
+          // Clear the duplicate
+          console.log('[MERGE] Merging duplicate "' + norm + '": kept', keeper.dataset.slot, ', cleared', dup.dataset.slot);
+          dup.querySelector('.name').textContent = 'Name';
+          dup.querySelector('.years').textContent = 'YYYY — YYYY';
+          delete dup.dataset.fullname;
+          delete dup.dataset.maiden;
+          delete dup.dataset.docs;
+        });
+        // Re-display keeper with short name from fullname
+        if (keeper.dataset.fullname) {
+          keeper.querySelector('.name').textContent = shortName(keeper.dataset.fullname);
+        }
+      });
+    })();
+
     // Try to find the child in the tree
     childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
     // Surname fallback only if generation makes sense
