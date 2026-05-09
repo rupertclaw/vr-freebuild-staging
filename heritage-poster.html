@@ -1682,6 +1682,7 @@ function extractEntryFields(entry, type) {
     if (entry.child?.birthDate) fields.push({ label: 'Birth Date', value: entry.child.birthDate, conf: confidence.fields?.child_birthDate, path: 'child.birthDate' });
     if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, conf: confidence.fields?.father_name, path: 'father.name' });
     if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name, conf: confidence.fields?.mother_name, path: 'mother.name' });
+    if (entry.mother?.maidenName) fields.push({ label: 'Mother Maiden', value: entry.mother.maidenName, conf: confidence.fields?.mother_maidenName, path: 'mother.maidenName' });
     if (entry.mother?.maidenSurname) fields.push({ label: 'Mother Maiden', value: entry.mother.maidenSurname, conf: confidence.fields?.mother_maidenSurname, path: 'mother.maidenSurname' });
     if (entry.parentsMarriage?.date) fields.push({ label: 'Parents Married', value: entry.parentsMarriage.date, conf: confidence.fields?.parentsMarriage_date, path: 'parentsMarriage.date' });
     if (entry.district) fields.push({ label: 'District', value: entry.district, conf: confidence.fields?.district, path: 'district' });
@@ -1690,8 +1691,12 @@ function extractEntryFields(entry, type) {
     if (entry.deceased?.age) fields.push({ label: 'Age', value: entry.deceased.age, conf: confidence.fields?.deceased_age, path: 'deceased.age' });
     if (entry.deceased?.spouseName) fields.push({ label: 'Spouse', value: entry.deceased.spouseName, conf: confidence.fields?.spouseName, path: 'deceased.spouseName' });
     if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, conf: confidence.fields?.father_name, path: 'father.name' });
+    if (entry.father?.occupation) fields.push({ label: 'Father Occupation', value: entry.father.occupation, conf: confidence.fields?.father_occupation, path: 'father.occupation' });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name, conf: confidence.fields?.mother_name, path: 'mother.name' });
     if (entry.mother?.maidenName) fields.push({ label: 'Mother Maiden', value: entry.mother.maidenName, conf: confidence.fields?.mother_maidenName, path: 'mother.maidenName' });
-    if (entry.deathDate) fields.push({ label: 'Death Date', value: entry.deathDate, conf: confidence.fields?.deathDate, path: 'deathDate' });
+    if (entry.causeOfDeath) fields.push({ label: 'Cause', value: entry.causeOfDeath, conf: confidence.fields?.causeOfDeath, path: 'causeOfDeath' });
+    if (entry.deathDate) fields.push({ label: 'Date', value: entry.deathDate, conf: confidence.fields?.deathDate, path: 'deathDate' });
+    if (entry.place) fields.push({ label: 'Place', value: entry.place, conf: confidence.fields?.place, path: 'place' });
     if (entry.district) fields.push({ label: 'District', value: entry.district, conf: confidence.fields?.district, path: 'district' });
   }
 
@@ -2477,7 +2482,7 @@ const SPOUSE_MAP = {
           const existing = mPlate.dataset.fullname || mPlate.querySelector('.name').textContent;
           const bcMother = data.mother.name;
           if (existing === 'Name') {
-            const ok = fillPlate(mPlate, bcMother, '', data.mother?.maidenSurname || '');
+            const ok = fillPlate(mPlate, bcMother, '', data.mother?.maidenName || data.mother?.maidenSurname || '');
             if (ok) {
               addDocBadge(mPlate, 'birth');
               filled++;
