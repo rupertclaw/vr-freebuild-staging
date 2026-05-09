@@ -2384,6 +2384,7 @@ certConfirm.addEventListener('click', () => {
 
     // Try to find the child in the tree
     childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
+    showToast('BC: searching for "' + childName + '" (year=' + (birthYear||'?') + ')');
     // Surname fallback only if generation makes sense
     if (!childPlate && birthYear) {
       childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
