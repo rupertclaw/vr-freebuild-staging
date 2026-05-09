@@ -1897,6 +1897,7 @@ const SPOUSE_MAP = {
 // SPOUSE_PARENT_MAP removed — use OWN_PARENT_MAP[SPOUSE_MAP[slot]] instead
 
 certConfirm.addEventListener('click', () => {
+  showToast('Apply clicked');
   if (!lastTranscription) {
     showToast('No entry selected. Tap a card first.');
     return;
@@ -1908,6 +1909,9 @@ certConfirm.addEventListener('click', () => {
   }
   try {
   showToast('Applying...');
+  // DEBUG: show what data we're working with
+  const preview = lastTranscription.child?.name || lastTranscription.groom?.name || lastTranscription.deceased?.name || 'no name';
+  showToast('Data: ' + preview.substring(0, 30));
   const data = lastTranscription;
   const type = data._type || 'unknown';
 
@@ -2052,7 +2056,14 @@ certConfirm.addEventListener('click', () => {
         const bY = (b.plate.querySelector('.years')?.textContent || '').match(/\d{4}/);
         const aDiff = aY ? Math.abs(parseInt(aY[0]) - refYear) : 9999;
         const bDiff = bY ? Math.abs(parseInt(bY[0]) - refYear) : 9999;
-        return aDiff - bDiff;
+        if (aDiff !== bDiff) return aDiff - bDiff;
+      }
+      // FINAL tiebreaker: for birth certs, prefer the LESS-filled plate
+      // This prevents a duplicate with existing data from beating the empty original
+      if (opts && opts.certType === 'birth') {
+        const aData = (a.plate.dataset.fullname ? 1 : 0) + (a.plate.dataset.docs ? 1 : 0);
+        const bData = (b.plate.dataset.fullname ? 1 : 0) + (b.plate.dataset.docs ? 1 : 0);
+        return aData - bData; // less data wins (ascending)
       }
       return 0;
     });
@@ -2289,43 +2300,6 @@ certConfirm.addEventListener('click', () => {
     const childName = data.child?.name || '';
     const birthYear = extractYear(data.child?.birthDate);
     const bcOpts = birthYear ? { certType: 'birth', certYear: parseInt(birthYear) } : null;
-
-    // Pre-clean: remove duplicate nameplates for the same normalized name
-    // A duplicate is an empty or near-empty plate that shares a normalized name with a filled plate
-    const allPlates = Array.from(document.querySelectorAll('.nameplate'));
-    const normMap = new Map();
-    allPlates.forEach(p => {
-      const n = normalizeName(p.querySelector('.name')?.textContent || '');
-      const fn = normalizeName(p.dataset.fullname || '');
-      if (n && n !== 'name' && n !== '') {
-        if (!normMap.has(n)) normMap.set(n, []);
-        normMap.get(n).push(p);
-      }
-      if (fn && fn !== n && fn !== 'name' && fn !== '') {
-        if (!normMap.has(fn)) normMap.set(fn, []);
-        normMap.get(fn).push(p);
-      }
-    });
-    normMap.forEach((plates, normName) => {
-      if (plates.length > 1) {
-        // Sort by how filled they are (more data = keep)
-        plates.sort((a, b) => {
-          const aData = (a.dataset.fullname ? 1 : 0) + (a.querySelector('.years')?.textContent?.includes('—') ? 1 : 0) + (a.dataset.docs ? 1 : 0);
-          const bData = (b.dataset.fullname ? 1 : 0) + (b.querySelector('.years')?.textContent?.includes('—') ? 1 : 0) + (b.dataset.docs ? 1 : 0);
-          return bData - aData; // more data first
-        });
-        // Clear all but the most filled one
-        plates.slice(1).forEach(p => {
-          const slot = p.dataset.slot || '?';
-          console.log('[DEDUP] Clearing duplicate "' + normName + '" from slot', slot);
-          p.querySelector('.name').textContent = 'Name';
-          p.querySelector('.years').textContent = 'YYYY — YYYY';
-          delete p.dataset.fullname;
-          delete p.dataset.maiden;
-          delete p.dataset.docs;
-        });
-      }
-    });
 
     // Try to find the child in the tree
     childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
