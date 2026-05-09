@@ -1896,8 +1896,10 @@ const SPOUSE_MAP = {
 
 // SPOUSE_PARENT_MAP removed — use OWN_PARENT_MAP[SPOUSE_MAP[slot]] instead
 
-certConfirm.addEventListener('click', () => {
-  showToast('Apply clicked');
+  certConfirm.addEventListener('click', () => {
+  try {
+  showToast('Apply clicked — type will show next');
+  } catch(e) { console.error('toast err', e); }
   if (!lastTranscription) {
     showToast('No entry selected. Tap a card first.');
     return;
@@ -2321,6 +2323,7 @@ certConfirm.addEventListener('click', () => {
     // PRE-MATCH: Merge duplicate nameplates for the same normalized person.
     // e.g. "Andrew Fenwick" (slotted, empty) and "Andrew H. Fenwick" (unslotted, with data)
     // are the same person. Merge: copy data from duplicate into the best plate, then clear it.
+    try {
     (function mergeDuplicates() {
       const allPlates = Array.from(document.querySelectorAll('.nameplate'));
       const normGroups = new Map();
@@ -2338,18 +2341,18 @@ certConfirm.addEventListener('click', () => {
           if (!normGroups.get(full).includes(p)) normGroups.get(full).push(p);
         }
       });
+      let mergeCount = 0;
       normGroups.forEach((plates, norm) => {
         if (plates.length < 2) return; // no duplicates
-        // Sort: prefer the slotted plate with a proper position, then least-filled
+        // Sort: prefer the slotted plate with data, then slotted without data, then least-filled
         plates.sort((a, b) => {
-          const aSlot = a.dataset.slot ? 1 : 0;
-          const bSlot = b.dataset.slot ? 1 : 0;
-          if (bSlot !== aSlot) return bSlot - aSlot; // slotted first
+          const aSlot = a.dataset.slot ? 2 : 0;
+          const bSlot = b.dataset.slot ? 2 : 0;
           const aData = (a.dataset.fullname ? 1 : 0) + (a.dataset.docs ? 1 : 0);
           const bData = (b.dataset.fullname ? 1 : 0) + (b.dataset.docs ? 1 : 0);
-          return aData - bData; // less data first (we'll merge INTO the slotted one)
+          return (bSlot + bData) - (aSlot + aData); // slotted + data wins
         });
-        const keeper = plates[0]; // best plate (slotted, or least-filled)
+        const keeper = plates[0]; // best plate (slotted with data, or slotted, or with data)
         const dups = plates.slice(1);
         dups.forEach(dup => {
           // Merge data from duplicate into keeper (if keeper doesn't have it)
@@ -2364,7 +2367,7 @@ certConfirm.addEventListener('click', () => {
           // Update display name to the fuller version
           const keeperName = keeper.querySelector('.name')?.textContent || '';
           const dupName = dup.querySelector('.name')?.textContent || '';
-          if (keeperName === 'Name' && dupName !== 'Name') {
+          if ((keeperName === 'Name' || keeperName.length < dupName.length) && dupName !== 'Name') {
             keeper.querySelector('.name').textContent = dupName;
           }
           // Clear the duplicate
@@ -2374,13 +2377,19 @@ certConfirm.addEventListener('click', () => {
           delete dup.dataset.fullname;
           delete dup.dataset.maiden;
           delete dup.dataset.docs;
+          mergeCount++;
         });
         // Re-display keeper with short name from fullname
         if (keeper.dataset.fullname) {
           keeper.querySelector('.name').textContent = shortName(keeper.dataset.fullname);
         }
       });
+      if (mergeCount > 0) showToast('Merged ' + mergeCount + ' duplicate(s)');
     })();
+    } catch(mergeErr) {
+      console.error('[MERGE ERROR]', mergeErr);
+      showToast('Merge error: ' + mergeErr.message);
+    }
 
     // Try to find the child in the tree
     childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
