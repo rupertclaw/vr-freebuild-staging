@@ -1964,16 +1964,31 @@ certConfirm.addEventListener('click', () => {
       const maiden = (plate.dataset.maiden || '').toLowerCase().trim();
       const displayNorm = normalizeName(display);
       const fullNorm = normalizeName(fullName);
+      const plateGen = parseInt(plate.dataset.gen || '0');
 
+      let score = 0;
       // Exact match = highest score
-      if (display === searchName || fullName === searchName || maiden === searchName) return 100;
-      // Full containment = high score (e.g. "Andrew Henderson Craigie" contains "Andrew Craigie")
-      if (searchName.includes(fullName) || fullName.includes(searchName)) return 80;
-      if (searchName.includes(display) || display.includes(searchName)) return 75;
+      if (display === searchName || fullName === searchName || maiden === searchName) score = 100;
+      // Full containment = high score
+      else if (searchName.includes(fullName) || fullName.includes(searchName)) score = 80;
+      else if (searchName.includes(display) || display.includes(searchName)) score = 75;
       // Normalized first+last match = good score
-      if (displayNorm === searchNorm || fullNorm === searchNorm) return 60;
-      if (searchNorm.includes(displayNorm) || displayNorm.includes(searchNorm)) return 50;
-      return 0;
+      else if (displayNorm === searchNorm || fullNorm === searchNorm) score = 60;
+      else if (searchNorm.includes(displayNorm) || displayNorm.includes(searchNorm)) score = 50;
+
+      // Generation penalty/bonus for birth certs
+      // If this plate is in a wildly wrong generation, penalize it heavily
+      // This prevents a duplicate in the wrong generation from beating the correct match
+      if (score > 0 && opts && opts.certType === 'birth' && expGen !== null) {
+        const genDiff = Math.abs(plateGen - expGen);
+        if (genDiff > 1) {
+          score -= 50; // Heavy penalty for wrong generation
+        } else if (genDiff === 0) {
+          score += 10; // Small bonus for exact generation match
+        }
+      }
+
+      return score;
     }
 
     for (const plate of plates) {
@@ -1982,6 +1997,23 @@ certConfirm.addEventListener('click', () => {
         candidates.push({ plate, score });
       }
     }
+
+    // DEBUG: log all candidates and store for mobile toast
+    if (candidates.length > 0) {
+      console.log('[findNameplate] Candidates for "' + name + '":');
+      candidates.forEach(c => {
+        const slot = c.plate.dataset.slot || 'no-slot';
+        const gen = c.plate.dataset.gen || '?';
+        const display = c.plate.querySelector('.name')?.textContent || 'empty';
+        console.log('  slot=' + slot + ' gen=' + gen + ' score=' + c.score + ' name="' + display + '"');
+      });
+    }
+    window.__lastFindCandidates = candidates.map(c => ({
+      slot: c.plate.dataset.slot || '?',
+      gen: c.plate.dataset.gen || '?',
+      name: c.plate.querySelector('.name')?.textContent || 'empty',
+      score: c.score
+    }));
 
     // Filter out impossible generation matches before ranking
     if (opts && opts.certType && opts.certYear && !isNaN(opts.certYear)) {
@@ -2258,6 +2290,43 @@ certConfirm.addEventListener('click', () => {
     const birthYear = extractYear(data.child?.birthDate);
     const bcOpts = birthYear ? { certType: 'birth', certYear: parseInt(birthYear) } : null;
 
+    // Pre-clean: remove duplicate nameplates for the same normalized name
+    // A duplicate is an empty or near-empty plate that shares a normalized name with a filled plate
+    const allPlates = Array.from(document.querySelectorAll('.nameplate'));
+    const normMap = new Map();
+    allPlates.forEach(p => {
+      const n = normalizeName(p.querySelector('.name')?.textContent || '');
+      const fn = normalizeName(p.dataset.fullname || '');
+      if (n && n !== 'name' && n !== '') {
+        if (!normMap.has(n)) normMap.set(n, []);
+        normMap.get(n).push(p);
+      }
+      if (fn && fn !== n && fn !== 'name' && fn !== '') {
+        if (!normMap.has(fn)) normMap.set(fn, []);
+        normMap.get(fn).push(p);
+      }
+    });
+    normMap.forEach((plates, normName) => {
+      if (plates.length > 1) {
+        // Sort by how filled they are (more data = keep)
+        plates.sort((a, b) => {
+          const aData = (a.dataset.fullname ? 1 : 0) + (a.querySelector('.years')?.textContent?.includes('—') ? 1 : 0) + (a.dataset.docs ? 1 : 0);
+          const bData = (b.dataset.fullname ? 1 : 0) + (b.querySelector('.years')?.textContent?.includes('—') ? 1 : 0) + (b.dataset.docs ? 1 : 0);
+          return bData - aData; // more data first
+        });
+        // Clear all but the most filled one
+        plates.slice(1).forEach(p => {
+          const slot = p.dataset.slot || '?';
+          console.log('[DEDUP] Clearing duplicate "' + normName + '" from slot', slot);
+          p.querySelector('.name').textContent = 'Name';
+          p.querySelector('.years').textContent = 'YYYY — YYYY';
+          delete p.dataset.fullname;
+          delete p.dataset.maiden;
+          delete p.dataset.docs;
+        });
+      }
+    });
+
     // Try to find the child in the tree
     childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
     // Surname fallback only if generation makes sense
@@ -2291,6 +2360,16 @@ certConfirm.addEventListener('click', () => {
       showToast('Matched "' + childName + '" to slot ' + slot + ' (gen ' + gen + ', was: ' + existing + ')');
     } else {
       showToast('No match for "' + childName + '" — will try generation placement');
+    }
+    // Also show all candidates in a delayed toast for mobile debugging
+    const allCands = window.__lastFindCandidates || [];
+    if (allCands.length > 1) {
+      setTimeout(() => {
+        const top3 = allCands.slice(0, 3).map(c => {
+          return c.slot + '=' + c.name.substring(0, 12) + '(sc' + c.score + ')';
+        }).join(', ');
+        showToast('Top matches: ' + top3);
+      }, 1500);
     }
 
     if (childPlate && childPlate.dataset.slot) {
