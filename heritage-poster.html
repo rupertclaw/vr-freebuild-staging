@@ -1557,12 +1557,20 @@ certFileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
   pendingDocFile = file;
-  await processDocFile(file);
+  try {
+    await processDocFile(file);
+  } catch (err) {
+    console.error('[UPLOAD ERROR]', err);
+    certStatus.style.display = 'block';
+    certStatus.className = 'cert-status';
+    certStatus.innerHTML = 'Error: ' + (err.message || 'Could not process image') + '<br><small>Tap Try Again to retry</small>';
+    certRetry.style.display = 'block';
+  }
 });
 
 // Shared processing function — used for initial upload AND retries
 async function processDocFile(file) {
-  // Show preview
+  // Show preview immediately
   const reader = new FileReader();
   reader.onload = (ev) => {
     certPreviewImg.src = ev.target.result;
@@ -1571,9 +1579,26 @@ async function processDocFile(file) {
   };
   reader.readAsDataURL(file);
 
-  // Compress/resize image before API to stay under Vercel's 4.5MB limit
-  // Use 1600px max and 90% quality for better OCR of small handwritten text
-  const base64 = await resizeAndCompressImage(file, 1600, 0.90);
+  // Show compressing status
+  certStatus.style.display = 'block';
+  certStatus.className = 'cert-status scan';
+  certStatus.textContent = 'Preparing image...';
+
+  let base64;
+  try {
+    // Compress/resize image before API to stay under Vercel's 4.5MB limit
+    // Use 1600px max and 90% quality for better OCR of small handwritten text
+    base64 = await resizeAndCompressImage(file, 1600, 0.90);
+  } catch (compressErr) {
+    console.error('[COMPRESS ERROR]', compressErr);
+    // Fallback: use original file
+    base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
 
   // Store for potential document retention
   pendingDocImage = base64;
@@ -2173,7 +2198,9 @@ certConfirm.addEventListener('click', () => {
   function resizeAndCompressImage(file, maxWidth, quality) {
     return new Promise((resolve, reject) => {
       const img = new Image();
+      const url = URL.createObjectURL(file);
       img.onload = () => {
+        URL.revokeObjectURL(url);
         let w = img.width;
         let h = img.height;
         if (w > maxWidth) {
@@ -2184,12 +2211,17 @@ certConfirm.addEventListener('click', () => {
         canvas.width = w;
         canvas.height = h;
         const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, w, h);
         ctx.drawImage(img, 0, 0, w, h);
         const dataUrl = canvas.toDataURL('image/jpeg', quality);
         resolve(dataUrl);
       };
-      img.onerror = reject;
-      img.src = URL.createObjectURL(file);
+      img.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load image for compression'));
+      };
+      img.src = url;
     });
   }
 
