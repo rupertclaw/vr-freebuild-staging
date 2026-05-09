@@ -2285,9 +2285,12 @@ certConfirm.addEventListener('click', () => {
     }
     // DEBUG: tell user what we matched
     if (childPlate) {
-      showToast('Matched child to: ' + (childPlate.dataset.slot || 'unnamed slot'));
+      const slot = childPlate.dataset.slot || 'unnamed';
+      const gen = childPlate.dataset.gen || '?';
+      const existing = childPlate.querySelector('.name')?.textContent || 'empty';
+      showToast('Matched "' + childName + '" to slot ' + slot + ' (gen ' + gen + ', was: ' + existing + ')');
     } else {
-      showToast('No match found for child: ' + childName);
+      showToast('No match for "' + childName + '" — will try generation placement');
     }
 
     if (childPlate && childPlate.dataset.slot) {
@@ -2301,20 +2304,28 @@ certConfirm.addEventListener('click', () => {
       const slot = childPlate.dataset.slot;
       const pMap = OWN_PARENT_MAP[slot];
       if (pMap && pMap.fatherSlot && data.father?.name) {
-        // Already have parents from marriage cert? Just verify — don't overwrite
         const fPlate = findSlot(pMap.fatherSlot);
         if (fPlate) {
-          // Cross-verify: does BC father match what's already there?
           const existing = fPlate.dataset.fullname || fPlate.querySelector('.name').textContent;
           const bcFather = data.father.name;
           if (existing === 'Name') {
-            fillPlate(fPlate, bcFather, '');
-            addDocBadge(fPlate, 'birth');
-            filled++;
-            messages.push("BC father → " + pMap.fatherSlot);
+            const ok = fillPlate(fPlate, bcFather, '');
+            if (ok) {
+              addDocBadge(fPlate, 'birth');
+              filled++;
+              messages.push("BC father → " + pMap.fatherSlot);
+              showToast('Father: ' + bcFather + ' → ' + pMap.fatherSlot);
+            } else {
+              showToast('Father slot ' + pMap.fatherSlot + ' blocked by fillPlate');
+            }
+          } else {
+            showToast('Father slot ' + pMap.fatherSlot + ' already has: ' + existing);
           }
-          // If already filled, we just note it matched (verification)
+        } else {
+          showToast('Father slot ' + pMap.fatherSlot + ' not found in DOM');
         }
+      } else {
+        showToast('No pMap or no father data. pMap=' + JSON.stringify(pMap) + ' father=' + (data.father?.name || 'missing'));
       }
       if (pMap && pMap.motherSlot && data.mother?.name) {
         const mPlate = findSlot(pMap.motherSlot);
@@ -2322,12 +2333,23 @@ certConfirm.addEventListener('click', () => {
           const existing = mPlate.dataset.fullname || mPlate.querySelector('.name').textContent;
           const bcMother = data.mother.name;
           if (existing === 'Name') {
-            fillPlate(mPlate, bcMother, '', data.mother?.maidenSurname || '');
-            addDocBadge(mPlate, 'birth');
-            filled++;
-            messages.push("BC mother → " + pMap.motherSlot);
+            const ok = fillPlate(mPlate, bcMother, '', data.mother?.maidenSurname || '');
+            if (ok) {
+              addDocBadge(mPlate, 'birth');
+              filled++;
+              messages.push("BC mother → " + pMap.motherSlot);
+              showToast('Mother: ' + bcMother + ' → ' + pMap.motherSlot);
+            } else {
+              showToast('Mother slot ' + pMap.motherSlot + ' blocked by fillPlate');
+            }
+          } else {
+            showToast('Mother slot ' + pMap.motherSlot + ' already has: ' + existing);
           }
+        } else {
+          showToast('Mother slot ' + pMap.motherSlot + ' not found in DOM');
         }
+      } else {
+        showToast('No mother data or pMap. mother=' + (data.mother?.name || 'missing'));
       }
     } else if (childPlate) {
       // Found the child but on a generic nameplate (no slot) — just update
