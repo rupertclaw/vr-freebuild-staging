@@ -1508,7 +1508,10 @@ sessionFileInput.addEventListener('change', (e) => {
 certRetry.addEventListener('click', () => {
   if (pendingDocFile) {
     // Retry the same file without making user re-pick it
-    processDocFile(pendingDocFile);
+    certStatus.style.display = 'block';
+    certStatus.textContent = 'Retrying scan...';
+    certRetry.style.display = 'none';
+    setTimeout(() => processDocFile(pendingDocFile), 500); // Small delay to prevent rate limiting
   } else {
     // No file in memory — fall back to file picker
     certRetry.style.display = 'none';
