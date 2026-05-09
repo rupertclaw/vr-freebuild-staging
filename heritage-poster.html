@@ -2001,7 +2001,10 @@ certConfirm.addEventListener('click', () => {
     if (!candidates.length) return null;
     if (candidates.length === 1) return candidates[0].plate;
 
-    // Sort by score descending, then by generation match, then by empty-preference, then by year proximity
+    // Sort by score descending, then by generation match, then by year proximity
+    // NOTE: removed empty-preference tiebreaker — it was causing birth certs to skip the
+    // correct filled match and land in a wrong-generation empty slot. fillPlate() blocks
+    // cross-person overwrites, so we can safely match filled slots first.
     candidates.sort((a, b) => {
       if (b.score !== a.score) return b.score - a.score;
       // Generation match bonus/penalty for birth certs
@@ -2012,9 +2015,6 @@ certConfirm.addEventListener('click', () => {
         const bGenDiff = Math.abs(bGen - expGen);
         if (aGenDiff !== bGenDiff) return aGenDiff - bGenDiff; // closer generation wins
       }
-      const aEmpty = a.plate.querySelector('.name')?.textContent === 'Name' ? 1 : 0;
-      const bEmpty = b.plate.querySelector('.name')?.textContent === 'Name' ? 1 : 0;
-      if (bEmpty !== aEmpty) return bEmpty - aEmpty;
       if (refYear) {
         const aY = (a.plate.querySelector('.years')?.textContent || '').match(/\d{4}/);
         const bY = (b.plate.querySelector('.years')?.textContent || '').match(/\d{4}/);
