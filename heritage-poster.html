@@ -3314,11 +3314,10 @@ function runGuidanceAnalysis() {
           <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#7a6545;margin-bottom:4px;">
             <strong>Fills:</strong> ${s.fills.join(' · ')}
           </div>
-          ${s.source ? `<a href="${s.source.url}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-size:11px;color:#3a5a8a;text-decoration:none;display:inline-block;padding:3px 8px;border:1px solid #3a5a8a;border-radius:3px;margin-right:6px;margin-top:4px;">🛒 ${s.source.label} →</a>` : ''}
-          ${s.source && s.source.secondary ? `<a href="${s.source.secondary.url}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#5a8a3a;text-decoration:none;display:inline-block;padding:3px 8px;border:1px solid #5a8a3a;border-radius:3px;margin-top:4px;">🔍 ${s.source.secondary.label} →</a>` : ''}
-          ${s.source ? `<div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#8a7a65;margin-top:6px;font-style:italic;">
-            💡 Tip: Try the <a href="${s.source.secondary ? s.source.secondary.url : '#'}" target="_blank" style="color:#5a8a3a;text-decoration:underline;">free FamilySearch index</a> first to confirm details, then buy the certificate image on ScotlandsPeople
-          </div>` : ''}
+          ${s.source ? `<a href="${s.source.url}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-size:11px;color:#3a5a8a;text-decoration:none;display:inline-block;padding:3px 8px;border:1px solid #3a5a8a;border-radius:3px;margin-top:4px;">🛒 ${s.source.label} →</a>` : ''}
+          <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#8a7a65;margin-top:6px;font-style:italic;">
+            💡 Cost: ~£1 per certificate image on ScotlandsPeople (30 credits)
+          </div>
         </div>
       `;
     });
@@ -3337,23 +3336,7 @@ function runGuidanceAnalysis() {
 
 function getSourceForPerson(p) {
   // Build smart deep links based on cert type and generation
-  const gen = parseInt(p.gen, 10);
   const name = p.name || '';
-  const parts = name.trim().split(/\s+/);
-  const surname = parts.length > 1 ? parts[parts.length - 1] : name;
-  const forename = parts.length > 1 ? parts[0] : '';
-  
-  // Extract approximate year from nameplate data
-  const years = p.years || '';
-  let yearHint = '';
-  if (years && years !== 'YYYY — YYYY') {
-    // Parse year ranges like "1904 — 1938" or just "1938"
-    const yearMatch = years.match(/(\d{4})/);
-    if (yearMatch) yearHint = yearMatch[1];
-  }
-  
-  const spBase = 'https://www.scotlandspeople.gov.uk/search-records/statutory-records/';
-  const fsBase = 'https://www.familysearch.org/search/record/results?q.';
   
   // Type-specific URLs
   const type = p.suggestType || 'BC';
@@ -3372,45 +3355,21 @@ function getSourceForPerson(p) {
     spDesc = `Search for ${name}'s marriage record`;
   }
   
-  // Build FamilySearch deep link with prefilled search
-  const fsParams = [];
-  if (surname) fsParams.push('surname=' + encodeURIComponent(surname));
-  if (forename) fsParams.push('givenName=' + encodeURIComponent(forename));
-  if (yearHint) {
-    fsParams.push('birthLikeDate.from=' + encodeURIComponent(String(parseInt(yearHint) - 2)));
-    fsParams.push('birthLikeDate.to=' + encodeURIComponent(String(parseInt(yearHint) + 2)));
-  }
-  fsParams.push('f.collectionId=3174752'); // Scotland births and baptisms
-  const fsUrl = fsBase + fsParams.join('&');
+  const spBase = 'https://www.scotlandspeople.gov.uk/search-records/statutory-records/';
   
   return {
     label: spLabel,
     url: spBase + spPath,
-    desc: spDesc,
-    secondary: {
-      label: 'Free index search',
-      url: fsParams.length > 1 ? fsUrl : 'https://www.familysearch.org/search/',
-      desc: 'Free index search (limited Scottish records)'
-    }
+    desc: spDesc
   };
 }
 
 function getSourceForCouple(name1, name2) {
   // For marriage certs, link to marriages search
-  const parts1 = name1.trim().split(/\s+/);
-  const parts2 = name2.trim().split(/\s+/);
-  const surname1 = parts1.length > 1 ? parts1[parts1.length - 1] : name1;
-  const surname2 = parts2.length > 1 ? parts2[parts2.length - 1] : name2;
-  
   return {
-    label: 'ScotlandsPeople — Marriages',
+    label: 'Buy marriage cert (£1)',
     url: 'https://www.scotlandspeople.gov.uk/search-records/statutory-records/stat_marriages',
-    desc: `Search for ${name1} & ${name2}'s marriage`,
-    secondary: {
-      label: 'Free index search',
-      url: `https://www.familysearch.org/search/record/results?q.surname=${encodeURIComponent(surname1)}&q.givenName=${encodeURIComponent(parts1[0] || '')}&q.f.collectionId=3174752`,
-      desc: 'Free index search'
-    }
+    desc: `Search for ${name1} & ${name2}'s marriage`
   };
 }
 </script>
