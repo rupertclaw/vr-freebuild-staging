@@ -606,67 +606,67 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 </div>
 
 <!-- Gen 4: Great-great-grandparents -->
-<div class="nameplate" style="left: 142px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="pat-pat-pat-grandfather" style="left: 142px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 242px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="pat-pat-pat-grandmother" style="left: 242px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 342px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandfather" style="left: 342px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 442px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandmother" style="left: 442px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 542px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandfather" style="left: 542px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 642px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandmother" style="left: 642px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 742px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandfather" style="left: 742px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 842px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandmother" style="left: 842px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 942px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandfather" style="left: 942px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 1042px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandmother" style="left: 1042px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 1142px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandfather" style="left: 1142px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 1242px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandmother" style="left: 1242px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 1342px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandfather" style="left: 1342px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 1442px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandmother" style="left: 1442px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 1542px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandfather" style="left: 1542px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" style="left: 1642px; top: 480px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandmother" style="left: 1642px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
@@ -1878,6 +1878,23 @@ const OWN_PARENT_MAP = {
   'mat-pat-grandmother':    { fatherSlot: 'mat-pat-mat-grandfather', motherSlot: 'mat-pat-mat-grandmother' },
   'mat-mat-grandfather':    { fatherSlot: 'mat-mat-pat-grandfather', motherSlot: 'mat-mat-pat-grandmother' },
   'mat-mat-grandmother':    { fatherSlot: 'mat-mat-mat-grandfather', motherSlot: 'mat-mat-mat-grandmother' },
+  // Gen 4: great-great-grandparents' parents (gen 5 slots — arc layout, may not exist as findSlot targets)
+  'pat-pat-pat-grandfather':    { fatherSlot: 'pat-pat-pat-pat-grandfather', motherSlot: 'pat-pat-pat-pat-grandmother' },
+  'pat-pat-pat-grandmother':    { fatherSlot: 'pat-pat-pat-mat-grandfather', motherSlot: 'pat-pat-pat-mat-grandmother' },
+  'pat-pat-mat-grandfather':    { fatherSlot: 'pat-pat-mat-pat-grandfather', motherSlot: 'pat-pat-mat-pat-grandmother' },
+  'pat-pat-mat-grandmother':    { fatherSlot: 'pat-pat-mat-mat-grandfather', motherSlot: 'pat-pat-mat-mat-grandmother' },
+  'pat-mat-pat-grandfather':    { fatherSlot: 'pat-mat-pat-pat-grandfather', motherSlot: 'pat-mat-pat-pat-grandmother' },
+  'pat-mat-pat-grandmother':    { fatherSlot: 'pat-mat-pat-mat-grandfather', motherSlot: 'pat-mat-pat-mat-grandmother' },
+  'pat-mat-mat-grandfather':    { fatherSlot: 'pat-mat-mat-pat-grandfather', motherSlot: 'pat-mat-mat-pat-grandmother' },
+  'pat-mat-mat-grandmother':    { fatherSlot: 'pat-mat-mat-mat-grandfather', motherSlot: 'pat-mat-mat-mat-grandmother' },
+  'mat-pat-pat-grandfather':    { fatherSlot: 'mat-pat-pat-pat-grandfather', motherSlot: 'mat-pat-pat-pat-grandmother' },
+  'mat-pat-pat-grandmother':    { fatherSlot: 'mat-pat-pat-mat-grandfather', motherSlot: 'mat-pat-pat-mat-grandmother' },
+  'mat-pat-mat-grandfather':    { fatherSlot: 'mat-pat-mat-pat-grandfather', motherSlot: 'mat-pat-mat-pat-grandmother' },
+  'mat-pat-mat-grandmother':    { fatherSlot: 'mat-pat-mat-mat-grandfather', motherSlot: 'mat-pat-mat-mat-grandmother' },
+  'mat-mat-pat-grandfather':    { fatherSlot: 'mat-mat-pat-pat-grandfather', motherSlot: 'mat-mat-pat-pat-grandmother' },
+  'mat-mat-pat-grandmother':    { fatherSlot: 'mat-mat-pat-mat-grandfather', motherSlot: 'mat-mat-pat-mat-grandmother' },
+  'mat-mat-mat-grandfather':    { fatherSlot: 'mat-mat-mat-pat-grandfather', motherSlot: 'mat-mat-mat-pat-grandmother' },
+  'mat-mat-mat-grandmother':    { fatherSlot: 'mat-mat-mat-mat-grandfather', motherSlot: 'mat-mat-mat-mat-grandmother' },
 };
 
 // Spouse map: given a slot, where does the spouse go?
@@ -1897,6 +1914,23 @@ const SPOUSE_MAP = {
   'mat-pat-grandmother': 'mat-pat-grandfather',
   'mat-mat-grandfather': 'mat-mat-grandmother',
   'mat-mat-grandmother': 'mat-mat-grandfather',
+  // Gen 4: great-great-grandparent spouses
+  'pat-pat-pat-grandfather': 'pat-pat-pat-grandmother',
+  'pat-pat-pat-grandmother': 'pat-pat-pat-grandfather',
+  'pat-pat-mat-grandfather': 'pat-pat-mat-grandmother',
+  'pat-pat-mat-grandmother': 'pat-pat-mat-grandfather',
+  'pat-mat-pat-grandfather': 'pat-mat-pat-grandmother',
+  'pat-mat-pat-grandmother': 'pat-mat-pat-grandfather',
+  'pat-mat-mat-grandfather': 'pat-mat-mat-grandmother',
+  'pat-mat-mat-grandmother': 'pat-mat-mat-grandfather',
+  'mat-pat-pat-grandfather': 'mat-pat-pat-grandmother',
+  'mat-pat-pat-grandmother': 'mat-pat-pat-grandfather',
+  'mat-pat-mat-grandfather': 'mat-pat-mat-grandmother',
+  'mat-pat-mat-grandmother': 'mat-pat-mat-grandfather',
+  'mat-mat-pat-grandfather': 'mat-mat-pat-grandmother',
+  'mat-mat-pat-grandmother': 'mat-mat-pat-grandfather',
+  'mat-mat-mat-grandfather': 'mat-mat-mat-grandmother',
+  'mat-mat-mat-grandmother': 'mat-mat-mat-grandfather',
 };
 
 // SPOUSE_PARENT_MAP removed — use OWN_PARENT_MAP[SPOUSE_MAP[slot]] instead
