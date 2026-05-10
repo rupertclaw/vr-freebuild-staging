@@ -2353,8 +2353,8 @@ const SPOUSE_MAP = {
 
   // Helper: fill a nameplate with name + years; stores full name in data-fullname, displays short
   // If maidenName provided, stores in data-maiden for later matching
-  // SAFETY: will NOT overwrite an already-filled nameplate with a DIFFERENT person
-  function fillPlate(plate, name, years, maidenName) {
+  // SAFETY: will NOT overwrite an already-filled nameplate with a DIFFERENT person, unless force=true
+  function fillPlate(plate, name, years, maidenName, force) {
     if (!plate) return false;
     const nameEl = plate.querySelector('.name');
     if (!nameEl) return false;
@@ -2364,7 +2364,7 @@ const SPOUSE_MAP = {
     const newNorm = normalizeName(name);
     const existingNorm = normalizeName(plate.dataset.fullname || existing);
     // Block cross-person overwrite: if slot has a real name and it's a different person
-    if (existing !== 'Name' && existing !== '' && existingNorm !== newNorm) {
+    if (!force && existing !== 'Name' && existing !== '' && existingNorm !== newNorm) {
       console.log('[fillPlate] BLOCKED overwrite of', plate.dataset.slot, ':', existing, '→', name);
       return false;
     }
@@ -2891,8 +2891,8 @@ const SPOUSE_MAP = {
                     messages.push('DC father updated ' + pMap.fatherSlot);
                   }
                 } else {
-                  // Different person entirely — cert is primary source, overwrite
-                  fillPlate(fPlate, dcFather, '', '');
+                  // Different person entirely — cert is primary source, force overwrite
+                  fillPlate(fPlate, dcFather, '', '', true);
                   addDocBadge(fPlate, 'death');
                   filled++;
                   messages.push('DC father corrected ' + pMap.fatherSlot + ': ' + existing + ' → ' + dcFather);
@@ -2923,8 +2923,8 @@ const SPOUSE_MAP = {
                     messages.push('DC mother updated ' + pMap.motherSlot);
                   }
                 } else {
-                  // Different person entirely — cert is primary source, overwrite
-                  fillPlate(mPlate, dcMother, '', dcMaiden);
+                  // Different person entirely — cert is primary source, force overwrite
+                  fillPlate(mPlate, dcMother, '', dcMaiden, true);
                   addDocBadge(mPlate, 'death');
                   filled++;
                   messages.push('DC mother corrected ' + pMap.motherSlot + ': ' + existing + ' → ' + dcMother);
@@ -2940,11 +2940,30 @@ const SPOUSE_MAP = {
               const sPlate = findSlot(spouseSlot);
               if (sPlate) {
                 const existingSpouse = sPlate.dataset.fullname || sPlate.querySelector('.name').textContent;
+                const dcSpouseName = data.deceased.spouseName;
                 if (existingSpouse === 'Name') {
-                  fillPlate(sPlate, data.deceased.spouseName, '');
+                  fillPlate(sPlate, dcSpouseName, '');
                   addDocBadge(sPlate, 'death');
                   filled++;
                   messages.push('DC spouse → ' + spouseSlot);
+                } else if (existingSpouse.toLowerCase().trim() !== dcSpouseName.toLowerCase().trim()) {
+                  // Spouse name differs — check if same person with more complete name
+                  if (normalizeName(existingSpouse) === normalizeName(dcSpouseName) || existingSpouse.toLowerCase().includes(dcSpouseName.split(' ')[0].toLowerCase())) {
+                    // Same person — update if cert has fuller name
+                    if (dcSpouseName.length > existingSpouse.length) {
+                      fillPlate(sPlate, dcSpouseName, '');
+                      addDocBadge(sPlate, 'death');
+                      filled++;
+                      messages.push('DC spouse updated ' + spouseSlot + ': ' + existingSpouse + ' → ' + dcSpouseName);
+                    }
+                  } else {
+                    // Different person entirely — cert is primary source, force overwrite
+                    fillPlate(sPlate, dcSpouseName, '', '', true);
+                    addDocBadge(sPlate, 'death');
+                    filled++;
+                    messages.push('DC spouse corrected ' + spouseSlot + ': ' + existingSpouse + ' → ' + dcSpouseName);
+                    showToast('Corrected spouse: ' + existingSpouse + ' → ' + dcSpouseName);
+                  }
                 }
               }
             }
