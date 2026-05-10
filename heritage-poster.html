@@ -3105,25 +3105,80 @@ function runGuidanceAnalysis() {
 
   // Determine which slots have missing data
   const missingBirth = [];
-  const missingDeath = [];
   const missingParents = [];
+  const couplesWithoutMC = [];
 
   filled.forEach(p => {
     const gen = parseInt(p.gen, 10);
+    const pMap = OWN_PARENT_MAP[p.slot];
+
     // Missing birth year?
     if (!p.years || p.years === 'YYYY — YYYY' || p.years.startsWith('YYYY')) {
-      missingBirth.push(p);
-    }
-    // Missing parents? (if slot has parent mapping and those slots are empty)
-    if (OWN_PARENT_MAP[p.slot]) {
-      const pMap = OWN_PARENT_MAP[p.slot];
-      if (pMap.fatherSlot && pMap.motherSlot) {
+      // Check how many slots a BC would actually fill
+      const parentSlotsFilled = [];
+      if (pMap) {
         const fPlate = guideFindSlot(pMap.fatherSlot);
         const mPlate = guideFindSlot(pMap.motherSlot);
         const fName = fPlate?.dataset?.fullname || fPlate?.querySelector('.name')?.textContent?.trim();
         const mName = mPlate?.dataset?.fullname || mPlate?.querySelector('.name')?.textContent?.trim();
-        if (fName === 'Name' || !fName) missingParents.push({ person: p, parentSlot: pMap.fatherSlot, rel: 'father' });
-        if (mName === 'Name' || !mName) missingParents.push({ person: p, parentSlot: pMap.motherSlot, rel: 'mother' });
+        if (fName === 'Name' || !fName) parentSlotsFilled.push('father');
+        if (mName === 'Name' || !mName) parentSlotsFilled.push('mother');
+      }
+      missingBirth.push({ ...p, newSlots: 1 + parentSlotsFilled.length, parentSlotsFilled });
+    }
+
+    // Missing parents?
+    if (pMap && pMap.fatherSlot && pMap.motherSlot) {
+      const fPlate = guideFindSlot(pMap.fatherSlot);
+      const mPlate = guideFindSlot(pMap.motherSlot);
+      const fName = fPlate?.dataset?.fullname || fPlate?.querySelector('.name')?.textContent?.trim();
+      const mName = mPlate?.dataset?.fullname || mPlate?.querySelector('.name')?.textContent?.trim();
+      const missing = [];
+      if (fName === 'Name' || !fName) missing.push('father');
+      if (mName === 'Name' || !mName) missing.push('mother');
+      if (missing.length > 0) {
+        missingParents.push({ person: p, missing, newSlots: missing.length });
+      }
+    }
+
+    // Known couple without marriage cert?
+    const spouseSlot = SPOUSE_MAP[p.slot];
+    if (spouseSlot) {
+      const spousePlate = guideFindSlot(spouseSlot);
+      const sName = spousePlate?.dataset?.fullname || spousePlate?.querySelector('.name')?.textContent?.trim();
+      if (sName && sName !== 'Name') {
+        const pDocs = p.docs || [];
+        if (!pDocs.includes('MC')) {
+          // How many slots would this MC fill?
+          // MC confirms: marriage date, groom's parents, bride's parents = up to 5 slots
+          const groomParentSlots = [];
+          const brideParentSlots = [];
+          const groomPMap = OWN_PARENT_MAP[p.slot];
+          const bridePMap = OWN_PARENT_MAP[spouseSlot];
+          if (groomPMap) {
+            const gfPlate = guideFindSlot(groomPMap.fatherSlot);
+            const gmPlate = guideFindSlot(groomPMap.motherSlot);
+            const gfName = gfPlate?.dataset?.fullname || gfPlate?.querySelector('.name')?.textContent?.trim();
+            const gmName = gmPlate?.dataset?.fullname || gmPlate?.querySelector('.name')?.textContent?.trim();
+            if (gfName === 'Name' || !gfName) groomParentSlots.push('groom father');
+            if (gmName === 'Name' || !gmName) groomParentSlots.push('groom mother');
+          }
+          if (bridePMap) {
+            const bfPlate = guideFindSlot(bridePMap.fatherSlot);
+            const bmPlate = guideFindSlot(bridePMap.motherSlot);
+            const bfName = bfPlate?.dataset?.fullname || bfPlate?.querySelector('.name')?.textContent?.trim();
+            const bmName = bmPlate?.dataset?.fullname || bmPlate?.querySelector('.name')?.textContent?.trim();
+            if (bfName === 'Name' || !bfName) brideParentSlots.push('bride father');
+            if (bmName === 'Name' || !bmName) brideParentSlots.push('bride mother');
+          }
+          couplesWithoutMC.push({
+            person: p,
+            spouseName: sName,
+            newSlots: 1 + groomParentSlots.length + brideParentSlots.length, // marriage date + parents
+            groomParentSlots,
+            brideParentSlots
+          });
+        }
       }
     }
   });
@@ -3134,84 +3189,87 @@ function runGuidanceAnalysis() {
   const bcCount = docs['BC'] || 0;
   const mcCount = docs['MC'] || 0;
   const dcCount = docs['DC'] || 0;
+  const uniqueDocs = bcCount + mcCount + dcCount;
 
-  // Build research suggestions based on tree gaps
+  // Build research suggestions — prioritise by impact (how many slots each doc fills)
   const suggestions = [];
 
-  // Priority 1: People with no birth year — need birth cert
-  missingBirth.forEach(p => {
-    const source = getSourceForPerson(p);
+  // P1: Marriage certs for known couples (highest yield — fills parents of BOTH spouses)
+  couplesWithoutMC.forEach(c => {
+    if (c.newSlots <= 0) return; // Skip if nothing new to learn
+    const source = getSourceForCouple(c.person.name, c.spouseName);
+    const fillsList = [];
+    fillsList.push('Marriage date & place');
+    c.groomParentSlots.forEach(s => fillsList.push(s));
+    c.brideParentSlots.forEach(s => fillsList.push(s));
     suggestions.push({
-      priority: 1,
-      type: 'BC',
-      icon: '🪒',
-      title: `Birth certificate for ${p.name}`,
-      desc: `No birth year recorded for ${p.name} (Gen ${p.gen}). A birth cert would confirm their date of birth and parents' names.`,
-      person: p.name,
-      slot: p.slot,
-      fills: [`Birth year for ${p.name}`, `Parents of ${p.name}`],
+      impact: c.newSlots,
+      type: 'MC',
+      icon: '💍',
+      title: `Marriage cert: ${c.person.name} & ${c.spouseName}`,
+      desc: `Known couple, no marriage cert on file. Would confirm the marriage and ${c.newSlots > 1 ? `fill ${c.newSlots - 1} empty parent slot${c.newSlots - 1 > 1 ? 's' : ''}` : 'confirm the date'}.`,
+      person: c.person.name,
+      fills: fillsList,
       source: source
     });
   });
 
-  // Priority 2: People with no parents filled — need parent certs
-  // Group by person to avoid duplicate suggestions
+  // P2: Death/marriage certs for people with missing parents
+  // Group by person to avoid duplicates
   const peopleWithMissingParents = {};
   missingParents.forEach(mp => {
     const key = mp.person.slot;
     if (!peopleWithMissingParents[key]) {
-      peopleWithMissingParents[key] = { person: mp.person, missing: [] };
+      peopleWithMissingParents[key] = { person: mp.person, missing: [], newSlots: 0 };
     }
-    peopleWithMissingParents[key].missing.push(mp.rel);
+    peopleWithMissingParents[key].missing.push(...mp.missing.filter(m => !peopleWithMissingParents[key].missing.includes(m)));
+    peopleWithMissingParents[key].newSlots = peopleWithMissingParents[key].missing.length;
   });
 
-  Object.values(peopleWithMissingParents).forEach(({ person: p, missing }) => {
-    // Suggest the cert type that would reveal the missing parents
+  Object.values(peopleWithMissingParents).forEach(({ person: p, missing, newSlots }) => {
+    const gen = parseInt(p.gen, 10);
     const rels = missing.join(' & ');
     const source = getSourceForPerson(p);
+    const certType = gen <= 2 ? 'Marriage' : 'Death';
+    const certIcon = gen <= 2 ? '💍' : '⚰️';
+    const desc = gen <= 2
+      ? `Missing ${rels} for ${p.name} (Gen ${gen}). A marriage cert would confirm both sets of parents.`
+      : `Missing ${rels} for ${p.name} (Gen ${gen}). A death cert would list ${rels}' names.`;
     suggestions.push({
-      priority: 2,
-      type: p.gen <= 2 ? 'MC' : 'DC',
-      icon: p.gen <= 2 ? '💍' : '⚰️',
-      title: `${p.gen <= 2 ? 'Marriage' : 'Death'} cert for ${p.name}`,
-      desc: `Missing ${rels} for ${p.name} (Gen ${p.gen}). A ${p.gen <= 2 ? 'marriage cert could confirm' : 'death cert would list'} their parents.`,
+      impact: newSlots + 1, // doc date + parent slots
+      type: gen <= 2 ? 'MC' : 'DC',
+      icon: certIcon,
+      title: `${certType} cert for ${p.name}`,
+      desc: desc,
       person: p.name,
-      slot: p.slot,
-      fills: [`${rels} of ${p.name}`],
+      fills: [`${certType.toLowerCase()} date`, ...missing.map(m => `${m} of ${p.name}`)],
       source: source
     });
   });
 
-  // Priority 3: Empty slots — suggest certs for known couples
-  // Find filled slots whose spouse slot is also filled, and check if their parents are empty
-  filled.forEach(p => {
-    const spouseSlot = SPOUSE_MAP[p.slot];
-    if (spouseSlot) {
-      const spousePlate = guideFindSlot(spouseSlot);
-      const sName = spousePlate?.dataset?.fullname || spousePlate?.querySelector('.name')?.textContent?.trim();
-      if (sName && sName !== 'Name') {
-        // This is a known couple — suggest their marriage cert if we don't have one
-        const pDocs = p.docs || [];
-        if (!pDocs.includes('MC')) {
-          const source = getSourceForCouple(p.name, sName);
-          suggestions.push({
-            priority: 3,
-            type: 'MC',
-            icon: '💍',
-            title: `Marriage cert: ${p.name} & ${sName}`,
-            desc: `Known couple with no marriage cert. Would confirm the marriage date, locations, and both sets of parents.`,
-            person: p.name,
-            slot: p.slot,
-            fills: [`Marriage date`, `Parents of both spouses`],
-            source: source
-          });
-        }
-      }
-    }
+  // P3: Birth certs for people with no birth year (least impact if parents already known)
+  // Sort by newSlots descending so BCs that fill more gaps come first
+  missingBirth.sort((a, b) => b.newSlots - a.newSlots);
+
+  missingBirth.forEach(p => {
+    const source = getSourceForPerson(p);
+    const parentNote = p.parentSlotsFilled.length > 0
+      ? `Also reveals ${p.parentSlotsFilled.join(' & ')} names.`
+      : `Parents already recorded — would only confirm the birth date.`;
+    suggestions.push({
+      impact: p.newSlots,
+      type: 'BC',
+      icon: '🪒',
+      title: `Birth cert for ${p.name}`,
+      desc: `No birth year for ${p.name} (Gen ${p.gen}). ${parentNote}`,
+      person: p.name,
+      fills: [`Birth year for ${p.name}`, ...p.parentSlotsFilled.map(s => `${s} of ${p.name}`)],
+      source: source
+    });
   });
 
-  // Sort by priority
-  suggestions.sort((a, b) => a.priority - b.priority);
+  // Sort by impact descending (most slots filled = highest priority)
+  suggestions.sort((a, b) => b.impact - a.impact);
 
   // Deduplicate by title
   const seen = new Set();
@@ -3234,7 +3292,7 @@ function runGuidanceAnalysis() {
       <div style="display:flex;justify-content:space-around;font-family:'Cormorant Garamond',serif;font-size:12px;color:#5a4a32;">
         <div style="text-align:center;"><div style="font-size:18px;color:#2a1f10;font-weight:bold;">${fillPercent}%</div><div>Filled</div></div>
         <div style="text-align:center;"><div style="font-size:18px;color:#2a1f10;font-weight:bold;">${filled.length}/${totalSlots}</div><div>Slots</div></div>
-        <div style="text-align:center;"><div style="font-size:18px;color:#2a1f10;font-weight:bold;">${bcCount + mcCount + dcCount}</div><div>Docs</div></div>
+        <div style="text-align:center;"><div style="font-size:18px;color:#2a1f10;font-weight:bold;">${bcCount + mcCount + dcCount}</div><div>Doc badges</div></div>
       </div>
     </div>
   `;
