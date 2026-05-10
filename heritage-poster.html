@@ -3075,6 +3075,11 @@ function runGuidanceAnalysis() {
   guideResults.style.display = 'block';
   guideResults.innerHTML = '<div style="text-align:center;padding:20px 0;font-family:\'Cormorant Garamond\',serif;color:#5a4a32;font-size:13px;">Analysing your family tree...</div>';
 
+  // Guidance-specific helpers (some tree functions are scoped inside applyCert, so we define lightweight versions here)
+  function guideFindSlot(slotName) {
+    return document.querySelector(`.nameplate[data-slot="${slotName}"]`);
+  }
+
   try {
   const plates = document.querySelectorAll('.nameplate');
   const filled = [];
@@ -3113,8 +3118,8 @@ function runGuidanceAnalysis() {
     if (OWN_PARENT_MAP[p.slot]) {
       const pMap = OWN_PARENT_MAP[p.slot];
       if (pMap.fatherSlot && pMap.motherSlot) {
-        const fPlate = findSlot(pMap.fatherSlot);
-        const mPlate = findSlot(pMap.motherSlot);
+        const fPlate = guideFindSlot(pMap.fatherSlot);
+        const mPlate = guideFindSlot(pMap.motherSlot);
         const fName = fPlate?.dataset?.fullname || fPlate?.querySelector('.name')?.textContent?.trim();
         const mName = mPlate?.dataset?.fullname || mPlate?.querySelector('.name')?.textContent?.trim();
         if (fName === 'Name' || !fName) missingParents.push({ person: p, parentSlot: pMap.fatherSlot, rel: 'father' });
@@ -3182,7 +3187,7 @@ function runGuidanceAnalysis() {
   filled.forEach(p => {
     const spouseSlot = SPOUSE_MAP[p.slot];
     if (spouseSlot) {
-      const spousePlate = findSlot(spouseSlot);
+      const spousePlate = guideFindSlot(spouseSlot);
       const sName = spousePlate?.dataset?.fullname || spousePlate?.querySelector('.name')?.textContent?.trim();
       if (sName && sName !== 'Name') {
         // This is a known couple — suggest their marriage cert if we don't have one
