@@ -826,13 +826,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <button class="cert-close" id="guideClose">×</button>
   <div class="cert-header">
     <h2>Research Guidance</h2>
-    <p>AI analysis of your tree — what to get next</p>
+    <p>What to get next and where to find it</p>
   </div>
   <div class="cert-body" id="guideBody">
-    <div id="guideProgress" style="text-align:center;padding:20px 0;font-family:'Cormorant Garamond',serif;color:#5a4a32;font-size:13px;">
-      Analysing your family tree...
-    </div>
-    <div id="guideResults" style="display:none;"></div>
+    <div id="guideResults"></div>
   </div>
 </div>
 
@@ -3059,7 +3056,6 @@ const guideBtn = document.getElementById('guideBtn');
 const guidePanel = document.getElementById('guidePanel');
 const guideOverlay = document.getElementById('guideOverlay');
 const guideClose = document.getElementById('guideClose');
-const guideProgress = document.getElementById('guideProgress');
 const guideResults = document.getElementById('guideResults');
 
 guideBtn.addEventListener('click', () => {
@@ -3076,12 +3072,10 @@ function closeGuide() {
 }
 
 function runGuidanceAnalysis() {
-  guideProgress.style.display = 'block';
-  guideProgress.textContent = 'Analysing your family tree...';
-  guideResults.style.display = 'none';
-  guideResults.innerHTML = '';
+  guideResults.style.display = 'block';
+  guideResults.innerHTML = '<div style="text-align:center;padding:20px 0;font-family:\'Cormorant Garamond\',serif;color:#5a4a32;font-size:13px;">Analysing your family tree...</div>';
 
-  // Scan the tree state
+  try {
   const plates = document.querySelectorAll('.nameplate');
   const filled = [];
   const empty = [];
@@ -3226,7 +3220,6 @@ function runGuidanceAnalysis() {
   const top = unique.slice(0, 8);
 
   // Render
-  guideProgress.style.display = 'none';
   guideResults.style.display = 'block';
 
   // Tree summary
@@ -3265,6 +3258,14 @@ function runGuidanceAnalysis() {
   }
 
   guideResults.innerHTML = html;
+  } catch (err) {
+    guideResults.innerHTML = `<div style="padding:20px;font-family:'Cormorant Garamond',serif;color:#8a3a32;font-size:13px;text-align:center;">
+      <strong>Error analysing tree</strong><br>
+      ${err.message}<br><br>
+      <button onclick="runGuidanceAnalysis()" style="padding:6px 12px;border:1px solid #4a3a22;border-radius:4px;background:#f5eedc;cursor:pointer;font-family:'Cormorant Garamond',serif;">Retry</button>
+    </div>`;
+    console.error('[GUIDANCE] Error:', err);
+  }
 }
 
 function getSourceForPerson(p) {
