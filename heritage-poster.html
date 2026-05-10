@@ -2736,8 +2736,10 @@ const SPOUSE_MAP = {
 
         // Place the deceased's parents into the correct slots
         const deathSlot = deathPlate.dataset.slot;
+        showToast('DC: ' + deceasedName + ' → slot ' + deathSlot);
         if (deathSlot && OWN_PARENT_MAP[deathSlot]) {
           const pMap = OWN_PARENT_MAP[deathSlot];
+          showToast('DC parents: father→' + pMap.fatherSlot + ', mother→' + pMap.motherSlot);
           // Father
           if (data.father?.name) {
             const fPlate = findSlot(pMap.fatherSlot);
@@ -2806,7 +2808,9 @@ const SPOUSE_MAP = {
             }
           }
         } else if (deathSlot) {
-          showToast('DC matched ' + deceasedName + ' but no parent slots for ' + deathSlot);
+          showToast('DC matched ' + deceasedName + ' but no OWN_PARENT_MAP entry for slot "' + deathSlot + '"');
+        } else {
+          showToast('DC matched ' + deceasedName + ' but no slot assigned');
         }
       }
     }
