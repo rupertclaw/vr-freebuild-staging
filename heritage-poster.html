@@ -3314,8 +3314,11 @@ function runGuidanceAnalysis() {
           <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#7a6545;margin-bottom:4px;">
             <strong>Fills:</strong> ${s.fills.join(' · ')}
           </div>
-          ${s.source ? `<a href="${s.source.url}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-size:11px;color:#3a5a8a;text-decoration:none;display:inline-block;padding:3px 8px;border:1px solid #3a5a8a;border-radius:3px;margin-right:6px;margin-top:4px;">${s.source.label} →</a>` : ''}
-          ${s.source && s.source.secondary ? `<a href="${s.source.secondary.url}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#5a8a3a;text-decoration:none;display:inline-block;padding:3px 8px;border:1px solid #5a8a3a;border-radius:3px;margin-top:4px;">${s.source.secondary.label} →</a>` : ''}
+          ${s.source ? `<a href="${s.source.url}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-size:11px;color:#3a5a8a;text-decoration:none;display:inline-block;padding:3px 8px;border:1px solid #3a5a8a;border-radius:3px;margin-right:6px;margin-top:4px;">🛒 ${s.source.label} →</a>` : ''}
+          ${s.source && s.source.secondary ? `<a href="${s.source.secondary.url}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#5a8a3a;text-decoration:none;display:inline-block;padding:3px 8px;border:1px solid #5a8a3a;border-radius:3px;margin-top:4px;">🔍 ${s.source.secondary.label} →</a>` : ''}
+          ${s.source ? `<div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#8a7a65;margin-top:6px;font-style:italic;">
+            💡 Tip: Try the <a href="${s.source.secondary ? s.source.secondary.url : '#'}" target="_blank" style="color:#5a8a3a;text-decoration:underline;">free FamilySearch index</a> first to confirm details, then buy the certificate image on ScotlandsPeople
+          </div>` : ''}
         </div>
       `;
     });
@@ -3357,15 +3360,15 @@ function getSourceForPerson(p) {
   let spPath, spLabel, spDesc;
   if (type === 'BC') {
     spPath = 'stat_births';
-    spLabel = 'ScotlandsPeople — Births';
+    spLabel = 'Buy birth cert (£1)';
     spDesc = `Search for ${name}'s birth record`;
   } else if (type === 'DC') {
     spPath = 'stat_deaths';
-    spLabel = 'ScotlandsPeople — Deaths';
+    spLabel = 'Buy death cert (£1)';
     spDesc = `Search for ${name}'s death record`;
   } else {
     spPath = 'stat_marriages';
-    spLabel = 'ScotlandsPeople — Marriages';
+    spLabel = 'Buy marriage cert (£1)';
     spDesc = `Search for ${name}'s marriage record`;
   }
   
@@ -3385,7 +3388,7 @@ function getSourceForPerson(p) {
     url: spBase + spPath,
     desc: spDesc,
     secondary: {
-      label: 'FamilySearch',
+      label: 'Free index search',
       url: fsParams.length > 1 ? fsUrl : 'https://www.familysearch.org/search/',
       desc: 'Free index search (limited Scottish records)'
     }
@@ -3404,7 +3407,7 @@ function getSourceForCouple(name1, name2) {
     url: 'https://www.scotlandspeople.gov.uk/search-records/statutory-records/stat_marriages',
     desc: `Search for ${name1} & ${name2}'s marriage`,
     secondary: {
-      label: 'FamilySearch',
+      label: 'Free index search',
       url: `https://www.familysearch.org/search/record/results?q.surname=${encodeURIComponent(surname1)}&q.givenName=${encodeURIComponent(parts1[0] || '')}&q.f.collectionId=3174752`,
       desc: 'Free index search'
     }
