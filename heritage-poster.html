@@ -775,6 +775,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <div style="position:fixed;bottom:16px;left:16px;display:flex;gap:6px;z-index:200;">
   <button id="saveSessionBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#3e3225;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">⬇ Save Session</button>
   <button id="loadSessionBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#3e3225;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">⬆ Load Session</button>
+  <button id="guideBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#5a7a3a;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">🔍 Next Steps</button>
   <input type="file" id="sessionFileInput" accept=".familytree,.json,application/json" style="display:none;">
 </div>
 
@@ -816,6 +817,22 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
       <button class="cert-btn secondary" id="certRetryScan">Retry Scan</button>
       <button class="cert-btn primary" id="certConfirm" disabled>Apply to Tree</button>
     </div>
+  </div>
+</div>
+
+<!-- Research Guidance panel -->
+<div class="cert-overlay" id="guideOverlay"></div>
+<div class="cert-panel" id="guidePanel">
+  <button class="cert-close" id="guideClose">×</button>
+  <div class="cert-header">
+    <h2>Research Guidance</h2>
+    <p>AI analysis of your tree — what to get next</p>
+  </div>
+  <div class="cert-body" id="guideBody">
+    <div id="guideProgress" style="text-align:center;padding:20px 0;font-family:'Cormorant Garamond',serif;color:#5a4a32;font-size:13px;">
+      Analysing your family tree...
+    </div>
+    <div id="guideResults" style="display:none;"></div>
   </div>
 </div>
 
@@ -3033,6 +3050,246 @@ const SPOUSE_MAP = {
     return;
   }
 });
+
+// ============================================
+// RESEARCH GUIDANCE
+// ============================================
+
+const guideBtn = document.getElementById('guideBtn');
+const guidePanel = document.getElementById('guidePanel');
+const guideOverlay = document.getElementById('guideOverlay');
+const guideClose = document.getElementById('guideClose');
+const guideProgress = document.getElementById('guideProgress');
+const guideResults = document.getElementById('guideResults');
+
+guideBtn.addEventListener('click', () => {
+  guidePanel.classList.add('active');
+  guideOverlay.classList.add('active');
+  runGuidanceAnalysis();
+});
+guideClose.addEventListener('click', closeGuide);
+guideOverlay.addEventListener('click', closeGuide);
+
+function closeGuide() {
+  guidePanel.classList.remove('active');
+  guideOverlay.classList.remove('active');
+}
+
+function runGuidanceAnalysis() {
+  guideProgress.style.display = 'block';
+  guideProgress.textContent = 'Analysing your family tree...';
+  guideResults.style.display = 'none';
+  guideResults.innerHTML = '';
+
+  // Scan the tree state
+  const plates = document.querySelectorAll('.nameplate');
+  const filled = [];
+  const empty = [];
+  const docs = {};
+
+  plates.forEach(plate => {
+    const nameEl = plate.querySelector('.name');
+    const yearsEl = plate.querySelector('.years');
+    const slot = plate.dataset.slot || '';
+    const gen = plate.dataset.gen || '0';
+    const name = (plate.dataset.fullname || nameEl?.textContent || '').trim();
+    const years = yearsEl?.textContent?.trim() || '';
+    const plateDocs = (plate.dataset.docs || '').split(',').filter(Boolean);
+
+    if (name && name !== 'Name') {
+      filled.push({ slot, gen, name, years, docs: plateDocs });
+      plateDocs.forEach(d => { docs[d] = (docs[d] || 0) + 1; });
+    } else {
+      empty.push({ slot, gen });
+    }
+  });
+
+  // Determine which slots have missing data
+  const missingBirth = [];
+  const missingDeath = [];
+  const missingParents = [];
+
+  filled.forEach(p => {
+    const gen = parseInt(p.gen, 10);
+    // Missing birth year?
+    if (!p.years || p.years === 'YYYY — YYYY' || p.years.startsWith('YYYY')) {
+      missingBirth.push(p);
+    }
+    // Missing parents? (if slot has parent mapping and those slots are empty)
+    if (OWN_PARENT_MAP[p.slot]) {
+      const pMap = OWN_PARENT_MAP[p.slot];
+      if (pMap.fatherSlot && pMap.motherSlot) {
+        const fPlate = findSlot(pMap.fatherSlot);
+        const mPlate = findSlot(pMap.motherSlot);
+        const fName = fPlate?.dataset?.fullname || fPlate?.querySelector('.name')?.textContent?.trim();
+        const mName = mPlate?.dataset?.fullname || mPlate?.querySelector('.name')?.textContent?.trim();
+        if (fName === 'Name' || !fName) missingParents.push({ person: p, parentSlot: pMap.fatherSlot, rel: 'father' });
+        if (mName === 'Name' || !mName) missingParents.push({ person: p, parentSlot: pMap.motherSlot, rel: 'mother' });
+      }
+    }
+  });
+
+  // Compute coverage
+  const totalSlots = plates.length;
+  const fillPercent = Math.round((filled.length / totalSlots) * 100);
+  const bcCount = docs['BC'] || 0;
+  const mcCount = docs['MC'] || 0;
+  const dcCount = docs['DC'] || 0;
+
+  // Build research suggestions based on tree gaps
+  const suggestions = [];
+
+  // Priority 1: People with no birth year — need birth cert
+  missingBirth.forEach(p => {
+    const source = getSourceForPerson(p);
+    suggestions.push({
+      priority: 1,
+      type: 'BC',
+      icon: '🪒',
+      title: `Birth certificate for ${p.name}`,
+      desc: `No birth year recorded for ${p.name} (Gen ${p.gen}). A birth cert would confirm their date of birth and parents' names.`,
+      person: p.name,
+      slot: p.slot,
+      fills: [`Birth year for ${p.name}`, `Parents of ${p.name}`],
+      source: source
+    });
+  });
+
+  // Priority 2: People with no parents filled — need parent certs
+  // Group by person to avoid duplicate suggestions
+  const peopleWithMissingParents = {};
+  missingParents.forEach(mp => {
+    const key = mp.person.slot;
+    if (!peopleWithMissingParents[key]) {
+      peopleWithMissingParents[key] = { person: mp.person, missing: [] };
+    }
+    peopleWithMissingParents[key].missing.push(mp.rel);
+  });
+
+  Object.values(peopleWithMissingParents).forEach(({ person: p, missing }) => {
+    // Suggest the cert type that would reveal the missing parents
+    const rels = missing.join(' & ');
+    const source = getSourceForPerson(p);
+    suggestions.push({
+      priority: 2,
+      type: p.gen <= 2 ? 'MC' : 'DC',
+      icon: p.gen <= 2 ? '💍' : '⚰️',
+      title: `${p.gen <= 2 ? 'Marriage' : 'Death'} cert for ${p.name}`,
+      desc: `Missing ${rels} for ${p.name} (Gen ${p.gen}). A ${p.gen <= 2 ? 'marriage cert could confirm' : 'death cert would list'} their parents.`,
+      person: p.name,
+      slot: p.slot,
+      fills: [`${rels} of ${p.name}`],
+      source: source
+    });
+  });
+
+  // Priority 3: Empty slots — suggest certs for known couples
+  // Find filled slots whose spouse slot is also filled, and check if their parents are empty
+  filled.forEach(p => {
+    const spouseSlot = SPOUSE_MAP[p.slot];
+    if (spouseSlot) {
+      const spousePlate = findSlot(spouseSlot);
+      const sName = spousePlate?.dataset?.fullname || spousePlate?.querySelector('.name')?.textContent?.trim();
+      if (sName && sName !== 'Name') {
+        // This is a known couple — suggest their marriage cert if we don't have one
+        const pDocs = p.docs || [];
+        if (!pDocs.includes('MC')) {
+          const source = getSourceForCouple(p.name, sName);
+          suggestions.push({
+            priority: 3,
+            type: 'MC',
+            icon: '💍',
+            title: `Marriage cert: ${p.name} & ${sName}`,
+            desc: `Known couple with no marriage cert. Would confirm the marriage date, locations, and both sets of parents.`,
+            person: p.name,
+            slot: p.slot,
+            fills: [`Marriage date`, `Parents of both spouses`],
+            source: source
+          });
+        }
+      }
+    }
+  });
+
+  // Sort by priority
+  suggestions.sort((a, b) => a.priority - b.priority);
+
+  // Deduplicate by title
+  const seen = new Set();
+  const unique = suggestions.filter(s => {
+    if (seen.has(s.title)) return false;
+    seen.add(s.title);
+    return true;
+  });
+
+  // Limit to top 8
+  const top = unique.slice(0, 8);
+
+  // Render
+  guideProgress.style.display = 'none';
+  guideResults.style.display = 'block';
+
+  // Tree summary
+  let html = `
+    <div style="margin-bottom:20px;padding:14px;background:rgba(250,244,230,0.6);border:2px solid #4a3a22;border-radius:4px;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:14px;color:#2a1f10;text-align:center;margin-bottom:8px;">Tree Coverage</div>
+      <div style="display:flex;justify-content:space-around;font-family:'Cormorant Garamond',serif;font-size:12px;color:#5a4a32;">
+        <div style="text-align:center;"><div style="font-size:18px;color:#2a1f10;font-weight:bold;">${fillPercent}%</div><div>Filled</div></div>
+        <div style="text-align:center;"><div style="font-size:18px;color:#2a1f10;font-weight:bold;">${filled.length}/${totalSlots}</div><div>Slots</div></div>
+        <div style="text-align:center;"><div style="font-size:18px;color:#2a1f10;font-weight:bold;">${bcCount + mcCount + dcCount}</div><div>Docs</div></div>
+      </div>
+    </div>
+  `;
+
+  if (top.length === 0) {
+    html += `<div style="text-align:center;font-family:'Cormorant Garamond',serif;font-size:13px;color:#5a4a32;padding:20px;">
+      Your tree looks well-covered! Consider adding census records or parish registers for missing details.
+    </div>`;
+  } else {
+    html += `<div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#2a1f10;text-align:center;margin-bottom:10px;">Suggested Next Steps</div>`;
+    top.forEach((s, i) => {
+      html += `
+        <div style="margin-bottom:12px;padding:10px;background:rgba(255,255,255,0.5);border:1px solid #c9b896;border-radius:4px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="font-size:16px;">${s.icon}</span>
+            <span style="font-family:'Cinzel Decorative',serif;font-size:11px;color:#2a1f10;font-weight:bold;">${s.title}</span>
+          </div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:11px;color:#5a4a32;margin-bottom:6px;">${s.desc}</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#7a6545;margin-bottom:4px;">
+            <strong>Fills:</strong> ${s.fills.join(' · ')}
+          </div>
+          ${s.source ? `<a href="${s.source.url}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-size:11px;color:#3a5a8a;text-decoration:none;display:inline-block;padding:3px 8px;border:1px solid #3a5a8a;border-radius:3px;margin-top:4px;">${s.source.label} →</a>` : ''}
+        </div>
+      `;
+    });
+  }
+
+  guideResults.innerHTML = html;
+}
+
+function getSourceForPerson(p) {
+  // Determine best source based on generation and likely location
+  const gen = parseInt(p.gen, 10);
+  const name = p.name || '';
+
+  // Default to ScotlandsPeople for Scottish records
+  const spBase = 'https://www.scotlandspeople.gov.uk/';
+  const groBase = 'https://www.gov.uk/order-copy-birth-death-marriage-certificate';
+  const familySearch = 'https://www.familysearch.org/search/';
+
+  // Suggest ScotlandsPeople as primary for Scottish trees
+  return {
+    label: 'ScotlandsPeople',
+    url: spBase
+  };
+}
+
+function getSourceForCouple(name1, name2) {
+  return {
+    label: 'ScotlandsPeople — Statutory marriages',
+    url: 'https://www.scotlandspeople.gov.uk/'
+  };
+}
 </script>
 
 </body>
