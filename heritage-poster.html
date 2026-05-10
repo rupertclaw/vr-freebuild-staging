@@ -2878,6 +2878,13 @@ const SPOUSE_MAP = {
                     filled++;
                     messages.push('DC father updated ' + pMap.fatherSlot);
                   }
+                } else {
+                  // Different person entirely — cert is primary source, overwrite
+                  fillPlate(fPlate, dcFather, '', '');
+                  addDocBadge(fPlate, 'death');
+                  filled++;
+                  messages.push('DC father corrected ' + pMap.fatherSlot + ': ' + existing + ' → ' + dcFather);
+                  showToast('Corrected: ' + existing + ' → ' + dcFather + ' @ ' + pMap.fatherSlot);
                 }
               }
             }
@@ -2903,6 +2910,13 @@ const SPOUSE_MAP = {
                     filled++;
                     messages.push('DC mother updated ' + pMap.motherSlot);
                   }
+                } else {
+                  // Different person entirely — cert is primary source, overwrite
+                  fillPlate(mPlate, dcMother, '', dcMaiden);
+                  addDocBadge(mPlate, 'death');
+                  filled++;
+                  messages.push('DC mother corrected ' + pMap.motherSlot + ': ' + existing + ' → ' + dcMother);
+                  showToast('Corrected: ' + existing + ' → ' + dcMother + ' @ ' + pMap.motherSlot);
                 }
               }
             }
