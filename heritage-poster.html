@@ -2825,7 +2825,16 @@ const SPOUSE_MAP = {
 
   console.log('[CERT APPLY] type:', type, 'filled:', filled, 'messages:', messages);
   console.log('[CERT APPLY] deathPlate slot:', deathPlate?.dataset?.slot, 'childPlate slot:', childPlate?.dataset?.slot);
-  showToast('✓ Applied ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' to tree', 4000);
+  // Show detailed debug toast for DC parents
+  if (type === 'death' && deathPlate) {
+    const dSlot = deathPlate.dataset.slot;
+    const pMap = dSlot ? OWN_PARENT_MAP[dSlot] : null;
+    const debugMsg = 'DC: slot=' + dSlot + ' parents=' + (pMap ? pMap.fatherSlot + '/' + pMap.motherSlot : 'NONE') + ' filled=' + filled;
+    console.log('[CERT APPLY]', debugMsg);
+    showToast('✓ ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' — ' + debugMsg, 5000);
+  } else {
+    showToast('✓ Applied ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' to tree', 4000);
+  }
 
   // Save document image to IndexedDB if retention is enabled
   const keepDocs = document.getElementById('keepDocsToggle').checked;
