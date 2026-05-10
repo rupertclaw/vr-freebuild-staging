@@ -2330,11 +2330,21 @@ const SPOUSE_MAP = {
     return document.querySelector(`.nameplate[data-slot="${slotName}"]`);
   }
 
-  // Helper: shorten a full name for nameplate display (e.g. "Andrew Maddox Fenwick" → "Andrew H. Fenwick")
-  function shortName(fullName) {
+  // Helper: shorten a full name for nameplate display
+  // "Andrew Maddox Fenwick" → "Andrew H. Fenwick" (3+ parts)
+  // "Elizabeth Maddox" → "E. Maddox" (2 parts, if gen 3+ and name > 16 chars)
+  function shortName(fullName, gen) {
     if (!fullName) return fullName;
     const parts = fullName.trim().split(/\s+/);
-    if (parts.length <= 2) return fullName; // "Joseph Harrow" stays as is
+    if (parts.length <= 2) {
+      // Two-part name — abbreviate first name for gen 3+ if too long
+      const total = fullName.length;
+      const maxLen = gen >= 4 ? 14 : gen >= 3 ? 16 : 999;
+      if (total > maxLen && parts[0].length > 1) {
+        return parts[0].charAt(0) + '. ' + parts[1];
+      }
+      return fullName; // "Joseph Harrow" stays as is
+    }
     // First name + initials + surname
     const surname = parts.pop();
     const initials = parts.slice(1).map(p => p.charAt(0) + '.').join(' ');
@@ -2360,7 +2370,8 @@ const SPOUSE_MAP = {
     }
     plate.dataset.fullname = name;
     if (maidenName) plate.dataset.maiden = maidenName;
-    nameEl.textContent = shortName(name);
+    const gen = parseInt(plate.dataset.gen || '0', 10);
+    nameEl.textContent = shortName(name, gen);
     if (years) {
       const yearsEl = plate.querySelector('.years');
       if (yearsEl) yearsEl.textContent = years;
@@ -2499,7 +2510,8 @@ const SPOUSE_MAP = {
         });
         // Re-display keeper with short name from fullname
         if (keeper.dataset.fullname) {
-          keeper.querySelector('.name').textContent = shortName(keeper.dataset.fullname);
+          const gen = parseInt(keeper.dataset.gen || '0', 10);
+          keeper.querySelector('.name').textContent = shortName(keeper.dataset.fullname, gen);
         }
       });
       if (mergeCount > 0) showToast('Merged ' + mergeCount + ' duplicate(s)');
