@@ -2736,10 +2736,13 @@ const SPOUSE_MAP = {
 
         // Place the deceased's parents into the correct slots
         const deathSlot = deathPlate.dataset.slot;
-        showToast('DC: ' + deceasedName + ' → slot ' + deathSlot);
+        console.log('[DC DEBUG] deceasedName:', deceasedName, 'deathSlot:', deathSlot);
+        console.log('[DC DEBUG] OWN_PARENT_MAP[' + deathSlot + ']:', deathSlot ? OWN_PARENT_MAP[deathSlot] : 'NO SLOT');
+        showToast('DC: ' + deceasedName + ' → slot ' + deathSlot, 4000);
         if (deathSlot && OWN_PARENT_MAP[deathSlot]) {
           const pMap = OWN_PARENT_MAP[deathSlot];
-          showToast('DC parents: father→' + pMap.fatherSlot + ', mother→' + pMap.motherSlot);
+          console.log('[DC DEBUG] fatherSlot:', pMap.fatherSlot, 'motherSlot:', pMap.motherSlot);
+          console.log('[DC DEBUG] data.father:', data.father, 'data.mother:', data.mother);
           // Father
           if (data.father?.name) {
             const fPlate = findSlot(pMap.fatherSlot);
@@ -2821,7 +2824,8 @@ const SPOUSE_MAP = {
   certActions.style.display = 'none';
 
   console.log('[CERT APPLY] type:', type, 'filled:', filled, 'messages:', messages);
-  showToast('✓ Applied ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' to tree');
+  console.log('[CERT APPLY] deathPlate slot:', deathPlate?.dataset?.slot, 'childPlate slot:', childPlate?.dataset?.slot);
+  showToast('✓ Applied ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' to tree', 4000);
 
   // Save document image to IndexedDB if retention is enabled
   const keepDocs = document.getElementById('keepDocsToggle').checked;
