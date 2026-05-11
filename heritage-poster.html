@@ -815,6 +815,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
     <div class="cert-actions" id="certActions" style="display:none;">
       <button class="cert-btn secondary" id="certCancel">Cancel</button>
       <button class="cert-btn secondary" id="certRetryScan">Retry Scan</button>
+      <button class="cert-btn secondary" id="certSwapParents" style="display:none;">↔ Swap Parents</button>
       <button class="cert-btn primary" id="certConfirm" disabled>Apply to Tree</button>
     </div>
   </div>
@@ -1553,6 +1554,28 @@ certRetry.addEventListener('click', () => {
   }
 });
 
+// Swap parents button: fixes transposed groom/bride parents (common vision model error)
+const certSwapParents = document.getElementById('certSwapParents');
+certSwapParents.addEventListener('click', () => {
+  if (!lastTranscription || lastTranscription._type !== 'marriage') return;
+  const entry = lastTranscription;
+  // Swap fathers
+  const tempFather = entry.groomFather;
+  entry.groomFather = entry.brideFather;
+  entry.brideFather = tempFather;
+  // Swap mothers
+  const tempMother = entry.groomMother;
+  entry.groomMother = entry.brideMother;
+  entry.brideMother = tempMother;
+  // Re-render
+  certResults.innerHTML = '';
+  const fields = extractEntryFields(entry, 'marriage');
+  const card = buildEntryCard(fields, entry, 'marriage', selectedEntryIndex || 0, () => {});
+  card.classList.add('selected');
+  certResults.appendChild(card);
+  showToast('Parents swapped — groom↔bride');
+});
+
 // Re-scan button: re-run transcription on the same image (for when transcription looks wrong)
 certRetryScan.addEventListener('click', () => {
   if (pendingDocImage) {
@@ -1675,6 +1698,12 @@ async function sendToTranscriptionAPI(base64) {
 
     certActions.style.display = 'flex';
     certConfirm.disabled = false;
+    // Show swap button only for marriage certs
+    if (json.data.type === 'marriage') {
+      certSwapParents.style.display = '';
+    } else {
+      certSwapParents.style.display = 'none';
+    }
 
   } catch (err) {
     certStatus.className = 'cert-status';
