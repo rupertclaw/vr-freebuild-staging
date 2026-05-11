@@ -259,7 +259,8 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 </div>
 
 <script>
-console.log('[Boot] Script started executing');
+window.__bootLog = [];
+window.__bootLog.push('Script start');
 // ═══════════════════════════════════════════════════════════════
 // DATA MODEL
 // ═══════════════════════════════════════════════════════════════
@@ -602,10 +603,11 @@ function showToast(msg, duration) {
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
   setTimeout(() => el.remove(), duration + 500);
 }
-if (!autoRestore()) { console.log('[Boot] autoRestore returned false, calling initDefaultData'); initDefaultData(); }
-console.log('[Boot] After init, people.length=', people.length);
+window.__bootLog.push('Before autoRestore');
+if (!autoRestore()) { window.__bootLog.push('autoRestore=false, calling initDefaultData'); initDefaultData(); window.__bootLog.push('initDefaultData done, people='+people.length); }
+window.__bootLog.push('Before renderTree, people='+people.length);
 renderTree();
-console.log('[Boot] After render, cards=', document.querySelectorAll('.person-card').length);
+window.__bootLog.push('After renderTree, cards='+document.querySelectorAll('.person-card').length);
 setTimeout(() => {
   const gavinEl = cardEls.get(1);
   if (gavinEl) {
