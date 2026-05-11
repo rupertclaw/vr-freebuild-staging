@@ -898,8 +898,8 @@ setTimeout(() => {
     // Center Gavin in viewport, show ~5-6 columns to the right
     const cardCenterX = gavinEl.offsetLeft + gavinEl.offsetWidth / 2;
     const cardCenterY = gavinEl.offsetTop + gavinEl.offsetHeight / 2;
-    scroll.scrollLeft = Math.max(0, cardCenterX * zoom - scroll.clientWidth / 3);
-    scroll.scrollTop = Math.max(0, cardCenterY * zoom - scroll.clientHeight / 2);
+    scroll.scrollLeft = Math.max(0, cardCenterX - scroll.clientWidth / (3 * zoom));
+    scroll.scrollTop = Math.max(0, cardCenterY - scroll.clientHeight / (2 * zoom));
   }
 }, 100);
 </script>
