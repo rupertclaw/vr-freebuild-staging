@@ -259,8 +259,6 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 </div>
 
 <script>
-window.__bootLog = [];
-window.__bootLog.push('Script start');
 // ═══════════════════════════════════════════════════════════════
 // DATA MODEL
 // ═══════════════════════════════════════════════════════════════
@@ -291,6 +289,11 @@ function createPerson(id, gen, name, years, status, opts) {
 
 let people = [];
 let nextId = 1;
+let selectedCertType = 'birth';
+let pendingDocFile = null;
+let pendingDocImage = null;
+let lastTranscription = null;
+let selectedEntryIndex = 0;
 
 function initDefaultData() {
   people = [];
@@ -534,30 +537,301 @@ document.querySelectorAll('.cert-type-btn').forEach(btn => {
   });
 });
 document.getElementById('certUploadArea').addEventListener('click', () => document.getElementById('certFileInput').click());
-document.getElementById('certFileInput').addEventListener('change', (e) => {
+document.getElementById('certFileInput').addEventListener('change', async (e) => {
   const file = e.target.files[0]; if (!file) return;
+  pendingDocFile = file;
+  try { await processDocFile(file); } catch (err) {
+    console.error('[UPLOAD ERROR]', err);
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status error'; cs.style.display = 'block';
+    cs.innerHTML = 'Error: ' + (err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    document.getElementById('certRetry').style.display = 'block';
+  }
+});
+
+async function processDocFile(file) {
   const reader = new FileReader();
   reader.onload = (ev) => {
     pendingDocImage = ev.target.result;
     document.getElementById('certPreviewImg').src = pendingDocImage;
     document.getElementById('certPreviewArea').style.display = 'block';
     document.getElementById('certUploadArea').style.display = 'none';
-    const cs = document.getElementById('certStatus');
-    cs.className = 'cert-status loading'; cs.textContent = 'Sending to transcription API...'; cs.style.display = 'block';
-    document.getElementById('certResults').innerHTML = '';
-    document.getElementById('certActions').style.display = 'none';
-    setTimeout(() => {
-      cs.className = 'cert-status success';
-      cs.textContent = '✓ Cert type: ' + selectedCertType.toUpperCase() + ' (demo mode)';
-      document.getElementById('certActions').style.display = 'flex';
-      document.getElementById('certResults').innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:#6b5537;">Demo mode: Use main tree for full cert scanning.<br>This view is for data browsing.</div>';
-    }, 1500);
   };
   reader.readAsDataURL(file);
+
+  const cs = document.getElementById('certStatus');
+  cs.className = 'cert-status loading'; cs.textContent = 'Preparing image...'; cs.style.display = 'block';
+  document.getElementById('certResults').innerHTML = '';
+  document.getElementById('certActions').style.display = 'none';
+
+  let base64;
+  try { base64 = await resizeAndCompressImage(file, 1600, 0.90); }
+  catch (compressErr) {
+    console.error('[COMPRESS ERROR]', compressErr);
+    base64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
+  }
+  pendingDocImage = base64;
+  await sendToTranscriptionAPI(base64);
+}
+
+async function resizeAndCompressImage(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+      else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    const r = new FileReader();
+    r.onload = (e) => { img.src = e.target.result; };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+const API_URL = 'https://genealogy-api.vercel.app/api/transcribe';
+
+async function sendToTranscriptionAPI(base64) {
+  const cs = document.getElementById('certStatus');
+  cs.className = 'cert-status loading'; cs.textContent = 'Scanning certificate...';
+  document.getElementById('certRetry').style.display = 'none';
+  try {
+    const resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: base64, certType: selectedCertType }) });
+    const json = await resp.json();
+    if (!json.success) {
+      cs.className = 'cert-status error';
+      cs.innerHTML = 'Scan failed: ' + (json.error || json.message || 'Unknown error') + '<br><small>Tap Retry to try again</small>';
+      document.getElementById('certRetry').style.display = 'block'; return;
+    }
+    lastTranscription = json.data;
+    cs.className = 'cert-status success';
+    cs.textContent = '✓ Cert type: ' + (json.data.type || 'unknown').toUpperCase();
+    renderTranscriptionResults(json.data);
+    document.getElementById('certActions').style.display = 'flex';
+    if (json.data.type === 'marriage') document.getElementById('certSwapParents').style.display = 'block';
+    else document.getElementById('certSwapParents').style.display = 'none';
+  } catch (err) {
+    cs.className = 'cert-status error';
+    cs.innerHTML = 'Network error: ' + (err.message || 'Could not reach server') + '<br><small>Tap Retry to try again</small>';
+    document.getElementById('certRetry').style.display = 'block';
+  }
+}
+
+function renderTranscriptionResults(data) {
+  const container = document.getElementById('certResults');
+  container.innerHTML = '';
+  selectedEntryIndex = 0;
+  const entries = data.entries || [data];
+  let type = data.type || 'unknown';
+  if (type === 'unknown' && entries.length > 0) {
+    const first = entries[0];
+    if (first.groom?.name || first.bride?.name) type = 'marriage';
+    else if (first.child?.name || first.father?.name || first.mother?.name) type = 'birth';
+    else if (first.deceased?.name) type = 'death';
+  }
+  entries.forEach((entry, idx) => {
+    const card = document.createElement('div');
+    card.className = 'cert-result-card' + (idx === 0 ? ' selected' : '');
+    card.dataset.index = idx;
+    const fields = extractEntryFields(entry, type);
+    let html = '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">' + entrySummary(entry, type) + '</div>';
+    fields.forEach(f => { html += '<div style="font-size:11px;margin:2px 0;"><span style="color:#6b5537;">' + f.label + ':</span> ' + f.value + '</div>'; });
+    card.innerHTML = html;
+    card.addEventListener('click', () => {
+      document.querySelectorAll('.cert-result-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected'); selectedEntryIndex = idx;
+    });
+    container.appendChild(card);
+  });
+}
+
+function extractEntryFields(entry, type) {
+  const fields = [];
+  if (type === 'marriage') {
+    if (entry.groom?.name) fields.push({ label: 'Groom', value: entry.groom.name });
+    if (entry.groom?.age) fields.push({ label: 'Groom Age', value: entry.groom.age });
+    if (entry.bride?.name) fields.push({ label: 'Bride', value: entry.bride.name });
+    if (entry.bride?.age) fields.push({ label: 'Bride Age', value: entry.bride.age });
+    if (entry.groomFather?.name) fields.push({ label: "Groom's Father", value: entry.groomFather.name });
+    if (entry.groomMother?.name) fields.push({ label: "Groom's Mother", value: entry.groomMother.name + (entry.groomMother.maidenName ? ' (m.s. ' + entry.groomMother.maidenName + ')' : '') });
+    if (entry.brideFather?.name) fields.push({ label: "Bride's Father", value: entry.brideFather.name });
+    if (entry.brideMother?.name) fields.push({ label: "Bride's Mother", value: entry.brideMother.name + (entry.brideMother.maidenName ? ' (m.s. ' + entry.brideMother.maidenName + ')' : '') });
+    if (entry.date) fields.push({ label: 'Date', value: entry.date });
+  } else if (type === 'birth') {
+    if (entry.child?.name) fields.push({ label: 'Child', value: entry.child.name });
+    if (entry.child?.birthDate) fields.push({ label: 'Birth Date', value: entry.child.birthDate });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : entry.mother.maidenSurname ? ' (m.s. ' + entry.mother.maidenSurname + ')' : '') });
+    if (entry.district) fields.push({ label: 'District', value: entry.district });
+  } else if (type === 'death') {
+    if (entry.deceased?.name) fields.push({ label: 'Deceased', value: entry.deceased.name });
+    if (entry.deceased?.age) fields.push({ label: 'Age', value: entry.deceased.age });
+    if (entry.deceased?.spouseName) fields.push({ label: 'Spouse', value: entry.deceased.spouseName });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : '') });
+    if (entry.deathDate) fields.push({ label: 'Date', value: entry.deathDate });
+    if (entry.causeOfDeath) fields.push({ label: 'Cause', value: entry.causeOfDeath });
+  }
+  return fields;
+}
+
+function entrySummary(entry, type) {
+  const name = entry.child?.name || entry.groom?.name || entry.bride?.name || entry.deceased?.name || 'Unknown';
+  const date = entry.child?.birthDate || entry.date || entry.deathDate || '';
+  if (type === 'marriage') return (entry.groom?.name || 'Unknown') + ' & ' + (entry.bride?.name || 'Unknown') + (date ? ' — ' + date : '');
+  if (type === 'birth') return name + (date ? ' — b. ' + date : '');
+  if (type === 'death') return name + (date ? ' — d. ' + date : '');
+  return name;
+}
+
+// Apply scanned cert data to the people array
+function applyCertToPerson(entry, type) {
+  if (!entry) return;
+  const changed = [];
+  if (type === 'birth') applyBirthEntry(entry, changed);
+  else if (type === 'marriage') applyMarriageEntry(entry, changed);
+  else if (type === 'death') applyDeathEntry(entry, changed);
+  if (changed.length) { renderTree(); showToast('Applied to ' + changed.length + ' people'); }
+  else { showToast('No matching people found — cert data stored'); }
+}
+
+function normalizeName(name) {
+  if (!name) return '';
+  const parts = name.toLowerCase().trim().split(/\s+/);
+  if (parts.length < 2) return parts[0] || '';
+  return parts[0] + ' ' + parts[parts.length - 1];
+}
+
+function findPerson(name) {
+  if (!name) return null;
+  const norm = normalizeName(name);
+  let best = null, bestScore = 0;
+  for (const p of people) {
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    let score = 0;
+    if (pNorm === norm || pFull === norm) score = 100;
+    else if ((p.name || '').toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes((p.name || '').toLowerCase())) score = 70;
+    else if (pNorm.includes(norm) || norm.includes(pNorm)) score = 50;
+    if (score > bestScore) { bestScore = score; best = p; }
+  }
+  return bestScore >= 50 ? best : null;
+}
+
+function getOrCreateParent(parentName, parentGen, spouseName, changed) {
+  if (!parentName) return null;
+  let p = findPerson(parentName);
+  if (!p) {
+    p = createPerson(nextId++, parentGen, parentName, '?', 'probable', {});
+    people.push(p); changed.push(p);
+  }
+  return p.id;
+}
+
+function applyBirthEntry(entry, changed) {
+  const childName = entry.child?.name; if (!childName) return;
+  let child = findPerson(childName);
+  if (!child) { child = createPerson(nextId++, 0, childName, '?', 'probable', {}); people.push(child); changed.push(child); }
+  if (entry.child?.birthDate && child.years === '?') { child.birthDate = entry.child.birthDate; child.years = 'b. ' + entry.child.birthDate; changed.push(child); }
+  if (entry.child?.birthDate) child.status = 'confirmed';
+  child.docs.push({ type: 'bc' });
+
+  const parentGen = child.gen + 1;
+  const fatherId = getOrCreateParent(entry.father?.name, parentGen, entry.mother?.name, changed);
+  const motherId = getOrCreateParent(entry.mother?.name, parentGen, entry.father?.name, changed);
+  if (motherId) {
+    const mother = people.find(pp => pp.id === motherId);
+    if (mother && entry.mother?.maidenName) mother.maidenName = entry.mother.maidenName;
+    if (mother && entry.mother?.maidenSurname) mother.maidenName = entry.mother.maidenSurname;
+  }
+  child.parents = [fatherId, motherId].filter(id => id !== null);
+}
+
+function applyMarriageEntry(entry, changed) {
+  const groomName = entry.groom?.name, brideName = entry.bride?.name;
+  if (!groomName || !brideName) return;
+  let groom = findPerson(groomName);
+  let bride = findPerson(brideName);
+  if (!groom) { groom = createPerson(nextId++, 0, groomName, '?', 'probable', {}); people.push(groom); changed.push(groom); }
+  if (!bride) { bride = createPerson(nextId++, 0, brideName, '?', 'probable', {}); people.push(bride); changed.push(bride); }
+  groom.spouseName = bride.name; bride.spouseName = groom.name;
+  if (entry.date) { groom.years = (groom.years === '?' ? '' : groom.years.replace(/\?/g,'')) + ' m. ' + entry.date; }
+  groom.docs.push({ type: 'mc' }); bride.docs.push({ type: 'mc' });
+  groom.status = 'confirmed'; bride.status = 'confirmed';
+
+  const parentGen = Math.max(groom.gen, bride.gen) + 1;
+  const groomFatherId = getOrCreateParent(entry.groomFather?.name, parentGen, entry.groomMother?.name, changed);
+  const groomMotherId = getOrCreateParent(entry.groomMother?.name, parentGen, entry.groomFather?.name, changed);
+  if (groomMotherId) {
+    const m = people.find(pp => pp.id === groomMotherId);
+    if (m && entry.groomMother?.maidenName) m.maidenName = entry.groomMother.maidenName;
+  }
+  groom.parents = [groomFatherId, groomMotherId].filter(id => id !== null);
+
+  const brideFatherId = getOrCreateParent(entry.brideFather?.name, parentGen, entry.brideMother?.name, changed);
+  const brideMotherId = getOrCreateParent(entry.brideMother?.name, parentGen, entry.brideFather?.name, changed);
+  if (brideMotherId) {
+    const m = people.find(pp => pp.id === brideMotherId);
+    if (m && entry.brideMother?.maidenName) m.maidenName = entry.brideMother.maidenName;
+  }
+  bride.parents = [brideFatherId, brideMotherId].filter(id => id !== null);
+}
+
+function applyDeathEntry(entry, changed) {
+  const decName = entry.deceased?.name; if (!decName) return;
+  let dec = findPerson(decName);
+  if (!dec) { dec = createPerson(nextId++, 0, decName, '?', 'probable', {}); people.push(dec); changed.push(dec); }
+  if (entry.deathDate) { dec.deathDate = entry.deathDate; dec.years = (dec.birthDate ? dec.birthDate + ' — ' : '') + entry.deathDate; }
+  if (entry.deceased?.age) dec.years += ' (age ' + entry.deceased.age + ')';
+  if (entry.deceased?.occupation) dec.occupation = entry.deceased.occupation;
+  if (entry.deceased?.spouseName) dec.spouseName = entry.deceased.spouseName;
+  dec.docs.push({ type: 'dc' }); dec.status = 'confirmed';
+
+  const parentGen = dec.gen + 1;
+  const fatherId = getOrCreateParent(entry.father?.name, parentGen, entry.mother?.name, changed);
+  const motherId = getOrCreateParent(entry.mother?.name, parentGen, entry.father?.name, changed);
+  if (motherId) {
+    const m = people.find(pp => pp.id === motherId);
+    if (m && entry.mother?.maidenName) m.maidenName = entry.mother.maidenName;
+  }
+  dec.parents = [fatherId, motherId].filter(id => id !== null);
+}
+
+document.getElementById('certConfirm').addEventListener('click', () => {
+  if (!lastTranscription) return;
+  const entries = lastTranscription.entries || [lastTranscription];
+  const entry = entries[selectedEntryIndex || 0];
+  if (!entry) return;
+  let type = lastTranscription.type || 'unknown';
+  if (type === 'unknown') {
+    if (entry.groom?.name || entry.bride?.name) type = 'marriage';
+    else if (entry.child?.name || entry.father?.name || entry.mother?.name) type = 'birth';
+    else if (entry.deceased?.name) type = 'death';
+  }
+  applyCertToPerson(entry, type);
 });
-document.getElementById('certConfirm').addEventListener('click', () => showToast('Demo mode: Use main tree for cert apply'));
-document.getElementById('certRetry').addEventListener('click', () => { document.getElementById('certFileInput').value = ''; document.getElementById('certFileInput').click(); });
-document.getElementById('certSwap').addEventListener('click', () => showToast('Swap parents: demo mode'));
+
+document.getElementById('certRetry').addEventListener('click', () => {
+  if (pendingDocFile) { processDocFile(pendingDocFile); }
+  else { document.getElementById('certFileInput').value = ''; document.getElementById('certFileInput').click(); }
+});
+
+document.getElementById('certSwapParents').addEventListener('click', () => {
+  if (!lastTranscription) return;
+  const entries = lastTranscription.entries || [lastTranscription];
+  const entry = entries[selectedEntryIndex || 0];
+  if (!entry || !entry.groomFather) return;
+  const tf = entry.groomFather; entry.groomFather = entry.brideFather; entry.brideFather = tf;
+  const tm = entry.groomMother; entry.groomMother = entry.brideMother; entry.brideMother = tm;
+  renderTranscriptionResults(lastTranscription);
+  showToast('Parents swapped — groom↔bride');
+});
 
 function saveSession() {
   const payload = { version: 2, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
@@ -603,11 +877,8 @@ function showToast(msg, duration) {
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
   setTimeout(() => el.remove(), duration + 500);
 }
-window.__bootLog.push('Before autoRestore');
-if (!autoRestore()) { window.__bootLog.push('autoRestore=false, calling initDefaultData'); initDefaultData(); window.__bootLog.push('initDefaultData done, people='+people.length); }
-window.__bootLog.push('Before renderTree, people='+people.length);
+if (!autoRestore()) initDefaultData();
 renderTree();
-window.__bootLog.push('After renderTree, cards='+document.querySelectorAll('.person-card').length);
 setTimeout(() => {
   const graemeEl = cardEls.get(1);
   if (graemeEl) {
