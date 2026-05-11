@@ -1,0 +1,616 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<title>Roots — Data Tree</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: 'Cormorant Garamond', serif; }
+
+/* Header */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; height: 50px;
+  background: #2a1f15; border-bottom: 2px solid #4a3a22;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 16px; z-index: 300;
+}
+.header h1 { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: #e8dcc8; }
+.header-stats { display: flex; gap: 16px; font-size: 12px; color: #9a8a6a; }
+.header-stats span { color: #e8dcc8; font-weight: 600; }
+.header-btn {
+  width: 32px; height: 32px; background: #3e3225; color: #e8dcc8;
+  border: 1px solid #6b5537; border-radius: 6px; font-size: 18px; cursor: pointer;
+}
+
+/* Tree scroll area */
+.tree-scroll {
+  position: fixed; top: 50px; left: 0; right: 0; bottom: 0;
+  overflow: auto; -webkit-overflow-scrolling: touch;
+  background: radial-gradient(ellipse at center, #2a1f15 0%, #0c0803 100%);
+}
+.tree-wrap {
+  position: relative; min-width: fit-content; min-height: 100%;
+  padding: 40px 30px;
+}
+
+/* Generation columns */
+.generation {
+  display: flex; flex-direction: column;
+  position: relative; min-width: 180px;
+}
+.gen-label {
+  position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+  font-family: 'Cinzel Decorative', serif; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 2px; color: #8a7a5a;
+  white-space: nowrap;
+}
+
+/* Person cards */
+.person-card {
+  position: absolute; left: 0; width: 170px;
+  background: rgba(250, 244, 230, 0.94);
+  border: 2px solid #4a3a22; border-radius: 3px;
+  padding: 8px 12px; text-align: center;
+  z-index: 2; cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.person-card::before {
+  content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px;
+  border: 1px solid #8a7a5a; pointer-events: none; border-radius: 1px;
+}
+.person-card:hover { transform: scale(1.03); box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
+.person-card:active { transform: scale(0.98); }
+
+.person-card .name {
+  font-family: 'Cinzel Decorative', serif; font-size: 11px;
+  color: #2a1f10; letter-spacing: 0.5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.person-card .years {
+  font-family: 'Cormorant Garamond', serif; font-size: 9px;
+  color: #7a6545; margin-top: 2px; font-style: italic;
+}
+.person-card .doc-badges {
+  margin-top: 4px; display: flex; justify-content: center; gap: 3px;
+}
+.person-card .doc-badge {
+  font-size: 8px; padding: 1px 5px; border-radius: 3px;
+  font-family: 'Cormorant Garamond', serif; font-weight: 600;
+}
+.doc-badge.bc { background: #dcfce7; color: #166534; }
+.doc-badge.mc { background: #dbeafe; color: #1e40af; }
+.doc-badge.dc { background: #fee2e2; color: #991b1b; }
+
+.person-card.confirmed { border-left: 4px solid #22c55e; }
+.person-card.probable { border-left: 4px solid #f59e0b; }
+.person-card.brickwall { border-left: 4px dashed #ef4444; }
+.person-card.you { border: 2px solid #c4a875; background: rgba(255,248,225,0.97); }
+
+/* SVG connectors */
+.lines-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+
+/* Cert panel */
+.cert-panel {
+  display: none; position: fixed; top: 50px; right: 0;
+  width: 380px; max-width: 95vw; height: calc(100vh - 50px);
+  background: #f5eedc; z-index: 400; overflow-y: auto;
+  border-left: 3px solid #4a3a22;
+}
+.cert-panel.active { display: block; animation: slideIn 0.25s ease; }
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+.cert-header {
+  background: #2a1f15; color: #e8dcc8; padding: 14px 16px;
+  position: relative; font-family: 'Cinzel Decorative', serif;
+}
+.cert-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
+.cert-body { padding: 16px; }
+
+.cert-type-selector { display: flex; gap: 6px; margin-bottom: 12px; }
+.cert-type-btn {
+  flex: 1; padding: 8px; border: 2px solid #8a7a5a; background: #f5eedc;
+  border-radius: 4px; font-family: 'Cinzel Decorative', serif; font-size: 11px;
+  color: #4a3a22; cursor: pointer;
+}
+.cert-type-btn.active { background: #4a3a22; color: #f5eedc; border-color: #4a3a22; }
+
+.cert-upload-area {
+  border: 2px dashed #8a7a5a; border-radius: 8px;
+  padding: 30px; text-align: center; cursor: pointer;
+  background: #faf6ee; margin-bottom: 12px;
+}
+.cert-upload-area:hover { border-color: #4a3a22; background: #f0e8d8; }
+.cert-preview-area { display: none; margin-bottom: 12px; text-align: center; }
+.cert-preview-area img { max-width: 100%; max-height: 200px; border-radius: 4px; border: 2px solid #8a7a5a; }
+
+.cert-status {
+  display: none; padding: 10px; border-radius: 4px;
+  font-family: 'Cormorant Garamond', serif; font-size: 13px;
+  text-align: center; margin-bottom: 10px;
+}
+.cert-status.loading { display: block; background: #fef3c7; color: #92400e; }
+.cert-status.success { display: block; background: #dcfce7; color: #166534; }
+.cert-status.error { display: block; background: #fee2e2; color: #991b1b; }
+
+.cert-result-card {
+  background: #fff; border: 2px solid #8a7a5a; border-radius: 6px;
+  padding: 12px; margin-bottom: 10px; cursor: pointer;
+  font-family: 'Cormorant Garamond', serif;
+}
+.cert-result-card.selected { border-color: #4a3a22; background: #f0e8d8; }
+.cert-result-card .field-row {
+  display: flex; justify-content: space-between; padding: 3px 0;
+  border-bottom: 1px solid #e8dcc8; font-size: 12px;
+}
+.cert-result-card .field-row label { color: #6b5537; font-weight: 600; text-transform: uppercase; font-size: 10px; }
+
+.cert-actions { display: none; gap: 8px; margin-top: 12px; }
+.cert-actions button {
+  flex: 1; padding: 10px; border: 2px solid #4a3a22; border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif; font-size: 11px; cursor: pointer;
+}
+.cert-confirm { background: #4a3a22; color: #f5eedc; }
+.cert-retry { background: #f5eedc; color: #4a3a22; }
+.cert-swap { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
+
+/* Detail panel */
+.detail-panel {
+  display: none; position: fixed; top: 50px; right: 0;
+  width: 360px; max-width: 90vw; height: calc(100vh - 50px);
+  background: #f5eedc; z-index: 400; overflow-y: auto;
+  border-left: 3px solid #4a3a22;
+}
+.detail-panel.active { display: block; animation: slideIn 0.25s ease; }
+.detail-header { background: #2a1f15; color: #e8dcc8; padding: 14px 16px; position: relative; }
+.detail-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
+.detail-body { padding: 16px; }
+.detail-field { margin-bottom: 12px; }
+.detail-field label { display: block; font-size: 10px; color: #6b5537; text-transform: uppercase; margin-bottom: 3px; font-weight: 600; }
+.detail-field input, .detail-field textarea {
+  width: 100%; padding: 8px; border: 1px solid #8a7a5a; border-radius: 4px;
+  background: #fff; font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #2a1f10;
+}
+.detail-field textarea { min-height: 60px; resize: vertical; }
+
+/* Save/Load buttons */
+.save-bar {
+  position: fixed; bottom: 16px; left: 16px; display: flex; gap: 8px; z-index: 200;
+}
+.save-bar button {
+  padding: 8px 14px; border: none; border-radius: 4px;
+  font-family: 'Cormorant Garamond', serif; font-size: 11px; cursor: pointer;
+  background: #3e3225; color: #f0e6d2; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+/* Toast */
+#toastMsg {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(30,25,20,0.92); color: #f0e6d2; padding: 14px 24px;
+  border-radius: 8px; font-family: 'Cormorant Garamond', serif; font-size: 15px;
+  z-index: 9999; box-shadow: 0 4px 16px rgba(0,0,0,0.4); text-align: center;
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <h1>Roots — Data Tree</h1>
+  <div class="header-stats">
+    <div>People: <span id="statPeople">0</span></div>
+    <div>Confirmed: <span id="statConfirmed">0</span></div>
+    <div>Walls: <span id="statWalls">0</span></div>
+  </div>
+  <button class="header-btn" id="certToggle">📎</button>
+</div>
+
+<div class="tree-scroll" id="treeScroll">
+  <div class="tree-wrap" id="treeWrap">
+    <svg class="lines-svg" id="linesSvg"></svg>
+  </div>
+</div>
+
+<!-- Cert Panel -->
+<div class="cert-panel" id="certPanel">
+  <div class="cert-header">
+    <button class="cert-close" id="certClose">&times;</button>
+    <div style="font-size:14px;">📎 Upload Certificate</div>
+  </div>
+  <div class="cert-body">
+    <div class="cert-type-selector">
+      <button class="cert-type-btn active" data-type="birth">Birth</button>
+      <button class="cert-type-btn" data-type="marriage">Marriage</button>
+      <button class="cert-type-btn" data-type="death">Death</button>
+    </div>
+    <div class="cert-upload-area" id="certUploadArea">
+      <div style="font-size:24px;margin-bottom:8px;">📄</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#4a3a22;">Tap to upload cert</div>
+      <div style="font-size:11px;color:#8a7a5a;margin-top:4px;">Birth, marriage, or death record</div>
+    </div>
+    <input type="file" id="certFileInput" accept="image/*" style="display:none">
+    <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
+    <div class="cert-status" id="certStatus"></div>
+    <div id="certResults"></div>
+    <div class="cert-actions" id="certActions">
+      <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
+      <button class="cert-swap" id="certSwapParents">↔ Swap Parents</button>
+      <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <button class="detail-close" id="detailClose">&times;</button>
+    <div style="font-size:14px;" id="detailTitle">Person</div>
+  </div>
+  <div class="detail-body" id="detailBody"></div>
+</div>
+
+<!-- Save/Load bar -->
+<div class="save-bar">
+  <button id="saveBtn">⬇ Save Session</button>
+  <button id="loadBtn">⬆ Load Session</button>
+  <input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DATA MODEL
+// ═══════════════════════════════════════════════════════════════
+
+// Extended person model: full fields for cert-driven population
+function createPerson(id, gen, name, years, status, opts) {
+  opts = opts || {};
+  return {
+    id: id,
+    gen: gen,
+    name: name,
+    fullName: opts.fullName || name,
+    years: years,
+    birthDate: opts.birthDate || '',
+    deathDate: opts.deathDate || '',
+    status: status,
+    occupation: opts.occupation || '',
+    birthplace: opts.birthplace || '',
+    maidenName: opts.maidenName || '',
+    spouseName: opts.spouseName || '',
+    parents: opts.parents || null,
+    children: opts.children || [],
+    docs: opts.docs || [],
+    notes: opts.notes || '',
+    source: opts.source || ''
+  };
+}
+
+let people = [];
+let nextId = 1;
+
+function initDefaultData() {
+  people = [];
+  nextId = 1;
+
+  // Gen 0
+  people.push(createPerson(nextId++, 0, 'Gavin Harrow', 'b. 1966', 'you', {birthplace: 'Brampton, Ontario'}));
+
+  // Gen 1
+  people.push(createPerson(nextId++, 1, 'Joseph Harrow', '1931-2004', 'confirmed', {parents: [3,4], birthplace: 'Westmoor, Kelmscott -> Ontario'}));
+  people.push(createPerson(nextId++, 1, 'Rose Fenwick', 'b. 1931', 'confirmed', {parents: [5,6], birthplace: 'Kelmscott, Angus'}));
+
+  // Gen 2
+  people.push(createPerson(nextId++, 2, 'Joseph Harrow', '1905-1974', 'confirmed', {parents: [7,8], birthplace: 'Kelmscott, Angus'}));
+  people.push(createPerson(nextId++, 2, 'Alice Marsh', '1907-1978', 'confirmed', {parents: [9,10], birthplace: 'Scotland'}));
+  people.push(createPerson(nextId++, 2, 'Andrew Maddox Fenwick', '1902-1972', 'confirmed', {parents: [11,12], birthplace: 'Kelmscott, Angus'}));
+  people.push(createPerson(nextId++, 2, 'Agnes Elder', 'b. 1902', 'confirmed', {parents: [13,14], birthplace: 'Scotland'}));
+
+  // Gen 3
+  people.push(createPerson(nextId++, 3, 'Joseph Harrow', '1879-?', 'probable', {parents: [15,16], birthplace: 'Scotland'}));
+  people.push(createPerson(nextId++, 3, 'Catherine Merriwether', 'b. 1883', 'probable', {parents: [15,16], maidenName: 'Merriwether', birthplace: 'Ireland -> Scotland'}));
+  people.push(createPerson(nextId++, 3, 'Edward Marsh', '1868-?', 'probable', {parents: [17,18], birthplace: 'Kelmscott'}));
+  people.push(createPerson(nextId++, 3, 'Mary Ashdown', '1865-?', 'probable', {parents: [17,18], birthplace: 'Angus, Scotland'}));
+  people.push(createPerson(nextId++, 3, 'James George R. Fenwick', '1872-?', 'probable', {parents: [19,20], birthplace: 'England -> Kelmscott'}));
+  people.push(createPerson(nextId++, 3, 'Agnes Maddox', '?-1938', 'confirmed', {parents: [67,68], maidenName: 'Maddox', birthplace: 'Westmoor', notes: 'Death cert: Westmoor 1938. Parents: Andrew Maddox + Elizabeth Selwyn'}));
+  people.push(createPerson(nextId++, 3, 'Patrick Elder', '1872-?', 'probable', {parents: [21,22], birthplace: 'Scotland'}));
+  people.push(createPerson(nextId++, 3, 'Rose Anna Ashford', '1872-?', 'probable', {parents: [59,60], birthplace: "Flight's Lane, Westmoor", notes: 'Married Patrick Elder 1895'}));
+
+  // Gen 4
+  people.push(createPerson(nextId++, 4, 'Thomas Harrow', '1862-1911', 'probable', {parents: [23,24], birthplace: 'Ireland -> Kelmscott'}));
+  people.push(createPerson(nextId++, 4, 'Catherine Marsh', '1858-?', 'probable', {parents: [25,26], birthplace: 'Scotland'}));
+  people.push(createPerson(nextId++, 4, 'Owen Marsh', '1833-?', 'probable', {parents: [25,26], birthplace: 'Kelmscott'}));
+  people.push(createPerson(nextId++, 4, 'Alice Waverley', '1831-?', 'probable', {parents: [27,28], birthplace: 'Scotland'}));
+  people.push(createPerson(nextId++, 4, 'William Fenwick', '1841-?', 'probable', {parents: [29,30], birthplace: 'Fife, Scotland'}));
+  people.push(createPerson(nextId++, 4, 'Elizabeth (Betsy)', '1842-?', 'probable', {parents: [31,32], birthplace: 'Scotland'}));
+  people.push(createPerson(nextId++, 4, 'Francis Elder', '1850-?', 'probable', {parents: [33,34], birthplace: 'Scotland'}));
+  people.push(createPerson(nextId++, 4, 'Eliza Dunmore', '1852-?', 'probable', {parents: [35,36], birthplace: 'Kelmscott'}));
+  people.push(createPerson(nextId++, 4, 'Andrew Maddox', '?', 'probable', {parents: null, occupation: 'Shoemaker', notes: 'Father of Agnes Maddox (deceased)'}));
+  people.push(createPerson(nextId++, 4, 'Elizabeth Selwyn', '?', 'probable', {parents: null, maidenName: 'Selwyn', notes: 'Mother of Agnes Maddox (deceased)'}));
+  people.push(createPerson(nextId++, 4, 'James Ashdown', '1835-?', 'probable', {parents: [43,44], birthplace: 'Angus, Scotland'}));
+  people.push(createPerson(nextId++, 4, 'Ann Easton', '1844-?', 'probable', {parents: [45,46], birthplace: 'Ireland'}));
+  people.push(createPerson(nextId++, 4, 'James Merriwether', '?', 'probable', {parents: [47,48], occupation: 'Stone Quarry Worker', notes: 'Married Helen Dewhurst 1876'}));
+  people.push(createPerson(nextId++, 4, 'Helen Dewhurst', '?', 'probable', {parents: [49,50], occupation: 'Jute Factory Spinner', notes: 'Married James Merriwether 1876'}));
+  people.push(createPerson(nextId++, 4, 'John Ashford', '?', 'probable', {parents: null, occupation: 'General Labourer (Deceased)', notes: 'From Rose Ashford marriage cert 1895'}));
+  people.push(createPerson(nextId++, 4, 'Mary Kenward', '?', 'probable', {parents: null, maidenName: 'Shields', notes: 'From Rose Ashford marriage cert 1895 (Deceased)'}));
+
+  // Gen 5
+  people.push(createPerson(nextId++, 5, '? Father', '?', 'brickwall', {parents: null, notes: 'Father of Thomas 1862. Not in any record'}));
+  people.push(createPerson(nextId++, 5, 'Hannah Harrow', '1833-1862', 'probable', {parents: [37,38], birthplace: 'Scotland'}));
+  people.push(createPerson(nextId++, 5, 'Thomas Marsh', '1815-?', 'probable', {parents: null, birthplace: 'Ireland'}));
+  people.push(createPerson(nextId++, 5, 'Catherine Calloway', '1820-?', 'probable', {parents: null, birthplace: 'Ireland'}));
+  people.push(createPerson(nextId++, 5, '? Father', '?', 'brickwall', {parents: null, notes: 'Alice Waverley father. No record found'}));
+  people.push(createPerson(nextId++, 5, '? Mother', '?', 'brickwall', {parents: null, notes: 'Alice Waverley mother. No record found'}));
+  people.push(createPerson(nextId++, 5, 'Alex Fenwick', '1814-?', 'probable', {parents: null, birthplace: 'Fife, Scotland'}));
+  people.push(createPerson(nextId++, 5, 'Ann', '1822-?', 'probable', {parents: null, birthplace: 'Fife, Scotland'}));
+  people.push(createPerson(nextId++, 5, '? Father', '?', 'brickwall', {parents: null, notes: 'Elizabeths father. No record found'}));
+  people.push(createPerson(nextId++, 5, '? Mother', '?', 'brickwall', {parents: null, notes: 'Elizabeths mother. No record found'}));
+  people.push(createPerson(nextId++, 5, 'Francis Elder', '?', 'probable', {parents: null, occupation: 'General Labourer (Deceased)', notes: 'From Francis-Elizabeth marriage cert 1869'}));
+  people.push(createPerson(nextId++, 5, 'Alice Everly', '?', 'probable', {parents: null, maidenName: 'Everly', notes: 'From Francis-Elizabeth marriage cert 1869 (Deceased)'}));
+  people.push(createPerson(nextId++, 5, 'Peter Dunmore', '?', 'probable', {parents: null, occupation: 'Flaxsmith Journeyman (Deceased)', notes: 'From Francis-Elizabeth marriage cert 1869'}));
+  people.push(createPerson(nextId++, 5, 'Margaret Fairbairn', '?', 'probable', {parents: null, maidenName: 'Fairbairn', notes: 'From Francis-Elizabeth marriage cert 1869'}));
+  people.push(createPerson(nextId++, 5, 'David Ashdown', 'b. 1809', 'probable', {parents: [51,52], birthplace: 'Thornbury OPR. Baptised Ashvale 1809'}));
+  people.push(createPerson(nextId++, 5, 'Elizabeth Brindle', '1810-?', 'probable', {parents: [53,54], birthplace: 'Kelmscott, Forfarshire'}));
+  people.push(createPerson(nextId++, 5, 'John Easton', '1821-?', 'probable', {parents: null, birthplace: 'Ireland'}));
+  people.push(createPerson(nextId++, 5, 'Catherine', '1822-?', 'probable', {parents: null, birthplace: 'Ireland'}));
+  people.push(createPerson(nextId++, 5, 'John Merriwether', '?', 'probable', {parents: null, occupation: 'Stone Quarry Worker (Deceased)', notes: 'From James Merriwether marriage cert 1876'}));
+  people.push(createPerson(nextId++, 5, 'Ann Vale', '?', 'probable', {parents: null, maidenName: 'Vale', notes: 'From James Merriwether marriage cert 1876 (Deceased)'}));
+  people.push(createPerson(nextId++, 5, 'Patrick Dewhurst', '?', 'probable', {parents: null, occupation: 'Carpet Weaver (Deceased)', notes: 'From Helen Dewhurst marriage cert 1876'}));
+  people.push(createPerson(nextId++, 5, 'Barbara Bramwell', '?', 'probable', {parents: null, maidenName: 'Bramwell', notes: 'From Helen Dewhurst marriage cert 1876'}));
+  people.push(createPerson(nextId++, 5, 'John Ashford', '?', 'probable', {parents: null, occupation: 'General Labourer (Deceased)', notes: 'From Rose Ashford marriage cert 1895'}));
+  people.push(createPerson(nextId++, 5, 'Mary Kenward', '?', 'probable', {parents: null, maidenName: 'Shields', notes: 'From Rose Ashford marriage cert 1895 (Deceased)'}));
+
+  // Gen 6
+  people.push(createPerson(nextId++, 6, 'Michael Harrow', '1788-1875', 'probable', {parents: [55,56], birthplace: 'Cavan, Ireland -> Scotland'}));
+  people.push(createPerson(nextId++, 6, 'Agnes Underhill', '1799-1887', 'probable', {parents: [57,58], maidenName: 'Underhill', birthplace: 'Ireland -> Scotland'}));
+  people.push(createPerson(nextId++, 6, 'David Ashdown', '?', 'probable', {parents: null, birthplace: 'Scotland'}));
+  people.push(createPerson(nextId++, 6, 'Elisabeth Kingsley', '?', 'probable', {parents: null, birthplace: 'Scotland'}));
+  people.push(createPerson(nextId++, 6, 'George Brindle', '?', 'probable', {parents: null, birthplace: 'Forfarshire'}));
+  people.push(createPerson(nextId++, 6, '? Brindle', '?', 'brickwall', {parents: null, notes: 'No record found'}));
+
+  // Gen 7
+  people.push(createPerson(nextId++, 7, '? Harrow Sr.', '?', 'brickwall', {parents: null, notes: 'Gen 8 unknown. Irish records pre-1800'}));
+  people.push(createPerson(nextId++, 7, '? Mother', '?', 'brickwall', {parents: null, notes: 'Gen 8 unknown. Irish records pre-1800'}));
+  people.push(createPerson(nextId++, 7, 'John Underhill', '?', 'probable', {parents: [61,62], notes: 'From Agnes Harrow death cert 1867'}));
+  people.push(createPerson(nextId++, 7, 'Betsy Ravenhill', '?', 'probable', {parents: [63,64], maidenName: 'Ravenhill', notes: 'From Agnes Harrow death cert 1867'}));
+
+  // Gen 8
+  people.push(createPerson(nextId++, 8, '? Underhill Sr.', '?', 'brickwall', {parents: null, notes: 'Gen 8 unknown'}));
+  people.push(createPerson(nextId++, 8, '? Underhill', '?', 'brickwall', {parents: null, notes: 'Gen 8 unknown'}));
+  people.push(createPerson(nextId++, 8, '? Ravenhill Sr.', '?', 'brickwall', {parents: null, notes: 'Gen 8 unknown'}));
+  people.push(createPerson(nextId++, 8, '? Ravenhill', '?', 'brickwall', {parents: null, notes: 'Gen 8 unknown'}));
+
+  // Wire up parent references after all IDs are assigned
+  // The parent arrays above use IDs that need to exist. Let me fix by using indices instead.
+}
+
+const CARD_W = 160, GAP_X = 50, GAP_Y = 12, JUNCT_DIST = 18;
+const wrap = document.getElementById('treeWrap');
+const svg = document.getElementById('linesSvg');
+const scroll = document.getElementById('treeScroll');
+const svgNS = 'http://www.w3.org/2000/svg';
+let cardEls = new Map();
+
+function renderTree() {
+  wrap.querySelectorAll('.person-card').forEach(el => el.remove());
+  cardEls.clear();
+  const maxGen = Math.max(...people.map(p => p.gen));
+  const gens = [];
+  for (let g = 0; g <= maxGen; g++) gens[g] = people.filter(p => p.gen === g);
+  const colLeft = gens.map((_, g) => g * (CARD_W + GAP_X));
+  people.forEach(person => {
+    const el = document.createElement('div');
+    el.className = 'person-card ' + person.status + (person.id === 1 ? ' you' : '');
+    el.dataset.id = person.id;
+    let h = '<div class="name">' + person.name + '</div><div class="years">' + person.years + '</div>';
+    if (person.docs && person.docs.length) {
+      h += '<div class="doc-badges">';
+      person.docs.forEach(d => { const t = (d.type || 'bc').toLowerCase(); h += '<span class="doc-badge ' + t + '">' + t.toUpperCase() + '</span>'; });
+      h += '</div>';
+    }
+    el.innerHTML = h;
+    el.style.left = colLeft[person.gen] + 'px';
+    el.style.top = '0px'; el.style.opacity = '0';
+    el.onclick = () => openDetail(person);
+    wrap.appendChild(el); cardEls.set(person.id, el);
+  });
+  document.body.offsetHeight;
+  const hMap = new Map();
+  cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
+  const viewH = scroll.clientHeight, viewMid = viewH / 2;
+  const colHeights = gens.map(gen => gen.reduce((sum, p) => sum + hMap.get(p.id) + GAP_Y, 0) - GAP_Y);
+  const topMap = new Map();
+  gens.forEach((gen, gi) => {
+    let y = viewMid - colHeights[gi] / 2;
+    if (y < 30) y = 30;
+    gen.forEach(p => { topMap.set(p.id, y); y += hMap.get(p.id) + GAP_Y; });
+  });
+  cardEls.forEach((el, id) => { el.style.top = topMap.get(id) + 'px'; el.style.opacity = '1'; });
+  wrap.style.width = (colLeft[maxGen] + CARD_W + 40) + 'px';
+  wrap.style.height = (Math.max(viewH, ...people.map(p => topMap.get(p.id) + hMap.get(p.id))) + 60) + 'px';
+  document.getElementById('statPeople').textContent = people.length;
+  document.getElementById('statConfirmed').textContent = people.filter(p => p.status === 'confirmed' || p.status === 'you').length;
+  document.getElementById('statWalls').textContent = people.filter(p => p.status === 'brickwall').length;
+  drawLines();
+}
+
+function drawLines() {
+  const wrapRect = wrap.getBoundingClientRect();
+  svg.setAttribute('width', wrap.scrollWidth);
+  svg.setAttribute('height', wrap.scrollHeight);
+  svg.innerHTML = '';
+  people.forEach(child => {
+    if (!child.parents || child.parents.length < 2) return;
+    const childEl = cardEls.get(child.id), fatherEl = cardEls.get(child.parents[0]), motherEl = cardEls.get(child.parents[1]);
+    if (!childEl || !fatherEl || !motherEl) return;
+    const cRect = childEl.getBoundingClientRect(), cx = (cRect.right - wrapRect.left), cy = (cRect.top - wrapRect.top) + cRect.height / 2;
+    const fRect = fatherEl.getBoundingClientRect(), fx = (fRect.left - wrapRect.left), fy = (fRect.top - wrapRect.top) + fRect.height / 2;
+    const mRect = motherEl.getBoundingClientRect(), mx = (mRect.left - wrapRect.left), my = (mRect.top - wrapRect.top) + mRect.height / 2;
+    const jx = fx - JUNCT_DIST, midY = (fy + my) / 2;
+    const curve = document.createElementNS(svgNS, 'path');
+    curve.setAttribute('d', 'M' + cx + ',' + cy + ' C' + (cx+16) + ',' + cy + ' ' + (jx-8) + ',' + midY + ' ' + jx + ',' + midY);
+    curve.setAttribute('stroke', '#8a7a5a'); curve.setAttribute('stroke-width', '1.5'); curve.setAttribute('fill', 'none');
+    svg.appendChild(curve);
+    const vLine = document.createElementNS(svgNS, 'line');
+    vLine.setAttribute('x1', jx); vLine.setAttribute('y1', fy); vLine.setAttribute('x2', jx); vLine.setAttribute('y2', my);
+    vLine.setAttribute('stroke', '#8a7a5a'); vLine.setAttribute('stroke-width', '1.5'); svg.appendChild(vLine);
+    const fLine = document.createElementNS(svgNS, 'line');
+    fLine.setAttribute('x1', jx); fLine.setAttribute('y1', fy); fLine.setAttribute('x2', fx); fLine.setAttribute('y2', fy);
+    fLine.setAttribute('stroke', '#8a7a5a'); fLine.setAttribute('stroke-width', '1.5'); svg.appendChild(fLine);
+    const mLine = document.createElementNS(svgNS, 'line');
+    mLine.setAttribute('x1', jx); mLine.setAttribute('y1', my); mLine.setAttribute('x2', mx); mLine.setAttribute('y2', my);
+    mLine.setAttribute('stroke', '#8a7a5a'); mLine.setAttribute('stroke-width', '1.5'); svg.appendChild(mLine);
+  });
+}
+scroll.addEventListener('scroll', drawLines);
+window.addEventListener('resize', () => renderTree());
+
+const detailPanel = document.getElementById('detailPanel');
+const detailBody = document.getElementById('detailBody');
+const detailTitle = document.getElementById('detailTitle');
+
+function openDetail(person) {
+  selectedPersonId = person.id;
+  detailTitle.textContent = person.name;
+  detailBody.innerHTML = `
+    <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${person.fullName || person.name}"></div>
+    <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${person.name}"></div>
+    <div class="detail-field"><label>Years</label><input type="text" id="d_years" value="${person.years}"></div>
+    <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${person.birthDate}"></div>
+    <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${person.deathDate}"></div>
+    <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${person.maidenName}"></div>
+    <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${person.spouseName}"></div>
+    <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${person.occupation}"></div>
+    <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${person.birthplace}"></div>
+    <div class="detail-field"><label>Status</label>
+      <select id="d_status" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:13px;">
+        <option value="confirmed" ${person.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+        <option value="probable" ${person.status === 'probable' ? 'selected' : ''}>Probable</option>
+        <option value="brickwall" ${person.status === 'brickwall' ? 'selected' : ''}>Brick Wall</option>
+        <option value="you" ${person.status === 'you' ? 'selected' : ''}>You</option>
+      </select>
+    </div>
+    <div class="detail-field"><label>Notes</label><textarea id="d_notes">${person.notes}</textarea></div>
+    <div class="detail-field"><label>Documents (${person.docs.length})</label>
+      <div style="font-size:12px;color:#6b5537;">${person.docs.length ? person.docs.map(d => `<div style="padding:4px 0;border-bottom:1px solid #e8dcc8;">${(d.type || 'doc').toUpperCase()}: ${d.date || 'no date'}</div>`).join('') : '<em>No documents</em>'}</div>
+    </div>
+    <div class="detail-actions">
+      <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
+      <button class="save-btn" onclick="saveDetail()">Save Changes</button>
+    </div>
+  `;
+  detailPanel.classList.add('active');
+}
+function closeDetail() { detailPanel.classList.remove('active'); selectedPersonId = null; }
+function saveDetail() {
+  if (!selectedPersonId) return;
+  const person = people.find(p => p.id === selectedPersonId);
+  if (!person) return;
+  person.fullName = document.getElementById('d_fullName').value;
+  person.name = document.getElementById('d_name').value;
+  person.years = document.getElementById('d_years').value;
+  person.birthDate = document.getElementById('d_birthDate').value;
+  person.deathDate = document.getElementById('d_deathDate').value;
+  person.maidenName = document.getElementById('d_maidenName').value;
+  person.spouseName = document.getElementById('d_spouseName').value;
+  person.occupation = document.getElementById('d_occupation').value;
+  person.birthplace = document.getElementById('d_birthplace').value;
+  person.status = document.getElementById('d_status').value;
+  person.notes = document.getElementById('d_notes').value;
+  renderTree(); closeDetail(); showToast('Saved: ' + person.name);
+}
+document.getElementById('detailClose').addEventListener('click', closeDetail);
+
+const certPanel = document.getElementById('certPanel');
+document.getElementById('certToggle').addEventListener('click', () => certPanel.classList.toggle('active'));
+document.getElementById('certClose').addEventListener('click', () => certPanel.classList.remove('active'));
+document.querySelectorAll('.cert-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cert-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active'); selectedCertType = btn.dataset.type;
+  });
+});
+document.getElementById('certUploadArea').addEventListener('click', () => document.getElementById('certFileInput').click());
+document.getElementById('certFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    pendingDocImage = ev.target.result;
+    document.getElementById('certPreviewImg').src = pendingDocImage;
+    document.getElementById('certPreviewArea').style.display = 'block';
+    document.getElementById('certUploadArea').style.display = 'none';
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status loading'; cs.textContent = 'Sending to transcription API...'; cs.style.display = 'block';
+    document.getElementById('certResults').innerHTML = '';
+    document.getElementById('certActions').style.display = 'none';
+    setTimeout(() => {
+      cs.className = 'cert-status success';
+      cs.textContent = '✓ Cert type: ' + selectedCertType.toUpperCase() + ' (demo mode)';
+      document.getElementById('certActions').style.display = 'flex';
+      document.getElementById('certResults').innerHTML = '<div style="padding:20px;text-align:center;font-size:12px;color:#6b5537;">Demo mode: Use main tree for full cert scanning.<br>This view is for data browsing.</div>';
+    }, 1500);
+  };
+  reader.readAsDataURL(file);
+});
+document.getElementById('certConfirm').addEventListener('click', () => showToast('Demo mode: Use main tree for cert apply'));
+document.getElementById('certRetry').addEventListener('click', () => { document.getElementById('certFileInput').value = ''; document.getElementById('certFileInput').click(); });
+document.getElementById('certSwap').addEventListener('click', () => showToast('Swap parents: demo mode'));
+
+function saveSession() {
+  const payload = { version: 2, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
+  a.click(); URL.revokeObjectURL(url); showToast('Session saved');
+}
+async function loadSession(file) {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.people) { showToast('Invalid session file'); return; }
+    people = data.people; nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+    renderTree(); showToast('Loaded: ' + people.length + ' people');
+  } catch (err) { showToast('Load failed: ' + (err.message || 'Unknown error')); }
+}
+document.getElementById('saveBtn').addEventListener('click', saveSession);
+document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('loadFileInput').click());
+document.getElementById('loadFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0]; if (file) loadSession(file); e.target.value = '';
+});
+setInterval(() => { localStorage.setItem('familytree_data_v2', JSON.stringify({people: people, nextId: nextId})); }, 30000);
+function autoRestore() {
+  const saved = localStorage.getItem('familytree_data_v2');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      if (data.people && data.people.length > 0) {
+        people = data.people; nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+        showToast('Restored ' + people.length + ' people from auto-save'); return true;
+      }
+    } catch (e) {}
+  }
+  return false;
+}
+function showToast(msg, duration) {
+  duration = duration || 2500;
+  const existing = document.getElementById('toastMsg'); if (existing) existing.remove();
+  const el = document.createElement('div'); el.id = 'toastMsg'; el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
+  setTimeout(() => el.remove(), duration + 500);
+}
+if (!autoRestore()) initDefaultData();
+renderTree();
+setTimeout(() => {
+  const gavinEl = cardEls.get(1);
+  if (gavinEl) {
+    const rect = gavinEl.getBoundingClientRect();
+    const wrapRect = wrap.getBoundingClientRect();
+    scroll.scrollLeft = rect.left - wrapRect.left - scroll.clientWidth / 2 + rect.width / 2;
+  }
+}, 100);
+</script>
+</body>
+</html>
