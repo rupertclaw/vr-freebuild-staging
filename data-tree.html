@@ -359,7 +359,7 @@ const svgNS = 'http://www.w3.org/2000/svg';
 let cardEls = new Map();
 
 let treeWidth = 0, treeHeight = 0;
-let zoom = 1;
+let zoom = 0.25;
 
 function renderTree() {
   wrap.querySelectorAll('.person-card').forEach(el => el.remove());
@@ -476,7 +476,7 @@ function setZoom(z) {
 }
 document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.2));
 document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
-document.getElementById('zoomReset').addEventListener('click', () => setZoom(1));
+document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.25));
 
 const detailPanel = document.getElementById('detailPanel');
 const detailBody = document.getElementById('detailBody');
@@ -822,6 +822,7 @@ document.getElementById('certConfirm').addEventListener('click', () => {
     else if (entry.deceased?.name) type = 'death';
   }
   applyCertToPerson(entry, type);
+  certPanel.classList.remove('active');
 });
 
 document.getElementById('certRetry').addEventListener('click', () => {
@@ -890,6 +891,7 @@ function showToast(msg, duration) {
 }
 if (!autoRestore()) initDefaultData();
 renderTree();
+document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
 setTimeout(() => {
   const graemeEl = cardEls.get(2); // Graeme is ID 2
   if (graemeEl) {
