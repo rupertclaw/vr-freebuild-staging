@@ -89,6 +89,15 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 .person-card.probable { border-left: 4px solid #f59e0b; }
 .person-card.brickwall { border-left: 4px dashed #ef4444; }
 .person-card.you { border: 2px solid #c4a875; background: rgba(255,248,225,0.97); }
+.person-card.blank {
+  background: rgba(250, 244, 230, 0.45);
+  border: 2px dashed #b8a88a;
+  opacity: 0.6;
+  cursor: default;
+}
+.person-card.blank:hover { transform: none; box-shadow: none; }
+.person-card.blank .name,
+.person-card.blank .years { color: #b8a88a; }
 
 /* SVG connectors */
 .lines-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
@@ -298,8 +307,15 @@ let selectedEntryIndex = 0;
 function initDefaultData() {
   people = [];
   nextId = 1;
-  // Gen 0 only — user starts here and scans certs to populate ancestors
+  // Gen 0: user
   people.push(createPerson(nextId++, 0, 'Graeme Mooney', 'b. 1966', 'you', {birthplace: 'Brampton, Ontario'}));
+  // Gens 1-8: blank placeholder cards (2^gen each)
+  for (let g = 1; g <= 8; g++) {
+    const count = Math.pow(2, g);
+    for (let i = 0; i < count; i++) {
+      people.push(createPerson(nextId++, g, 'Name', '?', 'blank', {}));
+    }
+  }
 }
 
 const CARD_W = 160, GAP_X = 50, GAP_Y = 12, JUNCT_DIST = 18;
