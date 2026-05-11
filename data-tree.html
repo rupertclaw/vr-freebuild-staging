@@ -762,7 +762,7 @@ document.getElementById('certSwapParents').addEventListener('click', () => {
 });
 
 function saveSession() {
-  const payload = { version: 2, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
+  const payload = { version: 3, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -783,9 +783,9 @@ document.getElementById('loadBtn').addEventListener('click', () => document.getE
 document.getElementById('loadFileInput').addEventListener('change', (e) => {
   const file = e.target.files[0]; if (file) loadSession(file); e.target.value = '';
 });
-setInterval(() => { localStorage.setItem('familytree_data_v2', JSON.stringify({people: people, nextId: nextId})); }, 30000);
+setInterval(() => { localStorage.setItem('familytree_data_v3', JSON.stringify({people: people, nextId: nextId})); }, 30000);
 function autoRestore() {
-  const saved = localStorage.getItem('familytree_data_v2');
+  const saved = localStorage.getItem('familytree_data_v3');
   if (saved) {
     try {
       const data = JSON.parse(saved);
@@ -796,6 +796,10 @@ function autoRestore() {
     } catch (e) {}
   }
   return false;
+}
+function clearStorage() {
+  localStorage.removeItem('familytree_data_v3');
+  showToast('Storage cleared — reload to start fresh');
 }
 function showToast(msg, duration) {
   duration = duration || 2500;
