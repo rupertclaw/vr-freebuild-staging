@@ -34,7 +34,21 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 .tree-wrap {
   position: relative; min-width: fit-content; min-height: 100%;
   padding: 40px 30px;
+  transform: scale(var(--zoom, 1));
+  transform-origin: top left;
+  transition: transform 0.15s ease;
 }
+
+.zoom-controls {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(255,248,225,0.15);
+  padding: 2px 8px; border-radius: 6px;
+}
+.zoom-controls span {
+  font-size: 11px; color: #8a7a5a; min-width: 36px; text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+}
+.zoom-btn { font-size: 14px; padding: 2px 8px; min-width: 28px; }
 
 /* Generation columns */
 .generation {
@@ -213,10 +227,17 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
     <div>Confirmed: <span id="statConfirmed">0</span></div>
     <div>Walls: <span id="statWalls">0</span></div>
   </div>
+  <div class="zoom-controls">
+    <button class="header-btn zoom-btn" id="zoomOut" title="Zoom out">−</button>
+    <span id="zoomLevel">100%</span>
+    <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
+    <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom">⟲</button>
+  </div>
   <button class="header-btn" id="certToggle">📎</button>
 </div>
 
 <div class="tree-scroll" id="treeScroll">
+  <div id="zoomSizer" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0;"></div>
   <div class="tree-wrap" id="treeWrap">
     <svg class="lines-svg" id="linesSvg"></svg>
   </div>
@@ -316,6 +337,18 @@ function initDefaultData() {
       people.push(createPerson(nextId++, g, 'Name', '?', 'blank', {}));
     }
   }
+  // Wire parent-child relationships: person at gen g, index i has parents at gen g+1, indices 2i and 2i+1
+  for (let g = 0; g < 8; g++) {
+    const gen = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+    const nextGen = people.filter(p => p.gen === g + 1).sort((a,b) => a.id - b.id);
+    gen.forEach((p, i) => {
+      const father = nextGen[2 * i];
+      const mother = nextGen[2 * i + 1];
+      if (father && mother) {
+        p.parents = [father.id, mother.id];
+      }
+    });
+  }
 }
 
 const CARD_W = 160, GAP_X = 50, GAP_Y = 12, JUNCT_DIST = 18;
@@ -325,12 +358,15 @@ const scroll = document.getElementById('treeScroll');
 const svgNS = 'http://www.w3.org/2000/svg';
 let cardEls = new Map();
 
+let treeWidth = 0, treeHeight = 0;
+let zoom = 1;
+
 function renderTree() {
   wrap.querySelectorAll('.person-card').forEach(el => el.remove());
   cardEls.clear();
   const maxGen = Math.max(...people.map(p => p.gen));
   const gens = [];
-  for (let g = 0; g <= maxGen; g++) gens[g] = people.filter(p => p.gen === g);
+  for (let g = 0; g <= maxGen; g++) gens[g] = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
   const colLeft = gens.map((_, g) => g * (CARD_W + GAP_X));
   people.forEach(person => {
     const el = document.createElement('div');
@@ -351,17 +387,47 @@ function renderTree() {
   document.body.offsetHeight;
   const hMap = new Map();
   cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
-  const viewH = scroll.clientHeight, viewMid = viewH / 2;
-  const colHeights = gens.map(gen => gen.reduce((sum, p) => sum + hMap.get(p.id) + GAP_Y, 0) - GAP_Y);
+
+  // Cascading layout: start from rightmost gen, position equally, then cascade left
   const topMap = new Map();
-  gens.forEach((gen, gi) => {
-    let y = viewMid - colHeights[gi] / 2;
-    if (y < 30) y = 30;
-    gen.forEach(p => { topMap.set(p.id, y); y += hMap.get(p.id) + GAP_Y; });
-  });
-  cardEls.forEach((el, id) => { el.style.top = topMap.get(id) + 'px'; el.style.opacity = '1'; });
-  wrap.style.width = (colLeft[maxGen] + CARD_W + 40) + 'px';
-  wrap.style.height = (Math.max(viewH, ...people.map(p => topMap.get(p.id) + hMap.get(p.id))) + 60) + 'px';
+  if (gens[maxGen] && gens[maxGen].length > 0) {
+    // Position rightmost generation with equal spacing from top
+    let y = 30;
+    gens[maxGen].forEach(p => {
+      topMap.set(p.id, y);
+      y += hMap.get(p.id) + GAP_Y;
+    });
+    // Cascade leftward: each card centered between its two parents in the next gen
+    for (let g = maxGen - 1; g >= 0; g--) {
+      if (!gens[g]) continue;
+      gens[g].forEach(p => {
+        if (!p.parents || p.parents.length < 2) return;
+        const father = people.find(x => x.id === p.parents[0]);
+        const mother = people.find(x => x.id === p.parents[1]);
+        if (!father || !mother) return;
+        const fy = topMap.get(father.id);
+        const my = topMap.get(mother.id);
+        if (fy === undefined || my === undefined) return;
+        const fh = hMap.get(father.id);
+        const mh = hMap.get(mother.id);
+        const midCenter = (fy + fh/2 + my + mh/2) / 2;
+        topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
+      });
+    }
+  }
+
+  cardEls.forEach((el, id) => { el.style.top = (topMap.get(id) || 30) + 'px'; el.style.opacity = '1'; });
+  treeWidth = colLeft[maxGen] + CARD_W + 40;
+  treeHeight = Math.max(scroll.clientHeight, ...people.map(p => (topMap.get(p.id) || 0) + hMap.get(p.id))) + 60;
+  wrap.style.width = treeWidth + 'px';
+  wrap.style.height = treeHeight + 'px';
+  // Update zoom sizer for scroll area
+  const sizer = document.getElementById('zoomSizer');
+  if (sizer) {
+    sizer.style.width = (treeWidth * zoom) + 'px';
+    sizer.style.height = (treeHeight * zoom) + 'px';
+  }
+  wrap.style.setProperty('--zoom', zoom);
   document.getElementById('statPeople').textContent = people.length;
   document.getElementById('statConfirmed').textContent = people.filter(p => p.status === 'confirmed' || p.status === 'you').length;
   document.getElementById('statWalls').textContent = people.filter(p => p.status === 'brickwall').length;
@@ -369,17 +435,20 @@ function renderTree() {
 }
 
 function drawLines() {
-  const wrapRect = wrap.getBoundingClientRect();
-  svg.setAttribute('width', wrap.scrollWidth);
-  svg.setAttribute('height', wrap.scrollHeight);
+  svg.setAttribute('width', treeWidth);
+  svg.setAttribute('height', treeHeight);
   svg.innerHTML = '';
   people.forEach(child => {
     if (!child.parents || child.parents.length < 2) return;
     const childEl = cardEls.get(child.id), fatherEl = cardEls.get(child.parents[0]), motherEl = cardEls.get(child.parents[1]);
     if (!childEl || !fatherEl || !motherEl) return;
-    const cRect = childEl.getBoundingClientRect(), cx = (cRect.right - wrapRect.left), cy = (cRect.top - wrapRect.top) + cRect.height / 2;
-    const fRect = fatherEl.getBoundingClientRect(), fx = (fRect.left - wrapRect.left), fy = (fRect.top - wrapRect.top) + fRect.height / 2;
-    const mRect = motherEl.getBoundingClientRect(), mx = (mRect.left - wrapRect.left), my = (mRect.top - wrapRect.top) + mRect.height / 2;
+    // Use offset coordinates relative to treeWrap (unaffected by zoom transform)
+    const cx = childEl.offsetLeft + childEl.offsetWidth;
+    const cy = childEl.offsetTop + childEl.offsetHeight / 2;
+    const fx = fatherEl.offsetLeft;
+    const fy = fatherEl.offsetTop + fatherEl.offsetHeight / 2;
+    const mx = motherEl.offsetLeft;
+    const my = motherEl.offsetTop + motherEl.offsetHeight / 2;
     const jx = fx - JUNCT_DIST, midY = (fy + my) / 2;
     const curve = document.createElementNS(svgNS, 'path');
     curve.setAttribute('d', 'M' + cx + ',' + cy + ' C' + (cx+16) + ',' + cy + ' ' + (jx-8) + ',' + midY + ' ' + jx + ',' + midY);
@@ -398,6 +467,16 @@ function drawLines() {
 }
 scroll.addEventListener('scroll', drawLines);
 window.addEventListener('resize', () => renderTree());
+
+// Zoom controls
+function setZoom(z) {
+  zoom = Math.max(0.25, Math.min(3, z));
+  renderTree();
+  document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+}
+document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.2));
+document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
+document.getElementById('zoomReset').addEventListener('click', () => setZoom(1));
 
 const detailPanel = document.getElementById('detailPanel');
 const detailBody = document.getElementById('detailBody');
@@ -812,11 +891,13 @@ function showToast(msg, duration) {
 if (!autoRestore()) initDefaultData();
 renderTree();
 setTimeout(() => {
-  const gavinEl = cardEls.get(1);
+  const gavinEl = cardEls.get(2); // Gavin is ID 2
   if (gavinEl) {
-    const rect = gavinEl.getBoundingClientRect();
-    const wrapRect = wrap.getBoundingClientRect();
-    scroll.scrollLeft = rect.left - wrapRect.left - scroll.clientWidth / 2 + rect.width / 2;
+    // Center Gavin in viewport, show ~5-6 columns to the right
+    const cardCenterX = gavinEl.offsetLeft + gavinEl.offsetWidth / 2;
+    const cardCenterY = gavinEl.offsetTop + gavinEl.offsetHeight / 2;
+    scroll.scrollLeft = Math.max(0, cardCenterX * zoom - scroll.clientWidth / 3);
+    scroll.scrollTop = Math.max(0, cardCenterY * zoom - scroll.clientHeight / 2);
   }
 }, 100);
 </script>
