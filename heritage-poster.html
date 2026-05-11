@@ -1232,6 +1232,7 @@ function closeDetail() {
 }
 
 // Gen 5 cards navigate to branch page; others open detail panel
+// Before navigating, auto-save main tree state to localStorage
 document.querySelectorAll('.nameplate').forEach((np) => {
   np.addEventListener('click', (e) => {
     e.stopPropagation();
@@ -1241,7 +1242,63 @@ document.querySelectorAll('.nameplate').forEach((np) => {
     const slot = np.dataset.slot || '';
 
     if (isGen5) {
-      window.location.href = `branch-tree.html?name=${encodeURIComponent(name)}&years=${encodeURIComponent(years)}`;
+      // 1. Save full main tree state to localStorage
+      const payload = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        slots: {},
+        siblings: slotSiblings,
+        settings: { keepDocs: document.getElementById('keepDocsToggle').checked }
+      };
+      document.querySelectorAll('.nameplate').forEach(p => {
+        const s = p.dataset.slot;
+        if (!s) return;
+        payload.slots[s] = {
+          name: p.querySelector('.name')?.textContent || '',
+          fullname: p.dataset.fullname || '',
+          years: p.querySelector('.years')?.textContent || '',
+          maiden: p.dataset.maiden || '',
+          docs: p.dataset.docs || ''
+        };
+      });
+      localStorage.setItem('familytree_main', JSON.stringify(payload));
+
+      // 2. Save this person's data for the branch tree
+      const personData = {
+        name: name,
+        fullname: np.dataset.fullname || name,
+        years: years,
+        maiden: np.dataset.maiden || '',
+        docs: np.dataset.docs || '',
+        slot: slot
+      };
+      // Also include parents if we know them from OWN_PARENT_MAP
+      const parentMap = OWN_PARENT_MAP[slot];
+      if (parentMap) {
+        const fPlate = document.querySelector('.nameplate[data-slot="' + parentMap.fatherSlot + '"]');
+        const mPlate = document.querySelector('.nameplate[data-slot="' + parentMap.motherSlot + '"]');
+        if (fPlate && fPlate.querySelector('.name').textContent !== 'Name') {
+          personData.father = {
+            name: fPlate.querySelector('.name').textContent,
+            fullname: fPlate.dataset.fullname || '',
+            years: fPlate.querySelector('.years').textContent,
+            slot: parentMap.fatherSlot
+          };
+        }
+        if (mPlate && mPlate.querySelector('.name').textContent !== 'Name') {
+          personData.mother = {
+            name: mPlate.querySelector('.name').textContent,
+            fullname: mPlate.dataset.fullname || '',
+            years: mPlate.querySelector('.years').textContent,
+            maiden: mPlate.dataset.maiden || '',
+            slot: parentMap.motherSlot
+          };
+        }
+      }
+      localStorage.setItem('familytree_branch_subject', JSON.stringify(personData));
+
+      // 3. Navigate to branch tree
+      window.location.href = 'branch-tree.html';
     } else {
       openDetail(name, years, slot);
     }
@@ -3435,6 +3492,58 @@ function getSourceForCouple(name1, name2) {
     desc: `Search for ${name1} & ${name2}'s marriage`
   };
 }
+
+// Auto-restore main tree state when returning from branch tree
+(function restoreFromBranch() {
+  const saved = localStorage.getItem('familytree_main');
+  if (!saved) return;
+  try {
+    const data = JSON.parse(saved);
+    if (!data.slots) return;
+
+    // Restore slot data
+    Object.entries(data.slots).forEach(([slot, info]) => {
+      if (slot === 'undefined' || !slot) return;
+      const plate = document.querySelector('.nameplate[data-slot="' + slot + '"]');
+      if (!plate) return;
+      if (info.fullname) {
+        plate.dataset.fullname = info.fullname;
+        plate.querySelector('.name').textContent = info.name || info.fullname;
+      }
+      if (info.years) {
+        const yEl = plate.querySelector('.years');
+        if (yEl) yEl.textContent = info.years;
+      }
+      if (info.maiden) plate.dataset.maiden = info.maiden;
+      if (info.docs) plate.dataset.docs = info.docs;
+      if (info.name === 'Name' && !info.fullname) {
+        plate.dataset.fullname = '';
+        plate.dataset.maiden = '';
+        plate.dataset.docs = '';
+        plate.querySelector('.name').textContent = 'Name';
+        plate.querySelector('.years').textContent = 'YYYY — YYYY';
+      }
+    });
+
+    // Restore siblings
+    if (data.siblings) {
+      slotSiblings = data.siblings;
+      saveSiblings();
+      Object.keys(slotSiblings).forEach(slot => updateSiblingBadge(slot));
+    }
+
+    // Restore settings
+    if (data.settings?.keepDocs !== undefined) {
+      document.getElementById('keepDocsToggle').checked = data.settings.keepDocs;
+    }
+
+    showToast('Tree restored from branch view');
+    // Clear the saved state so we don't restore again on refresh
+    localStorage.removeItem('familytree_main');
+  } catch (err) {
+    console.error('[RESTORE] Failed:', err);
+  }
+})();
 </script>
 
 </body>
