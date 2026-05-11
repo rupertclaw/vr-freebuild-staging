@@ -2685,14 +2685,15 @@ const SPOUSE_MAP = {
     const groomBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.groom?.age || 0)) : null;
     const brideBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.bride?.age || 0)) : null;
     const mcOpts = marriageYear ? { certType: 'marriage', certYear: parseInt(marriageYear) } : null;
+
+    // STEP 1: Match groom
     groomPlate = findNameplate(groomName, groomBirthYear, mcOpts);
-    bridePlate = findNameplate(brideName, brideBirthYear, mcOpts);
     if (!groomPlate) groomPlate = findNameplateBySurname(groomName, groomBirthYear);
-    if (!bridePlate) bridePlate = findNameplateBySurname(brideName, brideBirthYear);
-    // Step 3: Smart bride match using groom's spouse slot
-    // If we know the groom's slot, the bride MUST be in SPOUSE_MAP[groomSlot]
-    // This handles maiden name → married name mismatches
-    if (!bridePlate && groomPlate && brideName) {
+
+    // STEP 2: Match bride — SPOUSE SLOT FIRST
+    // If groom is matched, bride MUST be in SPOUSE_MAP[groomSlot]. This is definitive.
+    // Prevents false matches from previous scans that placed the bride in wrong slots.
+    if (groomPlate && brideName) {
       const expectedBrideSlot = SPOUSE_MAP[groomPlate.dataset.slot];
       if (expectedBrideSlot) {
         const expectedBridePlate = findSlot(expectedBrideSlot);
@@ -2700,8 +2701,13 @@ const SPOUSE_MAP = {
           const brideFirstName = brideName.split(' ')[0]?.toLowerCase();
           const expectedName = (expectedBridePlate.querySelector('.name')?.textContent || '').toLowerCase();
           const expectedFull = (expectedBridePlate.dataset.fullname || '').toLowerCase();
-          // Match if first name matches and it's not "Name" placeholder
-          if (expectedName !== 'name' && (expectedName.split(' ')[0] === brideFirstName || expectedFull.split(' ')[0] === brideFirstName)) {
+          const expectedMaiden = (expectedBridePlate.dataset.maiden || '').toLowerCase();
+          // Match if first name matches (display, fullname, or maiden)
+          if (expectedName !== 'name' && (
+            expectedName.split(' ')[0] === brideFirstName ||
+            expectedFull.split(' ')[0] === brideFirstName ||
+            expectedMaiden.split(' ')[0] === brideFirstName
+          )) {
             bridePlate = expectedBridePlate;
             // Store maiden name for future matching
             if (!expectedBridePlate.dataset.maiden) {
@@ -2712,8 +2718,13 @@ const SPOUSE_MAP = {
       }
     }
 
-    // Last resort for MC: match by first name only (bride may have changed surname on marriage)
-    // e.g. cert says "Alice Marsh" but tree card says "Alice Harrow" and no groom context
+    // STEP 3: If spouse slot didn't match, fall back to tree search
+    if (!bridePlate) {
+      bridePlate = findNameplate(brideName, brideBirthYear, mcOpts);
+      if (!bridePlate) bridePlate = findNameplateBySurname(brideName, brideBirthYear);
+    }
+
+    // STEP 4: Last resort — first name only
     if (!bridePlate && brideName) {
       const brideFirst = brideName.split(' ')[0];
       bridePlate = findNameplateByFirstName(brideFirst, brideBirthYear);
