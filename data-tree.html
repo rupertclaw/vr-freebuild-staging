@@ -622,7 +622,7 @@ async function processDocFile(file) {
   document.getElementById('certActions').style.display = 'none';
 
   let base64;
-  try { base64 = await resizeAndCompressImage(file, 1600, 0.90); }
+  try { base64 = await resizeAndCompressImage(file, 1200, 0.85); }
   catch (compressErr) {
     console.error('[COMPRESS ERROR]', compressErr);
     base64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
@@ -656,15 +656,29 @@ const API_URL = 'https://genealogy-api.vercel.app/api/transcribe';
 
 async function sendToTranscriptionAPI(base64) {
   const cs = document.getElementById('certStatus');
-  cs.className = 'cert-status loading'; cs.textContent = 'Scanning certificate...';
+  cs.className = 'cert-status loading'; cs.innerHTML = 'Scanning certificate...<br><small>This can take 30-60 seconds on first scan</small>';
   document.getElementById('certRetry').style.display = '';  // Reset to default visible in actions bar
+  
+  // Progress dots to show it's still alive
+  let dotCount = 0;
+  const dotTimer = setInterval(() => {
+    dotCount = (dotCount + 1) % 4;
+    const dots = '.'.repeat(dotCount);
+    cs.innerHTML = 'Scanning certificate' + dots + '<br><small>This can take 30-60 seconds</small>';
+  }, 2000);
+  
   try {
-    const resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: base64, certType: selectedCertType }) });
+    const controller = new AbortController();
+    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+    const resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: base64, certType: selectedCertType }), signal: controller.signal });
+    clearTimeout(timeoutId);
+    clearInterval(dotTimer);
     const json = await resp.json();
     if (!json.success) {
       cs.className = 'cert-status error';
       cs.innerHTML = 'Scan failed: ' + (json.error || json.message || 'Unknown error') + '<br><small>Tap Retry to try again</small>';
-      document.getElementById('certRetry').style.display = 'block'; return;
+      document.getElementById('certActions').style.display = 'flex';
+      return;
     }
     lastTranscription = json.data;
     cs.className = 'cert-status success';
@@ -674,9 +688,11 @@ async function sendToTranscriptionAPI(base64) {
     if (json.data.type === 'marriage') document.getElementById('certSwapParents').style.display = 'block';
     else document.getElementById('certSwapParents').style.display = 'none';
   } catch (err) {
+    clearInterval(dotTimer);
     cs.className = 'cert-status error';
-    cs.innerHTML = 'Network error: ' + (err.message || 'Could not reach server') + '<br><small>Tap Retry to try again</small>';
-    document.getElementById('certRetry').style.display = 'block';
+    const msg = err.name === 'AbortError' ? 'Scan timed out after 2 minutes' : (err.message || 'Could not reach server');
+    cs.innerHTML = 'Network error: ' + msg + '<br><small>Tap Retry to try again</small>';
+    document.getElementById('certActions').style.display = 'flex';
   }
 }
 
