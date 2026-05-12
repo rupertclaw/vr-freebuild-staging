@@ -143,10 +143,21 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 
 .cert-upload-area {
   border: 2px dashed #8a7a5a; border-radius: 8px;
-  padding: 30px; text-align: center; cursor: pointer;
-  background: #faf6ee; margin-bottom: 12px;
+  padding: 20px; text-align: center; cursor: pointer;
+  background: #faf6ee; margin-bottom: 8px;
 }
 .cert-upload-area:hover { border-color: #4a3a22; background: #f0e8d8; }
+.cert-upload-btns { display: flex; gap: 10px; margin-bottom: 12px; }
+.cert-upload-btns button {
+  flex: 1; padding: 14px 10px; border: 2px solid #8a7a5a; border-radius: 8px;
+  background: #faf6ee; cursor: pointer; text-align: center;
+  font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #4a3a22;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cert-upload-btns button:hover { border-color: #4a3a22; background: #f0e8d8; }
+.cert-upload-btns .camera-btn { border-color: #6b5537; }
+.cert-upload-btns .camera-btn span { font-size: 28px; display: block; margin-bottom: 4px; }
+.cert-upload-btns .file-btn span { font-size: 28px; display: block; margin-bottom: 4px; }
 .cert-preview-area { display: none; margin-bottom: 12px; text-align: center; }
 .cert-preview-area img { max-width: 100%; max-height: 200px; border-radius: 4px; border: 2px solid #8a7a5a; }
 
@@ -170,6 +181,20 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   border-bottom: 1px solid #e8dcc8; font-size: 12px;
 }
 .cert-result-card .field-row label { color: #6b5537; font-weight: 600; text-transform: uppercase; font-size: 10px; }
+.cert-field-edit {
+  display: flex; align-items: center; gap: 6px;
+  margin: 4px 0; flex-wrap: nowrap;
+}
+.cert-field-edit .cert-field-label {
+  color: #6b5537; font-weight: 600; text-transform: uppercase;
+  font-size: 10px; min-width: 70px; max-width: 80px; flex-shrink: 0;
+}
+.cert-field-edit input {
+  flex: 1; min-width: 0; padding: 4px 6px;
+  border: 1px solid #ccc; border-radius: 3px;
+  font-size: 12px; font-family: 'Cormorant Garamond', serif;
+  background: #fff; color: #2a1f10;
+}
 
 .cert-actions { display: none; gap: 8px; margin-top: 12px; }
 .cert-actions button {
@@ -255,12 +280,17 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
       <button class="cert-type-btn" data-type="marriage">Marriage</button>
       <button class="cert-type-btn" data-type="death">Death</button>
     </div>
-    <div class="cert-upload-area" id="certUploadArea">
+    <div class="cert-upload-btns" id="certUploadBtns">
+      <button class="camera-btn" id="certCameraBtn"><span>📷</span>Camera</button>
+      <button class="file-btn" id="certFileBtn"><span>📁</span>Choose File</button>
+    </div>
+    <div class="cert-upload-area" id="certUploadArea" style="display:none">
       <div style="font-size:24px;margin-bottom:8px;">📄</div>
       <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#4a3a22;">Tap to upload cert</div>
       <div style="font-size:11px;color:#8a7a5a;margin-top:4px;">Birth, marriage, or death record</div>
     </div>
     <input type="file" id="certFileInput" accept="image/*" style="display:none">
+    <input type="file" id="certCameraInput" accept="image/*" capture="environment" style="display:none">
     <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
     <div class="cert-status" id="certStatus"></div>
     <div id="certResults"></div>
@@ -546,11 +576,24 @@ document.querySelectorAll('.cert-type-btn').forEach(btn => {
   });
 });
 document.getElementById('certUploadArea').addEventListener('click', () => document.getElementById('certFileInput').click());
+document.getElementById('certFileBtn').addEventListener('click', () => document.getElementById('certFileInput').click());
+document.getElementById('certCameraBtn').addEventListener('click', () => document.getElementById('certCameraInput').click());
 document.getElementById('certFileInput').addEventListener('change', async (e) => {
   const file = e.target.files[0]; if (!file) return;
   pendingDocFile = file;
   try { await processDocFile(file); } catch (err) {
     console.error('[UPLOAD ERROR]', err);
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status error'; cs.style.display = 'block';
+    cs.innerHTML = 'Error: ' + (err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    document.getElementById('certRetry').style.display = 'block';
+  }
+});
+document.getElementById('certCameraInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  pendingDocFile = file;
+  try { await processDocFile(file); } catch (err) {
+    console.error('[CAMERA ERROR]', err);
     const cs = document.getElementById('certStatus');
     cs.className = 'cert-status error'; cs.style.display = 'block';
     cs.innerHTML = 'Error: ' + (err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
@@ -564,6 +607,7 @@ async function processDocFile(file) {
     pendingDocImage = ev.target.result;
     document.getElementById('certPreviewImg').src = pendingDocImage;
     document.getElementById('certPreviewArea').style.display = 'block';
+    document.getElementById('certUploadBtns').style.display = 'none';
     document.getElementById('certUploadArea').style.display = 'none';
   };
   reader.readAsDataURL(file);
@@ -609,7 +653,7 @@ const API_URL = 'https://genealogy-api.vercel.app/api/transcribe';
 async function sendToTranscriptionAPI(base64) {
   const cs = document.getElementById('certStatus');
   cs.className = 'cert-status loading'; cs.textContent = 'Scanning certificate...';
-  document.getElementById('certRetry').style.display = 'none';
+  document.getElementById('certRetry').style.display = '';  // Reset to default visible in actions bar
   try {
     const resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: base64, certType: selectedCertType }) });
     const json = await resp.json();
@@ -652,7 +696,7 @@ function renderTranscriptionResults(data) {
     let html = '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">' + entrySummary(entry, type) + '</div>';
     fields.forEach((f, fi) => {
       const fieldId = 'cf_' + idx + '_' + fi;
-      html += '<div style="font-size:11px;margin:2px 0;display:flex;align-items:center;"><span style="color:#6b5537;min-width:80px;">' + f.label + ':</span> <input id="' + fieldId + '" type="text" value="' + f.value.replace(/"/g, '&quot;') + '" style="flex:1;padding:3px 5px;border:1px solid #ccc;border-radius:3px;font-size:11px;font-family:Cormorant Garamond,serif;background:#fff;" data-entry="' + idx + '" data-field="' + f.key + '" onfocus="event.stopPropagation()" onclick="event.stopPropagation()">';
+      html += '<div class="cert-field-edit"><span class="cert-field-label">' + f.label + ':</span><input id="' + fieldId + '" type="text" value="' + f.value.replace(/"/g, '&quot;') + '" data-entry="' + idx + '" data-field="' + f.key + '" onfocus="event.stopPropagation()" onclick="event.stopPropagation()"></div>';
     });
     card.innerHTML = html;
     card.addEventListener('click', () => {
@@ -865,9 +909,12 @@ document.getElementById('certRetry').addEventListener('click', () => {
   document.getElementById('certStatus').style.display = 'none';
   document.getElementById('certResults').innerHTML = '';
   document.getElementById('certActions').style.display = 'none';
+  document.getElementById('certPreviewArea').style.display = 'none';
+  document.getElementById('certUploadBtns').style.display = 'flex';
   lastTranscription = null;
   if (pendingDocFile) {
     // Re-scan the same image
+    document.getElementById('certUploadBtns').style.display = 'none';
     processDocFile(pendingDocFile);
   } else {
     // No file stored, trigger file picker
