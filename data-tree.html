@@ -193,12 +193,15 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   border: 1px solid #ccc; border-radius: 3px;
   font-size: 12px; font-family: 'Cormorant Garamond', serif;
   background: #fff; color: #2a1f10;
+}
+
+.cert-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
+
+.cert-toolbar { padding: 12px 16px; border-bottom: 2px solid #4a3a22; flex-shrink: 0; background: #f5eedc; }
+
 .cert-body { padding: 16px; overflow-y: auto; flex: 1; min-height: 0; }
 
-.cert-actions { display: none; flex-wrap: wrap; gap: 8px; margin-top: 12px;
-  position: sticky; bottom: 0; background: #f5eedc; padding: 12px 0;
-  z-index: 10; border-top: 2px solid #4a3a22;
-}
+.cert-actions { display: none; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
 .cert-panel.has-results .cert-actions { display: flex; }
 .cert-actions button {
   flex: 1 1 auto; padding: 10px; border: 2px solid #4a3a22; border-radius: 4px;
@@ -278,12 +281,19 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
     <button class="cert-close" id="certClose">&times;</button>
     <div style="font-size:14px;">📎 Upload Certificate</div>
   </div>
-  <div class="cert-body" id="certBody">
+  <div class="cert-toolbar">
     <div class="cert-type-selector">
       <button class="cert-type-btn active" data-type="birth">Birth</button>
       <button class="cert-type-btn" data-type="marriage">Marriage</button>
       <button class="cert-type-btn" data-type="death">Death</button>
     </div>
+    <div class="cert-actions" id="certActions">
+      <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
+      <button class="cert-swap" id="certSwapParents">↔ Swap Parents</button>
+      <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
+    </div>
+  </div>
+  <div class="cert-body" id="certBody">
     <div class="cert-upload-btns" id="certUploadBtns">
       <button class="camera-btn" id="certCameraBtn"><span>📷</span>Camera</button>
       <button class="file-btn" id="certFileBtn"><span>📁</span>Choose File</button>
@@ -298,11 +308,6 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
     <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
     <div class="cert-status" id="certStatus"></div>
     <div id="certResults"></div>
-    <div class="cert-actions" id="certActions">
-      <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
-      <button class="cert-swap" id="certSwapParents">↔ Swap Parents</button>
-      <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
-    </div>
   </div>
 </div>
 
@@ -846,7 +851,10 @@ function getOrCreateParent(parentName, parentGen, spouseName, changed) {
     p = createPerson(nextId++, parentGen, parentName, '?', 'probable', {});
     people.push(p); changed.push(p);
   } else if (p.name === 'Name' || p.status === 'blank') {
-    // Upgraded a blank placeholder — count as changed
+    // Upgraded a blank placeholder — fill in the real name
+    p.name = parentName;
+    p.fullName = parentName;
+    p.status = 'probable';
     changed.push(p);
   }
   return p.id;
