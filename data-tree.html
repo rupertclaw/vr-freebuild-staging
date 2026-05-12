@@ -324,6 +324,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 <div class="save-bar">
   <button id="saveBtn">⬇ Save Session</button>
   <button id="loadBtn">⬆ Load Session</button>
+  <button id="resetBtn" style="background:#5c2a2a;color:#f5eedc;">↻ Reset</button>
   <input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
 </div>
 
@@ -367,8 +368,8 @@ let selectedEntryIndex = 0;
 function initDefaultData() {
   people = [];
   nextId = 1;
-  // Gen 0: user
-  people.push(createPerson(nextId++, 0, 'Gavin Harrow', 'b. 1966', 'you', {birthplace: 'Brampton, Ontario'}));
+  // Gen 0: blank placeholder for the user to populate with their birth cert
+  people.push(createPerson(nextId++, 0, 'Name', '?', 'blank', {}));
   // Gens 1-8: blank placeholder cards (2^gen each)
   for (let g = 1; g <= 8; g++) {
     const count = Math.pow(2, g);
@@ -863,7 +864,18 @@ function getOrCreateParent(parentName, parentGen, spouseName, changed) {
 function applyBirthEntry(entry, changed) {
   const childName = entry.child?.name; if (!childName) return;
   let child = findPerson(childName);
-  if (!child) { child = createPerson(nextId++, 0, childName, '?', 'probable', {}); people.push(child); }
+  if (!child) {
+    // Check if Gen 0 has a blank placeholder we can fill
+    const gen0 = people.find(p => p.gen === 0 && (p.name === 'Name' || p.status === 'blank'));
+    if (gen0) {
+      child = gen0;
+    } else {
+      child = createPerson(nextId++, 0, childName, '?', 'probable', {});
+      people.push(child);
+    }
+  }
+  child.name = childName;
+  child.fullName = childName;
   if (entry.child?.birthDate) { child.birthDate = entry.child.birthDate; child.years = 'b. ' + entry.child.birthDate; }
   child.status = 'confirmed';
   child.docs.push({ type: 'bc' });
@@ -1055,9 +1067,15 @@ document.getElementById('loadBtn').addEventListener('click', () => document.getE
 document.getElementById('loadFileInput').addEventListener('change', (e) => {
   const file = e.target.files[0]; if (file) loadSession(file); e.target.value = '';
 });
-setInterval(() => { localStorage.setItem('familytree_data_v3', JSON.stringify({people: people, nextId: nextId})); }, 30000);
+document.getElementById('resetBtn').addEventListener('click', () => {
+  if (confirm('Clear all data and start fresh?')) {
+    localStorage.removeItem('familytree_data_v4');
+    location.reload();
+  }
+});
+setInterval(() => { localStorage.setItem('familytree_data_v4', JSON.stringify({people: people, nextId: nextId})); }, 30000);
 function autoRestore() {
-  const saved = localStorage.getItem('familytree_data_v3');
+  const saved = localStorage.getItem('familytree_data_v4');
   if (saved) {
     try {
       const data = JSON.parse(saved);
@@ -1070,7 +1088,7 @@ function autoRestore() {
   return false;
 }
 function clearStorage() {
-  localStorage.removeItem('familytree_data_v3');
+  localStorage.removeItem('familytree_data_v4');
   showToast('Storage cleared — reload to start fresh');
 }
 function showToast(msg, duration) {
