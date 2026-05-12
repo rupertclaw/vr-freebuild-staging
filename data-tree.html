@@ -120,10 +120,10 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 .cert-panel {
   display: none; position: fixed; top: 50px; right: 0;
   width: 380px; max-width: 95vw; height: calc(100vh - 50px);
-  background: #f5eedc; z-index: 400; overflow-y: auto;
+  background: #f5eedc; z-index: 400;
   border-left: 3px solid #4a3a22;
 }
-.cert-panel.active { display: block; animation: slideIn 0.25s ease; }
+.cert-panel.active { display: flex; flex-direction: column; animation: slideIn 0.25s ease; }
 @keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
 .cert-header {
@@ -131,7 +131,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   position: relative; font-family: 'Cinzel Decorative', serif;
 }
 .cert-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
-.cert-body { padding: 16px; }
+.cert-body { padding: 16px; overflow-y: auto; flex: 1; }
 
 .cert-type-selector { display: flex; gap: 6px; margin-bottom: 12px; }
 .cert-type-btn {
@@ -196,9 +196,8 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   background: #fff; color: #2a1f10;
 }
 
-.cert-actions { display: none; flex-wrap: wrap; gap: 8px; margin-top: 12px;
-  position: sticky; bottom: 0; background: #f5eedc; padding: 10px 0;
-  z-index: 10; border-top: 1px solid #8a7a5a;
+.cert-actions { display: none; flex-wrap: wrap; gap: 8px; padding: 12px 16px;
+  background: #f5eedc; border-top: 2px solid #4a3a22; flex-shrink: 0;
 }
 .cert-actions button {
   flex: 1 1 auto; padding: 10px; border: 2px solid #4a3a22; border-radius: 4px;
@@ -278,7 +277,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
     <button class="cert-close" id="certClose">&times;</button>
     <div style="font-size:14px;">📎 Upload Certificate</div>
   </div>
-  <div class="cert-body">
+  <div class="cert-body" id="certBody">
     <div class="cert-type-selector">
       <button class="cert-type-btn active" data-type="birth">Birth</button>
       <button class="cert-type-btn" data-type="marriage">Marriage</button>
@@ -298,11 +297,11 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
     <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
     <div class="cert-status" id="certStatus"></div>
     <div id="certResults"></div>
-    <div class="cert-actions" id="certActions">
-      <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
-      <button class="cert-swap" id="certSwapParents">↔ Swap Parents</button>
-      <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
-    </div>
+  </div>
+  <div class="cert-actions" id="certActions">
+    <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
+    <button class="cert-swap" id="certSwapParents">↔ Swap Parents</button>
+    <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
   </div>
 </div>
 
@@ -802,6 +801,18 @@ function applyCertToPerson(entry, type) {
   else if (type === 'death') applyDeathEntry(entry, changed);
   if (changed.length) { renderTree(); showToast('Applied to ' + changed.length + ' people'); }
   else { showToast('No matching people found — cert data stored'); }
+  // Scroll to the first changed person so you can see the result
+  if (changed.length > 0) {
+    const target = changed[0];
+    setTimeout(() => {
+      const el = cardEls.get(target.id);
+      if (el) {
+        const cx = (el.offsetLeft + el.offsetWidth / 2) * zoom;
+        const cy = (el.offsetTop + el.offsetHeight / 2) * zoom;
+        scroll.scrollTo({ left: Math.max(0, cx - scroll.clientWidth / 2), top: Math.max(0, cy - scroll.clientHeight / 2), behavior: 'smooth' });
+      }
+    }, 200);
+  }
 }
 
 function normalizeName(name) {
@@ -833,6 +844,9 @@ function getOrCreateParent(parentName, parentGen, spouseName, changed) {
   if (!p) {
     p = createPerson(nextId++, parentGen, parentName, '?', 'probable', {});
     people.push(p); changed.push(p);
+  } else if (p.name === 'Name' || p.status === 'blank') {
+    // Upgraded a blank placeholder — count as changed
+    changed.push(p);
   }
   return p.id;
 }
@@ -840,10 +854,12 @@ function getOrCreateParent(parentName, parentGen, spouseName, changed) {
 function applyBirthEntry(entry, changed) {
   const childName = entry.child?.name; if (!childName) return;
   let child = findPerson(childName);
-  if (!child) { child = createPerson(nextId++, 0, childName, '?', 'probable', {}); people.push(child); changed.push(child); }
-  if (entry.child?.birthDate && child.years === '?') { child.birthDate = entry.child.birthDate; child.years = 'b. ' + entry.child.birthDate; changed.push(child); }
+  const isNew = !child;
+  if (!child) { child = createPerson(nextId++, 0, childName, '?', 'probable', {}); people.push(child); }
+  if (entry.child?.birthDate) { child.birthDate = entry.child.birthDate; child.years = 'b. ' + entry.child.birthDate; }
   if (entry.child?.birthDate) child.status = 'confirmed';
   child.docs.push({ type: 'bc' });
+  changed.push(child); // Always count child as changed
 
   const parentGen = child.gen + 1;
   const fatherId = getOrCreateParent(entry.father?.name, parentGen, entry.mother?.name, changed);
@@ -920,8 +936,6 @@ document.getElementById('certConfirm').addEventListener('click', () => {
   }
   applyCertToPerson(entry, type);
   certPanel.classList.remove('active');
-  // Center back to Gen 0 after applying
-  setTimeout(() => centerOnGen0(), 200);
 });
 
 document.getElementById('certRetry').addEventListener('click', () => {
