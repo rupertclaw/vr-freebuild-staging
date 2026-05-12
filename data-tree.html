@@ -342,6 +342,28 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 
 <script>
 // ═══════════════════════════════════════════════════════════════
+// DEBUG LOG CAPTURE (for mobile troubleshooting)
+// ═══════════════════════════════════════════════════════════════
+const debugLogs = [];
+const origConsoleError = console.error;
+const origConsoleLog = console.log;
+const origConsoleWarn = console.warn;
+function pushLog(type, args) {
+  const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a).slice(0,200) : String(a)).join(' ');
+  debugLogs.push({t: type, m: msg, time: new Date().toLocaleTimeString()});
+  if (debugLogs.length > 50) debugLogs.shift();
+}
+console.error = function(...args) { pushLog('ERR', args); origConsoleError.apply(console, args); };
+console.log = function(...args) { pushLog('LOG', args); origConsoleLog.apply(console, args); };
+console.warn = function(...args) { pushLog('WRN', args); origConsoleWarn.apply(console, args); };
+window.onerror = function(msg, url, line, col, err) {
+  pushLog('EXC', [msg, 'at', url + ':' + line]);
+};
+function getDebugLogs() {
+  return debugLogs.slice(-20).map(l => l.time + ' [' + l.t + '] ' + l.m).join('\n');
+}
+
+// ═══════════════════════════════════════════════════════════════
 // DATA MODEL
 // ═══════════════════════════════════════════════════════════════
 
@@ -821,7 +843,8 @@ async function sendToTranscriptionAPI(base64) {
     if (msg.includes('Failed to fetch')) {
       msg = 'Connection failed on image upload. Your network may block large uploads.';
     }
-    cs.innerHTML = 'Network error: ' + msg + '<br><small>Try: 1) Different WiFi network, 2) Use camera instead of gallery, 3) Clear and retry</small>';
+    const debugId = 'debug_' + Date.now();
+    cs.innerHTML = 'Network error: ' + msg + '<br><small>Try: 1) Different WiFi, 2) Camera not gallery, 3) Clear and retry</small><br><button onclick="document.getElementById(\'' + debugId + '\').style.display=\'block\'" style="margin-top:6px;padding:4px 8px;font-size:11px;background:#8a7a5a;color:#fff;border:none;border-radius:4px;">Show Debug Logs</button><pre id="' + debugId + '" style="display:none;margin-top:6px;padding:6px;background:#1a1510;color:#e8dcc8;font-size:10px;max-height:150px;overflow:auto;border-radius:4px;white-space:pre-wrap;">' + getDebugLogs().replace(/</g,'&lt;') + '</pre>';
     certPanel.classList.add('has-results');
   }
 }
