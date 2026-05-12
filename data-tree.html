@@ -360,6 +360,7 @@ function createPerson(id, gen, name, years, status, opts) {
     birthplace: opts.birthplace || '',
     maidenName: opts.maidenName || '',
     spouseName: opts.spouseName || '',
+    spouseId: opts.spouseId || null,
     parents: opts.parents || null,
     children: opts.children || [],
     docs: opts.docs || [],
@@ -388,7 +389,7 @@ function initDefaultData() {
       people.push(createPerson(nextId++, g, 'Name', '?', 'blank', {}));
     }
   }
-  // Wire parent-child relationships: person at gen g, index i has parents at gen g+1, indices 2i and 2i+1
+  // Wire parent-child relationships AND spouse relationships
   for (let g = 0; g < 8; g++) {
     const gen = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
     const nextGen = people.filter(p => p.gen === g + 1).sort((a,b) => a.id - b.id);
@@ -397,6 +398,9 @@ function initDefaultData() {
       const mother = nextGen[2 * i + 1];
       if (father && mother) {
         p.parents = [father.id, mother.id];
+        // Wire spouse relationship between parents
+        father.spouseId = mother.id;
+        mother.spouseId = father.id;
       }
     });
   }
@@ -890,17 +894,18 @@ function getOrCreateParent(parentName, parentGen, spouseName, changed) {
 
 function applyBirthEntry(entry, changed) {
   const childName = entry.child?.name; if (!childName) return;
-  let child = findPerson(childName);
-  if (!child) {
-    // Check if Gen 0 has a blank placeholder we can fill
-    const gen0 = people.find(p => p.gen === 0 && (p.name === 'Name' || p.status === 'blank'));
-    if (gen0) {
-      child = gen0;
-    } else {
-      child = createPerson(nextId++, 0, childName, '?', 'probable', {});
-      people.push(child);
-    }
+  
+  // Find or create the child (always Gen 0 for root person)
+  let child = people.find(p => p.gen === 0);
+  if (!child || (child.name !== 'Name' && child.status !== 'blank')) {
+    // If Gen 0 is already filled, find by name
+    child = findPerson(childName);
   }
+  if (!child) {
+    child = createPerson(nextId++, 0, childName, '?', 'probable', {});
+    people.push(child);
+  }
+  
   child.name = childName;
   child.fullName = childName;
   if (entry.child?.birthDate) { child.birthDate = entry.child.birthDate; child.years = 'b. ' + entry.child.birthDate; }
@@ -908,15 +913,17 @@ function applyBirthEntry(entry, changed) {
   child.docs.push({ type: 'bc' });
   changed.push(child);
 
-  // Use child's existing parent placeholders if wired, otherwise create new
-  const parentGen = child.gen + 1;
-  let fatherId = null, motherId = null;
-
+  // Use child's existing parent placeholders (always IDs 2,3 in fresh tree)
+  if (!child.parents || child.parents.length < 2) {
+    // Re-wire parents from tree structure if missing
+    const gen1 = people.filter(p => p.gen === 1).sort((a,b) => a.id - b.id);
+    if (gen1.length >= 2) child.parents = [gen1[0].id, gen1[1].id];
+  }
+  
   if (child.parents && child.parents.length >= 2) {
-    fatherId = child.parents[0];
-    motherId = child.parents[1];
-    const father = people.find(p => p.id === fatherId);
-    const mother = people.find(p => p.id === motherId);
+    const father = people.find(p => p.id === child.parents[0]);
+    const mother = people.find(p => p.id === child.parents[1]);
+    
     if (father && entry.father?.name) {
       father.name = entry.father.name;
       father.fullName = entry.father.name;
@@ -931,77 +938,111 @@ function applyBirthEntry(entry, changed) {
       if (entry.mother?.maidenSurname) mother.maidenName = entry.mother.maidenSurname;
       changed.push(mother);
     }
-  } else {
-    fatherId = getOrCreateParent(entry.father?.name, parentGen, entry.mother?.name, changed);
-    motherId = getOrCreateParent(entry.mother?.name, parentGen, entry.father?.name, changed);
+    
+    // Wire spouse relationship between parents
+    if (father && mother) {
+      father.spouseId = mother.id;
+      mother.spouseId = father.id;
+      father.spouseName = mother.name;
+      mother.spouseName = father.name;
+    }
   }
-  child.parents = [fatherId, motherId].filter(id => id !== null);
 }
 
 function applyMarriageEntry(entry, changed) {
   const groomName = entry.groom?.name, brideName = entry.bride?.name;
   if (!groomName || !brideName) return;
-  let groom = findPerson(groomName);
-  let bride = findPerson(brideName);
-  let matchedByMaiden = false;
-  if (!bride) { bride = findPerson(brideName, { checkMaiden: true }); matchedByMaiden = !!bride; }
-  if (!groom) { groom = createPerson(nextId++, 0, groomName, '?', 'probable', {}); people.push(groom); changed.push(groom); }
-  if (!bride) { bride = createPerson(nextId++, 0, brideName, '?', 'probable', {}); people.push(bride); changed.push(bride); }
   
-  // If bride was found by maiden name, update her display name to married name
-  if (matchedByMaiden) {
-    const groomParts = groomName.trim().split(/\s+/);
-    const groomSurname = groomParts[groomParts.length - 1];
-    const brideParts = bride.name.trim().split(/\s+/);
-    // If bride's current name doesn't already end with groom's surname, update it
-    if (brideParts[brideParts.length - 1].toLowerCase() !== groomSurname.toLowerCase()) {
-      const brideFirstNames = brideParts.slice(0, -1).join(' ') || brideParts[0];
-      const marriedName = brideFirstNames + ' ' + groomSurname;
-      bride.name = marriedName;
-      bride.fullName = marriedName;
-      changed.push(bride);
+  // Step 1: Find groom by name
+  let groom = findPerson(groomName);
+  
+  // Step 2: Find bride — SPOUSE LINK FIRST (definitive)
+  let bride = null;
+  if (groom && groom.spouseId) {
+    const spouse = people.find(p => p.id === groom.spouseId);
+    if (spouse) {
+      // Verify first name matches
+      const brideFirst = brideName.split(/\s+/)[0]?.toLowerCase();
+      const spouseFirst = spouse.name.split(/\s+/)[0]?.toLowerCase();
+      if (spouseFirst === brideFirst) {
+        bride = spouse;
+      }
     }
   }
   
-  groom.spouseName = bride.name; bride.spouseName = groom.name;
-  if (entry.date) { groom.years = (groom.years === '?' ? '' : groom.years.replace(/\?/g,'')) + ' m. ' + entry.date; }
-  groom.docs.push({ type: 'mc' }); bride.docs.push({ type: 'mc' });
+  // Step 3: If no spouse link, fall back to name matching
+  if (!bride) {
+    bride = findPerson(brideName);
+    if (!bride) bride = findPerson(brideName, { checkMaiden: true });
+  }
+  
+  // Step 4: Create new people only if not found
+  if (!groom) {
+    groom = createPerson(nextId++, 0, groomName, '?', 'probable', {});
+    people.push(groom); changed.push(groom);
+  }
+  if (!bride) {
+    bride = createPerson(nextId++, 0, brideName, '?', 'probable', {});
+    people.push(bride); changed.push(bride);
+  }
+  
+  // Step 5: Wire spouse relationship
+  groom.spouseId = bride.id;
+  bride.spouseId = groom.id;
+  groom.spouseName = bride.name;
+  bride.spouseName = groom.name;
+  
+  // Step 6: Update bride's display name to married name if matched by maiden
+  const groomSurname = groomName.split(/\s+/).pop();
+  const brideSurname = bride.name.split(/\s+/).pop();
+  if (brideSurname.toLowerCase() !== groomSurname.toLowerCase()) {
+    const brideFirst = bride.name.split(/\s+/).slice(0, -1).join(' ') || bride.name.split(/\s+/)[0];
+    bride.name = brideFirst + ' ' + groomSurname;
+    bride.fullName = bride.name;
+    changed.push(bride);
+  }
+  
   groom.status = 'confirmed'; bride.status = 'confirmed';
+  groom.docs.push({ type: 'mc' }); bride.docs.push({ type: 'mc' });
+  if (entry.date) { groom.years = (groom.years === '?' ? '' : groom.years.replace(/\?/g,'')) + ' m. ' + entry.date; }
   changed.push(groom); changed.push(bride);
 
-  // Use existing parent placeholders if wired
-  function updateParents(person, fatherName, motherName, motherMaiden, changed) {
-    const parentGen = person.gen + 1;
-    let fatherId = null, motherId = null;
-    if (person.parents && person.parents.length >= 2) {
-      fatherId = person.parents[0];
-      motherId = person.parents[1];
-      const father = people.find(p => p.id === fatherId);
-      const mother = people.find(p => p.id === motherId);
-      if (father && fatherName) {
-        father.name = fatherName; father.fullName = fatherName;
-        if (father.status === 'blank') father.status = 'probable';
-        changed.push(father);
-      }
-      if (mother && motherName) {
-        mother.name = motherName; mother.fullName = motherName;
-        if (mother.status === 'blank') mother.status = 'probable';
-        if (motherMaiden) mother.maidenName = motherMaiden;
-        changed.push(mother);
-      }
-    } else {
-      fatherId = getOrCreateParent(fatherName, parentGen, motherName, changed);
-      motherId = getOrCreateParent(motherName, parentGen, fatherName, changed);
-      if (motherId) {
-        const m = people.find(pp => pp.id === motherId);
-        if (m && motherMaiden) m.maidenName = motherMaiden;
-      }
+  // Step 7: Update parents using tree structure ONLY — never search by name for parents
+  function updateParents(person, fatherName, motherName, motherMaiden) {
+    if (!person || !person.parents || person.parents.length < 2) return;
+    const father = people.find(p => p.id === person.parents[0]);
+    const mother = people.find(p => p.id === person.parents[1]);
+    
+    // Only fill blanks — never overwrite an existing confirmed name
+    if (father && fatherName && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable')) {
+      father.name = fatherName; father.fullName = fatherName;
+      if (father.status === 'blank') father.status = 'probable';
+      changed.push(father);
     }
-    person.parents = [fatherId, motherId].filter(id => id !== null);
+    if (mother && motherName && (mother.name === 'Name' || mother.status === 'blank' || mother.status === 'probable')) {
+      mother.name = motherName; mother.fullName = motherName;
+      if (mother.status === 'blank') mother.status = 'probable';
+      if (motherMaiden) mother.maidenName = motherMaiden;
+      changed.push(mother);
+    }
+    // Wire spouse relationship between grandparents
+    if (father && mother) {
+      father.spouseId = mother.id;
+      mother.spouseId = father.id;
+      father.spouseName = mother.name;
+      mother.spouseName = father.name;
+    }
   }
 
-  updateParents(groom, entry.groomFather?.name, entry.groomMother?.name, entry.groomMother?.maidenName, changed);
-  updateParents(bride, entry.brideFather?.name, entry.brideMother?.name, entry.brideMother?.maidenName, changed);
+  // Groom's parents → groom.parents[0], groom.parents[1]
+  if (groom.parents && groom.parents.length >= 2) {
+    updateParents(groom, entry.groomFather?.name, entry.groomMother?.name, entry.groomMother?.maidenName);
+  }
+  
+  // Bride's parents → bride.parents[0], bride.parents[1]
+  if (bride.parents && bride.parents.length >= 2) {
+    updateParents(bride, entry.brideFather?.name, entry.brideMother?.name, entry.brideMother?.maidenName);
+  }
 }
 
 function applyDeathEntry(entry, changed) {
@@ -1013,35 +1054,31 @@ function applyDeathEntry(entry, changed) {
   if (entry.deceased?.occupation) dec.occupation = entry.deceased.occupation;
   if (entry.deceased?.spouseName) dec.spouseName = entry.deceased.spouseName;
   dec.docs.push({ type: 'dc' }); dec.status = 'confirmed';
+  changed.push(dec);
 
-  // Use existing parent placeholders if wired
-  const parentGen = dec.gen + 1;
-  let fatherId = null, motherId = null;
+  // Use existing parent placeholders if wired — only fill blanks
   if (dec.parents && dec.parents.length >= 2) {
-    fatherId = dec.parents[0];
-    motherId = dec.parents[1];
-    const father = people.find(p => p.id === fatherId);
-    const mother = people.find(p => p.id === motherId);
-    if (father && entry.father?.name) {
+    const father = people.find(p => p.id === dec.parents[0]);
+    const mother = people.find(p => p.id === dec.parents[1]);
+    if (father && entry.father?.name && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable')) {
       father.name = entry.father.name; father.fullName = entry.father.name;
       if (father.status === 'blank') father.status = 'probable';
       changed.push(father);
     }
-    if (mother && entry.mother?.name) {
+    if (mother && entry.mother?.name && (mother.name === 'Name' || mother.status === 'blank' || mother.status === 'probable')) {
       mother.name = entry.mother.name; mother.fullName = entry.mother.name;
       if (mother.status === 'blank') mother.status = 'probable';
-      if (entry.mother?.maidenName) mother.maidenName = entry.mother.maidenName;
+      if (entry.mother?.maidenName) mother.maidenName = entry.mother?.maidenName;
       changed.push(mother);
     }
-  } else {
-    fatherId = getOrCreateParent(entry.father?.name, parentGen, entry.mother?.name, changed);
-    motherId = getOrCreateParent(entry.mother?.name, parentGen, entry.father?.name, changed);
-    if (motherId) {
-      const m = people.find(pp => pp.id === motherId);
-      if (m && entry.mother?.maidenName) m.maidenName = entry.mother.maidenName;
+    // Wire spouse relationship between parents
+    if (father && mother) {
+      father.spouseId = mother.id;
+      mother.spouseId = father.id;
+      father.spouseName = mother.name;
+      mother.spouseName = father.name;
     }
   }
-  dec.parents = [fatherId, motherId].filter(id => id !== null);
 }
 
 document.getElementById('certConfirm').addEventListener('click', () => {
@@ -1090,7 +1127,7 @@ document.getElementById('certConfirm').addEventListener('click', () => {
 });
 
 function saveSession() {
-  const payload = { version: 3, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
+  const payload = { version: 5, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -1115,16 +1152,16 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   const dlg = document.getElementById('confirmDialog');
   dlg.style.display = 'flex';
   document.getElementById('confirmOk').onclick = () => {
-    localStorage.removeItem('familytree_data_v4');
+    localStorage.removeItem('familytree_data_v5');
     location.reload();
   };
   document.getElementById('confirmCancel').onclick = () => {
     dlg.style.display = 'none';
   };
 });
-setInterval(() => { localStorage.setItem('familytree_data_v4', JSON.stringify({people: people, nextId: nextId})); }, 30000);
+setInterval(() => { localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId})); }, 30000);
 function autoRestore() {
-  const saved = localStorage.getItem('familytree_data_v4');
+  const saved = localStorage.getItem('familytree_data_v5');
   if (saved) {
     try {
       const data = JSON.parse(saved);
@@ -1137,7 +1174,7 @@ function autoRestore() {
   return false;
 }
 function clearStorage() {
-  localStorage.removeItem('familytree_data_v4');
+  localStorage.removeItem('familytree_data_v5');
   showToast('Storage cleared — reload to start fresh');
 }
 function showToast(msg, duration) {
