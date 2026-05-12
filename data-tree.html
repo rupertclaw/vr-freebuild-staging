@@ -473,6 +473,8 @@ function setZoom(z) {
   zoom = Math.max(0.25, Math.min(3, z));
   renderTree();
   document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+  // Re-center on Gen 0 after zoom change
+  setTimeout(() => centerOnGen0(), 50);
 }
 document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.2));
 document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
@@ -648,9 +650,14 @@ function renderTranscriptionResults(data) {
     card.dataset.index = idx;
     const fields = extractEntryFields(entry, type);
     let html = '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">' + entrySummary(entry, type) + '</div>';
-    fields.forEach(f => { html += '<div style="font-size:11px;margin:2px 0;"><span style="color:#6b5537;">' + f.label + ':</span> ' + f.value + '</div>'; });
+    fields.forEach((f, fi) => {
+      const fieldId = 'cf_' + idx + '_' + fi;
+      html += '<div style="font-size:11px;margin:2px 0;display:flex;align-items:center;"><span style="color:#6b5537;min-width:80px;">' + f.label + ':</span> <input id="' + fieldId + '" type="text" value="' + f.value.replace(/"/g, '&quot;') + '" style="flex:1;padding:3px 5px;border:1px solid #ccc;border-radius:3px;font-size:11px;font-family:Cormorant Garamond,serif;background:#fff;" data-entry="' + idx + '" data-field="' + f.key + '" onfocus="event.stopPropagation()" onclick="event.stopPropagation()">';
+    });
     card.innerHTML = html;
     card.addEventListener('click', () => {
+      // Save current edits before switching
+      syncCertEdits();
       document.querySelectorAll('.cert-result-card').forEach(c => c.classList.remove('selected'));
       card.classList.add('selected'); selectedEntryIndex = idx;
     });
@@ -658,32 +665,57 @@ function renderTranscriptionResults(data) {
   });
 }
 
+// Sync editable field values back into lastTranscription
+function syncCertEdits() {
+  if (!lastTranscription) return;
+  const entries = lastTranscription.entries || [lastTranscription];
+  document.querySelectorAll('#certResults input[data-field]').forEach(input => {
+    const eIdx = parseInt(input.dataset.entry);
+    const field = input.dataset.field;
+    const entry = entries[eIdx];
+    if (!entry) return;
+    const val = input.value;
+    // Set value on the nested object using dot notation (e.g. "child.name", "father.name")
+    const parts = field.split('.');
+    let obj = entry;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!obj[parts[i]]) obj[parts[i]] = {};
+      obj = obj[parts[i]];
+    }
+    obj[parts[parts.length - 1]] = val;
+  });
+}
+
 function extractEntryFields(entry, type) {
   const fields = [];
   if (type === 'marriage') {
-    if (entry.groom?.name) fields.push({ label: 'Groom', value: entry.groom.name });
-    if (entry.groom?.age) fields.push({ label: 'Groom Age', value: entry.groom.age });
-    if (entry.bride?.name) fields.push({ label: 'Bride', value: entry.bride.name });
-    if (entry.bride?.age) fields.push({ label: 'Bride Age', value: entry.bride.age });
-    if (entry.groomFather?.name) fields.push({ label: "Groom's Father", value: entry.groomFather.name });
-    if (entry.groomMother?.name) fields.push({ label: "Groom's Mother", value: entry.groomMother.name + (entry.groomMother.maidenName ? ' (m.s. ' + entry.groomMother.maidenName + ')' : '') });
-    if (entry.brideFather?.name) fields.push({ label: "Bride's Father", value: entry.brideFather.name });
-    if (entry.brideMother?.name) fields.push({ label: "Bride's Mother", value: entry.brideMother.name + (entry.brideMother.maidenName ? ' (m.s. ' + entry.brideMother.maidenName + ')' : '') });
-    if (entry.date) fields.push({ label: 'Date', value: entry.date });
+    if (entry.groom?.name) fields.push({ label: 'Groom', value: entry.groom.name, key: 'groom.name' });
+    if (entry.groom?.age) fields.push({ label: 'Groom Age', value: entry.groom.age, key: 'groom.age' });
+    if (entry.bride?.name) fields.push({ label: 'Bride', value: entry.bride.name, key: 'bride.name' });
+    if (entry.bride?.age) fields.push({ label: 'Bride Age', value: entry.bride.age, key: 'bride.age' });
+    if (entry.groomFather?.name) fields.push({ label: "Groom's Father", value: entry.groomFather.name, key: 'groomFather.name' });
+    if (entry.groomMother?.name) fields.push({ label: "Groom's Mother", value: entry.groomMother.name + (entry.groomMother.maidenName ? ' (m.s. ' + entry.groomMother.maidenName + ')' : ''), key: 'groomMother.name' });
+    if (entry.groomMother?.maidenName) fields.push({ label: "Groom's Mother m.s.", value: entry.groomMother.maidenName, key: 'groomMother.maidenName' });
+    if (entry.brideFather?.name) fields.push({ label: "Bride's Father", value: entry.brideFather.name, key: 'brideFather.name' });
+    if (entry.brideMother?.name) fields.push({ label: "Bride's Mother", value: entry.brideMother.name + (entry.brideMother.maidenName ? ' (m.s. ' + entry.brideMother.maidenName + ')' : ''), key: 'brideMother.name' });
+    if (entry.brideMother?.maidenName) fields.push({ label: "Bride's Mother m.s.", value: entry.brideMother.maidenName, key: 'brideMother.maidenName' });
+    if (entry.date) fields.push({ label: 'Date', value: entry.date, key: 'date' });
   } else if (type === 'birth') {
-    if (entry.child?.name) fields.push({ label: 'Child', value: entry.child.name });
-    if (entry.child?.birthDate) fields.push({ label: 'Birth Date', value: entry.child.birthDate });
-    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name });
-    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : entry.mother.maidenSurname ? ' (m.s. ' + entry.mother.maidenSurname + ')' : '') });
-    if (entry.district) fields.push({ label: 'District', value: entry.district });
+    if (entry.child?.name) fields.push({ label: 'Child', value: entry.child.name, key: 'child.name' });
+    if (entry.child?.birthDate) fields.push({ label: 'Birth Date', value: entry.child.birthDate, key: 'child.birthDate' });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, key: 'father.name' });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : entry.mother.maidenSurname ? ' (m.s. ' + entry.mother.maidenSurname + ')' : ''), key: 'mother.name' });
+    if (entry.mother?.maidenName || entry.mother?.maidenSurname) fields.push({ label: 'Mother m.s.', value: entry.mother?.maidenName || entry.mother?.maidenSurname || '', key: 'mother.maidenName' });
+    if (entry.district) fields.push({ label: 'District', value: entry.district, key: 'district' });
   } else if (type === 'death') {
-    if (entry.deceased?.name) fields.push({ label: 'Deceased', value: entry.deceased.name });
-    if (entry.deceased?.age) fields.push({ label: 'Age', value: entry.deceased.age });
-    if (entry.deceased?.spouseName) fields.push({ label: 'Spouse', value: entry.deceased.spouseName });
-    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name });
-    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : '') });
-    if (entry.deathDate) fields.push({ label: 'Date', value: entry.deathDate });
-    if (entry.causeOfDeath) fields.push({ label: 'Cause', value: entry.causeOfDeath });
+    if (entry.deceased?.name) fields.push({ label: 'Deceased', value: entry.deceased.name, key: 'deceased.name' });
+    if (entry.deceased?.age) fields.push({ label: 'Age', value: entry.deceased.age, key: 'deceased.age' });
+    if (entry.deceased?.spouseName) fields.push({ label: 'Spouse', value: entry.deceased.spouseName, key: 'deceased.spouseName' });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, key: 'father.name' });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : ''), key: 'mother.name' });
+    if (entry.mother?.maidenName) fields.push({ label: 'Mother m.s.', value: entry.mother.maidenName, key: 'mother.maidenName' });
+    if (entry.deathDate) fields.push({ label: 'Date', value: entry.deathDate, key: 'deathDate' });
+    if (entry.causeOfDeath) fields.push({ label: 'Cause', value: entry.causeOfDeath, key: 'causeOfDeath' });
   }
   return fields;
 }
@@ -812,6 +844,7 @@ function applyDeathEntry(entry, changed) {
 
 document.getElementById('certConfirm').addEventListener('click', () => {
   if (!lastTranscription) return;
+  syncCertEdits(); // Save any field edits before applying
   const entries = lastTranscription.entries || [lastTranscription];
   const entry = entries[selectedEntryIndex || 0];
   if (!entry) return;
@@ -823,11 +856,24 @@ document.getElementById('certConfirm').addEventListener('click', () => {
   }
   applyCertToPerson(entry, type);
   certPanel.classList.remove('active');
+  // Center back to Gen 0 after applying
+  setTimeout(() => centerOnGen0(), 200);
 });
 
 document.getElementById('certRetry').addEventListener('click', () => {
-  if (pendingDocFile) { processDocFile(pendingDocFile); }
-  else { document.getElementById('certFileInput').value = ''; document.getElementById('certFileInput').click(); }
+  // Reset upload state for a fresh scan
+  document.getElementById('certStatus').style.display = 'none';
+  document.getElementById('certResults').innerHTML = '';
+  document.getElementById('certActions').style.display = 'none';
+  lastTranscription = null;
+  if (pendingDocFile) {
+    // Re-scan the same image
+    processDocFile(pendingDocFile);
+  } else {
+    // No file stored, trigger file picker
+    document.getElementById('certFileInput').value = '';
+    document.getElementById('certFileInput').click();
+  }
 });
 
 document.getElementById('certSwapParents').addEventListener('click', () => {
@@ -892,16 +938,21 @@ function showToast(msg, duration) {
 if (!autoRestore()) initDefaultData();
 renderTree();
 document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
-setTimeout(() => {
-  const gavinEl = cardEls.get(2); // Gavin is ID 2
-  if (gavinEl) {
-    // Center Gavin in viewport, show ~5-6 columns to the right
-    const cardCenterX = gavinEl.offsetLeft + gavinEl.offsetWidth / 2;
-    const cardCenterY = gavinEl.offsetTop + gavinEl.offsetHeight / 2;
-    scroll.scrollLeft = Math.max(0, cardCenterX - scroll.clientWidth / (3 * zoom));
-    scroll.scrollTop = Math.max(0, cardCenterY - scroll.clientHeight / (2 * zoom));
-  }
-}, 100);
+
+function centerOnGen0() {
+  // Find Gavin (the root person, ID 1, gen 0)
+  const root = people.find(p => p.gen === 0);
+  if (!root) return;
+  const rootEl = cardEls.get(root.id);
+  if (!rootEl) return;
+  // At 25% zoom, center Gen 0 vertically in viewport, visible on left
+  const cardCenterX = rootEl.offsetLeft + rootEl.offsetWidth / 2;
+  const cardCenterY = rootEl.offsetTop + rootEl.offsetHeight / 2;
+  // Position so Gen 0 is ~1/3 from left edge, vertically centered
+  scroll.scrollLeft = Math.max(0, (cardCenterX * zoom) - scroll.clientWidth * 0.25);
+  scroll.scrollTop = Math.max(0, (cardCenterY * zoom) - scroll.clientHeight / 2);
+}
+setTimeout(() => centerOnGen0(), 150);
 </script>
 </body>
 </html>
