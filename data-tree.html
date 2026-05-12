@@ -705,7 +705,22 @@ const API_URL = 'https://genealogy-api.vercel.app/api/transcribe';
 
 async function sendToTranscriptionAPI(base64) {
   const cs = document.getElementById('certStatus');
-  cs.className = 'cert-status loading'; cs.innerHTML = 'Scanning certificate...<br><small>This can take 30-60 seconds on first scan</small>';
+  
+  // Pre-flight connectivity check
+  cs.className = 'cert-status loading'; 
+  cs.textContent = 'Checking connection...';
+  try {
+    const ping = await fetch('https://genealogy-api.vercel.app/api/test', { method: 'GET', cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    if (!ping.ok) throw new Error('API ping failed: ' + ping.status);
+  } catch (err) {
+    cs.className = 'cert-status error';
+    cs.innerHTML = 'Network error: Cannot reach API server.<br><small>Try: 1) WiFi instead of mobile data, 2) Disable ad blocker/VPN, 3) Retry</small>';
+    certPanel.classList.add('has-results');
+    console.error('[PING FAILED]', err.message);
+    return;
+  }
+  
+  cs.innerHTML = 'Scanning certificate...<br><small>This can take 10-15 seconds</small>';
   document.getElementById('certRetry').style.display = '';  // Reset to default visible in actions bar
   
   // Progress dots to show it's still alive
@@ -713,12 +728,12 @@ async function sendToTranscriptionAPI(base64) {
   const dotTimer = setInterval(() => {
     dotCount = (dotCount + 1) % 4;
     const dots = '.'.repeat(dotCount);
-    cs.innerHTML = 'Scanning certificate' + dots + '<br><small>This can take 30-60 seconds</small>';
+    cs.innerHTML = 'Scanning certificate' + dots + '<br><small>Usually 5-10 seconds</small>';
   }, 2000);
   
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 min timeout
+    const timeoutId = setTimeout(() => controller.abort(), 45000); // 45s timeout
     const resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: base64, certType: selectedCertType }), signal: controller.signal });
     clearTimeout(timeoutId);
     clearInterval(dotTimer);
@@ -737,7 +752,7 @@ async function sendToTranscriptionAPI(base64) {
   } catch (err) {
     clearInterval(dotTimer);
     cs.className = 'cert-status error';
-    let msg = err.name === 'AbortError' ? 'Scan timed out after 3 minutes. Try with a smaller image or WiFi.' : (err.message || 'Could not reach server');
+    let msg = err.name === 'AbortError' ? 'Scan timed out after 45 seconds. Try with WiFi or a smaller image.' : (err.message || 'Could not reach server');
     if (msg.includes('Failed to fetch')) {
       msg = 'Connection failed. Try: 1) WiFi instead of mobile data, 2) Smaller image, 3) Retry in a moment.';
     }
