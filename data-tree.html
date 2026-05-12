@@ -1211,9 +1211,23 @@ document.getElementById('certClear').addEventListener('click', () => {
 });
 
 document.getElementById('certRetry').addEventListener('click', () => {
-  clearCertPanel();
-  document.getElementById('certFileInput').value = '';
-  document.getElementById('certFileInput').click();
+  if (pendingDocFile || pendingDocImage) {
+    // Re-scan the same image without picking again
+    document.getElementById('certStatus').style.display = 'none';
+    document.getElementById('certResults').innerHTML = '';
+    certPanel.classList.remove('has-results');
+    lastTranscription = null;
+    if (pendingDocImage) {
+      sendToTranscriptionAPI(pendingDocImage);
+    } else if (pendingDocFile) {
+      processDocFile(pendingDocFile);
+    }
+  } else {
+    // No image stored, trigger file picker
+    clearCertPanel();
+    document.getElementById('certFileInput').value = '';
+    document.getElementById('certFileInput').click();
+  }
 });
 
 function saveSession() {
