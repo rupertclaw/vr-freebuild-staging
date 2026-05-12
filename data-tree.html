@@ -131,7 +131,6 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   position: relative; font-family: 'Cinzel Decorative', serif;
 }
 .cert-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
-.cert-body { padding: 16px; overflow-y: auto; flex: 1; }
 
 .cert-type-selector { display: flex; gap: 6px; margin-bottom: 12px; }
 .cert-type-btn {
@@ -194,12 +193,12 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   border: 1px solid #ccc; border-radius: 3px;
   font-size: 12px; font-family: 'Cormorant Garamond', serif;
   background: #fff; color: #2a1f10;
-}
+.cert-body { padding: 16px; overflow-y: auto; flex: 1; min-height: 0; }
 
-.cert-actions { flex-wrap: wrap; gap: 8px; padding: 12px 16px;
-  background: #f5eedc; border-top: 2px solid #4a3a22; flex-shrink: 0;
+.cert-actions { display: none; flex-wrap: wrap; gap: 8px; margin-top: 12px;
+  position: sticky; bottom: 0; background: #f5eedc; padding: 12px 0;
+  z-index: 10; border-top: 2px solid #4a3a22;
 }
-.cert-panel:not(.has-results) .cert-actions { display: none; }
 .cert-panel.has-results .cert-actions { display: flex; }
 .cert-actions button {
   flex: 1 1 auto; padding: 10px; border: 2px solid #4a3a22; border-radius: 4px;
@@ -299,11 +298,11 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
     <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
     <div class="cert-status" id="certStatus"></div>
     <div id="certResults"></div>
-  </div>
-  <div class="cert-actions" id="certActions">
-    <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
-    <button class="cert-swap" id="certSwapParents">↔ Swap Parents</button>
-    <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
+    <div class="cert-actions" id="certActions">
+      <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
+      <button class="cert-swap" id="certSwapParents">↔ Swap Parents</button>
+      <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
+    </div>
   </div>
 </div>
 
