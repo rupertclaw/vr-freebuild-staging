@@ -289,7 +289,6 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
     </div>
     <div class="cert-actions" id="certActions">
       <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
-      <button class="cert-swap" id="certSwapParents">↔ Swap Parents</button>
       <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
     </div>
   </div>
@@ -326,6 +325,18 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   <button id="loadBtn">⬆ Load Session</button>
   <button id="resetBtn" style="background:#5c2a2a;color:#f5eedc;">↻ Reset</button>
   <input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
+</div>
+
+<!-- Custom Confirm Dialog -->
+<div id="confirmDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:320px;width:90%;text-align:center;">
+    <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#4a3a22;margin-bottom:12px;">Reset Tree</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;">Clear all data and start fresh? This cannot be undone.</div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="confirmCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
+      <button id="confirmOk" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#5c2a2a;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Reset</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -701,8 +712,6 @@ async function sendToTranscriptionAPI(base64) {
     cs.textContent = '✓ Cert type: ' + (json.data.type || 'unknown').toUpperCase();
     renderTranscriptionResults(json.data);
     certPanel.classList.add('has-results');
-    if (json.data.type === 'marriage') document.getElementById('certSwapParents').style.display = 'block';
-    else document.getElementById('certSwapParents').style.display = 'none';
   } catch (err) {
     clearInterval(dotTimer);
     cs.className = 'cert-status error';
@@ -1071,15 +1080,13 @@ document.getElementById('certRetry').addEventListener('click', () => {
   }
 });
 
-document.getElementById('certSwapParents').addEventListener('click', () => {
+document.getElementById('certConfirm').addEventListener('click', () => {
   if (!lastTranscription) return;
+  syncCertEdits();
   const entries = lastTranscription.entries || [lastTranscription];
   const entry = entries[selectedEntryIndex || 0];
-  if (!entry || !entry.groomFather) return;
-  const tf = entry.groomFather; entry.groomFather = entry.brideFather; entry.brideFather = tf;
-  const tm = entry.groomMother; entry.groomMother = entry.brideMother; entry.brideMother = tm;
-  renderTranscriptionResults(lastTranscription);
-  showToast('Parents swapped — groom↔bride');
+  if (!entry) return;
+  applyCertToPerson(entry, lastTranscription.type || selectedCertType);
 });
 
 function saveSession() {
@@ -1105,10 +1112,15 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
   const file = e.target.files[0]; if (file) loadSession(file); e.target.value = '';
 });
 document.getElementById('resetBtn').addEventListener('click', () => {
-  if (confirm('Clear all data and start fresh?')) {
+  const dlg = document.getElementById('confirmDialog');
+  dlg.style.display = 'flex';
+  document.getElementById('confirmOk').onclick = () => {
     localStorage.removeItem('familytree_data_v4');
     location.reload();
-  }
+  };
+  document.getElementById('confirmCancel').onclick = () => {
+    dlg.style.display = 'none';
+  };
 });
 setInterval(() => { localStorage.setItem('familytree_data_v4', JSON.stringify({people: people, nextId: nextId})); }, 30000);
 function autoRestore() {
