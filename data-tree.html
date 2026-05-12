@@ -706,21 +706,42 @@ const API_URL = 'https://genealogy-api.vercel.app/api/transcribe';
 async function sendToTranscriptionAPI(base64) {
   const cs = document.getElementById('certStatus');
   
-  // Pre-flight connectivity check
+  // Phase 1: GET connectivity check
   cs.className = 'cert-status loading'; 
-  cs.textContent = 'Checking connection...';
+  cs.textContent = 'Checking connection (1/3)...';
   try {
-    const ping = await fetch('https://genealogy-api.vercel.app/api/test', { method: 'GET', cache: 'no-store', signal: AbortSignal.timeout(5000) });
+    const ping = await fetch('https://genealogy-api.vercel.app/api/test', { method: 'GET', cache: 'no-store' });
     if (!ping.ok) throw new Error('API ping failed: ' + ping.status);
   } catch (err) {
     cs.className = 'cert-status error';
-    cs.innerHTML = 'Network error: Cannot reach API server.<br><small>Try: 1) WiFi instead of mobile data, 2) Disable ad blocker/VPN, 3) Retry</small>';
+    cs.innerHTML = 'Network error: Cannot reach API server (GET blocked).<br><small>Try: 1) WiFi instead of mobile data, 2) Disable ad blocker/VPN, 3) Retry</small>';
     certPanel.classList.add('has-results');
-    console.error('[PING FAILED]', err.message);
+    console.error('[PING GET FAILED]', err.message);
     return;
   }
   
-  cs.innerHTML = 'Scanning certificate...<br><small>This can take 10-15 seconds</small>';
+  // Phase 2: POST connectivity check (no image, tiny body)
+  cs.textContent = 'Checking connection (2/3)...';
+  try {
+    const postTest = await fetch('https://genealogy-api.vercel.app/api/test-post', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ test: true })
+    });
+    if (!postTest.ok) throw new Error('API POST test failed: ' + postTest.status);
+    const postJson = await postTest.json();
+    console.log('[POST TEST OK]', postJson);
+  } catch (err) {
+    cs.className = 'cert-status error';
+    cs.innerHTML = 'Network error: POST requests blocked.<br><small>Your network or browser may block uploads. Try: 1) Different WiFi, 2) Chrome/Safari, 3) Disable privacy extensions</small>';
+    certPanel.classList.add('has-results');
+    console.error('[PING POST FAILED]', err.message);
+    return;
+  }
+  
+  // Phase 3: Send actual image
+  const payloadSize = Math.round(base64.length * 0.75 / 1024);
+  cs.innerHTML = 'Scanning certificate...<br><small>Image: ' + payloadSize + 'KB. Usually 5-10s</small>';
   document.getElementById('certRetry').style.display = '';  // Reset to default visible in actions bar
   
   // Progress dots to show it's still alive
@@ -752,12 +773,13 @@ async function sendToTranscriptionAPI(base64) {
   } catch (err) {
     clearInterval(dotTimer);
     cs.className = 'cert-status error';
-    let msg = err.name === 'AbortError' ? 'Scan timed out after 45 seconds. Try with WiFi or a smaller image.' : (err.message || 'Could not reach server');
+    let msg = err.name === 'AbortError' ? 'Scan timed out after 45 seconds.' : (err.message || 'Could not reach server');
     if (msg.includes('Failed to fetch')) {
-      msg = 'Connection failed. Try: 1) WiFi instead of mobile data, 2) Smaller image, 3) Retry in a moment.';
+      msg = 'Connection failed on image upload. Your network may block large uploads.';
     }
-    cs.innerHTML = 'Network error: ' + msg + '<br><small>Tap Retry to try again</small>';
+    cs.innerHTML = 'Network error: ' + msg + '<br><small>Try: 1) Different WiFi network, 2) Use camera instead of gallery, 3) Clear and retry</small>';
     certPanel.classList.add('has-results');
+    console.error('[TRANSCRIBE POST FAILED]', err.name, err.message);
   }
 }
 
