@@ -290,6 +290,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
     <div class="cert-actions" id="certActions">
       <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
       <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
+      <button class="cert-clear" id="certClear" style="background:#e8dcc8;color:#4a3a22;">✕ Clear</button>
     </div>
   </div>
   <div class="cert-body" id="certBody">
@@ -572,6 +573,19 @@ function openDetail(person) {
   detailPanel.classList.add('active');
 }
 function closeDetail() { detailPanel.classList.remove('active'); selectedPersonId = null; }
+function clearCertPanel() {
+  lastTranscription = null;
+  pendingDocFile = null;
+  pendingDocImage = null;
+  document.getElementById('certPreviewImg').src = '';
+  document.getElementById('certPreviewArea').style.display = 'none';
+  document.getElementById('certStatus').style.display = 'none';
+  document.getElementById('certStatus').textContent = '';
+  document.getElementById('certStatus').className = 'cert-status';
+  document.getElementById('certResults').innerHTML = '';
+  document.getElementById('certUploadBtns').style.display = 'flex';
+  certPanel.classList.remove('has-results');
+}
 function saveDetail() {
   if (!selectedPersonId) return;
   const person = people.find(p => p.id === selectedPersonId);
@@ -592,7 +606,11 @@ function saveDetail() {
 document.getElementById('detailClose').addEventListener('click', closeDetail);
 
 const certPanel = document.getElementById('certPanel');
-document.getElementById('certToggle').addEventListener('click', () => certPanel.classList.toggle('active'));
+document.getElementById('certToggle').addEventListener('click', () => {
+  const isOpening = !certPanel.classList.contains('active');
+  certPanel.classList.toggle('active');
+  if (isOpening) clearCertPanel();
+});
 document.getElementById('certClose').addEventListener('click', () => { certPanel.classList.remove('active'); certPanel.classList.remove('has-results'); });
 document.querySelectorAll('.cert-type-btn').forEach(btn => {
   btn.addEventListener('click', () => {
@@ -1083,7 +1101,7 @@ function applyDeathEntry(entry, changed) {
 
 document.getElementById('certConfirm').addEventListener('click', () => {
   if (!lastTranscription) return;
-  syncCertEdits(); // Save any field edits before applying
+  syncCertEdits();
   const entries = lastTranscription.entries || [lastTranscription];
   const entry = entries[selectedEntryIndex || 0];
   if (!entry) return;
@@ -1098,32 +1116,14 @@ document.getElementById('certConfirm').addEventListener('click', () => {
   certPanel.classList.remove('has-results');
 });
 
-document.getElementById('certRetry').addEventListener('click', () => {
-  // Reset upload state for a fresh scan
-  document.getElementById('certStatus').style.display = 'none';
-  document.getElementById('certResults').innerHTML = '';
-  certPanel.classList.remove('has-results');
-  document.getElementById('certPreviewArea').style.display = 'none';
-  document.getElementById('certUploadBtns').style.display = 'flex';
-  lastTranscription = null;
-  if (pendingDocFile) {
-    // Re-scan the same image
-    document.getElementById('certUploadBtns').style.display = 'none';
-    processDocFile(pendingDocFile);
-  } else {
-    // No file stored, trigger file picker
-    document.getElementById('certFileInput').value = '';
-    document.getElementById('certFileInput').click();
-  }
+document.getElementById('certClear').addEventListener('click', () => {
+  clearCertPanel();
 });
 
-document.getElementById('certConfirm').addEventListener('click', () => {
-  if (!lastTranscription) return;
-  syncCertEdits();
-  const entries = lastTranscription.entries || [lastTranscription];
-  const entry = entries[selectedEntryIndex || 0];
-  if (!entry) return;
-  applyCertToPerson(entry, lastTranscription.type || selectedCertType);
+document.getElementById('certRetry').addEventListener('click', () => {
+  clearCertPanel();
+  document.getElementById('certFileInput').value = '';
+  document.getElementById('certFileInput').click();
 });
 
 function saveSession() {
