@@ -842,17 +842,22 @@ function normalizeName(name) {
   return parts[0] + ' ' + parts[parts.length - 1];
 }
 
-function findPerson(name) {
+function findPerson(name, opts) {
+  opts = opts || {};
   if (!name) return null;
   const norm = normalizeName(name);
   let best = null, bestScore = 0;
   for (const p of people) {
     const pNorm = normalizeName(p.name);
     const pFull = normalizeName(p.fullName || '');
+    const pMaiden = normalizeName(p.maidenName || '');
     let score = 0;
     if (pNorm === norm || pFull === norm) score = 100;
     else if ((p.name || '').toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes((p.name || '').toLowerCase())) score = 70;
     else if (pNorm.includes(norm) || norm.includes(pNorm)) score = 50;
+    // Also match by maiden name (for marriage certs where bride is listed by maiden name)
+    if (opts.checkMaiden && pMaiden === norm) score = 90;
+    else if (opts.checkMaiden && pMaiden.includes(norm)) score = 60;
     if (score > bestScore) { bestScore = score; best = p; }
   }
   return bestScore >= 50 ? best : null;
@@ -860,7 +865,7 @@ function findPerson(name) {
 
 function getOrCreateParent(parentName, parentGen, spouseName, changed) {
   if (!parentName) return null;
-  let p = findPerson(parentName);
+  let p = findPerson(parentName) || findPerson(parentName, { checkMaiden: true });
   if (!p) {
     p = createPerson(nextId++, parentGen, parentName, '?', 'probable', {});
     people.push(p); changed.push(p);
@@ -928,7 +933,7 @@ function applyMarriageEntry(entry, changed) {
   const groomName = entry.groom?.name, brideName = entry.bride?.name;
   if (!groomName || !brideName) return;
   let groom = findPerson(groomName);
-  let bride = findPerson(brideName);
+  let bride = findPerson(brideName) || findPerson(brideName, { checkMaiden: true });
   if (!groom) { groom = createPerson(nextId++, 0, groomName, '?', 'probable', {}); people.push(groom); changed.push(groom); }
   if (!bride) { bride = createPerson(nextId++, 0, brideName, '?', 'probable', {}); people.push(bride); changed.push(bride); }
   groom.spouseName = bride.name; bride.spouseName = groom.name;
