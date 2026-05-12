@@ -173,7 +173,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 .cert-result-card {
   background: #fff; border: 2px solid #8a7a5a; border-radius: 6px;
   padding: 12px; margin-bottom: 10px; cursor: pointer;
-  font-family: 'Cormorant Garamond', serif;
+  font-family: 'Cormorant Garamond', serif; overflow: hidden;
 }
 .cert-result-card.selected { border-color: #4a3a22; background: #f0e8d8; }
 .cert-result-card .field-row {
@@ -196,10 +196,11 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   background: #fff; color: #2a1f10;
 }
 
-.cert-actions { display: none; gap: 8px; margin-top: 12px; }
+.cert-actions { display: none; flex-wrap: wrap; gap: 8px; margin-top: 12px; }
 .cert-actions button {
-  flex: 1; padding: 10px; border: 2px solid #4a3a22; border-radius: 4px;
+  flex: 1 1 auto; padding: 10px; border: 2px solid #4a3a22; border-radius: 4px;
   font-family: 'Cinzel Decorative', serif; font-size: 11px; cursor: pointer;
+  min-width: 100px;
 }
 .cert-confirm { background: #4a3a22; color: #f5eedc; }
 .cert-retry { background: #f5eedc; color: #4a3a22; }
@@ -1001,5 +1002,16 @@ function centerOnGen0() {
 }
 setTimeout(() => centerOnGen0(), 150);
 </script>
+<style>
+@media (max-width: 480px) {
+  .cert-panel { width: 100vw; max-width: 100vw; }
+  .cert-field-edit { flex-wrap: wrap; }
+  .cert-field-edit .cert-field-label { min-width: 100%; font-size: 9px; margin-bottom: 2px; }
+  .cert-field-edit input { width: 100%; }
+  .cert-upload-btns button { padding: 12px 6px; font-size: 11px; }
+  .cert-upload-btns button span { font-size: 22px !important; }
+  .cert-actions button { flex: 1 1 100%; }
+}
+</style>
 </body>
 </html>
