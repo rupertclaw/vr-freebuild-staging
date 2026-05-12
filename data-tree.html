@@ -857,7 +857,7 @@ function findPerson(name, opts) {
     else if (pNorm.includes(norm) || norm.includes(pNorm)) score = 50;
     // Also match by maiden name (for marriage certs where bride is listed by maiden name)
     if (opts.checkMaiden && pMaiden === norm) score = 90;
-    else if (opts.checkMaiden && pMaiden.includes(norm)) score = 60;
+    else if (opts.checkMaiden && (pMaiden.includes(norm) || norm.includes(pMaiden))) score = 60;
     if (score > bestScore) { bestScore = score; best = p; }
   }
   return bestScore >= 50 ? best : null;
