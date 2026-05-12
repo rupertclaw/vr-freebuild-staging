@@ -628,7 +628,17 @@ async function processDocFile(file) {
   certPanel.classList.remove('has-results');
 
   let base64;
-  try { base64 = await resizeAndCompressImage(file, 1200, 0.85); }
+  try {
+    base64 = await resizeAndCompressImage(file, 800, 0.7);
+    const sizeMB = (base64.length * 0.75 / 1024 / 1024).toFixed(2);
+    console.log(`[UPLOAD] Compressed image size: ~${sizeMB}MB`);
+    if (base64.length > 2.5 * 1024 * 1024) {
+      console.log('[UPLOAD] Image still large, re-compressing...');
+      base64 = await resizeAndCompressImage(file, 600, 0.55);
+      const sizeMB2 = (base64.length * 0.75 / 1024 / 1024).toFixed(2);
+      console.log(`[UPLOAD] Re-compressed size: ~${sizeMB2}MB`);
+    }
+  }
   catch (compressErr) {
     console.error('[COMPRESS ERROR]', compressErr);
     base64 = await new Promise((res, rej) => { const r = new FileReader(); r.onload = () => res(r.result); r.onerror = rej; r.readAsDataURL(file); });
@@ -675,7 +685,7 @@ async function sendToTranscriptionAPI(base64) {
   
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 120000); // 2 min timeout
+    const timeoutId = setTimeout(() => controller.abort(), 180000); // 3 min timeout
     const resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ image: base64, certType: selectedCertType }), signal: controller.signal });
     clearTimeout(timeoutId);
     clearInterval(dotTimer);
@@ -696,7 +706,10 @@ async function sendToTranscriptionAPI(base64) {
   } catch (err) {
     clearInterval(dotTimer);
     cs.className = 'cert-status error';
-    const msg = err.name === 'AbortError' ? 'Scan timed out after 2 minutes' : (err.message || 'Could not reach server');
+    let msg = err.name === 'AbortError' ? 'Scan timed out after 3 minutes. Try with a smaller image or WiFi.' : (err.message || 'Could not reach server');
+    if (msg.includes('Failed to fetch')) {
+      msg = 'Connection failed. Try: 1) WiFi instead of mobile data, 2) Smaller image, 3) Retry in a moment.';
+    }
     cs.innerHTML = 'Network error: ' + msg + '<br><small>Tap Retry to try again</small>';
     certPanel.classList.add('has-results');
   }
