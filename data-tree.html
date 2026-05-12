@@ -196,9 +196,11 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   background: #fff; color: #2a1f10;
 }
 
-.cert-actions { display: none; flex-wrap: wrap; gap: 8px; padding: 12px 16px;
+.cert-actions { flex-wrap: wrap; gap: 8px; padding: 12px 16px;
   background: #f5eedc; border-top: 2px solid #4a3a22; flex-shrink: 0;
 }
+.cert-panel:not(.has-results) .cert-actions { display: none; }
+.cert-panel.has-results .cert-actions { display: flex; }
 .cert-actions button {
   flex: 1 1 auto; padding: 10px; border: 2px solid #4a3a22; border-radius: 4px;
   font-family: 'Cinzel Decorative', serif; font-size: 11px; cursor: pointer;
@@ -571,7 +573,7 @@ document.getElementById('detailClose').addEventListener('click', closeDetail);
 
 const certPanel = document.getElementById('certPanel');
 document.getElementById('certToggle').addEventListener('click', () => certPanel.classList.toggle('active'));
-document.getElementById('certClose').addEventListener('click', () => certPanel.classList.remove('active'));
+document.getElementById('certClose').addEventListener('click', () => { certPanel.classList.remove('active'); certPanel.classList.remove('has-results'); });
 document.querySelectorAll('.cert-type-btn').forEach(btn => {
   btn.addEventListener('click', () => {
     document.querySelectorAll('.cert-type-btn').forEach(b => b.classList.remove('active'));
@@ -618,7 +620,7 @@ async function processDocFile(file) {
   const cs = document.getElementById('certStatus');
   cs.className = 'cert-status loading'; cs.textContent = 'Preparing image...'; cs.style.display = 'block';
   document.getElementById('certResults').innerHTML = '';
-  document.getElementById('certActions').style.display = 'none';
+  certPanel.classList.remove('has-results');
 
   let base64;
   try { base64 = await resizeAndCompressImage(file, 1200, 0.85); }
@@ -676,14 +678,14 @@ async function sendToTranscriptionAPI(base64) {
     if (!json.success) {
       cs.className = 'cert-status error';
       cs.innerHTML = 'Scan failed: ' + (json.error || json.message || 'Unknown error') + '<br><small>Tap Retry to try again</small>';
-      document.getElementById('certActions').style.display = 'flex';
+      certPanel.classList.add('has-results');
       return;
     }
     lastTranscription = json.data;
     cs.className = 'cert-status success';
     cs.textContent = '✓ Cert type: ' + (json.data.type || 'unknown').toUpperCase();
     renderTranscriptionResults(json.data);
-    document.getElementById('certActions').style.display = 'flex';
+    certPanel.classList.add('has-results');
     if (json.data.type === 'marriage') document.getElementById('certSwapParents').style.display = 'block';
     else document.getElementById('certSwapParents').style.display = 'none';
   } catch (err) {
@@ -691,7 +693,7 @@ async function sendToTranscriptionAPI(base64) {
     cs.className = 'cert-status error';
     const msg = err.name === 'AbortError' ? 'Scan timed out after 2 minutes' : (err.message || 'Could not reach server');
     cs.innerHTML = 'Network error: ' + msg + '<br><small>Tap Retry to try again</small>';
-    document.getElementById('certActions').style.display = 'flex';
+    certPanel.classList.add('has-results');
   }
 }
 
@@ -936,13 +938,14 @@ document.getElementById('certConfirm').addEventListener('click', () => {
   }
   applyCertToPerson(entry, type);
   certPanel.classList.remove('active');
+  certPanel.classList.remove('has-results');
 });
 
 document.getElementById('certRetry').addEventListener('click', () => {
   // Reset upload state for a fresh scan
   document.getElementById('certStatus').style.display = 'none';
   document.getElementById('certResults').innerHTML = '';
-  document.getElementById('certActions').style.display = 'none';
+  certPanel.classList.remove('has-results');
   document.getElementById('certPreviewArea').style.display = 'none';
   document.getElementById('certUploadBtns').style.display = 'flex';
   lastTranscription = null;
