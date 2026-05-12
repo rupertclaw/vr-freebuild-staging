@@ -933,13 +933,32 @@ function applyMarriageEntry(entry, changed) {
   const groomName = entry.groom?.name, brideName = entry.bride?.name;
   if (!groomName || !brideName) return;
   let groom = findPerson(groomName);
-  let bride = findPerson(brideName) || findPerson(brideName, { checkMaiden: true });
+  let bride = findPerson(brideName);
+  let matchedByMaiden = false;
+  if (!bride) { bride = findPerson(brideName, { checkMaiden: true }); matchedByMaiden = !!bride; }
   if (!groom) { groom = createPerson(nextId++, 0, groomName, '?', 'probable', {}); people.push(groom); changed.push(groom); }
   if (!bride) { bride = createPerson(nextId++, 0, brideName, '?', 'probable', {}); people.push(bride); changed.push(bride); }
+  
+  // If bride was found by maiden name, update her display name to married name
+  if (matchedByMaiden) {
+    const groomParts = groomName.trim().split(/\s+/);
+    const groomSurname = groomParts[groomParts.length - 1];
+    const brideParts = bride.name.trim().split(/\s+/);
+    // If bride's current name doesn't already end with groom's surname, update it
+    if (brideParts[brideParts.length - 1].toLowerCase() !== groomSurname.toLowerCase()) {
+      const brideFirstNames = brideParts.slice(0, -1).join(' ') || brideParts[0];
+      const marriedName = brideFirstNames + ' ' + groomSurname;
+      bride.name = marriedName;
+      bride.fullName = marriedName;
+      changed.push(bride);
+    }
+  }
+  
   groom.spouseName = bride.name; bride.spouseName = groom.name;
   if (entry.date) { groom.years = (groom.years === '?' ? '' : groom.years.replace(/\?/g,'')) + ' m. ' + entry.date; }
   groom.docs.push({ type: 'mc' }); bride.docs.push({ type: 'mc' });
   groom.status = 'confirmed'; bride.status = 'confirmed';
+  changed.push(groom); changed.push(bride);
 
   // Use existing parent placeholders if wired
   function updateParents(person, fatherName, motherName, motherMaiden, changed) {
