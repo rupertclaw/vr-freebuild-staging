@@ -1143,13 +1143,20 @@ function applyMarriageEntry(entry, changed) {
   }
 
   // Step 4: Create new people only if not found
+  // Use groom's actual generation (he may be gen 1, 2, etc. in a larger tree)
+  const targetGen = groom ? groom.gen : 0;
   if (!groom) {
-    groom = createPerson(nextId++, 0, groomName, '?', 'probable', {});
+    groom = createPerson(nextId++, targetGen, groomName, '?', 'probable', {});
     people.push(groom); changed.push(groom);
   }
   if (!bride) {
-    bride = createPerson(nextId++, 0, brideName, '?', 'probable', {});
+    bride = createPerson(nextId++, targetGen, brideName, '?', 'probable', {});
     people.push(bride); changed.push(bride);
+  }
+  // If bride exists at wrong gen, move her to match groom
+  if (bride.gen !== targetGen) {
+    bride.gen = targetGen;
+    changed.push(bride);
   }
 
   // Step 5: Wire spouse relationship
