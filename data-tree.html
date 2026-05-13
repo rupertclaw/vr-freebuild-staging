@@ -774,7 +774,7 @@ async function sendToTranscriptionAPI(base64) {
   
   // Phase 3: Send actual image with retries
   const payloadSize = Math.round(base64.length * 0.75 / 1024);
-  cs.innerHTML = 'Scanning certificate...<br><small>Image: ' + payloadSize + 'KB. Usually 5-10s</small>';
+  cs.innerHTML = 'Scanning certificate...<br><small>Image: ' + payloadSize + 'KB. Usually 10-25s</small>';
   document.getElementById('certRetry').style.display = '';
 
   const payload = JSON.stringify({ image: base64, certType: selectedCertType });
