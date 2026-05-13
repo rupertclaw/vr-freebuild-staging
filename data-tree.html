@@ -986,24 +986,167 @@ function normalizeName(name) {
 function findPerson(name, opts) {
   opts = opts || {};
   if (!name) return null;
-  const norm = normalizeName(name);
-  let best = null, bestScore = 0;
-  for (const p of people) {
+  const searchNorm = normalizeName(name);
+  const searchFull = name.toLowerCase().trim();
+  const searchFirst = name.split(/\s+/)[0]?.toLowerCase() || '';
+  const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
+
+  // Extract reference year from options
+  const refYear = opts.refYear || null;
+  const certType = opts.certType || null;
+  const certYear = opts.certYear || null;
+
+  function getBirthYear(p) {
+    const m = (p.years || p.birthDate || '').match(/\d{4}/);
+    return m ? parseInt(m[0]) : null;
+  }
+
+  function getDeathYear(p) {
+    const m = (p.years || p.deathDate || '').match(/\d{4}(?!.*\d{4})/);
+    return m ? parseInt(m[0]) : null;
+  }
+
+  function scorePerson(p) {
     const pNorm = normalizeName(p.name);
     const pFull = normalizeName(p.fullName || '');
     const pMaiden = normalizeName(p.maidenName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+    const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
+
     let score = 0;
-    if (pNorm === norm || pFull === norm) score = 100;
-    else if ((p.name || '').toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes((p.name || '').toLowerCase())) score = 70;
-    else if (pNorm.includes(norm) || norm.includes(pNorm)) score = 50;
-    // Also match by maiden name (for marriage certs where bride is listed by maiden name)
-    // Check if search term's surname matches the person's maiden name
-    const searchSurname = norm.split(/\s+/).pop();
-    if (opts.checkMaiden && pMaiden && (pMaiden === searchSurname || pMaiden === norm)) score = 95;
-    else if (opts.checkMaiden && pMaiden && (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden))) score = 75;
-    if (score > bestScore) { bestScore = score; best = p; }
+
+    // Same person check: normalized first+last match (ignores middle names/initials)
+    if (pNorm === searchNorm || pFull === searchNorm) {
+      score = 100;
+    }
+    // Exact string match
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) {
+      score = 100;
+    }
+    // Full containment
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) {
+      score = 80;
+    }
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) {
+      score = 75;
+    }
+    // Partial normalized match
+    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) {
+      score = 50;
+    }
+
+    // Maiden name matching for marriage certs
+    if (opts.checkMaiden && pMaiden) {
+      if (pMaiden === searchSurname || pMaiden === searchNorm) score = Math.max(score, 95);
+      else if (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden)) score = Math.max(score, 75);
+    }
+
+    return score;
   }
-  return bestScore >= 50 ? best : null;
+
+  // Build candidate list
+  let candidates = [];
+  for (const p of people) {
+    const score = scorePerson(p);
+    if (score > 0) candidates.push({ person: p, score });
+  }
+
+  if (!candidates.length) return null;
+
+  // Filter by impossible year constraints
+  if (certType && certYear && !isNaN(certYear)) {
+    candidates = candidates.filter(({person: p}) => {
+      const by = getBirthYear(p);
+      if (!by) return true; // unfilled passes through
+      if (certType === 'marriage') return by <= certYear - 16; // can't marry before ~16
+      if (certType === 'death') return by < certYear; // can't die before born
+      if (certType === 'birth' && refYear) return Math.abs(by - refYear) < 50;
+      return true;
+    });
+  }
+
+  if (!candidates.length) return null;
+  if (candidates.length === 1) return candidates[0].person;
+
+  // Sort: score desc, then year proximity, then gen proximity, then less data
+  candidates.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    // Year proximity
+    if (refYear) {
+      const aY = getBirthYear(a.person);
+      const bY = getBirthYear(b.person);
+      const aDiff = aY ? Math.abs(aY - refYear) : 9999;
+      const bDiff = bY ? Math.abs(bY - refYear) : 9999;
+      if (aDiff !== bDiff) return aDiff - bDiff;
+    }
+    // Generation proximity
+    if (opts.expectedGen !== undefined) {
+      const aGenDiff = Math.abs(a.person.gen - opts.expectedGen);
+      const bGenDiff = Math.abs(b.person.gen - opts.expectedGen);
+      if (aGenDiff !== bGenDiff) return aGenDiff - bGenDiff;
+    }
+    // Prefer less-filled cards for birth certs
+    if (certType === 'birth') {
+      const aData = (a.person.fullName && a.person.fullName !== a.person.name ? 1 : 0) + (a.person.docs?.length || 0);
+      const bData = (b.person.fullName && b.person.fullName !== b.person.name ? 1 : 0) + (b.person.docs?.length || 0);
+      return aData - bData;
+    }
+    return 0;
+  });
+
+  return candidates[0].person;
+}
+
+function extractYear(str) {
+  if (!str) return null;
+  const m = String(str).match(/(\d{4})/);
+  return m ? parseInt(m[1]) : null;
+}
+
+function findPersonBySurname(name, opts) {
+  opts = opts || {};
+  if (!name) return null;
+  const surname = name.split(/\s+/).pop().toLowerCase();
+  if (!surname) return null;
+
+  let candidates = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank') continue;
+    const pName = (p.name || '').toLowerCase();
+    const pFull = (p.fullName || '').toLowerCase();
+    const pMaiden = (p.maidenName || '').toLowerCase();
+    if (pName.includes(surname) || pFull.includes(surname) || pMaiden.includes(surname)) {
+      candidates.push(p);
+    }
+  }
+
+  // Filter by year constraints
+  if (opts.certType && opts.certYear && !isNaN(opts.certYear)) {
+    candidates = candidates.filter(p => {
+      const by = (p.years || p.birthDate || '').match(/\d{4}/);
+      if (!by) return true;
+      if (opts.certType === 'marriage') return parseInt(by[0]) <= opts.certYear - 16;
+      if (opts.certType === 'death') return parseInt(by[0]) < opts.certYear;
+      if (opts.certType === 'birth' && opts.refYear) return Math.abs(parseInt(by[0]) - opts.refYear) < 50;
+      return true;
+    });
+  }
+
+  if (!candidates.length) return null;
+  if (candidates.length === 1) return candidates[0];
+
+  // Prefer closest to refYear
+  if (opts.refYear) {
+    candidates.sort((a, b) => {
+      const aY = (a.years || a.birthDate || '').match(/\d{4}/);
+      const bY = (b.years || b.birthDate || '').match(/\d{4}/);
+      const aDiff = aY ? Math.abs(parseInt(aY[0]) - opts.refYear) : 9999;
+      const bDiff = bY ? Math.abs(parseInt(bY[0]) - opts.refYear) : 9999;
+      return aDiff - bDiff;
+    });
+  }
+  return candidates[0];
 }
 
 function getOrCreateParent(parentName, parentGen, spouseName, changed) {
@@ -1083,7 +1226,12 @@ function applyMarriageEntry(entry, changed) {
   const groomName = entry.groom?.name, brideName = entry.bride?.name;
   if (!groomName || !brideName) return;
 
-  // Helper: check if candidate is an ancestor of person (parent, grandparent, etc.)
+  // Extract marriage year for age filtering
+  const marriageYear = extractYear(entry.date);
+  const groomBirthYear = marriageYear ? (marriageYear - parseInt(entry.groom?.age || 0)) : null;
+  const brideBirthYear = marriageYear ? (marriageYear - parseInt(entry.bride?.age || 0)) : null;
+
+  // Helper: check if candidate is an ancestor of person
   function isAncestor(candidate, person) {
     if (!candidate || !person || !person.parents) return false;
     for (const parentId of person.parents) {
@@ -1094,10 +1242,9 @@ function applyMarriageEntry(entry, changed) {
     return false;
   }
 
-  // Helper: check if candidate is a descendant of person (child, grandchild, etc.)
+  // Helper: check if candidate is a descendant of person
   function isDescendant(candidate, person) {
     if (!candidate || !person) return false;
-    // Find all people who have 'person' as a parent
     for (const p of people) {
       if (p.parents && p.parents.includes(person.id)) {
         if (p.id === candidate.id) return true;
@@ -1107,29 +1254,22 @@ function applyMarriageEntry(entry, changed) {
     return false;
   }
 
-  // Step 1: Find groom by name
-  let groom = findPerson(groomName);
-
-  // If multiple people share the groom's name, use MC parent context to pick the right one
-  const groomNorm = normalizeName(groomName);
-  const groomCandidates = people.filter(p => normalizeName(p.name) === groomNorm || normalizeName(p.fullName || '') === groomNorm);
-  if (groomCandidates.length > 1 && (entry.groomFather?.name || entry.groomMother?.name)) {
-    for (const c of groomCandidates) {
-      if (!c.parents || c.parents.length < 2) { groom = c; break; }
-      const ef = people.find(p => p.id === c.parents[0]);
-      const em = people.find(p => p.id === c.parents[1]);
-      const fatherHasName = ef && ef.name !== 'Name' && ef.status !== 'blank';
-      const motherHasName = em && em.name !== 'Name' && em.status !== 'blank';
-      const fatherConflict = fatherHasName && entry.groomFather?.name && normalizeName(ef.name) !== normalizeName(entry.groomFather.name);
-      const motherConflict = motherHasName && entry.groomMother?.name && normalizeName(em.name) !== normalizeName(entry.groomMother.name);
-      if (!fatherConflict && !motherConflict) {
-        groom = c;
-        break;
-      }
-    }
+  // STEP 1: Match groom using year-aware scoring
+  let groom = findPerson(groomName, {
+    refYear: groomBirthYear,
+    certType: 'marriage',
+    certYear: marriageYear
+  });
+  // Fallback: find by surname if full name didn't match
+  if (!groom) {
+    groom = findPersonBySurname(groomName, {
+      refYear: groomBirthYear,
+      certType: 'marriage',
+      certYear: marriageYear
+    });
   }
 
-  // Step 2: Find bride — SPOUSE LINK FIRST (definitive)
+  // STEP 2: Match bride — SPOUSE LINK FIRST (definitive)
   let bride = null;
   if (groom && groom.spouseId) {
     const spouse = people.find(p => p.id === groom.spouseId);
@@ -1142,27 +1282,60 @@ function applyMarriageEntry(entry, changed) {
     }
   }
 
-  // Step 3: If no spouse link, fall back to name matching
-  // BUT: never match bride to groom's ancestor or descendant (avoids matching mother as bride)
+  // STEP 3: If no spouse link, fall back to name matching
+  // BUT: never match bride to groom's ancestor or descendant
   if (!bride) {
-    const candidates = [];
-    const byName = findPerson(brideName);
-    if (byName) candidates.push(byName);
-    const byMaiden = findPerson(brideName, { checkMaiden: true });
-    if (byMaiden && !candidates.includes(byMaiden)) candidates.push(byMaiden);
-
-    for (const c of candidates) {
-      if (groom && (isAncestor(c, groom) || isDescendant(c, groom))) {
-        console.log('[MC] Rejected bride candidate', c.name, '- is ancestor/descendant of groom');
-        continue;
-      }
-      bride = c;
-      break;
+    bride = findPerson(brideName, {
+      refYear: brideBirthYear,
+      certType: 'marriage',
+      certYear: marriageYear
+    });
+    if (!bride) {
+      bride = findPerson(brideName, {
+        checkMaiden: true,
+        refYear: brideBirthYear,
+        certType: 'marriage',
+        certYear: marriageYear
+      });
+    }
+    // Reject ancestor/descendant matches
+    if (bride && groom && (isAncestor(bride, groom) || isDescendant(bride, groom))) {
+      console.log('[MC] Rejected bride candidate', bride.name, '- is ancestor/descendant of groom');
+      bride = null;
     }
   }
 
-  // Step 4: Create new people only if not found
-  // Use groom's actual generation (he may be gen 1, 2, etc. in a larger tree)
+  // STEP 4: If still no bride match, try first name only
+  if (!bride && brideName) {
+    const brideFirst = brideName.split(/\s+/)[0];
+    for (const p of people) {
+      if (p.name === 'Name' || p.status === 'blank') continue;
+      if (p.name.split(/\s+/)[0]?.toLowerCase() === brideFirst.toLowerCase()) {
+        if (groom && (isAncestor(p, groom) || isDescendant(p, groom))) continue;
+        // Check year constraint
+        const by = (p.years || p.birthDate || '').match(/\d{4}/);
+        if (by && marriageYear && parseInt(by[0]) > marriageYear - 16) continue;
+        bride = p;
+        break;
+      }
+    }
+  }
+
+  // Sanity check: groom/bride birth year cannot be after marriage year
+  function checkBirthBeforeMarriage(person, age) {
+    if (!person || !marriageYear) return;
+    const by = (person.years || person.birthDate || '').match(/\d{4}/);
+    if (by && parseInt(by[0]) > marriageYear) {
+      // Wrong person — birth after marriage
+      console.log('[MC] Rejecting match: birth year', by[0], 'after marriage year', marriageYear);
+      return false;
+    }
+    return true;
+  }
+  if (groom && !checkBirthBeforeMarriage(groom, entry.groom?.age)) groom = null;
+  if (bride && !checkBirthBeforeMarriage(bride, entry.bride?.age)) bride = null;
+
+  // STEP 5: Create new people only if not found
   const targetGen = groom ? groom.gen : 0;
   if (!groom) {
     groom = createPerson(nextId++, targetGen, groomName, '?', 'probable', {});
@@ -1172,19 +1345,18 @@ function applyMarriageEntry(entry, changed) {
     bride = createPerson(nextId++, targetGen, brideName, '?', 'probable', {});
     people.push(bride); changed.push(bride);
   }
-  // If bride exists at wrong gen, move her to match groom
   if (bride.gen !== targetGen) {
     bride.gen = targetGen;
     changed.push(bride);
   }
 
-  // Step 5: Wire spouse relationship
+  // STEP 6: Wire spouse relationship
   groom.spouseId = bride.id;
   bride.spouseId = groom.id;
   groom.spouseName = bride.name;
   bride.spouseName = groom.name;
 
-  // Step 6: Update bride's display name to married name if matched by maiden
+  // STEP 7: Update bride's display name to married name if matched by maiden
   const groomSurname = groomName.split(/\s+/).pop();
   const brideSurname = bride.name.split(/\s+/).pop();
   if (brideSurname.toLowerCase() !== groomSurname.toLowerCase()) {
@@ -1199,10 +1371,9 @@ function applyMarriageEntry(entry, changed) {
   if (entry.date) { groom.years = (groom.years === '?' ? '' : groom.years.replace(/\?/g,'')) + ' m. ' + entry.date; }
   changed.push(groom); changed.push(bride);
 
-  // Step 7: Update parents using tree structure ONLY — never search by name for parents
+  // STEP 8: Update parents using tree structure ONLY
   function updateParents(person, fatherName, motherName, motherMaiden) {
     if (!person) return;
-    // Ensure person has parent slots — create blanks if missing
     if (!person.parents || person.parents.length < 2) {
       const newFather = createPerson(nextId++, person.gen + 1, 'Name', '?', 'blank', {});
       const newMother = createPerson(nextId++, person.gen + 1, 'Name', '?', 'blank', {});
@@ -1212,7 +1383,6 @@ function applyMarriageEntry(entry, changed) {
     const father = people.find(p => p.id === person.parents[0]);
     const mother = people.find(p => p.id === person.parents[1]);
 
-    // Only fill blanks — never overwrite an existing confirmed name
     if (father && fatherName && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable')) {
       father.name = fatherName; father.fullName = fatherName;
       if (father.status === 'blank') father.status = 'probable';
@@ -1224,7 +1394,6 @@ function applyMarriageEntry(entry, changed) {
       if (motherMaiden) mother.maidenName = motherMaiden;
       changed.push(mother);
     }
-    // Wire spouse relationship between grandparents
     if (father && mother) {
       father.spouseId = mother.id;
       mother.spouseId = father.id;
@@ -1233,10 +1402,7 @@ function applyMarriageEntry(entry, changed) {
     }
   }
 
-  // Groom's parents
   updateParents(groom, entry.groomFather?.name, entry.groomMother?.name, entry.groomMother?.maidenName);
-
-  // Bride's parents
   updateParents(bride, entry.brideFather?.name, entry.brideMother?.name, entry.brideMother?.maidenName);
 
   // Warn if groom's existing confirmed parents don't match MC parents
