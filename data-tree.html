@@ -1110,6 +1110,25 @@ function applyMarriageEntry(entry, changed) {
   // Step 1: Find groom by name
   let groom = findPerson(groomName);
 
+  // If multiple people share the groom's name, use MC parent context to pick the right one
+  const groomNorm = normalizeName(groomName);
+  const groomCandidates = people.filter(p => normalizeName(p.name) === groomNorm || normalizeName(p.fullName || '') === groomNorm);
+  if (groomCandidates.length > 1 && (entry.groomFather?.name || entry.groomMother?.name)) {
+    for (const c of groomCandidates) {
+      if (!c.parents || c.parents.length < 2) { groom = c; break; }
+      const ef = people.find(p => p.id === c.parents[0]);
+      const em = people.find(p => p.id === c.parents[1]);
+      const fatherHasName = ef && ef.name !== 'Name' && ef.status !== 'blank';
+      const motherHasName = em && em.name !== 'Name' && em.status !== 'blank';
+      const fatherConflict = fatherHasName && entry.groomFather?.name && normalizeName(ef.name) !== normalizeName(entry.groomFather.name);
+      const motherConflict = motherHasName && entry.groomMother?.name && normalizeName(em.name) !== normalizeName(entry.groomMother.name);
+      if (!fatherConflict && !motherConflict) {
+        groom = c;
+        break;
+      }
+    }
+  }
+
   // Step 2: Find bride — SPOUSE LINK FIRST (definitive)
   let bride = null;
   if (groom && groom.spouseId) {
