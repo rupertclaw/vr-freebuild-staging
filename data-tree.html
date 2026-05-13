@@ -1223,10 +1223,13 @@ document.getElementById('certClear').addEventListener('click', () => {
 document.getElementById('certRetry').addEventListener('click', () => {
   if (pendingDocFile || pendingDocImage) {
     // Re-scan the same image without picking again
-    document.getElementById('certStatus').style.display = 'none';
     document.getElementById('certResults').innerHTML = '';
     certPanel.classList.remove('has-results');
     lastTranscription = null;
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status loading';
+    cs.innerHTML = 'Scanning certificate...<br><small>Please wait</small>';
+    cs.style.display = 'block';
     if (pendingDocImage) {
       sendToTranscriptionAPI(pendingDocImage);
     } else if (pendingDocFile) {
