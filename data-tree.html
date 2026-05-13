@@ -495,6 +495,16 @@ function renderTree() {
         const midCenter = (fy + fh/2 + my + mh/2) / 2;
         topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
       });
+      // Position any remaining people in this gen without parents in next gen
+      y = 30;
+      gens[g].forEach(p => {
+        if (topMap.has(p.id)) {
+          y = Math.max(y, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
+        } else {
+          topMap.set(p.id, y);
+          y += hMap.get(p.id) + GAP_Y;
+        }
+      });
     }
   }
 
@@ -987,8 +997,10 @@ function findPerson(name, opts) {
     else if ((p.name || '').toLowerCase().includes(name.toLowerCase()) || name.toLowerCase().includes((p.name || '').toLowerCase())) score = 70;
     else if (pNorm.includes(norm) || norm.includes(pNorm)) score = 50;
     // Also match by maiden name (for marriage certs where bride is listed by maiden name)
-    if (opts.checkMaiden && pMaiden === norm) score = 90;
-    else if (opts.checkMaiden && (pMaiden.includes(norm) || norm.includes(pMaiden))) score = 60;
+    // Check if search term's surname matches the person's maiden name
+    const searchSurname = norm.split(/\s+/).pop();
+    if (opts.checkMaiden && pMaiden && (pMaiden === searchSurname || pMaiden === norm)) score = 95;
+    else if (opts.checkMaiden && pMaiden && (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden))) score = 75;
     if (score > bestScore) { bestScore = score; best = p; }
   }
   return bestScore >= 50 ? best : null;
