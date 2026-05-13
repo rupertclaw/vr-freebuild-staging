@@ -1127,7 +1127,14 @@ function applyMarriageEntry(entry, changed) {
 
   // Step 7: Update parents using tree structure ONLY — never search by name for parents
   function updateParents(person, fatherName, motherName, motherMaiden) {
-    if (!person || !person.parents || person.parents.length < 2) return;
+    if (!person) return;
+    // Ensure person has parent slots — create blanks if missing
+    if (!person.parents || person.parents.length < 2) {
+      const newFather = createPerson(nextId++, person.gen + 1, 'Name', '?', 'blank', {});
+      const newMother = createPerson(nextId++, person.gen + 1, 'Name', '?', 'blank', {});
+      people.push(newFather, newMother);
+      person.parents = [newFather.id, newMother.id];
+    }
     const father = people.find(p => p.id === person.parents[0]);
     const mother = people.find(p => p.id === person.parents[1]);
     
@@ -1152,15 +1159,11 @@ function applyMarriageEntry(entry, changed) {
     }
   }
 
-  // Groom's parents → groom.parents[0], groom.parents[1]
-  if (groom.parents && groom.parents.length >= 2) {
-    updateParents(groom, entry.groomFather?.name, entry.groomMother?.name, entry.groomMother?.maidenName);
-  }
+  // Groom's parents
+  updateParents(groom, entry.groomFather?.name, entry.groomMother?.name, entry.groomMother?.maidenName);
   
-  // Bride's parents → bride.parents[0], bride.parents[1]
-  if (bride.parents && bride.parents.length >= 2) {
-    updateParents(bride, entry.brideFather?.name, entry.brideMother?.name, entry.brideMother?.maidenName);
-  }
+  // Bride's parents
+  updateParents(bride, entry.brideFather?.name, entry.brideMother?.name, entry.brideMother?.maidenName);
 }
 
 function applyDeathEntry(entry, changed) {
