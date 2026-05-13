@@ -1082,16 +1082,39 @@ function applyBirthEntry(entry, changed) {
 function applyMarriageEntry(entry, changed) {
   const groomName = entry.groom?.name, brideName = entry.bride?.name;
   if (!groomName || !brideName) return;
-  
+
+  // Helper: check if candidate is an ancestor of person (parent, grandparent, etc.)
+  function isAncestor(candidate, person) {
+    if (!candidate || !person || !person.parents) return false;
+    for (const parentId of person.parents) {
+      if (parentId === candidate.id) return true;
+      const parent = people.find(p => p.id === parentId);
+      if (parent && isAncestor(candidate, parent)) return true;
+    }
+    return false;
+  }
+
+  // Helper: check if candidate is a descendant of person (child, grandchild, etc.)
+  function isDescendant(candidate, person) {
+    if (!candidate || !person) return false;
+    // Find all people who have 'person' as a parent
+    for (const p of people) {
+      if (p.parents && p.parents.includes(person.id)) {
+        if (p.id === candidate.id) return true;
+        if (isDescendant(candidate, p)) return true;
+      }
+    }
+    return false;
+  }
+
   // Step 1: Find groom by name
   let groom = findPerson(groomName);
-  
+
   // Step 2: Find bride — SPOUSE LINK FIRST (definitive)
   let bride = null;
   if (groom && groom.spouseId) {
     const spouse = people.find(p => p.id === groom.spouseId);
     if (spouse) {
-      // Verify first name matches
       const brideFirst = brideName.split(/\s+/)[0]?.toLowerCase();
       const spouseFirst = spouse.name.split(/\s+/)[0]?.toLowerCase();
       if (spouseFirst === brideFirst) {
@@ -1099,13 +1122,26 @@ function applyMarriageEntry(entry, changed) {
       }
     }
   }
-  
+
   // Step 3: If no spouse link, fall back to name matching
+  // BUT: never match bride to groom's ancestor or descendant (avoids matching mother as bride)
   if (!bride) {
-    bride = findPerson(brideName);
-    if (!bride) bride = findPerson(brideName, { checkMaiden: true });
+    const candidates = [];
+    const byName = findPerson(brideName);
+    if (byName) candidates.push(byName);
+    const byMaiden = findPerson(brideName, { checkMaiden: true });
+    if (byMaiden && !candidates.includes(byMaiden)) candidates.push(byMaiden);
+
+    for (const c of candidates) {
+      if (groom && (isAncestor(c, groom) || isDescendant(c, groom))) {
+        console.log('[MC] Rejected bride candidate', c.name, '- is ancestor/descendant of groom');
+        continue;
+      }
+      bride = c;
+      break;
+    }
   }
-  
+
   // Step 4: Create new people only if not found
   if (!groom) {
     groom = createPerson(nextId++, 0, groomName, '?', 'probable', {});
@@ -1115,13 +1151,13 @@ function applyMarriageEntry(entry, changed) {
     bride = createPerson(nextId++, 0, brideName, '?', 'probable', {});
     people.push(bride); changed.push(bride);
   }
-  
+
   // Step 5: Wire spouse relationship
   groom.spouseId = bride.id;
   bride.spouseId = groom.id;
   groom.spouseName = bride.name;
   bride.spouseName = groom.name;
-  
+
   // Step 6: Update bride's display name to married name if matched by maiden
   const groomSurname = groomName.split(/\s+/).pop();
   const brideSurname = bride.name.split(/\s+/).pop();
@@ -1131,7 +1167,7 @@ function applyMarriageEntry(entry, changed) {
     bride.fullName = bride.name;
     changed.push(bride);
   }
-  
+
   groom.status = 'confirmed'; bride.status = 'confirmed';
   groom.docs.push({ type: 'mc' }); bride.docs.push({ type: 'mc' });
   if (entry.date) { groom.years = (groom.years === '?' ? '' : groom.years.replace(/\?/g,'')) + ' m. ' + entry.date; }
@@ -1149,7 +1185,7 @@ function applyMarriageEntry(entry, changed) {
     }
     const father = people.find(p => p.id === person.parents[0]);
     const mother = people.find(p => p.id === person.parents[1]);
-    
+
     // Only fill blanks — never overwrite an existing confirmed name
     if (father && fatherName && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable')) {
       father.name = fatherName; father.fullName = fatherName;
@@ -1173,9 +1209,20 @@ function applyMarriageEntry(entry, changed) {
 
   // Groom's parents
   updateParents(groom, entry.groomFather?.name, entry.groomMother?.name, entry.groomMother?.maidenName);
-  
+
   // Bride's parents
   updateParents(bride, entry.brideFather?.name, entry.brideMother?.name, entry.brideMother?.maidenName);
+
+  // Warn if groom's existing confirmed parents don't match MC parents
+  if (groom.parents && groom.parents.length >= 2 && entry.groomFather?.name) {
+    const existingFather = people.find(p => p.id === groom.parents[0]);
+    const existingMother = people.find(p => p.id === groom.parents[1]);
+    const fatherMismatch = existingFather && existingFather.status === 'confirmed' && normalizeName(existingFather.name) !== normalizeName(entry.groomFather.name);
+    const motherMismatch = existingMother && existingMother.status === 'confirmed' && normalizeName(existingMother.name) !== normalizeName(entry.groomMother?.name || '');
+    if (fatherMismatch || motherMismatch) {
+      setTimeout(() => showToast('Note: MC parents differ from existing tree parents. Check for duplicate names.'), 500);
+    }
+  }
 }
 
 function applyDeathEntry(entry, changed) {
