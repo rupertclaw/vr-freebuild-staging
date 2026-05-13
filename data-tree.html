@@ -802,11 +802,11 @@ async function sendToTranscriptionAPI(base64) {
       const json = await resp.json();
       console.log('[UPLOAD] Attempt', attempt, 'response:', JSON.stringify(json).slice(0, 200));
 
-      // Gemma 4 overloaded — wait and retry instead of falling through
+      // Primary model overloaded — wait and retry instead of falling through
       if (json.error === 'PRIMARY_OVERLOADED' && json.retryable) {
         const waitSec = attempt <= 3 ? 12 : 8;
-        console.log('[UPLOAD] Gemma 4 overloaded, waiting', waitSec, 's before retry');
-        cs.innerHTML = 'Gemma 4 is busy (attempt ' + attempt + '/6).<br><small>Waiting ' + waitSec + 's before retry — privacy-first model gets priority</small>';
+        console.log('[UPLOAD] Primary model overloaded, waiting', waitSec, 's before retry');
+        cs.innerHTML = 'Server is busy (attempt ' + attempt + '/6).<br><small>Waiting ' + waitSec + 's before retry</small>';
         await new Promise(r => setTimeout(r, waitSec * 1000));
         continue; // retry same attempt number (don't increment)
       }
