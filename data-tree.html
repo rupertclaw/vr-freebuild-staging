@@ -13,7 +13,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 /* Header */
 .header {
   position: fixed; top: 0; left: 0; right: 0;
-  min-height: 124px; height: auto;
+  height: auto;
   background: #131820; border-bottom: 2px solid #2a3a50;
   display: flex; flex-direction: column;
   justify-content: space-between;
@@ -631,6 +631,24 @@ function drawLines() {
 }
 scroll.addEventListener('scroll', drawLines);
 window.addEventListener('resize', () => renderTree());
+
+// Sync tree-scroll top to actual header height (handles mobile text wrapping)
+function syncHeaderHeight() {
+  const header = document.querySelector('.header');
+  const treeScroll = document.getElementById('treeScroll');
+  const certPanel = document.getElementById('certPanel');
+  const detailPanel = document.getElementById('detailPanel');
+  if (!header) return;
+  const h = header.offsetHeight;
+  if (treeScroll) treeScroll.style.top = h + 'px';
+  if (certPanel) { certPanel.style.top = h + 'px'; certPanel.style.height = 'calc(100vh - ' + h + 'px)'; }
+  if (detailPanel) { detailPanel.style.top = h + 'px'; detailPanel.style.height = 'calc(100vh - ' + h + 'px)'; }
+}
+window.addEventListener('resize', syncHeaderHeight);
+
+// Call after every renderTree
+const originalRenderTree = renderTree;
+renderTree = function() { originalRenderTree(); syncHeaderHeight(); };
 
 // Zoom controls
 function setZoom(z) {
