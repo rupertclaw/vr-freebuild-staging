@@ -60,6 +60,8 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   margin-top: 4px;
 }
 .header-emblem {
+  position: absolute; right: 14px; top: 50%;
+  transform: translateY(-50%);
   height: 82px; width: auto;
   border-radius: 4px; opacity: 0.92;
   object-fit: cover; flex-shrink: 0;
@@ -330,8 +332,8 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
         <div class="stat-value" id="statWalls">0</div>
       </div>
     </div>
-    <img src="vaulted-roots-shield.jpg" class="header-emblem" alt="Vaulted Roots">
   </div>
+  <img src="vaulted-roots-shield.jpg" class="header-emblem" alt="Vaulted Roots">
   <div class="header-bottom">
     <div class="zoom-controls">
       <button class="header-btn zoom-btn" id="zoomOut" title="Zoom out">−</button>
