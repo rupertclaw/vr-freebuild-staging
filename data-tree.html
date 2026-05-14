@@ -99,7 +99,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 
 .tree-wrap {
   position: relative; min-width: fit-content; min-height: 100%;
-  padding: 55px 30px;
+  padding: 40px 30px;
   transform: scale(var(--zoom, 1));
   transform-origin: top left;
   transition: transform 0.15s ease;
@@ -546,7 +546,7 @@ function renderTree() {
   const topMap = new Map();
   if (gens[maxGen] && gens[maxGen].length > 0) {
     // Position rightmost generation with equal spacing from top
-    let y = 30;
+    let y = 80;
     gens[maxGen].forEach(p => {
       topMap.set(p.id, y);
       y += hMap.get(p.id) + GAP_Y;
@@ -568,7 +568,7 @@ function renderTree() {
         topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
       });
       // Position any remaining people in this gen without parents in next gen
-      y = 30;
+      y = 80;
       gens[g].forEach(p => {
         if (topMap.has(p.id)) {
           y = Math.max(y, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
@@ -580,7 +580,7 @@ function renderTree() {
     }
   }
 
-  cardEls.forEach((el, id) => { el.style.top = (topMap.get(id) || 30) + 'px'; el.style.opacity = '1'; });
+  cardEls.forEach((el, id) => { el.style.top = (topMap.get(id) || 80) + 'px'; el.style.opacity = '1'; });
   treeWidth = colLeft[maxGen] + CARD_W + 40;
   treeHeight = Math.max(scroll.clientHeight, ...people.map(p => (topMap.get(p.id) || 0) + hMap.get(p.id))) + 60;
   wrap.style.width = treeWidth + 'px';
