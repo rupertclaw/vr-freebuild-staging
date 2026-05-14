@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-<title>Roots — Data Tree</title>
+<title>Roots</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
 
@@ -12,22 +12,65 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 
 /* Header */
 .header {
-  position: fixed; top: 0; left: 0; right: 0; height: 50px;
+  position: fixed; top: 0; left: 0; right: 0;
+  min-height: 88px; height: auto;
   background: #2a1f15; border-bottom: 2px solid #4a3a22;
-  display: flex; align-items: center; justify-content: space-between;
-  padding: 0 16px; z-index: 300;
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  padding: 8px 14px; z-index: 300;
 }
-.header h1 { font-family: 'Cinzel Decorative', serif; font-size: 16px; color: #e8dcc8; }
-.header-stats { display: flex; gap: 16px; font-size: 12px; color: #9a8a6a; }
-.header-stats span { color: #e8dcc8; font-weight: 600; }
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.header-brand {
+  display: flex; flex-direction: column;
+}
+.header-logo {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 22px; color: #e8dcc8;
+  line-height: 1.1; letter-spacing: 1px;
+}
+.header-tagline {
+  font-size: 10px; color: #8a7a5a;
+  text-transform: uppercase; letter-spacing: 2px;
+  margin-top: 2px;
+}
+.header-stats {
+  display: flex; gap: 10px; align-items: center;
+}
+.header-stat {
+  display: flex; flex-direction: column; align-items: center;
+  background: rgba(255,248,225,0.08);
+  padding: 4px 10px; border-radius: 6px;
+  min-width: 58px;
+}
+.header-stat .stat-label {
+  font-size: 9px; color: #8a7a5a;
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.header-stat .stat-value {
+  font-size: 15px; color: #e8dcc8;
+  font-weight: 600; font-family: 'Cormorant Garamond', serif;
+}
+.header-bottom {
+  display: flex; align-items: center; justify-content: space-between;
+  padding-top: 6px; border-top: 1px solid rgba(255,248,225,0.08);
+  margin-top: 4px;
+}
 .header-btn {
   width: 32px; height: 32px; background: #3e3225; color: #e8dcc8;
   border: 1px solid #6b5537; border-radius: 6px; font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.cert-btn {
+  width: 38px; height: 32px;
+  background: #4a3a22; border-color: #8a7a5a;
 }
 
 /* Tree scroll area */
 .tree-scroll {
-  position: fixed; top: 50px; left: 0; right: 0; bottom: 0;
+  position: fixed; top: 88px; left: 0; right: 0; bottom: 0;
   overflow: auto; -webkit-overflow-scrolling: touch;
   background: radial-gradient(ellipse at center, #2a1f15 0%, #0c0803 100%);
 }
@@ -118,7 +161,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 
 /* Cert panel */
 .cert-panel {
-  display: none; position: fixed; top: 50px; right: 0; bottom: 0;
+  display: none; position: fixed; top: 88px; right: 0; bottom: 0;
   width: 380px; max-width: 95vw;
   background: #f5eedc; z-index: 400;
   border-left: 3px solid #4a3a22;
@@ -214,8 +257,8 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 
 /* Detail panel */
 .detail-panel {
-  display: none; position: fixed; top: 50px; right: 0;
-  width: 360px; max-width: 90vw; height: calc(100vh - 50px);
+  display: none; position: fixed; top: 88px; right: 0;
+  width: 360px; max-width: 90vw; height: calc(100vh - 88px);
   background: #f5eedc; z-index: 400; overflow-y: auto;
   border-left: 3px solid #4a3a22;
 }
@@ -257,19 +300,35 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 <body>
 
 <div class="header">
-  <h1>Roots — Data Tree</h1>
-  <div class="header-stats">
-    <div>People: <span id="statPeople">0</span></div>
-    <div>Confirmed: <span id="statConfirmed">0</span></div>
-    <div>Walls: <span id="statWalls">0</span></div>
+  <div class="header-top">
+    <div class="header-brand">
+      <div class="header-logo">Roots</div>
+      <div class="header-tagline">Your Family Tree</div>
+    </div>
+    <div class="header-stats">
+      <div class="header-stat">
+        <div class="stat-label">Nodes</div>
+        <div class="stat-value" id="statPeople">0</div>
+      </div>
+      <div class="header-stat">
+        <div class="stat-label">Documented</div>
+        <div class="stat-value" id="statConfirmed">0</div>
+      </div>
+      <div class="header-stat">
+        <div class="stat-label">Brick Walls</div>
+        <div class="stat-value" id="statWalls">0</div>
+      </div>
+    </div>
   </div>
-  <div class="zoom-controls">
-    <button class="header-btn zoom-btn" id="zoomOut" title="Zoom out">−</button>
-    <span id="zoomLevel">100%</span>
-    <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
-    <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom">⟲</button>
+  <div class="header-bottom">
+    <div class="zoom-controls">
+      <button class="header-btn zoom-btn" id="zoomOut" title="Zoom out">−</button>
+      <span id="zoomLevel">100%</span>
+      <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
+      <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom">⟲</button>
+    </div>
+    <button class="header-btn cert-btn" id="certToggle" title="Upload certificate">📎</button>
   </div>
-  <button class="header-btn" id="certToggle">📎</button>
 </div>
 
 <div class="tree-scroll" id="treeScroll">
