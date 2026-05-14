@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
-<title>Roots</title>
+<title>Vaulted Roots</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
 
@@ -28,35 +28,45 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 }
 .header-logo {
   font-family: 'Cinzel Decorative', serif;
-  font-size: 22px; color: #e8dcc8;
+  font-size: 20px; color: #e0f8ff;
   line-height: 1.1; letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(0, 212, 255, 0.35), 0 0 20px rgba(0, 212, 255, 0.12);
 }
 .header-tagline {
-  font-size: 10px; color: #8a7a5a;
-  text-transform: uppercase; letter-spacing: 2px;
-  margin-top: 2px;
+  font-size: 10px; color: #80c8e0;
+  letter-spacing: 2px; margin-top: 3px;
 }
 .header-stats {
   display: flex; gap: 10px; align-items: center;
 }
 .header-stat {
   display: flex; flex-direction: column; align-items: center;
-  background: rgba(255,248,225,0.08);
+  background: rgba(0, 212, 255, 0.06);
+  border: 1px solid rgba(0, 212, 255, 0.12);
   padding: 4px 10px; border-radius: 6px;
   min-width: 58px;
 }
 .header-stat .stat-label {
-  font-size: 9px; color: #8a7a5a;
+  font-size: 9px; color: #7a9aaa;
   text-transform: uppercase; letter-spacing: 1px;
 }
 .header-stat .stat-value {
-  font-size: 15px; color: #e8dcc8;
+  font-size: 15px; color: #5dd4ff;
   font-weight: 600; font-family: 'Cormorant Garamond', serif;
 }
 .header-bottom {
   display: flex; align-items: center; justify-content: space-between;
   padding-top: 6px; border-top: 1px solid rgba(255,248,225,0.08);
   margin-top: 4px;
+}
+.header-emblem {
+  height: 48px; width: auto;
+  border-radius: 4px; opacity: 0.92;
+  object-fit: cover; flex-shrink: 0;
+  box-shadow: 0 0 8px rgba(0, 212, 255, 0.25);
+}
+@media (max-width: 480px) {
+  .header-emblem { display: none; }
 }
 .header-btn {
   width: 32px; height: 32px; background: #3e3225; color: #e8dcc8;
@@ -302,8 +312,8 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 <div class="header">
   <div class="header-top">
     <div class="header-brand">
-      <div class="header-logo">Roots</div>
-      <div class="header-tagline">Your Family Tree</div>
+      <div class="header-logo">Vaulted Roots</div>
+      <div class="header-tagline">Your legacy. Secure.</div>
     </div>
     <div class="header-stats">
       <div class="header-stat">
@@ -319,6 +329,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
         <div class="stat-value" id="statWalls">0</div>
       </div>
     </div>
+    <img src="vaulted-roots-emblem.jpg" class="header-emblem" alt="Vaulted Roots">
   </div>
   <div class="header-bottom">
     <div class="zoom-controls">
