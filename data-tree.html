@@ -74,6 +74,13 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   border: 1px solid #3a5a7a; border-radius: 6px; font-size: 20px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
+.country-select {
+  background: #1e2a3a; color: #a8c8e8;
+  border: 1px solid #3a5a7a; border-radius: 6px;
+  padding: 6px 8px; font-family: 'Cormorant Garamond', serif; font-size: 13px;
+  cursor: pointer; min-width: 110px;
+}
+.country-select option { background: #1e2a3a; color: #a8c8e8; }
 .cert-btn {
   width: 44px; height: 38px;
   background: #2a3a50; border-color: #4a6a8a;
@@ -341,7 +348,12 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
       <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
       <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom">⟲</button>
     </div>
-    <button class="header-btn cert-btn" id="certToggle" title="Upload certificate">📎</button>
+    <div style="display:flex;align-items:center;gap:6px;">
+      <select id="countrySelect" class="country-select" title="Research country">
+        <option value="" disabled>Country...</option>
+      </select>
+      <button class="header-btn cert-btn" id="certToggle" title="Upload certificate">📎</button>
+    </div>
   </div>
 </div>
 
@@ -417,6 +429,18 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   </div>
 </div>
 
+<!-- Country Selector Modal (first use) -->
+<div id="countryModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10001;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:340px;width:90%;text-align:center;">
+    <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#2a3a50;margin-bottom:8px;">Welcome to Vaulted Roots</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:16px;">Which country are you researching in? This helps us point you to the right record offices.</div>
+    <select id="countryModalSelect" style="width:100%;padding:10px;border:2px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:16px;">
+      <option value="" disabled selected>Choose a country...</option>
+    </select>
+    <button id="countryModalOk" style="padding:10px 24px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;">Start Researching</button>
+  </div>
+</div>
+
 <script>
 // ═══════════════════════════════════════════════════════════════
 // DEBUG LOG CAPTURE (for mobile troubleshooting)
@@ -438,6 +462,93 @@ window.onerror = function(msg, url, line, col, err) {
 };
 function getDebugLogs() {
   return debugLogs.slice(-20).map(l => l.time + ' [' + l.t + '] ' + l.m).join('\n');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COUNTRY RESEARCH SOURCES
+// ═══════════════════════════════════════════════════════════════
+const COUNTRY_SOURCES = {
+  scotland: { name: 'Scotland',
+    birth: 'https://www.scotlandspeople.gov.uk/record-results?search_type=people&event=%28B%20OR%20C%20OR%20S%29&record_type%5B0%5D=opr_births&record_type%5B1%5D=stat_births&record_type%5B2%5D=catholic_births&church_type=All%20Churches&dl=1',
+    marriage: 'https://www.scotlandspeople.gov.uk/record-results?search_type=people&event=%28M%29&record_type%5B0%5D=opr_marriages&record_type%5B1%5D=stat_marriages&church_type=All%20Churches&dl=1',
+    death: 'https://www.scotlandspeople.gov.uk/record-results?search_type=people&event=%28D%29&record_type%5B0%5D=opr_deaths&record_type%5B1%5D=stat_deaths&church_type=All%20Churches&dl=1' },
+  england: { name: 'England & Wales',
+    birth: 'https://www.gro.gov.uk/gro/content/certificates/indexes_search.asp',
+    marriage: 'https://www.gro.gov.uk/gro/content/certificates/indexes_search.asp',
+    death: 'https://www.gro.gov.uk/gro/content/certificates/indexes_search.asp' },
+  ireland: { name: 'Ireland',
+    birth: 'https://civilrecords.irishgenealogy.ie/churchrecords/civil-search',
+    marriage: 'https://civilrecords.irishgenealogy.ie/churchrecords/civil-search',
+    death: 'https://civilrecords.irishgenealogy.ie/churchrecords/civil-search' },
+  northern_ireland: { name: 'Northern Ireland',
+    birth: 'https://www.nidirect.gov.uk/information-and-services/order-life-event-certificates',
+    marriage: 'https://www.nidirect.gov.uk/information-and-services/order-life-event-certificates',
+    death: 'https://www.nidirect.gov.uk/information-and-services/order-life-event-certificates' },
+  usa: { name: 'United States',
+    birth: 'https://www.archives.gov/research/genealogy',
+    marriage: 'https://www.archives.gov/research/genealogy',
+    death: 'https://www.archives.gov/research/genealogy' },
+  canada: { name: 'Canada',
+    birth: 'https://www.bac-lac.gc.ca/eng/discover/genealogy/Pages/genealogy.aspx',
+    marriage: 'https://www.bac-lac.gc.ca/eng/discover/genealogy/Pages/genealogy.aspx',
+    death: 'https://www.bac-lac.gc.ca/eng/discover/genealogy/Pages/genealogy.aspx' },
+  australia: { name: 'Australia',
+    birth: 'https://www.naa.gov.au/explore-collection/family-history',
+    marriage: 'https://www.naa.gov.au/explore-collection/family-history',
+    death: 'https://www.naa.gov.au/explore-collection/family-history' },
+  new_zealand: { name: 'New Zealand',
+    birth: 'https://www.bdmhistoricalrecords.dia.govt.nz/',
+    marriage: 'https://www.bdmhistoricalrecords.dia.govt.nz/',
+    death: 'https://www.bdmhistoricalrecords.dia.govt.nz/' },
+  germany: { name: 'Germany',
+    birth: 'https://www.familysearch.org/en/wiki/Germany_Civil_Registration',
+    marriage: 'https://www.familysearch.org/en/wiki/Germany_Civil_Registration',
+    death: 'https://www.familysearch.org/en/wiki/Germany_Civil_Registration' },
+  france: { name: 'France',
+    birth: 'https://www.familysearch.org/en/wiki/France_Civil_Registration',
+    marriage: 'https://www.familysearch.org/en/wiki/France_Civil_Registration',
+    death: 'https://www.familysearch.org/en/wiki/France_Civil_Registration' },
+  italy: { name: 'Italy',
+    birth: 'https://www.familysearch.org/en/wiki/Italy_Civil_Registration',
+    marriage: 'https://www.familysearch.org/en/wiki/Italy_Civil_Registration',
+    death: 'https://www.familysearch.org/en/wiki/Italy_Civil_Registration' },
+  other: { name: 'Other / Not Listed',
+    birth: '', marriage: '', death: '' }
+};
+
+function getCountry() { return localStorage.getItem('vaulted_country') || ''; }
+function setCountry(code) {
+  if (!code) return;
+  localStorage.setItem('vaulted_country', code);
+  const sel = document.getElementById('countrySelect');
+  if (sel) sel.value = code;
+  showToast('Research country: ' + (COUNTRY_SOURCES[code]?.name || code));
+}
+function populateCountrySelect() {
+  const sel = document.getElementById('countrySelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="" disabled>Country...</option>';
+  Object.entries(COUNTRY_SOURCES).forEach(([code, info]) => {
+    const opt = document.createElement('option');
+    opt.value = code; opt.textContent = info.name;
+    sel.appendChild(opt);
+  });
+  const saved = getCountry();
+  if (saved && COUNTRY_SOURCES[saved]) sel.value = saved;
+}
+function getSourceLinks(certType) {
+  const code = getCountry();
+  if (!code || !COUNTRY_SOURCES[code]) return null;
+  const src = COUNTRY_SOURCES[code];
+  const url = src[certType] || src.birth || '';
+  if (!url) return null;
+  return { name: src.name, url };
+}
+function buildSourceButtons(certType) {
+  const links = getSourceLinks(certType);
+  if (!links) return '';
+  return `<a href="${links.url}" target="_blank" rel="noopener" class="source-btn" style="display:inline-block;padding:8px 12px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:11px;text-decoration:none;margin-top:8px;">🔍 Search ${links.name}
+  </a>`;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -692,6 +803,13 @@ function openDetail(person) {
     <div class="detail-field"><label>Documents (${person.docs.length})</label>
       <div style="font-size:12px;color:#6b5537;">${person.docs.length ? person.docs.map(d => `<div style="padding:4px 0;border-bottom:1px solid #e8dcc8;">${(d.type || 'doc').toUpperCase()}: ${d.date || 'no date'}</div>`).join('') : '<em>No documents</em>'}</div>
     </div>
+    <div class="detail-field"><label>Find Source Records</label>
+      <div style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${buildSourceButtons('birth')}
+        ${buildSourceButtons('marriage')}
+        ${buildSourceButtons('death')}
+      </div>
+    </div>
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
       <button class="save-btn" onclick="saveDetail()">Save Changes</button>
@@ -878,7 +996,7 @@ async function sendToTranscriptionAPI(base64) {
   cs.innerHTML = 'Scanning certificate...<br><small>Image: ' + payloadSize + 'KB. Usually 10-25s</small>';
   document.getElementById('certRetry').style.display = '';
 
-  const payload = JSON.stringify({ image: base64, certType: selectedCertType });
+  const payload = JSON.stringify({ image: base64, certType: selectedCertType, country: getCountry() });
   console.log('[UPLOAD] certType:', selectedCertType, '| Payload:', Math.round(payload.length / 1024), 'KB | URL:', API_URL);
 
   let lastErr = null;
@@ -1650,6 +1768,32 @@ function showToast(msg, duration) {
 if (!autoRestore()) initDefaultData();
 renderTree();
 document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+
+// Country init
+populateCountrySelect();
+document.getElementById('countrySelect').addEventListener('change', (e) => {
+  setCountry(e.target.value);
+});
+function showCountryModal() {
+  const modal = document.getElementById('countryModal');
+  const modalSel = document.getElementById('countryModalSelect');
+  modalSel.innerHTML = '<option value="" disabled selected>Choose a country...</option>';
+  Object.entries(COUNTRY_SOURCES).forEach(([code, info]) => {
+    const opt = document.createElement('option');
+    opt.value = code; opt.textContent = info.name;
+    modalSel.appendChild(opt);
+  });
+  modal.style.display = 'flex';
+}
+document.getElementById('countryModalOk').addEventListener('click', () => {
+  const val = document.getElementById('countryModalSelect').value;
+  if (!val) return;
+  setCountry(val);
+  document.getElementById('countryModal').style.display = 'none';
+});
+if (!getCountry()) {
+  setTimeout(() => showCountryModal(), 800);
+}
 
 function centerOnGen0() {
   // Find Gavin (the root person, ID 1, gen 0)
