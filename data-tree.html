@@ -182,7 +182,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 .cert-panel {
   display: none; position: fixed; top: 124px; right: 0;
   width: 380px; max-width: 95vw; height: calc(100vh - 124px);
-  background: #f5eedc; z-index: 400;
+  background: #f5eedc; z-index: 400; overflow-y: auto;
   border-left: 3px solid #4a3a22;
 }
 .cert-panel.active { display: block; animation: slideIn 0.25s ease; }
@@ -382,7 +382,6 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
     </div>
   </div>
   <div class="cert-body" id="certBody">
-    <div id="certScrollInner" style="overflow-y:auto;-webkit-overflow-scrolling:touch;max-height:calc(100vh - 124px - 140px);">
     <div class="cert-upload-btns" id="certUploadBtns">
       <button class="camera-btn" id="certCameraBtn"><span>📷</span>Camera</button>
       <button class="file-btn" id="certFileBtn"><span>📁</span>Choose File</button>
@@ -397,7 +396,6 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
     <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
     <div class="cert-status" id="certStatus"></div>
     <div id="certResults"></div>
-    </div>
   </div>
 </div>
 
