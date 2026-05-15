@@ -888,17 +888,17 @@ async function processDocFile(file) {
 
   let base64;
   try {
-    base64 = await resizeAndCompressImage(file, 600, 0.5);
+    base64 = await resizeAndCompressImage(file, 1200, 0.85);
     const sizeKB = Math.round(base64.length * 0.75 / 1024);
     console.log(`[UPLOAD] Compressed image size: ~${sizeKB}KB`);
-    if (sizeKB > 300) {
+    if (sizeKB > 500) {
       console.log('[UPLOAD] Image still large, re-compressing smaller...');
-      base64 = await resizeAndCompressImage(file, 400, 0.45);
+      base64 = await resizeAndCompressImage(file, 800, 0.75);
       const sizeKB2 = Math.round(base64.length * 0.75 / 1024);
       console.log(`[UPLOAD] Re-compressed size: ~${sizeKB2}KB`);
     }
     const finalKB = Math.round(base64.length * 0.75 / 1024);
-    if (finalKB > 500) {
+    if (finalKB > 800) {
       throw new Error('Image too large after compression (' + finalKB + 'KB). Try cropping or a clearer photo.');
     }
   }
