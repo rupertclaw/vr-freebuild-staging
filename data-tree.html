@@ -1668,7 +1668,9 @@ setTimeout(() => centerOnGen0(), 150);
 </script>
 <style>
 @media (max-width: 480px) {
-  .cert-panel { width: 100vw; max-width: 100vw; }
+  .cert-panel { width: 100vw; max-width: 100vw; overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .cert-panel.active { display: block; }
+  .cert-body { overflow-y: visible; flex: none; }
   .cert-field-edit { flex-wrap: wrap; }
   .cert-field-edit .cert-field-label { min-width: 100%; font-size: 9px; margin-bottom: 2px; }
   .cert-field-edit input { width: 100%; }
