@@ -180,16 +180,13 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 
 /* Cert panel */
 .cert-panel {
-  display: none; position: fixed; top: 124px; right: 0; bottom: 0;
-  width: 380px; max-width: 95vw;
-  background: #f5eedc; z-index: 400;
+  display: none; position: fixed; top: 124px; right: 0;
+  width: 380px; max-width: 95vw; height: calc(100vh - 124px);
+  background: #f5eedc; z-index: 400; overflow-y: auto;
   border-left: 3px solid #4a3a22;
-  overflow-y: auto;
-  -webkit-overflow-scrolling: touch;
-  -webkit-transform: translateZ(0);
-  transform: translateZ(0);
 }
-.cert-panel.active { display: block; }
+.cert-panel.active { display: block; animation: slideIn 0.25s ease; }
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
 
 .cert-header {
   background: #2a1f15; color: #e8dcc8; padding: 14px 16px;
