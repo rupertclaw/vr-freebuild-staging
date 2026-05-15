@@ -196,14 +196,6 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 }
 .cert-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
 
-.cert-type-selector { display: flex; gap: 6px; margin-bottom: 12px; }
-.cert-type-btn {
-  flex: 1; padding: 8px; border: 2px solid #8a7a5a; background: #f5eedc;
-  border-radius: 4px; font-family: 'Cinzel Decorative', serif; font-size: 11px;
-  color: #4a3a22; cursor: pointer;
-}
-.cert-type-btn.active { background: #4a3a22; color: #f5eedc; border-color: #4a3a22; }
-
 .cert-upload-area {
   border: 2px dashed #8a7a5a; border-radius: 8px;
   padding: 20px; text-align: center; cursor: pointer;
@@ -372,11 +364,6 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
     <div style="font-size:14px;">📎 Upload Certificate</div>
   </div>
   <div class="cert-toolbar">
-    <div class="cert-type-selector">
-      <button class="cert-type-btn active" data-type="birth">Birth</button>
-      <button class="cert-type-btn" data-type="marriage">Marriage</button>
-      <button class="cert-type-btn" data-type="death">Death</button>
-    </div>
     <div class="cert-actions" id="certActions">
       <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
       <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
@@ -583,7 +570,6 @@ function createPerson(id, gen, name, years, status, opts) {
 
 let people = [];
 let nextId = 1;
-let selectedCertType = 'birth';
 let pendingDocFile = null;
 let pendingDocImage = null;
 let lastTranscription = null;
@@ -858,12 +844,6 @@ document.getElementById('certToggle').addEventListener('click', () => {
   if (isOpening) clearCertPanel();
 });
 document.getElementById('certClose').addEventListener('click', () => { certPanel.classList.remove('active'); certPanel.classList.remove('has-results'); });
-document.querySelectorAll('.cert-type-btn').forEach(btn => {
-  btn.addEventListener('click', () => {
-    document.querySelectorAll('.cert-type-btn').forEach(b => b.classList.remove('active'));
-    btn.classList.add('active'); selectedCertType = btn.dataset.type;
-  });
-});
 document.getElementById('certUploadArea').addEventListener('click', () => document.getElementById('certFileInput').click());
 document.getElementById('certFileBtn').addEventListener('click', () => document.getElementById('certFileInput').click());
 document.getElementById('certCameraBtn').addEventListener('click', () => document.getElementById('certCameraInput').click());
@@ -997,8 +977,8 @@ async function sendToTranscriptionAPI(base64) {
   cs.innerHTML = 'Scanning certificate...<br><small>Image: ' + payloadSize + 'KB. Usually 10-25s</small>';
   document.getElementById('certRetry').style.display = '';
 
-  const payload = JSON.stringify({ image: base64, certType: selectedCertType, country: getCountry() });
-  console.log('[UPLOAD] certType:', selectedCertType, '| Payload:', Math.round(payload.length / 1024), 'KB | URL:', API_URL);
+  const payload = JSON.stringify({ image: base64, country: getCountry() });
+  console.log('[UPLOAD] Payload:', Math.round(payload.length / 1024), 'KB | URL:', API_URL);
 
   let lastErr = null;
   for (let attempt = 1; attempt <= 6; attempt++) {
