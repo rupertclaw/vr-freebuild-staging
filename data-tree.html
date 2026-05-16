@@ -767,6 +767,7 @@ const detailTitle = document.getElementById('detailTitle');
 
 function openDetail(person) {
   selectedPersonId = person.id;
+  history.pushState({panel: 'detail'}, '');
   detailTitle.textContent = person.name;
   detailBody.innerHTML = `
     <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${person.fullName || person.name}"></div>
@@ -804,7 +805,13 @@ function openDetail(person) {
   `;
   detailPanel.classList.add('active');
 }
-function closeDetail() { detailPanel.classList.remove('active'); selectedPersonId = null; }
+function closeDetail() {
+  if (detailPanel.classList.contains('active')) {
+    history.back();
+  }
+  detailPanel.classList.remove('active');
+  selectedPersonId = null;
+}
 function clearCertPanel() {
   lastTranscription = null;
   pendingDocFile = null;
@@ -841,9 +848,20 @@ const certPanel = document.getElementById('certPanel');
 document.getElementById('certToggle').addEventListener('click', () => {
   const isOpening = !certPanel.classList.contains('active');
   certPanel.classList.toggle('active');
-  if (isOpening) clearCertPanel();
+  if (isOpening) {
+    clearCertPanel();
+    history.pushState({panel: 'cert'}, '');
+  } else {
+    if (certPanel.classList.contains('active')) {
+      /* just closed via toggle, no history action needed */
+    }
+  }
 });
-document.getElementById('certClose').addEventListener('click', () => { certPanel.classList.remove('active'); certPanel.classList.remove('has-results'); });
+document.getElementById('certClose').addEventListener('click', () => {
+  certPanel.classList.remove('active');
+  certPanel.classList.remove('has-results');
+  history.back();
+});
 document.getElementById('certUploadArea').addEventListener('click', () => document.getElementById('certFileInput').click());
 document.getElementById('certFileBtn').addEventListener('click', () => document.getElementById('certFileInput').click());
 document.getElementById('certCameraBtn').addEventListener('click', () => document.getElementById('certCameraInput').click());
@@ -1173,9 +1191,18 @@ function normalizeName(name) {
   return parts[0] + ' ' + parts[parts.length - 1];
 }
 
+function isEffectivelyBlank(name) {
+  if (!name) return true;
+  const n = name.toLowerCase().trim();
+  if (!n || n === 'name' || n === 'unknown' || n === '?' || n === '??' || n === '...') return true;
+  if (n === 'father unknown' || n === 'mother unknown' || n === 'father' || n === 'mother') return true;
+  if (/^\?+$/.test(n)) return true;
+  return false;
+}
+
 function findPerson(name, opts) {
   opts = opts || {};
-  if (!name) return null;
+  if (!name || isEffectivelyBlank(name)) return null;
   const searchNorm = normalizeName(name);
   const searchFull = name.toLowerCase().trim();
   const searchFirst = name.split(/\s+/)[0]?.toLowerCase() || '';
@@ -1296,13 +1323,13 @@ function extractYear(str) {
 
 function findPersonBySurname(name, opts) {
   opts = opts || {};
-  if (!name) return null;
+  if (!name || isEffectivelyBlank(name)) return null;
   const surname = name.split(/\s+/).pop().toLowerCase();
   if (!surname) return null;
 
   let candidates = [];
   for (const p of people) {
-    if (p.name === 'Name' || p.status === 'blank') continue;
+    if (p.name === 'Name' || p.status === 'blank' || isEffectivelyBlank(p.name)) continue;
     const pName = (p.name || '').toLowerCase();
     const pFull = (p.fullName || '').toLowerCase();
     const pMaiden = (p.maidenName || '').toLowerCase();
@@ -1340,7 +1367,7 @@ function findPersonBySurname(name, opts) {
 }
 
 function getOrCreateParent(parentName, parentGen, spouseName, changed) {
-  if (!parentName) return null;
+  if (!parentName || isEffectivelyBlank(parentName)) return null;
   let p = findPerson(parentName) || findPerson(parentName, { checkMaiden: true });
   if (!p) {
     p = createPerson(nextId++, parentGen, parentName, '?', 'probable', {});
@@ -1749,6 +1776,19 @@ function showToast(msg, duration) {
 if (!autoRestore()) initDefaultData();
 renderTree();
 document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+
+// Mobile back button closes panels
+window.addEventListener('popstate', (e) => {
+  if (!e.state || !e.state.panel) return;
+  if (e.state.panel === 'detail' && detailPanel.classList.contains('active')) {
+    detailPanel.classList.remove('active');
+    selectedPersonId = null;
+  }
+  if (e.state.panel === 'cert' && certPanel.classList.contains('active')) {
+    certPanel.classList.remove('active');
+    certPanel.classList.remove('has-results');
+  }
+});
 
 // Country init
 populateCountrySelect();
