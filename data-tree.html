@@ -575,6 +575,60 @@ let pendingDocImage = null;
 let lastTranscription = null;
 let selectedEntryIndex = 0;
 
+// ========== IndexedDB Document Storage ==========
+const DOC_DB_NAME = 'VRTDocs';
+const DOC_DB_VERSION = 1;
+const DOC_STORE_NAME = 'documents';
+let _docDB = null;
+
+function openDocDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DOC_DB_NAME, DOC_DB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { _docDB = req.result; resolve(_docDB); };
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(DOC_STORE_NAME)) {
+        const store = d.createObjectStore(DOC_STORE_NAME, { keyPath: 'id' });
+        store.createIndex('personId', 'personId', { unique: false });
+      }
+    };
+  });
+}
+async function saveDocToDB(personId, type, base64Image, meta) {
+  if (!_docDB) await openDocDB();
+  const id = personId + '_' + type + '_' + Date.now();
+  const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
+  const store = tx.objectStore(DOC_STORE_NAME);
+  await new Promise((resolve, reject) => {
+    const req = store.put({ id, personId, type, image: base64Image, meta: meta || {}, created: Date.now() });
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+  return id;
+}
+async function getDocsForPerson(personId) {
+  if (!_docDB) await openDocDB();
+  const tx = _docDB.transaction(DOC_STORE_NAME, 'readonly');
+  const store = tx.objectStore(DOC_STORE_NAME);
+  const idx = store.index('personId');
+  return new Promise((resolve, reject) => {
+    const req = idx.getAll(personId);
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function extractDocDate(entry, type) {
+  if (!entry) return '';
+  const d = entry.date || entry.deathDate || entry.birthDate || entry.marriageDate || '';
+  if (d) return d;
+  if (type === 'birth') return entry.child?.birthDate || entry.child?.date || '';
+  if (type === 'death') return entry.deathDate || entry.deceased?.deathDate || entry.deceased?.date || '';
+  if (type === 'marriage') return entry.date || entry.marriageDate || entry.groom?.marriageDate || entry.bride?.marriageDate || '';
+  return '';
+}
+
 function initDefaultData() {
   people = [];
   nextId = 1;
@@ -788,8 +842,8 @@ function openDetail(person) {
       </select>
     </div>
     <div class="detail-field"><label>Notes</label><textarea id="d_notes">${person.notes}</textarea></div>
-    <div class="detail-field"><label>Documents (${person.docs.length})</label>
-      <div style="font-size:12px;color:#6b5537;">${person.docs.length ? person.docs.map(d => `<div style="padding:4px 0;border-bottom:1px solid #e8dcc8;">${(d.type || 'doc').toUpperCase()}: ${d.date || 'no date'}</div>`).join('') : '<em>No documents</em>'}</div>
+    <div class="detail-field"><label>Documents (<span id="docCount">${person.docs.length}</span>)</label>
+      <div id="docThumbs" style="display:flex;flex-wrap:wrap;gap:6px;">${person.docs.length ? '<em style="font-size:12px;color:#6b5537;">Loading...</em>' : '<em style="font-size:12px;color:#6b5537;">No documents</em>'}</div>
     </div>
     <div class="detail-field"><label>Find Source Records</label>
       <div style="display:flex;flex-wrap:wrap;gap:6px;">
@@ -804,6 +858,45 @@ function openDetail(person) {
     </div>
   `;
   detailPanel.classList.add('active');
+  // Load document thumbnails from IndexedDB
+  (async function loadDocThumbs() {
+    const container = document.getElementById('docThumbs');
+    const countEl = document.getElementById('docCount');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!person.docs.length) {
+      container.innerHTML = '<em style="font-size:12px;color:#6b5537;">No documents</em>';
+      if (countEl) countEl.textContent = '0';
+      return;
+    }
+    for (let i = 0; i < person.docs.length; i++) {
+      const d = person.docs[i];
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'text-align:center;';
+      const label = document.createElement('div');
+      label.style.cssText = 'font-size:10px;color:#6b5537;margin-top:2px;';
+      label.innerHTML = (d.type || 'doc').toUpperCase() + '<br><span style="color:#8a7a5a;">' + (d.date || 'no date') + '</span>';
+      if (d.docId) {
+        try {
+          const docs = await getDocsForPerson(person.id);
+          const doc = docs.find(rec => rec.id === d.docId);
+          if (doc && doc.image) {
+            const thumb = document.createElement('img');
+            thumb.src = doc.image;
+            thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #8a7a5a;cursor:pointer;';
+            thumb.onclick = () => showDocImageFromDB(d.docId, person.id);
+            wrapper.appendChild(thumb);
+            wrapper.appendChild(label);
+            container.appendChild(wrapper);
+            continue;
+          }
+        } catch(e) {}
+      }
+      // Fallback: text-only label if no image
+      wrapper.appendChild(label);
+      container.appendChild(wrapper);
+    }
+  })();
 }
 function closeDetail() {
   if (detailPanel.classList.contains('active')) {
@@ -825,6 +918,23 @@ function clearCertPanel() {
   document.getElementById('certUploadBtns').style.display = 'flex';
   certPanel.classList.remove('has-results');
 }
+async function showDocImageFromDB(docId, personId, fallbackSrc) {
+  let imgSrc = fallbackSrc || '';
+  if (docId && personId) {
+    try {
+      const docs = await getDocsForPerson(personId);
+      const doc = docs.find(d => d.id === docId);
+      if (doc && doc.image) imgSrc = doc.image;
+    } catch(e) {}
+  }
+  if (!imgSrc) { showToast('Document image not found'); return; }
+  const viewer = document.createElement('div');
+  viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:16px;';
+  viewer.innerHTML = '<img src="' + imgSrc + '" style="max-width:90vw;max-height:90vh;border-radius:4px;">';
+  viewer.addEventListener('click', () => viewer.remove());
+  document.body.appendChild(viewer);
+}
+
 function saveDetail() {
   if (!selectedPersonId) return;
   const person = people.find(p => p.id === selectedPersonId);
@@ -1162,12 +1272,12 @@ function entrySummary(entry, type) {
 }
 
 // Apply scanned cert data to the people array
-function applyCertToPerson(entry, type) {
+function applyCertToPerson(entry, type, docImage) {
   if (!entry) return;
   const changed = [];
-  if (type === 'birth') applyBirthEntry(entry, changed);
-  else if (type === 'marriage') applyMarriageEntry(entry, changed);
-  else if (type === 'death') applyDeathEntry(entry, changed);
+  if (type === 'birth') applyBirthEntry(entry, changed, docImage);
+  else if (type === 'marriage') applyMarriageEntry(entry, changed, docImage);
+  else if (type === 'death') applyDeathEntry(entry, changed, docImage);
   if (changed.length) { renderTree(); showToast('Applied to ' + changed.length + ' people'); }
   else { showToast('No matching people found — cert data stored'); }
   // Scroll to the first changed person so you can see the result
@@ -1382,7 +1492,7 @@ function getOrCreateParent(parentName, parentGen, spouseName, changed) {
   return p.id;
 }
 
-function applyBirthEntry(entry, changed) {
+function applyBirthEntry(entry, changed, docImage) {
   const childName = entry.child?.name; if (!childName) return;
   
   // Find or create the child (always Gen 0 for root person)
@@ -1400,7 +1510,13 @@ function applyBirthEntry(entry, changed) {
   child.fullName = childName;
   if (entry.child?.birthDate) { child.birthDate = entry.child.birthDate; child.years = 'b. ' + entry.child.birthDate; }
   child.status = 'confirmed';
-  child.docs.push({ type: 'bc' });
+  child.docs.push({ type: 'bc', date: extractDocDate(entry, 'birth'), docId: null });
+  if (docImage) {
+    saveDocToDB(child.id, 'bc', docImage, { personName: child.name }).then(id => {
+      const lastDoc = child.docs[child.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
   changed.push(child);
 
   // Use child's existing parent placeholders (always IDs 2,3 in fresh tree)
@@ -1439,7 +1555,7 @@ function applyBirthEntry(entry, changed) {
   }
 }
 
-function applyMarriageEntry(entry, changed) {
+function applyMarriageEntry(entry, changed, docImage) {
   const groomName = entry.groom?.name, brideName = entry.bride?.name;
   if (!groomName || !brideName) return;
 
@@ -1584,7 +1700,18 @@ function applyMarriageEntry(entry, changed) {
   }
 
   groom.status = 'confirmed'; bride.status = 'confirmed';
-  groom.docs.push({ type: 'mc' }); bride.docs.push({ type: 'mc' });
+  groom.docs.push({ type: 'mc', date: extractDocDate(entry, 'marriage'), docId: null });
+  bride.docs.push({ type: 'mc', date: extractDocDate(entry, 'marriage'), docId: null });
+  if (docImage) {
+    saveDocToDB(groom.id, 'mc', docImage, { personName: groom.name }).then(id => {
+      const lastDoc = groom.docs[groom.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+    saveDocToDB(bride.id, 'mc', docImage, { personName: bride.name }).then(id => {
+      const lastDoc = bride.docs[bride.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
   if (entry.date) { groom.years = (groom.years === '?' ? '' : groom.years.replace(/\?/g,'')) + ' m. ' + entry.date; }
   changed.push(groom); changed.push(bride);
 
@@ -1634,7 +1761,7 @@ function applyMarriageEntry(entry, changed) {
   }
 }
 
-function applyDeathEntry(entry, changed) {
+function applyDeathEntry(entry, changed, docImage) {
   const decName = entry.deceased?.name; if (!decName) return;
   let dec = findPerson(decName);
   if (!dec) { dec = createPerson(nextId++, 0, decName, '?', 'probable', {}); people.push(dec); changed.push(dec); }
@@ -1642,7 +1769,14 @@ function applyDeathEntry(entry, changed) {
   if (entry.deceased?.age) dec.years += ' (age ' + entry.deceased.age + ')';
   if (entry.deceased?.occupation) dec.occupation = entry.deceased.occupation;
   if (entry.deceased?.spouseName) dec.spouseName = entry.deceased.spouseName;
-  dec.docs.push({ type: 'dc' }); dec.status = 'confirmed';
+  dec.docs.push({ type: 'dc', date: extractDocDate(entry, 'death'), docId: null });
+  if (docImage) {
+    saveDocToDB(dec.id, 'dc', docImage, { personName: dec.name }).then(id => {
+      const lastDoc = dec.docs[dec.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
+  dec.status = 'confirmed';
   changed.push(dec);
 
   // Use existing parent placeholders if wired — only fill blanks
@@ -1682,7 +1816,7 @@ document.getElementById('certConfirm').addEventListener('click', () => {
     else if (entry.child?.name || entry.father?.name || entry.mother?.name) type = 'birth';
     else if (entry.deceased?.name) type = 'death';
   }
-  applyCertToPerson(entry, type);
+  applyCertToPerson(entry, type, pendingDocImage);
   certPanel.classList.remove('active');
   certPanel.classList.remove('has-results');
 });
