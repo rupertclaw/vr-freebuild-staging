@@ -408,8 +408,8 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 <!-- Custom Confirm Dialog -->
 <div id="confirmDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;justify-content:center;align-items:center;">
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:320px;width:90%;text-align:center;">
-    <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#2a3a50;margin-bottom:12px;">Reset Tree</div>
-    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;">Clear all data and start fresh? This cannot be undone.</div>
+    <div id="confirmTitle" style="font-family: 'Cinzel Decorative', serif;font-size:16px;color:#2a3a50;margin-bottom:12px;">Reset Tree</div>
+    <div id="confirmMessage" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;">Clear all data and start fresh? This cannot be undone.</div>
     <div style="display:flex;gap:10px;justify-content:center;">
       <button id="confirmCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
       <button id="confirmOk" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#5c2a2a;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Reset</button>
@@ -855,6 +855,9 @@ function openDetail(person) {
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
       <button class="save-btn" onclick="saveDetail()">Save Changes</button>
+    </div>
+    <div style="margin-top:8px;text-align:center;">
+      <button id="clearCardBtn" style="background:transparent;border:1px solid #5c2a2a;color:#5c2a2a;padding:6px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">↻ Clear Data from Card</button>
     </div>
   `;
   detailPanel.classList.add('active');
@@ -1915,6 +1918,26 @@ document.getElementById('resetBtn').addEventListener('click', () => {
     dlg.style.display = 'none';
   };
 });
+
+// Clear Card button in detail panel
+document.getElementById('clearCardBtn').addEventListener('click', () => {
+  const dlg = document.getElementById('confirmDialog');
+  document.getElementById('confirmTitle').textContent = 'Clear Card?';
+  document.getElementById('confirmMessage').textContent = 'Remove all data from this card? The person will be reset to blank status. This cannot be undone.';
+  dlg.style.display = 'flex';
+  document.getElementById('confirmOk').onclick = () => {
+    clearCard();
+    dlg.style.display = 'none';
+  };
+  document.getElementById('confirmCancel').onclick = () => {
+    dlg.style.display = 'none';
+    // Reset title for next use
+    document.getElementById('confirmTitle').textContent = 'Reset Tree';
+    document.getElementById('confirmMessage').textContent = 'Clear all data and start fresh? This cannot be undone.';
+    document.getElementById('confirmOk').textContent = 'Reset';
+  };
+});
+
 setInterval(() => { localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId})); }, 30000);
 function autoRestore() {
   const saved = localStorage.getItem('familytree_data_v5');
@@ -1940,6 +1963,59 @@ function showToast(msg, duration) {
   document.body.appendChild(el);
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
   setTimeout(() => el.remove(), duration + 500);
+}
+
+function clearCard() {
+  if (!selectedPersonId) return;
+  const person = people.find(p => p.id === selectedPersonId);
+  if (!person) return;
+  // Save old name/gen for toast
+  const oldName = person.name || 'Person';
+  // Reset to blank card state
+  person.name = 'Name';
+  person.fullName = null;
+  person.spouseName = null;
+  person.birthDate = null;
+  person.deathDate = null;
+  person.years = '?';
+  person.occupation = null;
+  person.birthplace = null;
+  person.maidenName = null;
+  person.notes = '';
+  person.docs = [];
+  person.status = 'blank';
+  renderTree();
+  closeDetail();
+  showToast('Cleared all data from ' + oldName);
+}
+function clearPersonDocs() {
+  const btn = document.getElementById('clearDocBtn');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const dlg = document.getElementById('confirmDialog');
+    document.getElementById('confirmTitle').textContent = 'Clear Documents?';
+    document.getElementById('confirmMessage').textContent = 'Remove all documents from this person's record? This cannot be undone.';
+    dlg.style.display = 'flex';
+    document.getElementById('confirmOk').onclick = () => {
+      dlg.style.display = 'none';
+      if (!selectedPersonId) return;
+      const person = people.find(p => p.id === selectedPersonId);
+      if (!person) return;
+      person.docs = [];
+      // Also clear IndexedDB
+      if (_docDB) {
+        getDocsForPerson(selectedPersonId).then(docs => {
+          const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
+          const store = tx.objectStore(DOC_STORE_NAME);
+          docs.forEach(d => store.delete(d.id));
+        }).catch(() => {});
+      }
+      renderTree(); showToast('Documents cleared');
+    };
+    document.getElementById('confirmCancel').onclick = () => {
+      dlg.style.display = 'none';
+    };
+  });
 }
 if (!autoRestore()) initDefaultData();
 renderTree();
