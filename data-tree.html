@@ -861,6 +861,14 @@ function openDetail(person) {
     </div>
   `;
   detailPanel.classList.add('active');
+  // Wire up Clear Card button (exists in detailBody innerHTML)
+  const clearCardBtnEl = document.getElementById('clearCardBtn');
+  if (clearCardBtnEl) {
+    clearCardBtnEl.addEventListener('click', () => {
+      if (!confirm('Clear all data from this card? The person will be reset to blank status. This cannot be undone.')) return;
+      clearCard();
+    });
+  }
   // Load document thumbnails from IndexedDB
   (async function loadDocThumbs() {
     const container = document.getElementById('docThumbs');
@@ -1919,25 +1927,6 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   };
 });
 
-// Clear Card button in detail panel
-const clearCardBtn = document.getElementById('clearCardBtn');
-if (clearCardBtn) clearCardBtn.addEventListener('click', () => {
-  const dlg = document.getElementById('confirmDialog');
-  document.getElementById('confirmTitle').textContent = 'Clear Card?';
-  document.getElementById('confirmMessage').textContent = 'Remove all data from this card? The person will be reset to blank status. This cannot be undone.';
-  dlg.style.display = 'flex';
-  document.getElementById('confirmOk').onclick = () => {
-    clearCard();
-    dlg.style.display = 'none';
-  };
-  document.getElementById('confirmCancel').onclick = () => {
-    dlg.style.display = 'none';
-    // Reset title for next use
-    document.getElementById('confirmTitle').textContent = 'Reset Tree';
-    document.getElementById('confirmMessage').textContent = 'Clear all data and start fresh? This cannot be undone.';
-    document.getElementById('confirmOk').textContent = 'Reset';
-  };
-});
 
 setInterval(() => { localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId})); }, 30000);
 function autoRestore() {
