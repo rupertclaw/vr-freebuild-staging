@@ -1296,7 +1296,9 @@ function applyCertToPerson(entry, type, docImage) {
 
 function normalizeName(name) {
   if (!name) return '';
-  const parts = name.toLowerCase().trim().split(/\s+/);
+  let stripped = name.replace(/\s*\([^)]*\)/g, '');
+  stripped = stripped.replace(/\s*[nN][ée]e\s+.*$/, '');
+  const parts = stripped.toLowerCase().trim().split(/\s+/);
   if (parts.length < 2) return parts[0] || '';
   return parts[0] + ' ' + parts[parts.length - 1];
 }
@@ -1370,6 +1372,26 @@ function findPerson(name, opts) {
     }
 
     return score;
+  }
+
+  // For death certs: also match by spouse link when woman uses married name
+  function getSpouseMatch(name) {
+    const firstName = name.split(/\s+/)[0]?.toLowerCase() || '';
+    const surname = name.split(/\s+/).pop()?.toLowerCase() || '';
+    for (const p of people) {
+      if (!p.spouseId || !p.spouseName) continue;
+      const pFirst = (p.spouseName || '').split(/\s+/)[0]?.toLowerCase() || '';
+      const pLast = (p.name || '').split(/\s+/).pop()?.toLowerCase() || '';
+      // If deceased's surname matches person's surname, and first name matches spouse link
+      if (pLast === surname && pFirst !== firstName && (pFirst.includes(firstName) || firstName.includes(pFirst))) {
+        return p;
+      }
+      // Also: deceased name matches person's name (with maiden annotation stripped)
+      const pBase = normalizeName(p.name);
+      const searchBase = normalizeName(name);
+      if (pBase === searchBase && pBase) return p;
+    }
+    return null;
   }
 
   // Build candidate list
@@ -1764,6 +1786,18 @@ function applyMarriageEntry(entry, changed, docImage) {
 function applyDeathEntry(entry, changed, docImage) {
   const decName = entry.deceased?.name; if (!decName) return;
   let dec = findPerson(decName);
+  if (!dec) {
+    // Try spouse-link match for married women where DC uses married name
+    for (const p of people) {
+      if (!p.spouseId || !p.name) continue;
+      const pDisplay = p.name.replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+      const pFirst = pDisplay.split(/\s+/)[0] || '';
+      const pLast = pDisplay.split(/\s+/).pop() || '';
+      const searchFirst = decName.split(/\s+/)[0]?.toLowerCase() || '';
+      const searchLast = decName.split(/\s+/).pop()?.toLowerCase() || '';
+      if (pFirst === searchFirst && pLast === searchLast) { dec = p; break; }
+    }
+  }
   if (!dec) { dec = createPerson(nextId++, 0, decName, '?', 'probable', {}); people.push(dec); changed.push(dec); }
   if (entry.deathDate) { dec.deathDate = entry.deathDate; dec.years = (dec.birthDate ? dec.birthDate + ' — ' : '') + entry.deathDate; }
   if (entry.deceased?.age) dec.years += ' (age ' + entry.deceased.age + ')';
