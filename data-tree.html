@@ -1995,7 +1995,7 @@ function clearPersonDocs() {
   btn.addEventListener('click', () => {
     const dlg = document.getElementById('confirmDialog');
     document.getElementById('confirmTitle').textContent = 'Clear Documents?';
-    document.getElementById('confirmMessage').textContent = 'Remove all documents from this person's record? This cannot be undone.';
+    document.getElementById('confirmMessage').textContent = `Remove all documents from this person's record? This cannot be undone.`;
     dlg.style.display = 'flex';
     document.getElementById('confirmOk').onclick = () => {
       dlg.style.display = 'none';
