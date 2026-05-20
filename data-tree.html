@@ -1920,7 +1920,8 @@ document.getElementById('resetBtn').addEventListener('click', () => {
 });
 
 // Clear Card button in detail panel
-document.getElementById('clearCardBtn').addEventListener('click', () => {
+const clearCardBtn = document.getElementById('clearCardBtn');
+if (clearCardBtn) clearCardBtn.addEventListener('click', () => {
   const dlg = document.getElementById('confirmDialog');
   document.getElementById('confirmTitle').textContent = 'Clear Card?';
   document.getElementById('confirmMessage').textContent = 'Remove all data from this card? The person will be reset to blank status. This cannot be undone.';
