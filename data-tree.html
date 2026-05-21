@@ -1578,6 +1578,70 @@ function findAllMatches(name, opts) {
   return matches;
 }
 
+// Generation-aware person finder: handles same-name people across generations
+// Returns a single best-match person, preferring parent-blank slots when multiple matches exist
+function findPersonGenAware(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return null;
+  const searchNorm = normalizeName(name);
+
+  // Search all non-blank people by name
+  const allMatches = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank') continue;
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    const pMaiden = normalizeName(p.maidenName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+    const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
+    const searchFull = name.toLowerCase().trim();
+
+    let score = 0;
+    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
+    else if (pNorm.includes(searchNorm) || searchNorm.includes(pNorm)) score = 50;
+
+    // Maiden name check
+    if (opts.checkMaiden && pMaidenLower) {
+      const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
+      if (pMaidenLower === searchSurname || pMaidenLower === searchNorm) score = Math.max(score, 95);
+      else if (pMaidenLower.includes(searchSurname) || searchSurname.includes(pMaidenLower)) score = Math.max(score, 75);
+    }
+
+    if (score > 0) allMatches.push({ person: p, score });
+  }
+
+  if (allMatches.length === 0) return null;
+  if (allMatches.length === 1) return allMatches[0].person;
+
+  // Multiple matches: sort by score desc, then apply generation-aware logic
+  allMatches.sort((a, b) => b.score - a.score);
+  const topScore = allMatches[0].score;
+  const topMatches = allMatches.filter(m => m.score >= topScore - 15);
+
+  // Among top-scoring matches, prefer the one whose parent slots are still blank
+  // (cert data for this person's parents needs somewhere to go)
+  for (const m of topMatches.sort((a, b) => a.person.gen - b.person.gen)) {
+    const dad = people.find(p => p.id === m.person.parents?.[0]);
+    const mum = people.find(p => p.id === m.person.parents?.[1]);
+    if (dad && mum && (dad.name === 'Name' || dad.status === 'blank') && (mum.name === 'Name' || mum.status === 'blank')) {
+      return m.person;
+    }
+  }
+
+  // If expected generation was specified, prefer that
+  if (opts.expectedGen !== undefined) {
+    const genMatch = topMatches.find(m => m.person.gen === opts.expectedGen);
+    if (genMatch) return genMatch.person;
+  }
+
+  // Fall back: lowest-gen top-scoring match
+  return topMatches.sort((a, b) => a.person.gen - b.person.gen)[0].person;
+}
+
 function extractYear(str) {
   if (!str) return null;
   const m = String(str).match(/(\d{4})/);
@@ -1706,9 +1770,9 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
     }
   }
   
-  // Last resort: findPerson across the whole tree
+  // Last resort: generation-aware findPerson
   if (!child) {
-    child = findPerson(childName);
+    child = findPersonGenAware(childName);
   }
   
   if (!child) {
@@ -1802,14 +1866,14 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
     return false;
   }
 
-  // STEP 1: Match groom using year-aware scoring
+  // STEP 1: Match groom using generation-aware scoring
   let groom = null;
   if (forceResolveId && forceResolveName === groomName) {
     groom = people.find(p => p.id === forceResolveId);
     if (groom) console.log('[MC] Forced groom match to', groom.name, '(gen', groom.gen + ')');
   }
   if (!groom) {
-    groom = findPerson(groomName, {
+    groom = findPersonGenAware(groomName, {
       refYear: groomBirthYear,
       certType: 'marriage',
       certYear: marriageYear
@@ -1841,16 +1905,16 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
     }
   }
 
-  // STEP 3: If no spouse link, fall back to name matching
+  // STEP 3: If no spouse link, fall back to generation-aware name matching
   // BUT: never match bride to groom's ancestor or descendant
   if (!bride) {
-    bride = findPerson(brideName, {
+    bride = findPersonGenAware(brideName, {
       refYear: brideBirthYear,
       certType: 'marriage',
       certYear: marriageYear
     });
     if (!bride) {
-      bride = findPerson(brideName, {
+      bride = findPersonGenAware(brideName, {
         checkMaiden: true,
         refYear: brideBirthYear,
         certType: 'marriage',
@@ -1994,7 +2058,7 @@ function applyDeathEntry(entry, changed, docImage, forceDecId) {
     dec = people.find(p => p.id === forceDecId);
   }
   if (!dec) {
-    dec = findPerson(decName);
+    dec = findPersonGenAware(decName);
   }
   if (!dec) {
     // Try spouse-link match for married women where DC uses married name
