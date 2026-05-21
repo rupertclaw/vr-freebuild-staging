@@ -2315,7 +2315,30 @@ function clearPersonDocs() {
     };
   });
 }
+// Backfill computed fields from existing doc data (migration for pre-v204 data)
+function backfillComputedFields() {
+  for (const p of people) {
+    // Marriage date from mc docs
+    if (!p.marriageDate && p.docs) {
+      const mc = p.docs.find(d => d.type === 'mc');
+      if (mc && mc.date) p.marriageDate = mc.date;
+    }
+    // Age at death from birth + death dates
+    if (!p.ageAtDeath && p.birthDate && p.deathDate) {
+      const bYear = (p.birthDate.match(/\d{4}/) || [])[0];
+      const dYear = (p.deathDate.match(/\d{4}/) || [])[0];
+      if (bYear && dYear) p.ageAtDeath = String(parseInt(dYear) - parseInt(bYear));
+    }
+    // Compact years display
+    const bY = (p.birthDate || '').match(/\d{4}/);
+    const dY = (p.deathDate || '').match(/\d{4}/);
+    if (bY && dY) p.years = bY[0] + ' \u2014 ' + dY[0];
+    else if (bY) p.years = 'b. ' + bY[0];
+    else if (p.years === '?' || !p.years) p.years = '?';
+  }
+}
 if (!autoRestore()) initDefaultData();
+backfillComputedFields();
 renderTree();
 document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
 
