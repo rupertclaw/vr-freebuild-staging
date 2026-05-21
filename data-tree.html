@@ -574,6 +574,7 @@ let pendingDocFile = null;
 let pendingDocImage = null;
 let lastTranscription = null;
 let selectedEntryIndex = 0;
+let pendingAmbigTarget = null;  // { entry, type, docImage, resolveName, resolveId }
 
 // ========== IndexedDB Document Storage ==========
 const DOC_DB_NAME = 'VRTDocs';
@@ -1285,13 +1286,46 @@ function entrySummary(entry, type) {
 // Apply scanned cert data to the people array
 function applyCertToPerson(entry, type, docImage) {
   if (!entry) return;
+
+  // Build a list of primary person names this cert targets
+  let primaryNames = [];
+  if (type === 'birth' && entry.child?.name) primaryNames.push({ name: entry.child.name, certKey: 'child.name' });
+  if (type === 'marriage') {
+    if (entry.groom?.name) primaryNames.push({ name: entry.groom.name, certKey: 'groom.name' });
+    if (entry.bride?.name) primaryNames.push({ name: entry.bride.name, certKey: 'bride.name' });
+  }
+  if (type === 'death' && entry.deceased?.name) primaryNames.push({ name: entry.deceased.name, certKey: 'deceased.name' });
+
+  // Detect ambiguity for any primary name
+  for (const pn of primaryNames) {
+    const refYear = type === 'marriage' ? (extractYear(entry.date) ? extractYear(entry.date) - parseInt(entry.groom?.age || entry.bride?.age || 0) : null)
+      : type === 'birth' ? (extractYear(entry.child?.birthDate) || null)
+      : type === 'death' ? (extractYear(entry.deathDate) ? extractYear(entry.deathDate) - parseInt(entry.deceased?.age || 0) : null)
+      : null;
+    const certYear = extractYear(entry.date || entry.deathDate || entry.child?.birthDate);
+    const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
+    if (matches.length >= 2) {
+      // Ambiguous: show dialog and pause
+      const top2ScoreDiff = matches[0].score - matches[1].score;
+      if (top2ScoreDiff < 30 || matches[0].person.status === 'confirmed') {
+        openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
+        return;
+      }
+    }
+  }
+
+  // No ambiguity — proceed normally
+  _applyCertToPersonResolved(entry, type, docImage, null, null);
+}
+
+// After user picks (or when unambiguous), do the actual apply
+function _applyCertToPersonResolved(entry, type, docImage, resolveName, resolveId) {
   const changed = [];
-  if (type === 'birth') applyBirthEntry(entry, changed, docImage);
-  else if (type === 'marriage') applyMarriageEntry(entry, changed, docImage);
-  else if (type === 'death') applyDeathEntry(entry, changed, docImage);
+  if (type === 'birth') applyBirthEntry(entry, changed, docImage, resolveId);
+  else if (type === 'marriage') applyMarriageEntry(entry, changed, docImage, resolveName, resolveId);
+  else if (type === 'death') applyDeathEntry(entry, changed, docImage, resolveId);
   if (changed.length) { renderTree(); showToast('Applied to ' + changed.length + ' people'); }
-  else { showToast('No matching people found — cert data stored'); }
-  // Scroll to the first changed person so you can see the result
+  else { showToast('No matching people found'); }
   if (changed.length > 0) {
     const target = changed[0];
     setTimeout(() => {
@@ -1304,6 +1338,42 @@ function applyCertToPerson(entry, type, docImage) {
     }, 200);
   }
 }
+
+// Ambiguity modal logic
+function openAmbigDialog(entry, type, docImage, targetName, matches, certKey) {
+  pendingAmbigTarget = { entry, type, docImage, resolveName: targetName, resolveId: null };
+  const modal = document.getElementById('ambigModal');
+  const question = document.getElementById('ambigQuestion');
+  const options = document.getElementById('ambigOptions');
+  question.textContent = 'Multiple "' + targetName + '" people found. Which one receives this certificate?';
+  options.innerHTML = '';
+  matches.forEach((m, i) => {
+    const p = m.person;
+    const info = [];
+    info.push('Gen ' + p.gen);
+    if (p.years) info.push(p.years);
+    if (p.birthDate) info.push('b. ' + p.birthDate);
+    if (p.spouseName) info.push('spouse: ' + p.spouseName);
+    if (p.status) info.push('status: ' + p.status);
+    const btn = document.createElement('button');
+    btn.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:8px;border:2px solid #8a7a5a;border-radius:6px;background:#faf6ee;cursor:pointer;font-family:"Cormorant Garamond",serif;font-size:13px;color:#2a1f10;';
+    btn.innerHTML = '<b>' + p.name + '</b> <span style="color:#6b5537;font-size:11px;">' + info.join(' | ') + '</span>';
+    btn.addEventListener('click', () => {
+      pendingAmbigTarget.resolveId = p.id;
+      modal.style.display = 'none';
+      _applyCertToPersonResolved(pendingAmbigTarget.entry, pendingAmbigTarget.type, pendingAmbigTarget.docImage, pendingAmbigTarget.resolveName, pendingAmbigTarget.resolveId);
+      pendingAmbigTarget = null;
+    });
+    options.appendChild(btn);
+  });
+  modal.style.display = 'flex';
+}
+
+document.getElementById('ambigCancel').addEventListener('click', () => {
+  document.getElementById('ambigModal').style.display = 'none';
+  pendingAmbigTarget = null;
+  showToast('Cancelled — cert not applied');
+});
 
 function normalizeName(name) {
   if (!name) return '';
@@ -1458,6 +1528,62 @@ function findPerson(name, opts) {
   return candidates[0].person;
 }
 
+// Return ALL matching candidates so ambiguity can be detected
+function findAllMatches(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return [];
+  const searchNorm = normalizeName(name);
+  const searchFull = name.toLowerCase().trim();
+  const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
+  const refYear = opts.refYear || null;
+  const certType = opts.certType || null;
+  const certYear = opts.certYear || null;
+
+  function getBirthYear(p) {
+    const m = (p.years || p.birthDate || '').match(/\d{4}/);
+    return m ? parseInt(m[0]) : null;
+  }
+
+  let matches = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank') continue;
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    const pMaiden = normalizeName(p.maidenName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+    const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
+
+    let score = 0;
+    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
+    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) score = 50;
+
+    if (opts.checkMaiden && pMaiden) {
+      if (pMaiden === searchSurname || pMaiden === searchNorm) score = Math.max(score, 95);
+      else if (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden)) score = Math.max(score, 75);
+    }
+
+    if (score > 0) matches.push({ person: p, score });
+  }
+
+  if (certType && certYear && !isNaN(certYear)) {
+    matches = matches.filter(({person: p}) => {
+      const by = getBirthYear(p);
+      if (!by) return true;
+      if (certType === 'marriage') return by <= certYear - 16;
+      if (certType === 'death') return by < certYear;
+      if (certType === 'birth' && refYear) return Math.abs(by - refYear) < 50;
+      return true;
+    });
+  }
+
+  matches.sort((a, b) => b.score - a.score);
+  return matches;
+}
+
 function extractYear(str) {
   if (!str) return null;
   const m = String(str).match(/(\d{4})/);
@@ -1525,13 +1651,18 @@ function getOrCreateParent(parentName, parentGen, spouseName, changed) {
   return p.id;
 }
 
-function applyBirthEntry(entry, changed, docImage) {
+function applyBirthEntry(entry, changed, docImage, forceChildId) {
   const childName = entry.child?.name; if (!childName) return;
   
   // Find or create the child (always Gen 0 for root person)
-  let child = people.find(p => p.gen === 0);
+  let child = null;
+  if (forceChildId) {
+    child = people.find(p => p.id === forceChildId);
+  }
+  if (!child) {
+    child = people.find(p => p.gen === 0);
+  }
   if (!child || (child.name !== 'Name' && child.status !== 'blank')) {
-    // If Gen 0 is already filled, find by name
     child = findPerson(childName);
   }
   if (!child) {
@@ -1588,7 +1719,7 @@ function applyBirthEntry(entry, changed, docImage) {
   }
 }
 
-function applyMarriageEntry(entry, changed, docImage) {
+function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceResolveId) {
   const groomName = entry.groom?.name, brideName = entry.bride?.name;
   if (!groomName || !brideName) return;
 
@@ -1621,23 +1752,34 @@ function applyMarriageEntry(entry, changed, docImage) {
   }
 
   // STEP 1: Match groom using year-aware scoring
-  let groom = findPerson(groomName, {
-    refYear: groomBirthYear,
-    certType: 'marriage',
-    certYear: marriageYear
-  });
-  // Fallback: find by surname if full name didn't match
+  let groom = null;
+  if (forceResolveId && forceResolveName === groomName) {
+    groom = people.find(p => p.id === forceResolveId);
+    if (groom) console.log('[MC] Forced groom match to', groom.name, '(gen', groom.gen + ')');
+  }
   if (!groom) {
-    groom = findPersonBySurname(groomName, {
+    groom = findPerson(groomName, {
       refYear: groomBirthYear,
       certType: 'marriage',
       certYear: marriageYear
     });
+    // Fallback: find by surname if full name didn't match
+    if (!groom) {
+      groom = findPersonBySurname(groomName, {
+        refYear: groomBirthYear,
+        certType: 'marriage',
+        certYear: marriageYear
+      });
+    }
   }
 
   // STEP 2: Match bride — SPOUSE LINK FIRST (definitive)
   let bride = null;
-  if (groom && groom.spouseId) {
+  if (forceResolveId && forceResolveName === brideName) {
+    bride = people.find(p => p.id === forceResolveId);
+    if (bride) console.log('[MC] Forced bride match to', bride.name, '(gen', bride.gen + ')');
+  }
+  if (!bride && groom && groom.spouseId) {
     const spouse = people.find(p => p.id === groom.spouseId);
     if (spouse) {
       const brideFirst = brideName.split(/\s+/)[0]?.toLowerCase();
@@ -1794,9 +1936,15 @@ function applyMarriageEntry(entry, changed, docImage) {
   }
 }
 
-function applyDeathEntry(entry, changed, docImage) {
+function applyDeathEntry(entry, changed, docImage, forceDecId) {
   const decName = entry.deceased?.name; if (!decName) return;
-  let dec = findPerson(decName);
+  let dec = null;
+  if (forceDecId) {
+    dec = people.find(p => p.id === forceDecId);
+  }
+  if (!dec) {
+    dec = findPerson(decName);
+  }
   if (!dec) {
     // Try spouse-link match for married women where DC uses married name
     for (const p of people) {
@@ -2077,5 +2225,16 @@ setTimeout(() => centerOnGen0(), 150);
   .cert-actions button { flex: 1 1 100%; }
 }
 </style>
+<!-- Ambiguity Resolution Modal -->
+<div id="ambigModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10002;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;">
+    <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#2a3a50;margin-bottom:8px;">Multiple Matches Found</div>
+    <div id="ambigQuestion" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:12px;">Which person should receive this certificate?</div>
+    <div id="ambigOptions" style="max-height:260px;overflow-y:auto;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="ambigCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
 </body>
 </html>
