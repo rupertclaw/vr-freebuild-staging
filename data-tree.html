@@ -168,6 +168,10 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 .person-card.confirmed { border-left: 4px solid #22c55e; }
 .person-card.probable { border-left: 4px solid #f59e0b; }
 .person-card.brickwall { border-left: 4px dashed #ef4444; }
+.person-card.unknown-parent { border-left: 4px dotted #9ca3af; background: rgba(240,235,220,0.5); opacity: 0.7; cursor: default; }
+.person-card.unknown-parent:hover { transform: none; box-shadow: none; }
+.person-card.unknown-parent .name,
+.person-card.unknown-parent .years { color: #a8a090; font-style: italic; }
 .person-card.you { border: 2px solid #c4a875; background: rgba(255,248,225,0.97); }
 .person-card.blank {
   background: rgba(250, 244, 230, 0.45);
@@ -852,6 +856,7 @@ function openDetail(person) {
         <option value="confirmed" ${person.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
         <option value="probable" ${person.status === 'probable' ? 'selected' : ''}>Probable</option>
         <option value="brickwall" ${person.status === 'brickwall' ? 'selected' : ''}>Brick Wall</option>
+        <option value="unknown-parent" ${person.status === 'unknown-parent' ? 'selected' : ''}>Parent Unknown</option>
         <option value="you" ${person.status === 'you' ? 'selected' : ''}>You</option>
       </select>
     </div>
@@ -1408,7 +1413,7 @@ function isEffectivelyBlank(name) {
   if (!name) return true;
   const n = name.toLowerCase().trim();
   if (!n || n === 'name' || n === 'unknown' || n === '?' || n === '??' || n === '...') return true;
-  if (n === 'father unknown' || n === 'mother unknown' || n === 'father' || n === 'mother') return true;
+  if (n === 'father unknown' || n === 'mother unknown' || n === 'unknown parent' || n === 'parent unknown' || n === 'father' || n === 'mother') return true;
   if (/^\?+$/.test(n)) return true;
   return false;
 }
@@ -1575,7 +1580,7 @@ function findAllMatches(name, opts) {
 
   let matches = [];
   for (const p of people) {
-    if (p.name === 'Name' || p.status === 'blank') continue;
+    if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
     const pNorm = normalizeName(p.name);
     const pFull = normalizeName(p.fullName || '');
     const pMaiden = normalizeName(p.maidenName || '');
@@ -1635,7 +1640,7 @@ function findPersonGenAware(name, opts) {
   // Search all non-blank people by name
   const allMatches = [];
   for (const p of people) {
-    if (p.name === 'Name' || p.status === 'blank') continue;
+    if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
     const pNorm = normalizeName(p.name);
     const pFull = normalizeName(p.fullName || '');
     const pMaiden = normalizeName(p.maidenName || '');
@@ -1769,7 +1774,7 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
   if (!child) {
     const allMatches = [];
     for (const p of people) {
-      if (p.name === 'Name' || p.status === 'blank') continue;
+      if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
       if (normalizeName(p.name) === childNorm || normalizeName(p.fullName || '') === childNorm) {
         allMatches.push(p);
       }
@@ -1977,7 +1982,7 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   if (!bride && brideName) {
     const brideFirst = brideName.split(/\s+/)[0];
     for (const p of people) {
-      if (p.name === 'Name' || p.status === 'blank') continue;
+      if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
       if (p.name.split(/\s+/)[0]?.toLowerCase() === brideFirst.toLowerCase()) {
         if (groom && (isAncestor(p, groom) || isDescendant(p, groom))) continue;
         // Check year constraint
@@ -2062,14 +2067,14 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
     const father = people.find(p => p.id === person.parents[0]);
     const mother = people.find(p => p.id === person.parents[1]);
 
-    if (father && fatherName && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable')) {
+    if (father && fatherName && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable' || father.status === 'unknown-parent')) {
       father.name = fatherName; father.fullName = fatherName;
-      if (father.status === 'blank') father.status = 'probable';
+      if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
       changed.push(father);
     }
-    if (mother && motherName && (mother.name === 'Name' || mother.status === 'blank' || mother.status === 'probable')) {
+    if (mother && motherName && (mother.name === 'Name' || mother.status === 'blank' || mother.status === 'probable' || mother.status === 'unknown-parent')) {
       mother.name = motherName; mother.fullName = motherName;
-      if (mother.status === 'blank') mother.status = 'probable';
+      if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
       if (motherMaiden) mother.maidenName = motherMaiden;
       changed.push(mother);
     }
@@ -2136,14 +2141,14 @@ function applyDeathEntry(entry, changed, docImage, forceDecId) {
   if (dec.parents && dec.parents.length >= 2) {
     const father = people.find(p => p.id === dec.parents[0]);
     const mother = people.find(p => p.id === dec.parents[1]);
-    if (father && entry.father?.name && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable')) {
+    if (father && entry.father?.name && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable' || father.status === 'unknown-parent')) {
       father.name = entry.father.name; father.fullName = entry.father.name;
-      if (father.status === 'blank') father.status = 'probable';
+      if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
       changed.push(father);
     }
-    if (mother && entry.mother?.name && (mother.name === 'Name' || mother.status === 'blank' || mother.status === 'probable')) {
+    if (mother && entry.mother?.name && (mother.name === 'Name' || mother.status === 'blank' || mother.status === 'probable' || mother.status === 'unknown-parent')) {
       mother.name = entry.mother.name; mother.fullName = entry.mother.name;
-      if (mother.status === 'blank') mother.status = 'probable';
+      if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
       if (entry.mother?.maidenName) mother.maidenName = entry.mother?.maidenName;
       changed.push(mother);
     }
