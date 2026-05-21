@@ -2153,7 +2153,7 @@ if (!autoRestore()) initDefaultData();
 renderTree();
 document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
 
-// Deferred listener: ambiguity modal cancel button (guarded: button lives in HTML after </script>)
+// Deferred listener: ambiguity modal cancel button (guarded: button lives in HTML after script block)
 const ambigCancelBtn = document.getElementById('ambigCancel');
 if (ambigCancelBtn) {
   ambigCancelBtn.addEventListener('click', () => {
