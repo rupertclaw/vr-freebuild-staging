@@ -150,6 +150,10 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   font-family: 'Cormorant Garamond', serif; font-size: 9px;
   color: #7a6545; margin-top: 2px; font-style: italic;
 }
+.person-card .married {
+  font-family: 'Cormorant Garamond', serif; font-size: 8px;
+  color: #8a7a5a; margin-top: 1px; font-style: italic;
+}
 .person-card .doc-badges {
   margin-top: 4px; display: flex; justify-content: center; gap: 3px;
 }
@@ -678,7 +682,17 @@ function renderTree() {
     const el = document.createElement('div');
     el.className = 'person-card ' + person.status + (person.id === 1 ? ' you' : '');
     el.dataset.id = person.id;
-    let h = '<div class="name">' + person.name + '</div><div class="years">' + person.years + '</div>';
+    // Compact card display: birth year — death year, marriage line
+    const bYear = (person.birthDate || person.years || '').match(/\d{4}/);
+    const dYear = (person.deathDate || '').match(/\d{4}/);
+    const mYear = (person.marriageDate || '').match(/\d{4}/);
+    let cardYears = '';
+    if (bYear && dYear) cardYears = bYear[0] + ' — ' + dYear[0];
+    else if (bYear) cardYears = 'b. ' + bYear[0];
+    else if (dYear) cardYears = 'd. ' + dYear[0];
+    else cardYears = person.years || '?';
+    let h = '<div class="name">' + person.name + '</div><div class="years">' + cardYears + '</div>';
+    if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
     if (person.docs && person.docs.length) {
       h += '<div class="doc-badges">';
       person.docs.forEach(d => { const t = (d.type || 'bc').toLowerCase(); h += '<span class="doc-badge ' + t + '">' + t.toUpperCase() + '</span>'; });
@@ -825,9 +839,10 @@ function openDetail(person) {
   detailBody.innerHTML = `
     <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${person.fullName || person.name}"></div>
     <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${person.name}"></div>
-    <div class="detail-field"><label>Years</label><input type="text" id="d_years" value="${person.years}"></div>
     <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${person.birthDate}"></div>
-    <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${person.deathDate}"></div>
+    <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${person.deathDate || ''}"></div>
+    <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${person.ageAtDeath || ''}"></div>
+    <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${person.marriageDate || ''}"></div>
     <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${person.maidenName}"></div>
     <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${person.spouseName}"></div>
     <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${person.occupation}"></div>
@@ -951,9 +966,10 @@ function saveDetail() {
   if (!person) return;
   person.fullName = document.getElementById('d_fullName').value;
   person.name = document.getElementById('d_name').value;
-  person.years = document.getElementById('d_years').value;
   person.birthDate = document.getElementById('d_birthDate').value;
   person.deathDate = document.getElementById('d_deathDate').value;
+  person.ageAtDeath = document.getElementById('d_ageAtDeath').value;
+  person.marriageDate = document.getElementById('d_marriageDate').value;
   person.maidenName = document.getElementById('d_maidenName').value;
   person.spouseName = document.getElementById('d_spouseName').value;
   person.occupation = document.getElementById('d_occupation').value;
@@ -2031,7 +2047,7 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
       if (lastDoc) lastDoc.docId = id;
     }).catch(() => {});
   }
-  if (entry.date) { groom.years = (groom.years === '?' ? '' : groom.years.replace(/\?/g,'')) + ' m. ' + entry.date; }
+  if (entry.date) { groom.marriageDate = entry.date; bride.marriageDate = entry.date; }
   changed.push(groom); changed.push(bride);
 
   // STEP 8: Update parents using tree structure ONLY
@@ -2102,8 +2118,8 @@ function applyDeathEntry(entry, changed, docImage, forceDecId) {
     }
   }
   if (!dec) { dec = createPerson(nextId++, 0, decName, '?', 'probable', {}); people.push(dec); changed.push(dec); }
-  if (entry.deathDate) { dec.deathDate = entry.deathDate; dec.years = (dec.birthDate ? dec.birthDate + ' — ' : '') + entry.deathDate; }
-  if (entry.deceased?.age) dec.years += ' (age ' + entry.deceased.age + ')';
+  if (entry.deathDate) { dec.deathDate = entry.deathDate; }
+  if (entry.deceased?.age) dec.ageAtDeath = entry.deceased.age;
   if (entry.deceased?.occupation) dec.occupation = entry.deceased.occupation;
   if (entry.deceased?.spouseName) dec.spouseName = entry.deceased.spouseName;
   dec.docs.push({ type: 'dc', date: extractDocDate(entry, 'death'), docId: null });
