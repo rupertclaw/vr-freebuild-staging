@@ -1581,6 +1581,9 @@ function findAllMatches(name, opts) {
     if (score > 0) matches.push({ person: p, score });
   }
 
+  // Filter out weak matches (score < 50 = only maiden surname with different first name)
+  matches = matches.filter(m => m.score >= 50);
+
   if (certType && certYear && !isNaN(certYear)) {
     matches = matches.filter(({person: p}) => {
       const by = getBirthYear(p);
@@ -1644,6 +1647,9 @@ function findPersonGenAware(name, opts) {
   }
 
   if (allMatches.length === 0) return null;
+  // Require minimum score of 50 — lower means only a weak maiden surname overlap with different first name
+  const bestScore = Math.max(...allMatches.map(m => m.score));
+  if (bestScore < 50) return null;
   if (allMatches.length === 1) return allMatches[0].person;
 
   // Multiple matches: sort by score desc, then apply generation-aware logic
