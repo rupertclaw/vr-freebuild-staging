@@ -2153,12 +2153,15 @@ if (!autoRestore()) initDefaultData();
 renderTree();
 document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
 
-// Deferred listener: ambiguity modal cancel button
-document.getElementById('ambigCancel').addEventListener('click', () => {
-  document.getElementById('ambigModal').style.display = 'none';
-  pendingAmbigTarget = null;
-  showToast('Cancelled — cert not applied');
-});
+// Deferred listener: ambiguity modal cancel button (guarded: button lives in HTML after </script>)
+const ambigCancelBtn = document.getElementById('ambigCancel');
+if (ambigCancelBtn) {
+  ambigCancelBtn.addEventListener('click', () => {
+    document.getElementById('ambigModal').style.display = 'none';
+    pendingAmbigTarget = null;
+    showToast('Cancelled — cert not applied');
+  });
+}
 
 // Mobile back button closes panels
 window.addEventListener('popstate', (e) => {
