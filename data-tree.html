@@ -251,8 +251,6 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   background: #fff; color: #2a1f10;
 }
 
-.cert-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
-
 .cert-toolbar { padding: 12px 16px; border-bottom: 2px solid #4a3a22; background: #f5eedc; flex-shrink: 0; }
 
 .cert-body { padding: 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
@@ -1120,6 +1118,10 @@ async function sendToTranscriptionAPI(base64) {
   const payload = JSON.stringify({ image: base64, country: getCountry() });
   console.log('[UPLOAD] Payload:', Math.round(payload.length / 1024), 'KB | URL:', API_URL);
 
+  // AbortController: 45s timeout for the entire upload session (covers all attempts)
+  const uploadController = new AbortController();
+  const uploadTimeout = setTimeout(() => uploadController.abort(), 45000);
+
   let lastErr = null;
   for (let attempt = 1; attempt <= 6; attempt++) {
     console.log('[UPLOAD] Attempt', attempt, '/6');
@@ -1128,9 +1130,9 @@ async function sendToTranscriptionAPI(base64) {
     try {
       let resp;
       if (attempt === 1) {
-        resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
+        resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, signal: uploadController.signal });
       } else if (attempt === 2) {
-        resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, credentials: 'omit' });
+        resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, credentials: 'omit', signal: uploadController.signal });
       } else {
         resp = await new Promise((resolve, reject) => {
           const xhr = new XMLHttpRequest();
@@ -1138,6 +1140,10 @@ async function sendToTranscriptionAPI(base64) {
           xhr.setRequestHeader('Content-Type', 'application/json');
           xhr.onload = () => resolve({ status: xhr.status, json: () => Promise.resolve(JSON.parse(xhr.responseText)) });
           xhr.onerror = () => reject(new Error('XHR network error'));
+          xhr.ontimeout = () => reject(new DOMException('XHR timed out', 'AbortError'));
+          xhr.timeout = 45000;
+          // Tie XHR to the same AbortController
+          uploadController.signal.addEventListener('abort', () => { xhr.abort(); });
           xhr.send(payload);
         });
       }
@@ -1166,16 +1172,20 @@ async function sendToTranscriptionAPI(base64) {
       cs.textContent = '✓ Cert type: ' + (json.data.type || 'unknown').toUpperCase();
       renderTranscriptionResults(json.data);
       certPanel.classList.add('has-results');
+      clearTimeout(uploadTimeout);
       return; // Success!
     } catch (err) {
       console.error('[UPLOAD] Attempt', attempt, 'failed:', err.name, err.message);
       lastErr = err;
+      if (err.name === 'AbortError') { clearTimeout(uploadTimeout); break; } // timeout — stop retrying
       if (attempt < 6) {
         cs.innerHTML = 'Retrying in 3s (attempt ' + (attempt + 1) + '/6)...';
         await new Promise(r => setTimeout(r, 3000));
       }
     }
   }
+
+  clearTimeout(uploadTimeout);
 
   // All 6 attempts failed
   cs.className = 'cert-status error';
@@ -1728,22 +1738,6 @@ function findPersonBySurname(name, opts) {
   return candidates[0];
 }
 
-function getOrCreateParent(parentName, parentGen, spouseName, changed) {
-  if (!parentName || isEffectivelyBlank(parentName)) return null;
-  let p = findPerson(parentName) || findPerson(parentName, { checkMaiden: true });
-  if (!p) {
-    p = createPerson(nextId++, parentGen, parentName, '?', 'probable', {});
-    people.push(p); changed.push(p);
-  } else if (p.name === 'Name' || p.status === 'blank') {
-    // Upgraded a blank placeholder — fill in the real name
-    p.name = parentName;
-    p.fullName = parentName;
-    p.status = 'probable';
-    changed.push(p);
-  }
-  return p.id;
-}
-
 function applyBirthEntry(entry, changed, docImage, forceChildId) {
   const childName = entry.child?.name; if (!childName) return;
   const childNorm = normalizeName(childName);
@@ -2044,10 +2038,10 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   function updateParents(person, fatherName, motherName, motherMaiden) {
     if (!person) return;
     if (!person.parents || person.parents.length < 2) {
-      const newFather = createPerson(nextId++, person.gen + 1, 'Name', '?', 'blank', {});
-      const newMother = createPerson(nextId++, person.gen + 1, 'Name', '?', 'blank', {});
-      people.push(newFather, newMother);
-      person.parents = [newFather.id, newMother.id];
+      // initDefaultData always wires parents. If this branch fires, the tree structure is corrupted.
+      // Creating new orphan nodes here would break the layout — bail out instead.
+      console.warn('[updateParents] No parents array for', person.name, '(id', person.id, ') — tree structure may be corrupted. Skipping parent update.');
+      return;
     }
     const father = people.find(p => p.id === person.parents[0]);
     const mother = people.find(p => p.id === person.parents[1]);
