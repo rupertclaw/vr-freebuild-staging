@@ -1647,18 +1647,42 @@ function getOrCreateParent(parentName, parentGen, spouseName, changed) {
 
 function applyBirthEntry(entry, changed, docImage, forceChildId) {
   const childName = entry.child?.name; if (!childName) return;
+  const childNorm = normalizeName(childName);
   
-  // Find or create the child (always Gen 0 for root person)
+  // Find or create the child — generation-aware
   let child = null;
   if (forceChildId) {
     child = people.find(p => p.id === forceChildId);
   }
+  
+  // If Gen 0 is still blank, claim it (first upload = root person)
   if (!child) {
-    child = people.find(p => p.gen === 0);
+    const gen0 = people.find(p => p.gen === 0);
+    if (gen0 && (gen0.name === 'Name' || gen0.status === 'blank')) {
+      child = gen0;
+    }
   }
-  if (!child || (child.name !== 'Name' && child.status !== 'blank')) {
+  
+  // Search upward by generation for first blank slot or name match
+  if (!child) {
+    for (let g = 1; g <= 8; g++) {
+      const gen = people.filter(p => p.gen === g).sort((a, b) => a.id - b.id);
+      // Prefer a non-confirmed person whose name matches the cert child
+      const nameMatch = gen.find(p => {
+        return normalizeName(p.name) === childNorm && p.status !== 'confirmed';
+      });
+      if (nameMatch) { child = nameMatch; break; }
+      // Fall back to first blank slot at this generation
+      const blank = gen.find(p => p.status === 'blank' || p.name === 'Name');
+      if (blank) { child = blank; break; }
+    }
+  }
+  
+  // Last resort: findPerson across the whole tree
+  if (!child) {
     child = findPerson(childName);
   }
+  
   if (!child) {
     child = createPerson(nextId++, 0, childName, '?', 'probable', {});
     people.push(child);
@@ -1677,11 +1701,16 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
   }
   changed.push(child);
 
-  // Use child's existing parent placeholders (always IDs 2,3 in fresh tree)
+  // Wire parents using the tree structure (child at gen G gets parents from gen G+1)
+  // The tree is wired so each gen G person i has parents at gen G+1 positions [2*i, 2*i+1]
   if (!child.parents || child.parents.length < 2) {
-    // Re-wire parents from tree structure if missing
-    const gen1 = people.filter(p => p.gen === 1).sort((a,b) => a.id - b.id);
-    if (gen1.length >= 2) child.parents = [gen1[0].id, gen1[1].id];
+    const childIdx = people.filter(p => p.gen === child.gen).sort((a,b) => a.id - b.id).indexOf(child);
+    const nextGen = people.filter(p => p.gen === child.gen + 1).sort((a,b) => a.id - b.id);
+    if (nextGen.length >= 2 && childIdx > -1) {
+      const father = nextGen[2 * childIdx];
+      const mother = nextGen[2 * childIdx + 1];
+      if (father && mother) child.parents = [father.id, mother.id];
+    }
   }
   
   if (child.parents && child.parents.length >= 2) {
