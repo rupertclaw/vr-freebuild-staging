@@ -1442,8 +1442,17 @@ function findPerson(name, opts) {
 
     // Maiden name matching for marriage certs
     if (opts.checkMaiden && pMaiden) {
-      if (pMaiden === searchSurname || pMaiden === searchNorm) score = Math.max(score, 95);
-      else if (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden)) score = Math.max(score, 75);
+      const searchFirst = searchFull.split(/\s+/)[0] || '';
+      const pFirst = pNameLower.split(/\s+/)[0] || '';
+      const maidenHit = (pMaiden === searchSurname || pMaiden === searchNorm) ? 95
+        : (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden)) ? 75 : 0;
+      if (maidenHit > 0) {
+        if (searchFirst && pFirst && searchFirst !== pFirst) {
+          maidenHit > 90 ? score = Math.max(score, 40) : score = Math.max(score, 30);
+        } else {
+          score = Math.max(score, maidenHit);
+        }
+      }
     }
 
     return score;
@@ -1556,8 +1565,17 @@ function findAllMatches(name, opts) {
     else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) score = 50;
 
     if (opts.checkMaiden && pMaiden) {
-      if (pMaiden === searchSurname || pMaiden === searchNorm) score = Math.max(score, 95);
-      else if (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden)) score = Math.max(score, 75);
+      const searchFirst = searchFull.split(/\s+/)[0] || '';
+      const pFirst = pNameLower.split(/\s+/)[0] || '';
+      const maidenHit = (pMaiden === searchSurname || pMaiden === searchNorm) ? 95
+        : (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden)) ? 75 : 0;
+      if (maidenHit > 0) {
+        if (searchFirst && pFirst && searchFirst !== pFirst) {
+          maidenHit > 90 ? score = Math.max(score, 40) : score = Math.max(score, 30);
+        } else {
+          score = Math.max(score, maidenHit);
+        }
+      }
     }
 
     if (score > 0) matches.push({ person: p, score });
@@ -1604,11 +1622,22 @@ function findPersonGenAware(name, opts) {
     else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
     else if (pNorm.includes(searchNorm) || searchNorm.includes(pNorm)) score = 50;
 
-    // Maiden name check
+    // Maiden name check — but reject if first names don't match
     if (opts.checkMaiden && pMaidenLower) {
       const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
-      if (pMaidenLower === searchSurname || pMaidenLower === searchNorm) score = Math.max(score, 95);
-      else if (pMaidenLower.includes(searchSurname) || searchSurname.includes(pMaidenLower)) score = Math.max(score, 75);
+      const searchFirst = name.split(/\s+/)[0]?.toLowerCase() || '';
+      const pFirst = pNameLower.split(/\s+/)[0] || '';
+      const maidenHit = (pMaidenLower === searchSurname || pMaidenLower === searchNorm) ? 95
+        : (pMaidenLower.includes(searchSurname) || searchSurname.includes(pMaidenLower)) ? 75 : 0;
+      if (maidenHit > 0) {
+        // First name must match for a high-confidence maiden hit
+        if (searchFirst && pFirst && searchFirst !== pFirst) {
+          // Different first name with shared maiden surname = likely a different person
+          maidenHit > 90 ? score = Math.max(score, 40) : score = Math.max(score, 30);
+        } else {
+          score = Math.max(score, maidenHit);
+        }
+      }
     }
 
     if (score > 0) allMatches.push({ person: p, score });
