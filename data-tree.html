@@ -1650,9 +1650,37 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
   const childNorm = normalizeName(childName);
   
   // Find or create the child — generation-aware
+  // Priority: forceChildId > exact confirmed match > exact non-confirmed match > blank Gen 0 > ascending blank slot > findPerson fallback
   let child = null;
   if (forceChildId) {
     child = people.find(p => p.id === forceChildId);
+  }
+  
+  // Try to match an existing person (confirmed or not) by name, lowest gen first
+  if (!child) {
+    const allMatches = [];
+    for (const p of people) {
+      if (p.name === 'Name' || p.status === 'blank') continue;
+      if (normalizeName(p.name) === childNorm || normalizeName(p.fullName || '') === childNorm) {
+        allMatches.push(p);
+      }
+    }
+    if (allMatches.length === 1) {
+      child = allMatches[0];
+    } else if (allMatches.length >= 2) {
+      // Multiple same-name people: pick the one whose parent slots are still blank
+      // (parent data from this cert needs somewhere to go)
+      for (const m of allMatches.sort((a, b) => a.gen - b.gen)) {
+        const dad = people.find(p => p.id === m.parents?.[0]);
+        const mum = people.find(p => p.id === m.parents?.[1]);
+        if (dad && mum && (dad.name === 'Name' || dad.status === 'blank') && (mum.name === 'Name' || mum.status === 'blank')) {
+          child = m;
+          break;
+        }
+      }
+      // If no match has blank parents, just take the lowest-gen one
+      if (!child) child = allMatches.sort((a, b) => a.gen - b.gen)[0];
+    }
   }
   
   // If Gen 0 is still blank, claim it (first upload = root person)
@@ -1663,7 +1691,7 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
     }
   }
   
-  // Search upward by generation for first blank slot or name match
+  // Search upward by generation for a non-confirmed name match or blank slot
   if (!child) {
     for (let g = 1; g <= 8; g++) {
       const gen = people.filter(p => p.gen === g).sort((a, b) => a.id - b.id);
