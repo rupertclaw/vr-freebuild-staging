@@ -2160,7 +2160,12 @@ function applyDeathEntry(entry, changed, docImage, forceDecId) {
       const pLast = pDisplay.split(/\s+/).pop() || '';
       const searchFirst = decName.split(/\s+/)[0]?.toLowerCase() || '';
       const searchLast = decName.split(/\s+/).pop()?.toLowerCase() || '';
+      // Match 1: tree name matches DC name directly
       if (pFirst === searchFirst && pLast === searchLast) { dec = p; break; }
+      // Match 2: DC surname matches person's spouse surname (married name on DC, maiden name in tree)
+      const spouse = people.find(s => s.id === p.spouseId);
+      const spouseLast = spouse ? (spouse.name.split(/\s+/).pop()?.toLowerCase() || '') : '';
+      if (spouseLast && pFirst === searchFirst && searchLast === spouseLast) { dec = p; break; }
     }
   }
   if (!dec) { dec = createPerson(nextId++, 0, decName, '?', 'probable', {}); people.push(dec); changed.push(dec); }
