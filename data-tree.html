@@ -581,6 +581,7 @@ let pendingDocImage = null;
 let lastTranscription = null;
 let selectedEntryIndex = 0;
 let pendingAmbigTarget = null;  // { entry, type, docImage, resolveName, resolveId }
+let pendingDirectAttachId = null; // person id for direct-attach from detail panel
 
 // ========== IndexedDB Document Storage ==========
 const DOC_DB_NAME = 'VRTDocs';
@@ -875,7 +876,8 @@ function openDetail(person) {
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
       <button class="save-btn" onclick="saveDetail()">Save Changes</button>
     </div>
-    <div style="margin-top:8px;text-align:center;">
+    <div style="margin-top:8px;text-align:center;display:flex;flex-direction:column;gap:8px;">
+      <button id="attachDocBtn" style="background:#faf6ee;border:2px solid #4a6b4a;color:#2a4a2a;padding:8px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">📎 Attach Document to This Person</button>
       <button id="clearCardBtn" style="background:transparent;border:1px solid #5c2a2a;color:#5c2a2a;padding:6px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">↻ Clear Data from Card</button>
     </div>
   `;
@@ -886,6 +888,20 @@ function openDetail(person) {
     clearCardBtnEl.addEventListener('click', () => {
       if (!confirm('Clear all data from this card? The person will be reset to blank status. This cannot be undone.')) return;
       clearCard();
+    });
+  }
+  // Wire up Attach Document button
+  const attachDocBtn = document.getElementById('attachDocBtn');
+  if (attachDocBtn) {
+    attachDocBtn.addEventListener('click', () => {
+      pendingDirectAttachId = person.id;  // Mark this person as the target
+      closeDetail();
+      // Open cert panel and trigger file picker
+      certPanel.classList.add('active');
+      clearCertPanel();
+      showToast('Select a certificate image to attach to ' + person.name);
+      document.getElementById('certFileInput').value = '';
+      document.getElementById('certFileInput').click();
     });
   }
   // Load document thumbnails from IndexedDB
@@ -1762,15 +1778,23 @@ function findPersonBySurname(name, opts) {
 function applyBirthEntry(entry, changed, docImage, forceChildId) {
   const childName = entry.child?.name; if (!childName) return;
   const childNorm = normalizeName(childName);
-  
-  // Find or create the child — generation-aware
-  // Priority: forceChildId > exact confirmed match > exact non-confirmed match > blank Gen 0 > ascending blank slot > findPerson fallback
+
+  // Validate father: if father equals child's own name, treat as illegitimate / OCR error
+  const fatherNameRaw = entry.father?.name || '';
+  const isIllegitimate = !fatherNameRaw
+    || fatherNameRaw.toLowerCase().includes('illegitimate')
+    || normalizeName(fatherNameRaw) === childNorm;
+  if (isIllegitimate) {
+    entry.father = null;  // Clear the false father so we don't write it later
+  }
+
+  // Find or create the child
   let child = null;
   if (forceChildId) {
     child = people.find(p => p.id === forceChildId);
   }
-  
-  // Try to match an existing person (confirmed or not) by name, lowest gen first
+
+  // Priority 1: exact name match (confirmed or probable), lowest gen first
   if (!child) {
     const allMatches = [];
     for (const p of people) {
@@ -1782,57 +1806,48 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
     if (allMatches.length === 1) {
       child = allMatches[0];
     } else if (allMatches.length >= 2) {
-      // Multiple same-name people: pick the one whose parent slots are still blank
-      // (parent data from this cert needs somewhere to go)
+      // Multiple same-name people: prefer the one with blank parent slots
       for (const m of allMatches.sort((a, b) => a.gen - b.gen)) {
         const dad = people.find(p => p.id === m.parents?.[0]);
         const mum = people.find(p => p.id === m.parents?.[1]);
         if (dad && mum && (dad.name === 'Name' || dad.status === 'blank') && (mum.name === 'Name' || mum.status === 'blank')) {
-          child = m;
-          break;
+          child = m; break;
         }
       }
-      // If no match has blank parents, just take the lowest-gen one
       if (!child) child = allMatches.sort((a, b) => a.gen - b.gen)[0];
     }
   }
-  
-  // If Gen 0 is still blank, claim it (first upload = root person)
+
+  // Priority 2: blank Gen 0 for root person
   if (!child) {
     const gen0 = people.find(p => p.gen === 0);
     if (gen0 && (gen0.name === 'Name' || gen0.status === 'blank')) {
       child = gen0;
     }
   }
-  
-  // Search upward by generation for a non-confirmed name match or blank slot
-  if (!child) {
-    for (let g = 1; g <= 8; g++) {
-      const gen = people.filter(p => p.gen === g).sort((a, b) => a.id - b.id);
-      // Prefer a non-confirmed person whose name matches the cert child
-      const nameMatch = gen.find(p => {
-        return normalizeName(p.name) === childNorm && p.status !== 'confirmed';
-      });
-      if (nameMatch) { child = nameMatch; break; }
-      // Fall back to first blank slot at this generation
-      const blank = gen.find(p => p.status === 'blank' || p.name === 'Name');
-      if (blank) { child = blank; break; }
-    }
-  }
-  
-  // Last resort: generation-aware findPerson
+
+  // Priority 3: generation-aware fuzzy match
   if (!child) {
     child = findPersonGenAware(childName);
   }
-  
+
+  // Priority 4: create new person at Gen 0 (never recycle existing blanks)
   if (!child) {
     child = createPerson(nextId++, 0, childName, '?', 'probable', {});
     people.push(child);
   }
-  
-  child.name = childName;
+
+  // Update child with cert data, but NEVER overwrite a confirmed person's name
+  if (child.name === 'Name' || child.status === 'blank') {
+    child.name = childName;
+  }
   child.fullName = childName;
-  if (entry.child?.birthDate) { child.birthDate = entry.child.birthDate; child.years = 'b. ' + entry.child.birthDate; }
+  if (entry.child?.birthDate) {
+    child.birthDate = entry.child.birthDate;
+    const bYear = extractYear(entry.child.birthDate);
+    const dYear = extractYear(child.deathDate);
+    child.years = dYear ? `${bYear} — ${dYear}` : `b. ${entry.child.birthDate}`;
+  }
   child.status = 'confirmed';
   child.docs.push({ type: 'bc', date: extractDocDate(entry, 'birth'), docId: null });
   if (docImage) {
@@ -1843,10 +1858,10 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
   }
   changed.push(child);
 
-  // Wire parents using the tree structure (child at gen G gets parents from gen G+1)
-  // The tree is wired so each gen G person i has parents at gen G+1 positions [2*i, 2*i+1]
+  // Wire parents using tree structure (gen G person i gets parents at gen G+1 positions [2*i, 2*i+1])
   if (!child.parents || child.parents.length < 2) {
-    const childIdx = people.filter(p => p.gen === child.gen).sort((a,b) => a.id - b.id).indexOf(child);
+    const genPeers = people.filter(p => p.gen === child.gen).sort((a,b) => a.id - b.id);
+    const childIdx = genPeers.indexOf(child);
     const nextGen = people.filter(p => p.gen === child.gen + 1).sort((a,b) => a.id - b.id);
     if (nextGen.length >= 2 && childIdx > -1) {
       const father = nextGen[2 * childIdx];
@@ -1854,28 +1869,36 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
       if (father && mother) child.parents = [father.id, mother.id];
     }
   }
-  
+
   if (child.parents && child.parents.length >= 2) {
     const father = people.find(p => p.id === child.parents[0]);
     const mother = people.find(p => p.id === child.parents[1]);
-    
+
+    // Father: only update if not illegitimate and father slot is blank/unconfirmed
     if (father && entry.father?.name) {
-      father.name = entry.father.name;
-      father.fullName = entry.father.name;
-      if (father.status === 'blank') father.status = 'probable';
-      changed.push(father);
+      const fatherNorm = normalizeName(entry.father.name);
+      if (fatherNorm !== childNorm && father.name !== 'Name' && father.status !== 'confirmed') {
+        father.name = entry.father.name;
+        father.fullName = entry.father.name;
+        if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
+        changed.push(father);
+      }
     }
+
+    // Mother: only update if blank/unconfirmed
     if (mother && entry.mother?.name) {
-      mother.name = entry.mother.name;
-      mother.fullName = entry.mother.name;
-      if (mother.status === 'blank') mother.status = 'probable';
-      if (entry.mother?.maidenName) mother.maidenName = entry.mother.maidenName;
-      if (entry.mother?.maidenSurname) mother.maidenName = entry.mother.maidenSurname;
-      changed.push(mother);
+      if (mother.status !== 'confirmed') {
+        mother.name = entry.mother.name;
+        mother.fullName = entry.mother.name;
+        if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
+        if (entry.mother?.maidenName) mother.maidenName = entry.mother.maidenName;
+        if (entry.mother?.maidenSurname) mother.maidenName = entry.mother.maidenSurname;
+        changed.push(mother);
+      }
     }
-    
-    // Wire spouse relationship between parents
-    if (father && mother) {
+
+    // Wire spouse relationship between parents (skip if illegitimate — no father)
+    if (father && mother && !isIllegitimate) {
       father.spouseId = mother.id;
       mother.spouseId = father.id;
       father.spouseName = mother.name;
@@ -2059,30 +2082,48 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   function updateParents(person, fatherName, motherName, motherMaiden) {
     if (!person) return;
     if (!person.parents || person.parents.length < 2) {
-      // initDefaultData always wires parents. If this branch fires, the tree structure is corrupted.
-      // Creating new orphan nodes here would break the layout — bail out instead.
       console.warn('[updateParents] No parents array for', person.name, '(id', person.id, ') — tree structure may be corrupted. Skipping parent update.');
       return;
     }
     const father = people.find(p => p.id === person.parents[0]);
     const mother = people.find(p => p.id === person.parents[1]);
 
-    if (father && fatherName && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable' || father.status === 'unknown-parent')) {
-      father.name = fatherName; father.fullName = fatherName;
+    // Validation: father name must not equal mother's existing spouse (different families)
+    if (father && fatherName) {
+      const fatherNorm = normalizeName(fatherName);
+      const mothersExistingSpouse = mother && mother.spouseName ? normalizeName(mother.spouseName) : '';
+      if (mothersExistingSpouse && mothersExistingSpouse !== fatherNorm && mother.status === 'confirmed') {
+        console.warn('[updateParents] Father', fatherName, 'does not match mother\'s existing spouse', mother.spouseName, '— skipping father update to avoid family merge.');
+        return;  // Bail entirely for this cert's parent update — data is ambiguous
+      }
+    }
+
+    // Only update father if slot is blank or probable (never overwrite confirmed)
+    if (father && fatherName && (father.status === 'blank' || father.status === 'probable' || father.status === 'unknown-parent')) {
+      father.name = fatherName;
+      father.fullName = fatherName;
       if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
       changed.push(father);
     }
-    if (mother && motherName && (mother.name === 'Name' || mother.status === 'blank' || mother.status === 'probable' || mother.status === 'unknown-parent')) {
-      mother.name = motherName; mother.fullName = motherName;
+    // Only update mother if slot is blank or probable (never overwrite confirmed)
+    if (mother && motherName && (mother.status === 'blank' || mother.status === 'probable' || mother.status === 'unknown-parent')) {
+      mother.name = motherName;
+      mother.fullName = motherName;
       if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
       if (motherMaiden) mother.maidenName = motherMaiden;
       changed.push(mother);
     }
+    // Wire spouse link only if both are unlinked or already linked to each other
     if (father && mother) {
-      father.spouseId = mother.id;
-      mother.spouseId = father.id;
-      father.spouseName = mother.name;
-      mother.spouseName = father.name;
+      const alreadyLinked = father.spouseId === mother.id || mother.spouseId === father.id;
+      const fatherFree = !father.spouseId || father.spouseId === mother.id;
+      const motherFree = !mother.spouseId || mother.spouseId === father.id;
+      if (alreadyLinked || (fatherFree && motherFree)) {
+        father.spouseId = mother.id;
+        mother.spouseId = father.id;
+        father.spouseName = mother.name;
+        mother.spouseName = father.name;
+      }
     }
   }
 
@@ -2168,6 +2209,27 @@ document.getElementById('certConfirm').addEventListener('click', () => {
   const entries = lastTranscription.entries || [lastTranscription];
   const entry = entries[selectedEntryIndex || 0];
   if (!entry) return;
+
+  // DIRECT ATTACH MODE: bypass matcher, force apply to selected person
+  if (pendingDirectAttachId) {
+    let type = lastTranscription.type || 'unknown';
+    if (type === 'unknown') {
+      if (entry.groom?.name || entry.bride?.name) type = 'marriage';
+      else if (entry.child?.name || entry.father?.name || entry.mother?.name) type = 'birth';
+      else if (entry.deceased?.name) type = 'death';
+    }
+    const changed = [];
+    if (type === 'birth') applyBirthEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
+    else if (type === 'marriage') applyMarriageEntry(entry, changed, pendingDocImage, null, pendingDirectAttachId);
+    else if (type === 'death') applyDeathEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
+    if (changed.length) { renderTree(); showToast('Document attached to ' + changed[0].name); }
+    pendingDirectAttachId = null;
+    certPanel.classList.remove('active');
+    certPanel.classList.remove('has-results');
+    return;
+  }
+
+  // Normal auto-match path
   let type = lastTranscription.type || 'unknown';
   if (type === 'unknown') {
     if (entry.groom?.name || entry.bride?.name) type = 'marriage';
@@ -2180,6 +2242,7 @@ document.getElementById('certConfirm').addEventListener('click', () => {
 });
 
 document.getElementById('certClear').addEventListener('click', () => {
+  pendingDirectAttachId = null;  // Cancel any pending direct-attach
   clearCertPanel();
 });
 
