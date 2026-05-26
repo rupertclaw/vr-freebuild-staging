@@ -564,6 +564,7 @@ function createPerson(id, gen, name, years, status, opts) {
     occupation: opts.occupation || '',
     birthplace: opts.birthplace || '',
     maidenName: opts.maidenName || '',
+    marriedName: opts.marriedName || '',
     spouseName: opts.spouseName || '',
     spouseId: opts.spouseId || null,
     parents: opts.parents || null,
@@ -1600,16 +1601,20 @@ function findAllMatches(name, opts) {
     const pNorm = normalizeName(p.name);
     const pFull = normalizeName(p.fullName || '');
     const pMaiden = normalizeName(p.maidenName || '');
+    const pMarried = normalizeName(p.marriedName || '');
+    const pSpouse = normalizeName(p.spouseName || '');
     const pNameLower = (p.name || '').toLowerCase().trim();
     const pFullLower = (p.fullName || '').toLowerCase().trim();
     const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
+    const pMarriedLower = (p.marriedName || '').toLowerCase().trim();
+    const pSpouseLower = (p.spouseName || '').toLowerCase().trim();
 
     let score = 0;
-    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
-    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) score = 100;
-    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
-    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
-    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) score = 50;
+    if (pNorm === searchNorm || pFull === searchNorm || pMaiden === searchNorm || pMarried === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull || pMarriedLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull) || searchFull.includes(pSpouseLower)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull) || searchFull.includes(pMaidenLower) || searchFull.includes(pMarriedLower)) score = 75;
+    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm) || searchNorm.includes(pMarried) || pMarried.includes(searchNorm)) score = 50;
 
     if (opts.checkMaiden && pMaiden) {
       const searchFirst = searchFull.split(/\s+/)[0] || '';
@@ -1622,6 +1627,15 @@ function findAllMatches(name, opts) {
         } else {
           score = Math.max(score, maidenHit);
         }
+      }
+    }
+
+    // Married name matching: if DC uses married name, score based on marriedName field
+    if (pMarried) {
+      const searchFirst = searchFull.split(/\s+/)[0] || '';
+      const pFirst = pNameLower.split(/\s+/)[0] || '';
+      if (searchFirst === pFirst && (pMarried === searchSurname || searchSurname.includes(pMarried) || pMarried.includes(searchSurname))) {
+        score = Math.max(score, 85);  // strong match: same first name + married surname
       }
     }
 
@@ -1660,17 +1674,19 @@ function findPersonGenAware(name, opts) {
     const pNorm = normalizeName(p.name);
     const pFull = normalizeName(p.fullName || '');
     const pMaiden = normalizeName(p.maidenName || '');
+    const pMarried = normalizeName(p.marriedName || '');
     const pNameLower = (p.name || '').toLowerCase().trim();
     const pFullLower = (p.fullName || '').toLowerCase().trim();
     const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
+    const pMarriedLower = (p.marriedName || '').toLowerCase().trim();
     const searchFull = name.toLowerCase().trim();
 
     let score = 0;
-    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
-    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) score = 100;
+    if (pNorm === searchNorm || pFull === searchNorm || pMaiden === searchNorm || pMarried === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull || pMarriedLower === searchFull) score = 100;
     else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
-    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
-    else if (pNorm.includes(searchNorm) || searchNorm.includes(pNorm)) score = 50;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull) || searchFull.includes(pMaidenLower) || searchFull.includes(pMarriedLower)) score = 75;
+    else if (pNorm.includes(searchNorm) || searchNorm.includes(pNorm) || searchNorm.includes(pMarried) || pMarried.includes(searchNorm)) score = 50;
 
     // Maiden name check — but reject if first names don't match
     if (opts.checkMaiden && pMaidenLower) {
@@ -1687,6 +1703,16 @@ function findPersonGenAware(name, opts) {
         } else {
           score = Math.max(score, maidenHit);
         }
+      }
+    }
+
+    // Married name check: if search uses married surname, score high
+    if (pMarried) {
+      const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
+      const searchFirst = name.split(/\s+/)[0]?.toLowerCase() || '';
+      const pFirst = pNameLower.split(/\s+/)[0] || '';
+      if (searchFirst === pFirst && (pMarried === searchSurname || searchSurname.includes(pMarried) || pMarried.includes(searchSurname))) {
+        score = Math.max(score, 85);
       }
     }
 
@@ -2062,13 +2088,18 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   groom.spouseName = bride.name;
   bride.spouseName = groom.name;
 
-  // STEP 7: Update bride's display name to married name if matched by maiden
+  // STEP 7: Record married name from marriage cert, never overwrite primary identity
   const groomSurname = groomName.split(/\s+/).pop();
   const brideSurname = bride.name.split(/\s+/).pop();
   if (brideSurname.toLowerCase() !== groomSurname.toLowerCase()) {
-    const brideFirst = bride.name.split(/\s+/).slice(0, -1).join(' ') || bride.name.split(/\s+/)[0];
-    bride.name = brideFirst + ' ' + groomSurname;
-    bride.fullName = bride.name;
+    // Store married name separately — maiden identity stays primary
+    if (!bride.marriedName) {
+      bride.marriedName = groomSurname;
+    }
+    // If maiden name not recorded, infer from current name (which should be maiden at this point)
+    if (!bride.maidenName) {
+      bride.maidenName = brideSurname;
+    }
     changed.push(bride);
   }
 
@@ -2181,7 +2212,12 @@ function applyDeathEntry(entry, changed, docImage, forceDecId) {
       const pLast = pDisplay.split(/\s+/).pop() || '';
       const searchFirst = decName.split(/\s+/)[0]?.toLowerCase() || '';
       const searchLast = decName.split(/\s+/).pop()?.toLowerCase() || '';
+      // Match 1: tree name matches DC name directly
       if (pFirst === searchFirst && pLast === searchLast) { dec = p; break; }
+      // Match 2: DC surname matches person's spouse surname (married name on DC, maiden name in tree)
+      const spouse = people.find(s => s.id === p.spouseId);
+      const spouseLast = spouse ? (spouse.name.split(/\s+/).pop()?.toLowerCase() || '') : '';
+      if (spouseLast && pFirst === searchFirst && searchLast === spouseLast) { dec = p; break; }
     }
   }
   if (!dec) { dec = createPerson(nextId++, 0, decName, '?', 'probable', {}); people.push(dec); changed.push(dec); }
@@ -2417,6 +2453,18 @@ function backfillComputedFields() {
       const bYear = (p.birthDate.match(/\d{4}/) || [])[0];
       const dYear = (p.deathDate.match(/\d{4}/) || [])[0];
       if (bYear && dYear) p.ageAtDeath = String(parseInt(dYear) - parseInt(bYear));
+    }
+    // Backfill marriedName from mismatched maiden/married entries
+    // If p.name has maiden surname but p.maidenName doesn't, extract it
+    if (!p.maidenName && p.spouseName) {
+      // Try to infer maiden name from current name if it doesn't match spouse
+      const nameSurname = (p.name || '').split(/\s+/).pop() || '';
+      const spouseSurname = (p.spouseName || '').split(/\s+/).pop() || '';
+      if (nameSurname.toLowerCase() !== spouseSurname.toLowerCase()) {
+        // Current name's surname is likely maiden
+        p.maidenName = nameSurname;
+        p.marriedName = spouseSurname;
+      }
     }
     // Compact years display
     const bY = (p.birthDate || '').match(/\d{4}/);
