@@ -1877,7 +1877,7 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
     // Father: only update if not illegitimate and father slot is blank/unconfirmed
     if (father && entry.father?.name) {
       const fatherNorm = normalizeName(entry.father.name);
-      if (fatherNorm !== childNorm && father.name !== 'Name' && father.status !== 'confirmed') {
+      if (fatherNorm !== childNorm && (father.name === 'Name' || father.status !== 'confirmed')) {
         father.name = entry.father.name;
         father.fullName = entry.father.name;
         if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
@@ -1885,14 +1885,24 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
       }
     }
 
-    // Mother: only update if blank/unconfirmed
+    // Mother: only update if blank/unconfirmed; prefer maiden identity for display name
     if (mother && entry.mother?.name) {
       if (mother.status !== 'confirmed') {
-        mother.name = entry.mother.name;
-        mother.fullName = entry.mother.name;
+        const rawMotherName = entry.mother.name.replace(/\s*\(m\.s\.\s+[^)]+\)/gi, '').trim();
+        const rawParts = rawMotherName.split(' ');
+        const firstName = rawParts[0] || '';
+        const rawSurname = rawParts.slice(1).join(' ');
+        const maiden = entry.mother?.maidenName || entry.mother?.maidenSurname || mother.maidenName || '';
+        if (maiden && firstName) {
+          mother.name = firstName + ' ' + maiden;
+          mother.fullName = firstName + ' ' + maiden;
+        } else {
+          mother.name = rawMotherName;
+          mother.fullName = rawMotherName;
+        }
+        if (maiden) mother.maidenName = maiden;
+        if (rawSurname && rawSurname !== maiden) mother.marriedName = rawSurname;
         if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
-        if (entry.mother?.maidenName) mother.maidenName = entry.mother.maidenName;
-        if (entry.mother?.maidenSurname) mother.maidenName = entry.mother.maidenSurname;
         changed.push(mother);
       }
     }
@@ -2107,10 +2117,21 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
     }
     // Only update mother if slot is blank or probable (never overwrite confirmed)
     if (mother && motherName && (mother.status === 'blank' || mother.status === 'probable' || mother.status === 'unknown-parent')) {
-      mother.name = motherName;
-      mother.fullName = motherName;
+      const rawMName = motherName.replace(/\s*\(m\.s\.\s+[^)]+\)/gi, '').trim();
+      const mParts = rawMName.split(' ');
+      const mFirst = mParts[0] || '';
+      const mRawSurname = mParts.slice(1).join(' ');
+      const mMaiden = motherMaiden || mother.maidenName || '';
+      if (mMaiden && mFirst) {
+        mother.name = mFirst + ' ' + mMaiden;
+        mother.fullName = mFirst + ' ' + mMaiden;
+      } else {
+        mother.name = rawMName;
+        mother.fullName = rawMName;
+      }
+      if (mMaiden) mother.maidenName = mMaiden;
+      if (mRawSurname && mRawSurname !== mMaiden) mother.marriedName = mRawSurname;
       if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
-      if (motherMaiden) mother.maidenName = motherMaiden;
       changed.push(mother);
     }
     // Wire spouse link only if both are unlinked or already linked to each other
