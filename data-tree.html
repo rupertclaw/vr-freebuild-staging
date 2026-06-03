@@ -1225,9 +1225,9 @@ async function sendToTranscriptionAPI(base64) {
   const payload = JSON.stringify({ image: base64, country: getCountry() });
   console.log('[UPLOAD] Payload:', Math.round(payload.length / 1024), 'KB | URL:', API_URL);
 
-  // AbortController: 45s timeout for the entire upload session (covers all attempts)
+  // AbortController: 90s timeout for the entire upload session (covers all attempts)
   const uploadController = new AbortController();
-  const uploadTimeout = setTimeout(() => uploadController.abort(), 45000);
+  const uploadTimeout = setTimeout(() => uploadController.abort(), 90000);
 
   let lastErr = null;
   for (let attempt = 1; attempt <= 6; attempt++) {
@@ -1248,7 +1248,7 @@ async function sendToTranscriptionAPI(base64) {
           xhr.onload = () => resolve({ status: xhr.status, json: () => Promise.resolve(JSON.parse(xhr.responseText)) });
           xhr.onerror = () => reject(new Error('XHR network error'));
           xhr.ontimeout = () => reject(new DOMException('XHR timed out', 'AbortError'));
-          xhr.timeout = 45000;
+          xhr.timeout = 90000;
           // Tie XHR to the same AbortController
           uploadController.signal.addEventListener('abort', () => { xhr.abort(); });
           xhr.send(payload);
@@ -1296,7 +1296,7 @@ async function sendToTranscriptionAPI(base64) {
 
   // All 6 attempts failed
   cs.className = 'cert-status error';
-  let msg = lastErr?.name === 'AbortError' ? 'Scan timed out after 45 seconds.' : (lastErr?.message || 'Could not reach server');
+  let msg = lastErr?.name === 'AbortError' ? 'Scan timed out after 90 seconds.' : (lastErr?.message || 'Could not reach server');
   if (msg.includes('Failed to fetch')) msg = 'Connection failed on image upload. Your network may block large uploads.';
   const debugId = 'debug_' + Date.now();
   cs.innerHTML = 'Network error: ' + msg + '<br><small>Try: 1) Different WiFi, 2) Camera not gallery, 3) Clear and retry</small><br><button onclick="document.getElementById(\'' + debugId + '\').style.display=\'block\'" style="margin-top:6px;padding:4px 8px;font-size:11px;background:#8a7a5a;color:#fff;border:none;border-radius:4px;">Show Debug Logs</button><pre id="' + debugId + '" style="display:none;margin-top:6px;padding:6px;background:#1a1510;color:#e8dcc8;font-size:10px;max-height:150px;overflow:auto;border-radius:4px;white-space:pre-wrap;">' + getDebugLogs().replace(/</g,'&lt;') + '</pre>';
