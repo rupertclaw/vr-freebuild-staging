@@ -530,19 +530,13 @@ function populateCountrySelect() {
   const saved = getCountry();
   if (saved && COUNTRY_SOURCES[saved]) sel.value = saved;
 }
-function getSourceLinks(certType) {
-  const code = getCountry();
-  if (!code || !COUNTRY_SOURCES[code]) return null;
-  const src = COUNTRY_SOURCES[code];
-  const url = src[certType] || src.birth || '';
-  if (!url) return null;
-  return { name: src.name, url };
-}
-function buildSourceButtons(certType) {
-  const links = getSourceLinks(certType);
-  if (!links) return '';
-  return `<a href="${links.url}" target="_blank" rel="noopener" class="source-btn" style="display:inline-block;padding:8px 12px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:11px;text-decoration:none;margin-top:8px;">🔍 Search ${links.name}
-  </a>`;
+function buildCountryButtons() {
+  let html = '';
+  for (const [code, src] of Object.entries(COUNTRY_SOURCES)) {
+    if (code === 'other' || (!src.birth && !src.marriage && !src.death)) continue;
+    html += `<button type="button" class="source-country-btn" data-country="${code}" style="padding:6px 10px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;">${src.name}</button>`;
+  }
+  return html;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -866,11 +860,10 @@ function openDetail(person) {
       <div id="docThumbs" style="display:flex;flex-wrap:wrap;gap:6px;">${person.docs.length ? '<em style="font-size:12px;color:#6b5537;">Loading...</em>' : '<em style="font-size:12px;color:#6b5537;">No documents</em>'}</div>
     </div>
     <div class="detail-field"><label>Find Source Records</label>
-      <div style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${buildSourceButtons('birth')}
-        ${buildSourceButtons('marriage')}
-        ${buildSourceButtons('death')}
+      <div id="sourceCountryGrid" style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${buildCountryButtons()}
       </div>
+      <div id="sourceRecordLinks" style="display:none;margin-top:6px;flex-wrap:wrap;gap:6px;"></div>
     </div>
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
@@ -904,6 +897,29 @@ function openDetail(person) {
       document.getElementById('certFileInput').click();
     });
   }
+  // Wire up country source buttons
+  document.querySelectorAll('.source-country-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const code = btn.dataset.country;
+      const src = COUNTRY_SOURCES[code];
+      if (!src) return;
+      const container = document.getElementById('sourceRecordLinks');
+      if (!container) return;
+      // Toggle: if same country already showing, hide it
+      if (container.dataset.activeCountry === code && container.style.display !== 'none') {
+        container.style.display = 'none';
+        container.dataset.activeCountry = '';
+        return;
+      }
+      let linksHtml = '';
+      if (src.birth) linksHtml += `<a href="${src.birth}" target="_blank" rel="noopener" style="display:inline-block;padding:6px 10px;border:2px solid #6b8e5a;border-radius:4px;background:#e8f0e0;color:#3a5a2a;font-family:'Cinzel Decorative',serif;font-size:11px;text-decoration:none;">Birth</a>`;
+      if (src.marriage) linksHtml += `<a href="${src.marriage}" target="_blank" rel="noopener" style="display:inline-block;padding:6px 10px;border:2px solid #8a7a5a;border-radius:4px;background:#f0e8d8;color:#5a4a2a;font-family:'Cinzel Decorative',serif;font-size:11px;text-decoration:none;">Marriage</a>`;
+      if (src.death) linksHtml += `<a href="${src.death}" target="_blank" rel="noopener" style="display:inline-block;padding:6px 10px;border:2px solid #8a5a5a;border-radius:4px;background:#f0e0e0;color:#5a2a2a;font-family:'Cinzel Decorative',serif;font-size:11px;text-decoration:none;">Death</a>`;
+      container.innerHTML = linksHtml;
+      container.style.display = 'flex';
+      container.dataset.activeCountry = code;
+    });
+  });
   // Load document thumbnails from IndexedDB
   (async function loadDocThumbs() {
     const container = document.getElementById('docThumbs');
