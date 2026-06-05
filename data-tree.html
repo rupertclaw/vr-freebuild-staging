@@ -297,6 +297,66 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 .detail-actions .cancel-btn { flex: 1; padding: 10px; border: 1px solid #8a7a5a; border-radius: 4px; background: #e8dcc8; color: #4a3a22; font-family: 'Cormorant Garamond', serif; font-size: 13px; cursor: pointer; }
 .detail-actions .save-btn { flex: 1; padding: 10px; border: none; border-radius: 4px; background: #3e3225; color: #f0e6d2; font-family: 'Cormorant Garamond', serif; font-size: 13px; cursor: pointer; }
 
+/* Guidance panel */
+.guidance-panel {
+  display: none; position: fixed; top: 124px; right: 0; bottom: 0;
+  width: 400px; max-width: 95vw;
+  background: #f5eedc; z-index: 400;
+  border-left: 3px solid #5a7a3a;
+  flex-direction: column;
+}
+.guidance-panel.active { display: flex; animation: slideIn 0.25s ease; }
+.guidance-header {
+  background: #1a3010; color: #e8f0e0; padding: 14px 16px;
+  position: relative; font-family: 'Cinzel Decorative', serif;
+  flex-shrink: 0;
+}
+.guidance-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8f0e0; font-size: 24px; cursor: pointer; }
+.guidance-body { padding: 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
+
+.guidance-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #c4b89a;
+}
+.guidance-stat { text-align: center; }
+.guidance-stat .val { font-family: 'Cinzel Decorative', serif; font-size: 20px; color: #5a7a3a; }
+.guidance-stat .lbl { font-size: 10px; color: #6b5537; text-transform: uppercase; }
+
+.guidance-card {
+  background: #fff; border: 2px solid #8a7a5a; border-radius: 6px;
+  padding: 12px; margin-bottom: 10px;
+  font-family: 'Cormorant Garamond', serif;
+}
+.guidance-card.high { border-color: #5a7a3a; background: #f8fdf5; }
+.guidance-card.med { border-color: #8a7a5a; }
+.guidance-card.low { border-color: #b8a88a; opacity: 0.85; }
+.guidance-card .title { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: #2a1f10; margin-bottom: 4px; }
+.guidance-card .desc { font-size: 13px; color: #4a3a22; margin-bottom: 6px; }
+.guidance-card .fills { font-size: 11px; color: #6b5537; margin-bottom: 8px; padding-left: 12px; }
+.guidance-card .fills li { margin-bottom: 2px; }
+.guidance-card .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.guidance-card .actions a {
+  display: inline-block; padding: 5px 10px; border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif; font-size: 10px; text-decoration: none;
+}
+.guidance-card .actions .source-link {
+  background: #e8f0e0; color: #3a5a2a; border: 1px solid #6b8e5a;
+}
+.guidance-card .actions .cost-note {
+  background: #fef3c7; color: #92400e; border: 1px solid #f59e0b;
+}
+
+.guidance-empty {
+  text-align: center; padding: 40px 20px;
+  font-family: 'Cormorant Garamond', serif; color: #6b5537;
+}
+.guidance-empty .icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Next Steps button */
+#nextStepsBtn {
+  background: #5a7a3a; color: #f5eedc; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
 /* Save/Load buttons */
 .save-bar {
   position: fixed; bottom: 16px; left: 16px; display: flex; gap: 8px; z-index: 200;
@@ -403,10 +463,25 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   <div class="detail-body" id="detailBody"></div>
 </div>
 
+<!-- Guidance Panel -->
+<div class="guidance-panel" id="guidancePanel">
+  <div class="guidance-header">
+    <button class="guidance-close" id="guidanceClose">&times;</button>
+    <div style="font-size:14px;">🧭 Research Guidance</div>
+  </div>
+  <div class="guidance-body" id="guidanceBody">
+    <div id="guidanceLoading" style="text-align:center;padding:40px;color:#6b5537;">
+      <div style="font-size:24px;margin-bottom:8px;">🧭</div>
+      <div>Analysing your tree...</div>
+    </div>
+  </div>
+</div>
+
 <!-- Save/Load bar -->
 <div class="save-bar">
   <button id="saveBtn">⬇ Save Session</button>
   <button id="loadBtn">⬆ Load Session</button>
+  <button id="nextStepsBtn">🧭 Next Steps</button>
   <button id="resetBtn" style="background:#2a3a50;color:#c8e8ff;">↻ Reset</button>
   <input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
 </div>
@@ -828,6 +903,7 @@ document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom 
 document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.25));
 
 const detailPanel = document.getElementById('detailPanel');
+const guidancePanel = document.getElementById('guidancePanel');
 const detailBody = document.getElementById('detailBody');
 const detailTitle = document.getElementById('detailTitle');
 
@@ -2376,6 +2452,233 @@ document.getElementById('certRetry').addEventListener('click', () => {
   }
 });
 
+// ═══════════════════════════════════════════════════════════════
+// RESEARCH GUIDANCE / NEXT STEPS
+// ═══════════════════════════════════════════════════════════════
+
+function openGuidancePanel() {
+  const panel = document.getElementById('guidancePanel');
+  panel.classList.add('active');
+  history.pushState({panel: 'guidance'}, '');
+  runGuidanceAnalysis();
+}
+
+function closeGuidancePanel() {
+  document.getElementById('guidancePanel').classList.remove('active');
+}
+
+function runGuidanceAnalysis() {
+  const body = document.getElementById('guidanceBody');
+  body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b5537;"><div style="font-size:24px;margin-bottom:8px;">🧭</div><div>Analysing your tree...</div></div>';
+  setTimeout(() => {
+    try { const data = buildGuidanceSuggestions(); renderGuidanceResults(data); }
+    catch (err) { console.error('[GUIDANCE]', err); body.innerHTML = '<div style="text-align:center;padding:40px;color:#991b1b;"><div style="font-size:24px;margin-bottom:8px;">⚠️</div><div>Could not analyse tree. Try refreshing.</div></div>'; }
+  }, 50);
+}
+
+function countEmptyParentSlots(p) {
+  if (!p.parents || p.parents.length < 2) return 2;
+  let count = 0;
+  for (const pid of p.parents) {
+    const parent = people.find(pp => pp.id === pid);
+    if (!parent || parent.status === 'blank' || parent.name === 'Name') count++;
+  }
+  return count;
+}
+
+function extractYear(dateStr) {
+  if (!dateStr) return null;
+  const m = String(dateStr).match(/\b(17|18|19|20)\d{2}\b/);
+  return m ? parseInt(m[0]) : null;
+}
+
+function buildFillsList(type, p, spouse) {
+  const fills = [];
+  if (type === 'MC') {
+    fills.push('Marriage date & place');
+    const pMissing = countEmptyParentSlots(p);
+    const sMissing = spouse ? countEmptyParentSlots(spouse) : 0;
+    if (pMissing > 0) fills.push("Groom's parents (" + pMissing + " unknown)");
+    if (sMissing > 0) fills.push("Bride's parents (" + sMissing + " unknown)");
+  } else if (type === 'DC') {
+    const missing = countEmptyParentSlots(p);
+    if (missing > 0) fills.push("Parents' names (" + missing + " unknown)");
+    if (!p.deathDate) fills.push('Death date');
+  } else if (type === 'BC') {
+    const missing = countEmptyParentSlots(p);
+    if (missing > 0) fills.push("Parents' names (" + missing + " unknown)");
+    fills.push('Birth date & place');
+  }
+  return fills;
+}
+
+function getDocCost(type, country) {
+  const costs = {
+    scotland: { BC: '~£1.50', MC: '~£1.50', DC: '~£1.50' },
+    england: { BC: '~£11', MC: '~£11', DC: '~£11' },
+    ireland: { BC: 'Free', MC: 'Free', DC: 'Free' },
+    northern_ireland: { BC: '~£15', MC: '~£15', DC: '~£15' },
+    usa: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    canada: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    australia: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    new_zealand: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    germany: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    france: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    italy: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+  };
+  const c = costs[country] || costs.scotland;
+  return c[type] || c.BC;
+}
+
+function getSourceForType(type, country) {
+  const src = COUNTRY_SOURCES[country] || COUNTRY_SOURCES.scotland;
+  if (!src) return { url: '#', name: 'Unknown' };
+  const url = src[type] || src.birth || '';
+  return { url, name: src.name };
+}
+
+function buildGuidanceSuggestions() {
+  const suggestions = [];
+  const countryCode = getCountry() || 'scotland';
+
+  // Stats
+  let total = 0, filled = 0, documented = 0, brickWalls = 0, docsCount = 0;
+  let bcDocs = 0, mcDocs = 0, dcDocs = 0;
+  for (const p of people) {
+    total++;
+    if (p.status === 'confirmed') filled++;
+    if (p.docs && p.docs.length > 0) { documented++; docsCount += p.docs.length; }
+    if (p.status === 'brickwall') brickWalls++;
+    if (p.docs) {
+      for (const d of p.docs) {
+        if (d.type === 'birth') bcDocs++;
+        else if (d.type === 'marriage') mcDocs++;
+        else if (d.type === 'death') dcDocs++;
+      }
+    }
+  }
+
+  // 1. Marriage certs for known couples (highest impact)
+  const processedCouples = new Set();
+  for (const p of people) {
+    if (!p.spouseId || processedCouples.has(p.id)) continue;
+    const spouse = people.find(s => s.id === p.spouseId);
+    if (!spouse) continue;
+    processedCouples.add(p.id);
+    processedCouples.add(spouse.id);
+
+    const pHasMC = p.docs && p.docs.some(d => d.type === 'marriage');
+    const sHasMC = spouse.docs && spouse.docs.some(d => d.type === 'marriage');
+    const pMissing = countEmptyParentSlots(p);
+    const sMissing = countEmptyParentSlots(spouse);
+    const totalMissing = pMissing + sMissing;
+
+    if (!pHasMC && !sHasMC && totalMissing > 0) {
+      const marriageYear = extractYear(p.marriageDate) || extractYear(spouse.marriageDate);
+      suggestions.push({
+        type: 'MC', priority: 'high', impact: totalMissing + (marriageYear ? 1 : 0),
+        title: 'Marriage cert: ' + p.name + ' & ' + spouse.name,
+        desc: marriageYear ? 'Married c. ' + marriageYear : 'Marriage date unknown',
+        fills: buildFillsList('MC', p, spouse),
+        people: [p, spouse],
+        cost: getDocCost('MC', countryCode),
+        source: getSourceForType('marriage', countryCode)
+      });
+    }
+  }
+
+  // 2. Death certs for gen > 2 with missing parents
+  for (const p of people) {
+    if (p.status === 'blank' || p.status === 'you') continue;
+    const missing = countEmptyParentSlots(p);
+    if (missing === 0) continue;
+    const hasDC = p.docs && p.docs.some(d => d.type === 'death');
+    if (p.gen > 2 && !hasDC) {
+      const deathYear = extractYear(p.deathDate);
+      suggestions.push({
+        type: 'DC', priority: 'med', impact: missing,
+        title: 'Death cert for ' + p.name,
+        desc: deathYear ? 'Died c. ' + deathYear : 'Death date unknown',
+        fills: buildFillsList('DC', p),
+        people: [p],
+        cost: getDocCost('DC', countryCode),
+        source: getSourceForType('death', countryCode)
+      });
+    }
+  }
+
+  // 3. Birth certs
+  for (const p of people) {
+    if (p.status === 'blank' || p.status === 'you') continue;
+    const hasBC = p.docs && p.docs.some(d => d.type === 'birth');
+    if (hasBC) continue;
+    const missing = countEmptyParentSlots(p);
+    const birthYear = extractYear(p.birthDate);
+
+    if (missing > 0) {
+      suggestions.push({
+        type: 'BC', priority: 'high', impact: missing + 1,
+        title: 'Birth cert for ' + p.name,
+        desc: birthYear ? 'Born c. ' + birthYear : 'Birth date unknown',
+        fills: buildFillsList('BC', p),
+        people: [p],
+        cost: getDocCost('BC', countryCode),
+        source: getSourceForType('birth', countryCode)
+      });
+    } else {
+      suggestions.push({
+        type: 'BC', priority: 'low', impact: 1,
+        title: 'Birth cert for ' + p.name,
+        desc: birthYear ? 'Born c. ' + birthYear : 'Birth date unknown',
+        fills: ['Birth date & place (parents already recorded — would only confirm details)'],
+        people: [p],
+        cost: getDocCost('BC', countryCode),
+        source: getSourceForType('birth', countryCode)
+      });
+    }
+  }
+
+  // Sort by impact desc, then priority
+  suggestions.sort((a, b) => {
+    if (b.impact !== a.impact) return b.impact - a.impact;
+    const pri = { high: 3, med: 2, low: 1 };
+    return pri[b.priority] - pri[a.priority];
+  });
+
+  return { suggestions: suggestions.slice(0, 8), stats: { total, filled, documented, brickWalls, docsCount, bcDocs, mcDocs, dcDocs } };
+}
+
+function renderGuidanceResults({ suggestions, stats }) {
+  const body = document.getElementById('guidanceBody');
+  let html = '<div class="guidance-stats">';
+  html += '<div class="guidance-stat"><div class="val">' + stats.filled + '/' + stats.total + '</div><div class="lbl">Confirmed</div></div>';
+  html += '<div class="guidance-stat"><div class="val">' + stats.documented + '</div><div class="lbl">Documented</div></div>';
+  html += '<div class="guidance-stat"><div class="val">' + stats.brickWalls + '</div><div class="lbl">Brick Walls</div></div>';
+  html += '</div>';
+
+  if (suggestions.length === 0) {
+    html += '<div class="guidance-empty"><div class="icon">🎉</div><div style="font-family: Cinzel Decorative,serif;font-size:16px;color:#5a7a3a;margin-bottom:8px;">Tree Complete!</div><div>All known ancestors have documents attached. Great work!</div></div>';
+    body.innerHTML = html;
+    return;
+  }
+
+  html += '<div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#2a1f10;margin-bottom:8px;">Top Priority Suggestions</div>';
+  const icons = { BC: '📜', MC: '💍', DC: '⚰️' };
+
+  for (const s of suggestions) {
+    const cls = s.priority === 'high' ? 'high' : (s.priority === 'med' ? 'med' : 'low');
+    html += '<div class="guidance-card ' + cls + '">';
+    html += '<div class="title">' + (icons[s.type] || '📄') + ' ' + s.title + '</div>';
+    html += '<div class="desc">' + s.desc + '</div>';
+    html += '<ul class="fills">' + s.fills.map(f => '<li>• ' + f + '</li>').join('') + '</ul>';
+    html += '<div class="actions">';
+    html += '<a href="' + s.source.url + '" target="_blank" rel="noopener" class="source-link">🔍 Search ' + s.source.name + '</a>';
+    html += '<span class="cost-note">🛒 ' + s.type + ' cert: ' + s.cost + '</span>';
+    html += '</div></div>';
+  }
+  body.innerHTML = html;
+}
+
 function saveSession() {
   const payload = { version: 5, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -2408,6 +2711,12 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   document.getElementById('confirmCancel').onclick = () => {
     dlg.style.display = 'none';
   };
+});
+
+document.getElementById('nextStepsBtn').addEventListener('click', openGuidancePanel);
+document.getElementById('guidanceClose').addEventListener('click', closeGuidancePanel);
+document.getElementById('guidancePanel').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('guidancePanel')) closeGuidancePanel();
 });
 
 
@@ -2537,6 +2846,9 @@ window.addEventListener('popstate', (e) => {
   if (e.state.panel === 'cert' && certPanel.classList.contains('active')) {
     certPanel.classList.remove('active');
     certPanel.classList.remove('has-results');
+  }
+  if (e.state.panel === 'guidance' && guidancePanel.classList.contains('active')) {
+    guidancePanel.classList.remove('active');
   }
 });
 
