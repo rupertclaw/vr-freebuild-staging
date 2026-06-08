@@ -834,7 +834,7 @@ function initDefaultData() {
   }
 }
 
-const CARD_W = 160, GAP_X = 40, GAP_Y = 6, JUNCT_DIST = 18;
+const CARD_W = 160, GAP_X = 40, GAP_Y = 6, JUNCT_DIST = 10;
 const wrap = document.getElementById('treeWrap');
 const svg = document.getElementById('linesSvg');
 const scroll = document.getElementById('treeScroll');
@@ -918,6 +918,10 @@ function renderTree() {
       });
     }
   }
+
+  // Apply vertical compression to bring ancestor generations closer together
+  const treeCompress = 0.60;
+  topMap.forEach((y, id) => topMap.set(id, Math.round(y * treeCompress)));
 
   cardEls.forEach((el, id) => { el.style.top = (topMap.get(id) || 80) + 'px'; el.style.opacity = '1'; });
   treeWidth = colLeft[maxGen] + CARD_W + 40;
