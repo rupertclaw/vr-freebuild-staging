@@ -2869,9 +2869,33 @@ function buildGuidanceSuggestions() {
   return { suggestions: suggestions.slice(0, 8), stats: { total, filled, documented, brickWalls, docsCount, bcDocs, mcDocs, dcDocs } };
 }
 
+function renderOnboardingGuide() {
+  return `
+<div id="onboardingGuide" style="background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;margin-bottom:10px;overflow:hidden;">
+  <button onclick="document.getElementById('onboardingBody').style.display=(document.getElementById('onboardingBody').style.display==='none'?'block':'none');this.querySelector('span').style.transform=(document.getElementById('onboardingBody').style.display==='none'?'rotate(0deg)':'rotate(180deg)')" style="width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-family:'Cinzel Decorative',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+    How to Build Your Tree
+    <span style="display:inline-block;transition:transform 0.2s;font-size:12px;">▼</span>
+  </button>
+  <div id="onboardingBody" style="display:none;padding:0 12px 12px;font-size:12px;color:#3e2b1a;line-height:1.6;">
+    <ol style="margin:0;padding-left:18px;">
+      <li><strong>Start with yourself.</strong> Tap the rightmost card (top of the tree), enter your name and birth date, set status to "You".</li>
+      <li><strong>Add your parents.</strong> Tap the two cards to the left of yours (Generation 1). Fill in father and mother. The tree holds 9 generations total.</li>
+      <li><strong>Upload certificates for speed.</strong> Use the 📜 Certificate panel (top-left button). Snap a photo of a birth, marriage, or death certificate and tap "Apply to Tree" to autofill cards.</li>
+      <li><strong>Or fill manually.</strong> Tap any card to open the detail panel. Add names, dates, maiden names, occupation, and change status (Confirmed, Probable, Brick Wall, Unknown Parent).</li>
+      <li><strong>Attach documents.</strong> In a person's detail panel, tap "Attach Document" to link a certificate image directly to that person.</li>
+      <li><strong>Track siblings.</strong> In the detail panel, add brothers and sisters under the Siblings section. A 🍃 leaf appears on cards with siblings recorded.</li>
+      <li><strong>Save your work.</strong> Tap ⬇ Save Session to export a <code>.familytree</code> backup. Load it later with ⬆ Load Session, or send it to someone else.</li>
+      <li><strong>Get suggestions.</strong> This panel shows which certificates to find next, with direct links to source records and cost estimates.</li>
+      <li><strong>Zoom and pan.</strong> Pinch to zoom in/out on the tree. Drag to scroll. Use the zoom controls (top right) for precise adjustment.</li>
+    </ol>
+  </div>
+</div>`;
+}
+
 function renderGuidanceResults({ suggestions, stats }) {
   const body = document.getElementById('guidanceBody');
-  let html = '<div class="guidance-stats">';
+  let html = renderOnboardingGuide();
+  html += '<div class="guidance-stats">';
   html += '<div class="guidance-stat"><div class="val">' + stats.filled + '/' + stats.total + '</div><div class="lbl">Confirmed</div></div>';
   html += '<div class="guidance-stat"><div class="val">' + stats.documented + '</div><div class="lbl">Documented</div></div>';
   html += '<div class="guidance-stat"><div class="val">' + stats.brickWalls + '</div><div class="lbl">Brick Walls</div></div>';
