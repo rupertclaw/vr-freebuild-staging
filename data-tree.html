@@ -28,12 +28,12 @@ html, body { height: 100%; overflow: hidden; background: #f0e2c5; font-family: '
 }
 .header-logo {
   font-family: 'Cinzel Decorative', serif;
-  font-size: 24px; color: #c4a875;
+  font-size: 24px; color: #4a7aaa;
   line-height: 1.1; letter-spacing: 1px;
-  text-shadow: 0 0 8px rgba(196, 168, 117, 0.35), 0 0 20px rgba(196, 168, 117, 0.15);
+  text-shadow: 0 0 8px rgba(74, 122, 170, 0.35), 0 0 20px rgba(74, 122, 170, 0.15);
 }
 .header-tagline {
-  font-size: 12px; color: #b8a88a;
+  font-size: 12px; color: #5a8aaa;
   letter-spacing: 2px; margin-top: 3px;
 }
 .header-stats {
@@ -41,22 +41,22 @@ html, body { height: 100%; overflow: hidden; background: #f0e2c5; font-family: '
 }
 .header-stat {
   display: flex; flex-direction: column; align-items: center;
-  background: rgba(196, 168, 117, 0.12);
-  border: 1px solid rgba(196, 168, 117, 0.25);
+  background: rgba(80, 140, 220, 0.08);
+  border: 1px solid rgba(80, 140, 220, 0.15);
   padding: 6px 12px; border-radius: 6px;
   min-width: 68px;
 }
 .header-stat .stat-label {
-  font-size: 11px; color: #b8a88a;
+  font-size: 11px; color: #5a8aaa;
   text-transform: uppercase; letter-spacing: 1px;
 }
 .header-stat .stat-value {
-  font-size: 18px; color: #d4b87a;
+  font-size: 18px; color: #4db8ff;
   font-weight: 600; font-family: 'Cormorant Garamond', serif;
 }
 .header-bottom {
   display: flex; align-items: center; justify-content: space-between;
-  padding-top: 6px; border-top: 1px solid rgba(240, 230, 210, 0.15);
+  padding-top: 6px; border-top: 1px solid rgba(255,248,225,0.08);
   margin-top: 4px;
 }
 .header-emblem {
@@ -64,7 +64,7 @@ html, body { height: 100%; overflow: hidden; background: #f0e2c5; font-family: '
   height: 82px; width: auto;
   border-radius: 4px; opacity: 0.92;
   object-fit: cover; flex-shrink: 0;
-  box-shadow: 0 0 8px rgba(196, 168, 117, 0.3);
+  box-shadow: 0 0 8px rgba(80, 140, 220, 0.3);
 }
 @media (max-width: 380px) {
   .header-emblem { height: 56px; }
@@ -95,11 +95,11 @@ html, body { height: 100%; overflow: hidden; background: #f0e2c5; font-family: '
 
 .zoom-controls {
   display: flex; align-items: center; gap: 4px;
-  background: rgba(196, 168, 117, 0.15);
+  background: rgba(80, 140, 220, 0.12);
   padding: 2px 8px; border-radius: 6px;
 }
 .zoom-controls span {
-  font-size: 13px; color: #6b5a3a; min-width: 42px; text-align: center;
+  font-size: 13px; color: #7a9aba; min-width: 42px; text-align: center;
   font-family: 'Cormorant Garamond', serif;
 }
 .zoom-btn { font-size: 16px; padding: 2px 10px; min-width: 32px; }
@@ -364,7 +364,7 @@ html, body { height: 100%; overflow: hidden; background: #f0e2c5; font-family: '
 .save-bar button {
   padding: 12px 20px; border: none; border-radius: 4px;
   font-family: 'Cormorant Garamond', serif; font-size: 14px; cursor: pointer;
-  background: #5c4033; color: #e8dcc8; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  background: #1e2a3a; color: #a8c8e8; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
 /* Toast */
@@ -482,7 +482,7 @@ html, body { height: 100%; overflow: hidden; background: #f0e2c5; font-family: '
   <button id="saveBtn">⬇ Save Session</button>
   <button id="loadBtn">⬆ Load Session</button>
   <button id="nextStepsBtn">🧭 Next Steps</button>
-  <button id="resetBtn" style="background:#6b4c35;color:#f0e6d2;">↻ Reset</button>
+  <button id="resetBtn" style="background:#2a3a50;color:#c8e8ff;">↻ Reset</button>
   <input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
 </div>
 
