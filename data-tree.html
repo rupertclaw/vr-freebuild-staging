@@ -144,13 +144,12 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 }
 .header-emblem {
   position: absolute; right: 14px; top: 6px;
-  height: 82px; width: auto;
-  border-radius: 4px; opacity: 0.92;
+  height: 82px; width: 82px;
+  border-radius: 50%;
   object-fit: cover; flex-shrink: 0;
-  box-shadow: 0 0 8px var(--bg-emblem-shadow);
 }
 @media (max-width: 380px) {
-  .header-emblem { height: 56px; }
+  .header-emblem { height: 56px; width: 56px; }
 }
 .header-btn {
   width: 38px; height: 38px; background: var(--bg-btn); color: var(--text-btn);
