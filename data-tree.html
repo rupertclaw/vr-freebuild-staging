@@ -995,7 +995,7 @@ renderTree = function() { originalRenderTree(); syncHeaderHeight(); };
 
 // Zoom controls
 function setZoom(z) {
-  zoom = Math.max(0.25, Math.min(3, z));
+  zoom = Math.max(0.05, Math.min(3, z));
   renderTree();
   document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
   // Re-center on Gen 0 after zoom change
