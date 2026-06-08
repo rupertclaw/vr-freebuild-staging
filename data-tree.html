@@ -172,6 +172,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .tree-scroll {
   position: fixed; top: 124px; left: 0; right: 0; bottom: 0;
   overflow: auto; -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
   background: radial-gradient(ellipse at center, var(--bg-tree-start) 0%, var(--bg-tree-end) 100%);
 }
 
@@ -1008,10 +1009,14 @@ document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.2
 // Pinch-to-zoom on tree scroll area
 (function setupPinchZoom() {
   const scrollArea = document.getElementById('treeScroll');
-  if (!scrollArea) return;
+  const treeWrap = document.getElementById('treeWrap');
+  if (!scrollArea || !treeWrap) return;
+
   let initialDistance = 0;
   let initialZoom = zoom;
+  let activePinchZoom = zoom;
   let isPinching = false;
+  let activeTouches = 0;
 
   function getDistance(touches) {
     const dx = touches[0].clientX - touches[1].clientX;
@@ -1020,31 +1025,51 @@ document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.2
   }
 
   scrollArea.addEventListener('touchstart', (e) => {
-    if (e.touches.length === 2) {
+    activeTouches = e.touches.length;
+    if (activeTouches === 2) {
       isPinching = true;
       initialDistance = getDistance(e.touches);
       initialZoom = zoom;
+      activePinchZoom = zoom;
     }
   }, { passive: true });
 
   scrollArea.addEventListener('touchmove', (e) => {
-    if (isPinching && e.touches.length === 2) {
+    activeTouches = e.touches.length;
+    if (isPinching && activeTouches === 2) {
       e.preventDefault();
+      e.stopPropagation();
       const newDistance = getDistance(e.touches);
       if (initialDistance > 0) {
         const scale = newDistance / initialDistance;
-        setZoom(initialZoom * scale);
+        activePinchZoom = Math.max(0.05, Math.min(3, initialZoom * scale));
+        // Fast CSS-only update during gesture — no full re-render
+        treeWrap.style.setProperty('--zoom', activePinchZoom);
+        treeWrap.style.transform = 'scale(' + activePinchZoom + ')';
+        document.getElementById('zoomLevel').textContent = Math.round(activePinchZoom * 100) + '%';
       }
     }
   }, { passive: false });
 
-  scrollArea.addEventListener('touchend', () => {
-    isPinching = false;
-  });
-  scrollArea.addEventListener('touchcancel', () => {
-    isPinching = false;
-  });
+  function endPinch() {
+    if (isPinching) {
+      isPinching = false;
+      // Commit zoom state once at end of gesture
+      setZoom(activePinchZoom);
+    }
+    activeTouches = 0;
+  }
+
+  scrollArea.addEventListener('touchend', endPinch);
+  scrollArea.addEventListener('touchcancel', endPinch);
 })();
+
+// Block browser page-level pinch zoom everywhere except our tree handler
+document.addEventListener('touchmove', function(e) {
+  if (e.touches.length > 1) {
+    e.preventDefault();
+  }
+}, { passive: false });
 
 const detailPanel = document.getElementById('detailPanel');
 const guidancePanel = document.getElementById('guidancePanel');
