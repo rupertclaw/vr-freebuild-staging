@@ -737,6 +737,7 @@ function createPerson(id, gen, name, years, status, opts) {
     parents: opts.parents || null,
     children: opts.children || [],
     docs: opts.docs || [],
+    siblings: opts.siblings || [],
     notes: opts.notes || '',
     source: opts.source || ''
   };
@@ -866,6 +867,9 @@ function renderTree() {
     else cardYears = person.years || '?';
     let h = '<div class="name">' + person.name + '</div><div class="years">' + cardYears + '</div>';
     if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
+    if (person.siblings && person.siblings.length) {
+      h += '<div style="position:absolute;top:2px;right:2px;font-size:11px;">🍃</div>';
+    }
     if (person.docs && person.docs.length) {
       h += '<div class="doc-badges">';
       person.docs.forEach(d => { const t = (d.type || 'bc').toLowerCase(); h += '<span class="doc-badge ' + t + '">' + t.toUpperCase() + '</span>'; });
@@ -1040,6 +1044,13 @@ function openDetail(person) {
       </div>
       <div id="sourceRecordLinks" style="display:none;margin-top:6px;flex-wrap:wrap;gap:6px;"></div>
     </div>
+    <div class="detail-field"><label>Siblings</label>
+      <div style="display:flex;gap:6px;margin-bottom:4px;">
+        <input type="text" id="d_siblingInput" placeholder="Sibling name" style="flex:1;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:14px;">
+        <button id="d_addSibling" style="background:#4a6b4a;color:#fff;border:none;padding:8px 14px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;">+</button>
+      </div>
+      <div id="d_siblingList" style="display:flex;flex-direction:column;gap:4px;"></div>
+    </div>
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
       <button class="save-btn" onclick="saveDetail()">Save Changes</button>
@@ -1095,6 +1106,36 @@ function openDetail(person) {
       container.dataset.activeCountry = code;
     });
   });
+  // Wire up siblings UI inside openDetail
+  const siblingList = document.getElementById('d_siblingList');
+  const siblingInput = document.getElementById('d_siblingInput');
+  const addSiblingBtn = document.getElementById('d_addSibling');
+  function renderSiblingList() {
+    if (!siblingList) return;
+    siblingList.innerHTML = '';
+    (person.siblings || []).forEach((name, idx) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:4px 6px;background:rgba(250,244,230,0.7);border:1px solid rgba(138,122,90,0.3);border-radius:4px;';
+      row.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:13px;color:#3e2b1a;">' + escapeHtml(name) + '</span><button style="background:none;border:none;color:#8a3a3a;cursor:pointer;font-size:16px;line-height:1;" onclick="removeSibling(' + idx + ')">×</button>';
+      siblingList.appendChild(row);
+    });
+  }
+  window.removeSibling = function(idx) {
+    person.siblings.splice(idx, 1);
+    renderSiblingList();
+  };
+  if (addSiblingBtn) {
+    addSiblingBtn.addEventListener('click', () => {
+      const val = (siblingInput?.value || '').trim();
+      if (!val) return;
+      if (!person.siblings) person.siblings = [];
+      person.siblings.push(val);
+      if (siblingInput) siblingInput.value = '';
+      renderSiblingList();
+    });
+  }
+  renderSiblingList();
+
   // Load document thumbnails from IndexedDB
   (async function loadDocThumbs() {
     const container = document.getElementById('docThumbs');
@@ -1188,6 +1229,7 @@ function saveDetail() {
   person.birthplace = document.getElementById('d_birthplace').value;
   person.status = document.getElementById('d_status').value;
   person.notes = document.getElementById('d_notes').value;
+  // Siblings are already updated live in the UI, just read the array from the person object
   renderTree(); closeDetail(); showToast('Saved: ' + person.name);
 }
 document.getElementById('detailClose').addEventListener('click', closeDetail);
@@ -1983,6 +2025,11 @@ function findPersonGenAware(name, opts) {
 
   // Fall back: lowest-gen top-scoring match
   return topMatches.sort((a, b) => a.person.gen - b.person.gen)[0].person;
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function extractYear(str) {
@@ -2864,6 +2911,7 @@ function clearCard() {
   person.maidenName = null;
   person.notes = '';
   person.docs = [];
+  person.siblings = [];
   person.status = 'blank';
   renderTree();
   closeDetail();
