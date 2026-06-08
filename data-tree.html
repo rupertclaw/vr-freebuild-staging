@@ -8,13 +8,13 @@
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
-html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: 'Cormorant Garamond', serif; }
+html, body { height: 100%; overflow: hidden; background: #f0e2c5; font-family: 'Cormorant Garamond', serif; }
 
 /* Header */
 .header {
   position: fixed; top: 0; left: 0; right: 0;
   height: auto;
-  background: #131820; border-bottom: 2px solid #2a3a50;
+  background: #3e2b1a; border-bottom: 2px solid #5c4033;
   display: flex; flex-direction: column;
   justify-content: space-between;
   padding: 6px 14px; z-index: 300;
@@ -28,12 +28,12 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 }
 .header-logo {
   font-family: 'Cinzel Decorative', serif;
-  font-size: 24px; color: #4a7aaa;
+  font-size: 24px; color: #c4a875;
   line-height: 1.1; letter-spacing: 1px;
-  text-shadow: 0 0 8px rgba(74, 122, 170, 0.35), 0 0 20px rgba(74, 122, 170, 0.15);
+  text-shadow: 0 0 8px rgba(196, 168, 117, 0.35), 0 0 20px rgba(196, 168, 117, 0.15);
 }
 .header-tagline {
-  font-size: 12px; color: #5a8aaa;
+  font-size: 12px; color: #b8a88a;
   letter-spacing: 2px; margin-top: 3px;
 }
 .header-stats {
@@ -41,22 +41,22 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 }
 .header-stat {
   display: flex; flex-direction: column; align-items: center;
-  background: rgba(80, 140, 220, 0.08);
-  border: 1px solid rgba(80, 140, 220, 0.15);
+  background: rgba(196, 168, 117, 0.12);
+  border: 1px solid rgba(196, 168, 117, 0.25);
   padding: 6px 12px; border-radius: 6px;
   min-width: 68px;
 }
 .header-stat .stat-label {
-  font-size: 11px; color: #5a8aaa;
+  font-size: 11px; color: #b8a88a;
   text-transform: uppercase; letter-spacing: 1px;
 }
 .header-stat .stat-value {
-  font-size: 18px; color: #4db8ff;
+  font-size: 18px; color: #d4b87a;
   font-weight: 600; font-family: 'Cormorant Garamond', serif;
 }
 .header-bottom {
   display: flex; align-items: center; justify-content: space-between;
-  padding-top: 6px; border-top: 1px solid rgba(255,248,225,0.08);
+  padding-top: 6px; border-top: 1px solid rgba(240, 230, 210, 0.15);
   margin-top: 4px;
 }
 .header-emblem {
@@ -64,42 +64,42 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   height: 82px; width: auto;
   border-radius: 4px; opacity: 0.92;
   object-fit: cover; flex-shrink: 0;
-  box-shadow: 0 0 8px rgba(80, 140, 220, 0.3);
+  box-shadow: 0 0 8px rgba(196, 168, 117, 0.3);
 }
 @media (max-width: 380px) {
   .header-emblem { height: 56px; }
 }
 .header-btn {
-  width: 38px; height: 38px; background: #1e2a3a; color: #a8c8e8;
-  border: 1px solid #3a5a7a; border-radius: 6px; font-size: 20px; cursor: pointer;
+  width: 38px; height: 38px; background: #5c4033; color: #e8dcc8;
+  border: 1px solid #7a6a4a; border-radius: 6px; font-size: 20px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
 .country-select {
-  background: #1e2a3a; color: #a8c8e8;
-  border: 1px solid #3a5a7a; border-radius: 6px;
+  background: #5c4033; color: #e8dcc8;
+  border: 1px solid #7a6a4a; border-radius: 6px;
   padding: 6px 8px; font-family: 'Cormorant Garamond', serif; font-size: 13px;
   cursor: pointer; min-width: 110px;
 }
-.country-select option { background: #1e2a3a; color: #a8c8e8; }
+.country-select option { background: #5c4033; color: #e8dcc8; }
 .cert-btn {
   width: 44px; height: 38px;
-  background: #2a3a50; border-color: #4a6a8a;
+  background: #6b4c35; border-color: #8a7a5a;
 }
 
 /* Tree scroll area */
 .tree-scroll {
   position: fixed; top: 124px; left: 0; right: 0; bottom: 0;
   overflow: auto; -webkit-overflow-scrolling: touch;
-  background: radial-gradient(ellipse at center, #1a1f2a 0%, #0a0c10 100%);
+  background: radial-gradient(ellipse at center, #f5e6c8 0%, #e8d5b7 100%);
 }
 
 .zoom-controls {
   display: flex; align-items: center; gap: 4px;
-  background: rgba(80, 140, 220, 0.12);
+  background: rgba(196, 168, 117, 0.15);
   padding: 2px 8px; border-radius: 6px;
 }
 .zoom-controls span {
-  font-size: 13px; color: #7a9aba; min-width: 42px; text-align: center;
+  font-size: 13px; color: #6b5a3a; min-width: 42px; text-align: center;
   font-family: 'Cormorant Garamond', serif;
 }
 .zoom-btn { font-size: 16px; padding: 2px 10px; min-width: 32px; }
@@ -120,25 +120,25 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 .gen-label {
   position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
   font-family: 'Cinzel Decorative', serif; font-size: 10px;
-  text-transform: uppercase; letter-spacing: 2px; color: #8a7a5a;
+  text-transform: uppercase; letter-spacing: 2px; color: #6b5a3a;
   white-space: nowrap;
 }
 
 /* Person cards */
 .person-card {
   position: absolute; left: 0; width: 170px;
-  background: rgba(250, 244, 230, 0.94);
-  border: 2px solid #4a3a22; border-radius: 3px;
+  background: rgba(255, 250, 240, 0.97);
+  border: 2px solid #5c4033; border-radius: 3px;
   padding: 8px 12px; text-align: center;
   z-index: 2; cursor: pointer;
-  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  box-shadow: 0 2px 6px rgba(90, 60, 30, 0.12);
   transition: transform 0.15s, box-shadow 0.15s;
 }
 .person-card::before {
   content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px;
-  border: 1px solid #8a7a5a; pointer-events: none; border-radius: 1px;
+  border: 1px solid #a89878; pointer-events: none; border-radius: 1px;
 }
-.person-card:hover { transform: scale(1.03); box-shadow: 0 4px 16px rgba(0,0,0,0.35); }
+.person-card:hover { transform: scale(1.03); box-shadow: 0 4px 14px rgba(90, 60, 30, 0.18); }
 .person-card:active { transform: scale(0.98); }
 
 .person-card .name {
@@ -168,20 +168,20 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 .person-card.confirmed { border-left: 4px solid #22c55e; }
 .person-card.probable { border-left: 4px solid #f59e0b; }
 .person-card.brickwall { border-left: 4px dashed #ef4444; }
-.person-card.unknown-parent { border-left: 4px dotted #9ca3af; background: rgba(240,235,220,0.5); opacity: 0.7; cursor: default; }
+.person-card.unknown-parent { border-left: 4px dotted #9ca3af; background: rgba(240, 235, 220, 0.6); opacity: 0.7; cursor: default; }
 .person-card.unknown-parent:hover { transform: none; box-shadow: none; }
 .person-card.unknown-parent .name,
 .person-card.unknown-parent .years { color: #a8a090; font-style: italic; }
-.person-card.you { border: 2px solid #c4a875; background: rgba(255,248,225,0.97); }
+.person-card.you { border: 2px solid #c4a875; background: rgba(255, 248, 225, 0.98); }
 .person-card.blank {
-  background: rgba(250, 244, 230, 0.45);
-  border: 2px dashed #b8a88a;
+  background: rgba(250, 244, 230, 0.6);
+  border: 2px dashed #9a8a6a;
   opacity: 0.6;
   cursor: default;
 }
 .person-card.blank:hover { transform: none; box-shadow: none; }
 .person-card.blank .name,
-.person-card.blank .years { color: #b8a88a; }
+.person-card.blank .years { color: #9a8a6a; }
 
 /* SVG connectors */
 .lines-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
@@ -364,7 +364,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 .save-bar button {
   padding: 12px 20px; border: none; border-radius: 4px;
   font-family: 'Cormorant Garamond', serif; font-size: 14px; cursor: pointer;
-  background: #1e2a3a; color: #a8c8e8; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  background: #5c4033; color: #e8dcc8; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
 
 /* Toast */
@@ -482,14 +482,14 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
   <button id="saveBtn">⬇ Save Session</button>
   <button id="loadBtn">⬆ Load Session</button>
   <button id="nextStepsBtn">🧭 Next Steps</button>
-  <button id="resetBtn" style="background:#2a3a50;color:#c8e8ff;">↻ Reset</button>
+  <button id="resetBtn" style="background:#6b4c35;color:#f0e6d2;">↻ Reset</button>
   <input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
 </div>
 
 <!-- Custom Confirm Dialog -->
 <div id="confirmDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;justify-content:center;align-items:center;">
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:320px;width:90%;text-align:center;">
-    <div id="confirmTitle" style="font-family: 'Cinzel Decorative', serif;font-size:16px;color:#2a3a50;margin-bottom:12px;">Reset Tree</div>
+    <div id="confirmTitle" style="font-family: 'Cinzel Decorative', serif;font-size:16px;color:#3e2b1a;margin-bottom:12px;">Reset Tree</div>
     <div id="confirmMessage" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;">Clear all data and start fresh? This cannot be undone.</div>
     <div style="display:flex;gap:10px;justify-content:center;">
       <button id="confirmCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
@@ -501,7 +501,7 @@ html, body { height: 100%; overflow: hidden; background: #1a1510; font-family: '
 <!-- Country Selector Modal (first use) -->
 <div id="countryModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10001;justify-content:center;align-items:center;">
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:340px;width:90%;text-align:center;">
-    <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#2a3a50;margin-bottom:8px;">Welcome to Vaulted Roots</div>
+    <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:8px;">Welcome to Vaulted Roots</div>
     <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:16px;">Which country are you researching in? This helps us point you to the right record offices.</div>
     <select id="countryModalSelect" style="width:100%;padding:10px;border:2px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:16px;">
       <option value="" disabled selected>Choose a country...</option>
@@ -856,17 +856,17 @@ function drawLines() {
     const jx = fx - JUNCT_DIST, midY = (fy + my) / 2;
     const curve = document.createElementNS(svgNS, 'path');
     curve.setAttribute('d', 'M' + cx + ',' + cy + ' C' + (cx+16) + ',' + cy + ' ' + (jx-8) + ',' + midY + ' ' + jx + ',' + midY);
-    curve.setAttribute('stroke', '#8a7a5a'); curve.setAttribute('stroke-width', '1.5'); curve.setAttribute('fill', 'none');
+    curve.setAttribute('stroke', '#7a6a4a'); curve.setAttribute('stroke-width', '1.5'); curve.setAttribute('fill', 'none');
     svg.appendChild(curve);
     const vLine = document.createElementNS(svgNS, 'line');
     vLine.setAttribute('x1', jx); vLine.setAttribute('y1', fy); vLine.setAttribute('x2', jx); vLine.setAttribute('y2', my);
-    vLine.setAttribute('stroke', '#8a7a5a'); vLine.setAttribute('stroke-width', '1.5'); svg.appendChild(vLine);
+    vLine.setAttribute('stroke', '#7a6a4a'); vLine.setAttribute('stroke-width', '1.5'); svg.appendChild(vLine);
     const fLine = document.createElementNS(svgNS, 'line');
     fLine.setAttribute('x1', jx); fLine.setAttribute('y1', fy); fLine.setAttribute('x2', fx); fLine.setAttribute('y2', fy);
-    fLine.setAttribute('stroke', '#8a7a5a'); fLine.setAttribute('stroke-width', '1.5'); svg.appendChild(fLine);
+    fLine.setAttribute('stroke', '#7a6a4a'); fLine.setAttribute('stroke-width', '1.5'); svg.appendChild(fLine);
     const mLine = document.createElementNS(svgNS, 'line');
     mLine.setAttribute('x1', jx); mLine.setAttribute('y1', my); mLine.setAttribute('x2', mx); mLine.setAttribute('y2', my);
-    mLine.setAttribute('stroke', '#8a7a5a'); mLine.setAttribute('stroke-width', '1.5'); svg.appendChild(mLine);
+    mLine.setAttribute('stroke', '#7a6a4a'); mLine.setAttribute('stroke-width', '1.5'); svg.appendChild(mLine);
   });
 }
 scroll.addEventListener('scroll', drawLines);
@@ -1391,7 +1391,7 @@ async function sendToTranscriptionAPI(base64) {
   let msg = lastErr?.name === 'AbortError' ? 'Scan timed out after 90 seconds.' : (lastErr?.message || 'Could not reach server');
   if (msg.includes('Failed to fetch')) msg = 'Connection failed on image upload. Your network may block large uploads.';
   const debugId = 'debug_' + Date.now();
-  cs.innerHTML = 'Network error: ' + msg + '<br><small>Try: 1) Different WiFi, 2) Camera not gallery, 3) Clear and retry</small><br><button onclick="document.getElementById(\'' + debugId + '\').style.display=\'block\'" style="margin-top:6px;padding:4px 8px;font-size:11px;background:#8a7a5a;color:#fff;border:none;border-radius:4px;">Show Debug Logs</button><pre id="' + debugId + '" style="display:none;margin-top:6px;padding:6px;background:#1a1510;color:#e8dcc8;font-size:10px;max-height:150px;overflow:auto;border-radius:4px;white-space:pre-wrap;">' + getDebugLogs().replace(/</g,'&lt;') + '</pre>';
+  cs.innerHTML = 'Network error: ' + msg + '<br><small>Try: 1) Different WiFi, 2) Camera not gallery, 3) Clear and retry</small><br><button onclick="document.getElementById(\'' + debugId + '\').style.display=\'block\'" style="margin-top:6px;padding:4px 8px;font-size:11px;background:#8a7a5a;color:#fff;border:none;border-radius:4px;">Show Debug Logs</button><pre id="' + debugId + '" style="display:none;margin-top:6px;padding:6px;background:#3e2b1a;color:#e8dcc8;font-size:10px;max-height:150px;overflow:auto;border-radius:4px;white-space:pre-wrap;">' + getDebugLogs().replace(/</g,'&lt;') + '</pre>';
   certPanel.classList.add('has-results');
 }
 
@@ -2908,7 +2908,7 @@ setTimeout(() => centerOnGen0(), 150);
 <!-- Ambiguity Resolution Modal -->
 <div id="ambigModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10002;justify-content:center;align-items:center;">
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;">
-    <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#2a3a50;margin-bottom:8px;">Multiple Matches Found</div>
+    <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#3e2b1a;margin-bottom:8px;">Multiple Matches Found</div>
     <div id="ambigQuestion" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:12px;">Which person should receive this certificate?</div>
     <div id="ambigOptions" style="max-height:260px;overflow-y:auto;margin-bottom:16px;"></div>
     <div style="display:flex;gap:10px;justify-content:center;">
