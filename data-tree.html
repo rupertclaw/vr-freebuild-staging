@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Vaulted Roots</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
@@ -1004,6 +1004,47 @@ function setZoom(z) {
 document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.2));
 document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
 document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.25));
+
+// Pinch-to-zoom on tree scroll area
+(function setupPinchZoom() {
+  const scrollArea = document.getElementById('treeScroll');
+  if (!scrollArea) return;
+  let initialDistance = 0;
+  let initialZoom = zoom;
+  let isPinching = false;
+
+  function getDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  scrollArea.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      isPinching = true;
+      initialDistance = getDistance(e.touches);
+      initialZoom = zoom;
+    }
+  }, { passive: true });
+
+  scrollArea.addEventListener('touchmove', (e) => {
+    if (isPinching && e.touches.length === 2) {
+      e.preventDefault();
+      const newDistance = getDistance(e.touches);
+      if (initialDistance > 0) {
+        const scale = newDistance / initialDistance;
+        setZoom(initialZoom * scale);
+      }
+    }
+  }, { passive: false });
+
+  scrollArea.addEventListener('touchend', () => {
+    isPinching = false;
+  });
+  scrollArea.addEventListener('touchcancel', () => {
+    isPinching = false;
+  });
+})();
 
 const detailPanel = document.getElementById('detailPanel');
 const guidancePanel = document.getElementById('guidancePanel');
