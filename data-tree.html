@@ -194,6 +194,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   transform-origin: top left;
   transition: transform 0.15s ease;
 }
+.tree-wrap.pinch-zooming {
+  transition: none !important;
+}
 
 /* Generation columns */
 .generation {
@@ -1031,6 +1034,7 @@ document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.2
       initialDistance = getDistance(e.touches);
       initialZoom = zoom;
       activePinchZoom = zoom;
+      treeWrap.classList.add('pinch-zooming');
     }
   }, { passive: true });
 
@@ -1043,7 +1047,6 @@ document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.2
       if (initialDistance > 0) {
         const scale = newDistance / initialDistance;
         activePinchZoom = Math.max(0.05, Math.min(3, initialZoom * scale));
-        // Fast CSS-only update during gesture — no full re-render
         treeWrap.style.setProperty('--zoom', activePinchZoom);
         treeWrap.style.transform = 'scale(' + activePinchZoom + ')';
         document.getElementById('zoomLevel').textContent = Math.round(activePinchZoom * 100) + '%';
@@ -1054,7 +1057,8 @@ document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.2
   function endPinch() {
     if (isPinching) {
       isPinching = false;
-      // Commit zoom state once at end of gesture
+      treeWrap.classList.remove('pinch-zooming');
+      treeWrap.style.transform = ''; // clear inline so CSS variable takes over
       setZoom(activePinchZoom);
     }
     activeTouches = 0;
