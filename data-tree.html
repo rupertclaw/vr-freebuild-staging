@@ -2783,6 +2783,9 @@ function buildGuidanceSuggestions() {
     processedCouples.add(p.id);
     processedCouples.add(spouse.id);
 
+    // Skip suggestions for blank/unfilled couples
+    if (isEffectivelyBlank(p.name) || isEffectivelyBlank(spouse.name)) continue;
+
     const pHasMC = p.docs && p.docs.some(d => d.type === 'marriage');
     const sHasMC = spouse.docs && spouse.docs.some(d => d.type === 'marriage');
     const pMissing = countEmptyParentSlots(p);
@@ -2806,6 +2809,7 @@ function buildGuidanceSuggestions() {
   // 2. Death certs for gen > 2 with missing parents
   for (const p of people) {
     if (p.status === 'blank' || p.status === 'you') continue;
+    if (isEffectivelyBlank(p.name)) continue;
     const missing = countEmptyParentSlots(p);
     if (missing === 0) continue;
     const hasDC = p.docs && p.docs.some(d => d.type === 'death');
@@ -2826,6 +2830,7 @@ function buildGuidanceSuggestions() {
   // 3. Birth certs
   for (const p of people) {
     if (p.status === 'blank' || p.status === 'you') continue;
+    if (isEffectivelyBlank(p.name)) continue;
     const hasBC = p.docs && p.docs.some(d => d.type === 'birth');
     if (hasBC) continue;
     const missing = countEmptyParentSlots(p);
