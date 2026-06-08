@@ -2991,6 +2991,19 @@ function centerOnGen0() {
   scroll.scrollTop = Math.max(0, (cardCenterY * zoom) - scroll.clientHeight / 2);
 }
 setTimeout(() => centerOnGen0(), 150);
+
+// Dark mode toggle
+document.getElementById('darkModeToggle').addEventListener('click', function() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    html.removeAttribute('data-theme');
+    localStorage.setItem('vaultedRootsTheme', 'light');
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    localStorage.setItem('vaultedRootsTheme', 'dark');
+  }
+});
 </script>
 <style>
 @media (max-width: 480px) {
