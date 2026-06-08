@@ -834,7 +834,7 @@ function initDefaultData() {
   }
 }
 
-const CARD_W = 160, GAP_X = 40, GAP_Y = 6, JUNCT_DIST = 10;
+const CARD_W = 160, GAP_X = 50, GAP_Y = 12, JUNCT_DIST = 18;
 const wrap = document.getElementById('treeWrap');
 const svg = document.getElementById('linesSvg');
 const scroll = document.getElementById('treeScroll');
@@ -918,20 +918,6 @@ function renderTree() {
       });
     }
   }
-
-  // Apply per-generation vertical compression: early gens tight, deep gens untouched
-  topMap.forEach((y, id) => {
-    const person = people.find(p => p.id === id);
-    if (!person) return;
-    const g = person.gen;
-    // Gen 0-1: 0.5x, Gen 2: 0.6x, Gen 3: 0.7x, Gen 4: 0.8x, Gen 5+: no compression
-    let compress = 1.0;
-    if (g === 0 || g === 1) compress = 0.50;
-    else if (g === 2) compress = 0.60;
-    else if (g === 3) compress = 0.70;
-    else if (g === 4) compress = 0.80;
-    topMap.set(id, Math.round(y * compress));
-  });
 
   cardEls.forEach((el, id) => { el.style.top = (topMap.get(id) || 80) + 'px'; el.style.opacity = '1'; });
   treeWidth = colLeft[maxGen] + CARD_W + 40;
