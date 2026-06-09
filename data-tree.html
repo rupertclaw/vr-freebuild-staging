@@ -470,7 +470,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   display: flex; align-items: center; justify-content: center;
 }
 @media print {
-  @page { size: landscape; margin: 6mm; }
+  @page { size: landscape; margin: 4mm; }
 
   /* Hide all UI chrome */
   .header,
@@ -478,34 +478,56 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .cert-panel,
   .detail-panel,
   .detail-overlay,
-  .toast { display: none !important; }
+  .toast,
+  #printTreeBtn { display: none !important; }
 
-  /* Clean page */
-  body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  /* Reset body to normal document flow */
+  body {
+    background: white !important;
+    position: static !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Un-fix the scroll container */
   .tree-scroll {
     position: static !important;
-    background: white !important;
     overflow: visible !important;
     top: auto !important; left: auto !important;
     right: auto !important; bottom: auto !important;
     width: auto !important; height: auto !important;
+    background: transparent !important;
   }
 
-  /* Remove zoom transform for print, print at natural size */
+  /* Tree-wrap: fit to one page using zoom (affects layout, not just visual) */
   .tree-wrap {
-    transform: none !important;
-    padding: 10px !important;
+    zoom: var(--print-scale, 1) !important;
+    --zoom: 1 !important;
+    padding: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    width: auto !important;
+    height: auto !important;
   }
 
-  /* Ensure cards and lines print */
+  /* Cards print cleanly */
   .person-card {
     background: #faf5ec !important;
-    border: 1px solid #c9b896 !important;
+    border: 1px solid #7a6a4a !important;
     box-shadow: none !important;
-    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
     page-break-inside: avoid;
   }
-  .lines-svg { display: block !important; }
+
+  /* SVG connector lines */
+  .lines-svg {
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  #zoomSizer { display: none !important; }
 }
 </style>
 </head>
@@ -3199,7 +3221,7 @@ document.getElementById('viewPosterBtn').addEventListener('click', () => {
   window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
 });
 
-// Print Tree — fit tree to page width, hide UI, trigger browser print
+// Print Tree — fit entire tree to a single landscape page via CSS scale
 document.getElementById('printTreeBtn').addEventListener('click', () => {
   // Close any open panels
   closeDetail();
@@ -3207,24 +3229,33 @@ document.getElementById('printTreeBtn').addEventListener('click', () => {
   if (certPanel) certPanel.classList.remove('open');
 
   const originalZoom = zoom;
+  const treeWrap = document.getElementById('treeWrap');
 
-  // Fit tree to landscape page (usable area ~1000×750 at 96dpi)
-  // treeWidth/treeHeight are the natural dimensions (zoom=1)
-  const pageW = 1000;
-  const pageH = 750;
-  const fitZoom = Math.max(0.08, Math.min(1, pageW / treeWidth, pageH / treeHeight));
+  // Step 1: set zoom to 1 and re-render so treeWidth/treeHeight reflect natural size
+  zoom = 1;
+  renderTree();
 
-  setZoom(fitZoom);
+  // Step 2: compute scale to fit landscape page
+  // A4 landscape at 96dpi ≈ 1123×794px; with 4mm margins ≈ 1040×720 usable
+  const pageW = 1040;
+  const pageH = 720;
+  const scale = Math.max(0.05, Math.min(1, pageW / treeWidth, pageH / treeHeight));
 
+  // Step 3: apply scale via CSS custom property (used by @media print)
+  treeWrap.style.setProperty('--print-scale', scale);
+
+  // Step 4: print
   let restored = false;
   const restore = () => {
     if (restored) return;
     restored = true;
-    setZoom(originalZoom);
+    zoom = originalZoom;
+    renderTree();
+    treeWrap.style.removeProperty('--print-scale');
     window.removeEventListener('afterprint', restore);
   };
   window.addEventListener('afterprint', restore);
-  setTimeout(restore, 10000); // fallback
+  setTimeout(restore, 10000); // fallback safety
 
   setTimeout(() => window.print(), 150);
 });
