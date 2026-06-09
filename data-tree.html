@@ -3221,43 +3221,79 @@ document.getElementById('viewPosterBtn').addEventListener('click', () => {
   window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
 });
 
-// Print Tree — fit entire tree to a single landscape page via CSS scale
+// Print — ask user which format they want, then route accordingly
 document.getElementById('printTreeBtn').addEventListener('click', () => {
-  // Close any open panels
   closeDetail();
   const certPanel = document.getElementById('certPanel');
   if (certPanel) certPanel.classList.remove('open');
 
-  const originalZoom = zoom;
-  const treeWrap = document.getElementById('treeWrap');
+  const personCount = people.length;
+  const genCount = Math.max(...people.map(p => p.gen)) + 1;
 
-  // Step 1: set zoom to 1 and re-render so treeWidth/treeHeight reflect natural size
-  zoom = 1;
-  renderTree();
+  // Build a small inline dialog
+  const dlg = document.createElement('div');
+  dlg.id = 'printChoiceDlg';
+  dlg.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:20000;display:flex;justify-content:center;align-items:center;';
+  dlg.innerHTML = `
+    <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:10px;padding:22px;max-width:340px;width:90%;text-align:center;">
+      <div style="font-family:\"Cinzel Decorative\",serif;font-size:15px;color:#3e2b1a;margin-bottom:14px;">Print Your Tree</div>
+      <div style="font-family:\"Cormorant Garamond\",serif;font-size:12px;color:#6a5a3a;margin-bottom:18px;">
+        ${personCount} people · ${genCount} generations
+      </div>
+      <button id="dlgPoster" style="display:block;width:100%;padding:10px;margin-bottom:10px;border:none;border-radius:6px;background:#3e3225;color:#f0e6d2;font-family:\"Cormorant Garamond\",serif;font-size:13px;cursor:pointer;">
+        🖼️ Heritage Poster — 1 page (printable)
+      </button>
+      <button id="dlgMulti" style="display:block;width:100%;padding:10px;margin-bottom:14px;border:none;border-radius:6px;background:#5a4a3a;color:#f0e6d2;font-family:\"Cormorant Garamond\",serif;font-size:13px;cursor:pointer;">
+        🌳 Full Tree — multi-page PDF
+      </button>
+      <button id="dlgCancel" style="padding:6px 16px;border:none;border-radius:4px;background:transparent;color:#7a6a4a;font-family:\"Cormorant Garamond\",serif;font-size:12px;cursor:pointer;text-decoration:underline;">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(dlg);
 
-  // Step 2: compute scale to fit landscape page
-  // A4 landscape at 96dpi ≈ 1123×794px; with 4mm margins ≈ 1040×720 usable
-  const pageW = 1040;
-  const pageH = 720;
-  const scale = Math.max(0.05, Math.min(1, pageW / treeWidth, pageH / treeHeight));
+  const cleanup = () => { dlg.remove(); };
 
-  // Step 3: apply scale via CSS custom property (used by @media print)
-  treeWrap.style.setProperty('--print-scale', scale);
+  dlg.querySelector('#dlgPoster').addEventListener('click', () => {
+    cleanup();
+    localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
+    window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
+  });
 
-  // Step 4: print
-  let restored = false;
-  const restore = () => {
-    if (restored) return;
-    restored = true;
-    zoom = originalZoom;
+  dlg.querySelector('#dlgMulti').addEventListener('click', () => {
+    cleanup();
+    // Multi-page print — fit tree to page width, hide UI, trigger browser print
+    const originalZoom = zoom;
+    const treeWrap = document.getElementById('treeWrap');
+
+    // Step 1: set zoom to 1 and re-render so treeWidth/treeHeight reflect natural size
+    zoom = 1;
     renderTree();
-    treeWrap.style.removeProperty('--print-scale');
-    window.removeEventListener('afterprint', restore);
-  };
-  window.addEventListener('afterprint', restore);
-  setTimeout(restore, 10000); // fallback safety
 
-  setTimeout(() => window.print(), 150);
+    // Step 2: compute scale to fit landscape page
+    const pageW = 1040;
+    const pageH = 720;
+    const scale = Math.max(0.05, Math.min(1, pageW / treeWidth, pageH / treeHeight));
+
+    // Step 3: apply scale via CSS custom property (used by @media print)
+    treeWrap.style.setProperty('--print-scale', scale);
+
+    // Step 4: print
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      restored = true;
+      zoom = originalZoom;
+      renderTree();
+      treeWrap.style.removeProperty('--print-scale');
+      window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+    setTimeout(restore, 10000); // fallback safety
+    setTimeout(() => window.print(), 150);
+  });
+
+  dlg.querySelector('#dlgCancel').addEventListener('click', cleanup);
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) cleanup(); });
 });
 </script>
 <style>
