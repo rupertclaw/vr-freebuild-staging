@@ -1232,18 +1232,33 @@ function closeDetail() {
   detailOverlay.classList.remove('active');
 }
 
-// Gen 5 cards navigate to branch page; others open detail panel
-// Before navigating, auto-save main tree state to localStorage
+// Click handler for nameplates — branches on data-tree mode
+let currentSubjectId = null;
+let currentPeopleMap = new Map();
+
 document.querySelectorAll('.nameplate').forEach((np) => {
   np.addEventListener('click', (e) => {
     e.stopPropagation();
-    const isGen5 = np.dataset.gen === '5';
     const name = np.querySelector('.name').textContent;
     const years = np.querySelector('.years').textContent;
     const slot = np.dataset.slot || '';
+    const gen = parseInt(np.dataset.gen || '0', 10);
 
-    if (isGen5) {
-      // 1. Save full main tree state to localStorage
+    // === DATA-TREE MODE: click-to-focus ===
+    if (dtModeActive) {
+      if (e.shiftKey) return; // shift-click falls through to old behavior (detail panel)
+      const path = slotToPath(slot);
+      const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
+      if (person && person.id !== dtSubjectId) {
+        populatePosterFromDataTree(person.id);
+        showToast('Now showing: ' + (person.name || person.fullName || 'Ancestor'));
+      }
+      return;
+    }
+
+    // === ORIGINAL HERITAGE-POSTER MODE ===
+    if (gen === 5) {
+      // Save main tree state and navigate to branch tree
       const payload = {
         version: 1,
         savedAt: new Date().toISOString(),
@@ -1263,8 +1278,6 @@ document.querySelectorAll('.nameplate').forEach((np) => {
         };
       });
       localStorage.setItem('familytree_main', JSON.stringify(payload));
-
-      // 2. Save this person's data for the branch tree
       const personData = {
         name: name,
         fullname: np.dataset.fullname || name,
@@ -1273,7 +1286,6 @@ document.querySelectorAll('.nameplate').forEach((np) => {
         docs: np.dataset.docs || '',
         slot: slot
       };
-      // Also include parents if we know them from OWN_PARENT_MAP
       const parentMap = OWN_PARENT_MAP[slot];
       if (parentMap) {
         const fPlate = document.querySelector('.nameplate[data-slot="' + parentMap.fatherSlot + '"]');
@@ -1297,8 +1309,6 @@ document.querySelectorAll('.nameplate').forEach((np) => {
         }
       }
       localStorage.setItem('familytree_branch_subject', JSON.stringify(personData));
-
-      // 3. Navigate to branch tree
       window.location.href = 'branch-tree.html';
     } else {
       openDetail(name, years, slot);
@@ -3686,29 +3696,6 @@ function loadFromDataTree() {
   populatePosterFromDataTree(subject.id);
   return true;
 }
-
-// Click-to-focus: shift-click or long-press keeps old behavior; normal click shifts subject
-document.querySelectorAll('.nameplate').forEach(np => {
-  np.addEventListener('click', (e) => {
-    if (!dtModeActive) return; // let old handler run
-    e.stopPropagation();
-    e.preventDefault();
-
-    // Shift-click bypasses focus shift
-    if (e.shiftKey) {
-      // fall through to old behavior below
-      return;
-    }
-
-    const slot = np.dataset.slot || '';
-    const path = slotToPath(slot);
-    const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
-    if (person && person.id !== dtSubjectId) {
-      populatePosterFromDataTree(person.id);
-      showToast('Now showing: ' + (person.name || person.fullName || 'Ancestor'));
-    }
-  });
-});
 
 // Try loading from data-tree
 loadFromDataTree();
