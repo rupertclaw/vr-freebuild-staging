@@ -469,6 +469,44 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   font-size: 18px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
+@media print {
+  @page { size: landscape; margin: 6mm; }
+
+  /* Hide all UI chrome */
+  .header,
+  .zoom-controls,
+  .cert-panel,
+  .detail-panel,
+  .detail-overlay,
+  .toast { display: none !important; }
+
+  /* Clean page */
+  body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .tree-scroll {
+    position: static !important;
+    background: white !important;
+    overflow: visible !important;
+    top: auto !important; left: auto !important;
+    right: auto !important; bottom: auto !important;
+    width: auto !important; height: auto !important;
+  }
+
+  /* Remove zoom transform for print, print at natural size */
+  .tree-wrap {
+    transform: none !important;
+    padding: 10px !important;
+  }
+
+  /* Ensure cards and lines print */
+  .person-card {
+    background: #faf5ec !important;
+    border: 1px solid #c9b896 !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact; print-color-adjust: exact;
+    page-break-inside: avoid;
+  }
+  .lines-svg { display: block !important; }
+}
 </style>
 </head>
 <body>
@@ -504,6 +542,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
       <button class="dark-mode-toggle" id="darkModeToggle" title="Toggle dark mode">🌙</button>
+      <button class="header-btn" id="printTreeBtn" title="Print tree as PDF" style="font-size:13px;padding:6px 10px;">🖨️ Print</button>
       <button class="header-btn" id="viewPosterBtn" title="Open Heritage Poster (new tab)" style="font-size:13px;padding:6px 10px;">🖼️ Heritage Poster</button>
       <select id="countrySelect" class="country-select" title="Research country">
         <option value="" disabled>Country...</option>
@@ -3158,6 +3197,36 @@ document.getElementById('darkModeToggle').addEventListener('click', function() {
 document.getElementById('viewPosterBtn').addEventListener('click', () => {
   localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
   window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
+});
+
+// Print Tree — fit tree to page width, hide UI, trigger browser print
+document.getElementById('printTreeBtn').addEventListener('click', () => {
+  // Close any open panels
+  closeDetail();
+  const certPanel = document.getElementById('certPanel');
+  if (certPanel) certPanel.classList.remove('open');
+
+  const originalZoom = zoom;
+
+  // Fit tree to landscape page (usable area ~1000×750 at 96dpi)
+  // treeWidth/treeHeight are the natural dimensions (zoom=1)
+  const pageW = 1000;
+  const pageH = 750;
+  const fitZoom = Math.max(0.08, Math.min(1, pageW / treeWidth, pageH / treeHeight));
+
+  setZoom(fitZoom);
+
+  let restored = false;
+  const restore = () => {
+    if (restored) return;
+    restored = true;
+    setZoom(originalZoom);
+    window.removeEventListener('afterprint', restore);
+  };
+  window.addEventListener('afterprint', restore);
+  setTimeout(restore, 10000); // fallback
+
+  setTimeout(() => window.print(), 150);
 });
 </script>
 <style>
