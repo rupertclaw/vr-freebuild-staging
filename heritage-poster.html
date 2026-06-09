@@ -3610,6 +3610,17 @@ function formatPersonYears(person) {
   return y;
 }
 
+// Global helper: split a full name into forename + <br> + surname for nameplate display
+// Defined at top level so both poster internals and data-tree integration can use it
+function formatNameplateName(fullName) {
+  if (!fullName || fullName === 'Name') return 'Name';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length < 2) return fullName;
+  const surname = parts.pop();
+  const forename = parts.join(' ');
+  return forename + '<br>' + surname;
+}
+
 // Short name for display (mimics heritage-poster shortName)
 function dtShortName(fullName, gen) {
   return formatNameplateName(fullName);
@@ -3636,6 +3647,7 @@ function populatePosterFromDataTree(subjectId) {
   });
 
   // Fill each slot
+  let filledCount = 0;
   document.querySelectorAll('.nameplate').forEach(plate => {
     const slot = plate.dataset.slot;
     const path = slotToPath(slot);
@@ -3663,7 +3675,9 @@ function populatePosterFromDataTree(subjectId) {
 
     plate.querySelector('.name').innerHTML = dtShortName(name, gen);
     plate.querySelector('.years').textContent = years;
+    filledCount++;
   });
+  console.log('[DT POPULATE] filled slots:', filledCount);
 
   // Show back button
   const backBtn = document.getElementById('backToTreeBtn');
@@ -3673,11 +3687,13 @@ function populatePosterFromDataTree(subjectId) {
 // Load from data-tree localStorage key
 function loadFromDataTree() {
   const raw = localStorage.getItem('familytree_data_v5');
+  console.log('[DT LOAD] raw exists:', !!raw);
   if (!raw) return false;
   let data;
-  try { data = JSON.parse(raw); } catch (e) { return false; }
-  if (!data.people || !Array.isArray(data.people)) return false;
+  try { data = JSON.parse(raw); } catch (e) { console.error('[DT LOAD] parse error', e); return false; }
+  if (!data.people || !Array.isArray(data.people)) { console.log('[DT LOAD] no people array'); return false; }
 
+  console.log('[DT LOAD] people count:', data.people.length);
   dtPeopleMap = new Map();
   data.people.forEach(p => dtPeopleMap.set(p.id, p));
 
@@ -3686,8 +3702,9 @@ function loadFromDataTree() {
                   data.people.find(p => p.status === 'you') ||
                   data.people.find(p => p.status === 'confirmed') ||
                   data.people[0];
-  if (!subject) return false;
+  if (!subject) { console.log('[DT LOAD] no subject found'); return false; }
 
+  console.log('[DT LOAD] subject:', subject.name, 'id:', subject.id);
   populatePosterFromDataTree(subject.id);
   return true;
 }

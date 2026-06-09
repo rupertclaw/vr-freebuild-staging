@@ -3157,7 +3157,7 @@ document.getElementById('darkModeToggle').addEventListener('click', function() {
 // Explicitly save to localStorage before opening to avoid sync lag
 document.getElementById('viewPosterBtn').addEventListener('click', () => {
   localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
-  window.open('heritage-poster.html', '_blank');
+  window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
 });
 </script>
 <style>
