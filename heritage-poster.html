@@ -1652,6 +1652,25 @@ async function importSession(file) {
   try {
     const text = await file.text();
     const data = JSON.parse(text);
+
+    // Data-tree export format: {people: [...], nextId, version}
+    if (data.people && Array.isArray(data.people)) {
+      dtPeopleMap = new Map();
+      data.people.forEach(p => dtPeopleMap.set(p.id, p));
+      const subject = data.people.find(p => p.gen === 0) ||
+                      data.people.find(p => p.status === 'you') ||
+                      data.people.find(p => p.status === 'confirmed') ||
+                      data.people[0];
+      if (subject) {
+        populatePosterFromDataTree(subject.id);
+        showToast('Tree loaded from data-tree file!');
+        return;
+      }
+      showToast('Invalid session file — no subject found');
+      return;
+    }
+
+    // Poster-native format: {slots: {...}}
     if (!data.slots) { showToast('Invalid session file — no tree data found'); return; }
 
     // Restore slot data
