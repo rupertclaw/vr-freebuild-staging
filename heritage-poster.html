@@ -3769,10 +3769,7 @@ function updateBanner() {
     bannerName.textContent = 'Family';
     return;
   }
-  const parts = name.trim().split(/\s+/);
-  // Use surname if available, otherwise full name
-  const display = parts.length >= 2 ? parts.pop() : name;
-  bannerName.textContent = display;
+  bannerName.textContent = name;
 }
 
 let dtPeopleMap = new Map();
