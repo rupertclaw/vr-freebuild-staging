@@ -549,37 +549,36 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 /* Heraldic banner above the tree */
 .poster-banner {
   position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 220px;
   z-index: 10;
+  background: url('poster-banner-bg.jpg') no-repeat center top;
+  background-size: 100% auto;
   display: flex;
-  align-items: baseline;
-  gap: 10px;
-  padding: 8px 32px;
-  background: rgba(30, 20, 10, 0.88);
-  border: 2px solid #b89a5e;
-  border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-  font-family: 'Cinzel Decorative', serif;
-  color: #e8c97e;
-  text-align: center;
-  white-space: nowrap;
+  flex-direction: column;
+  align-items: center;
+  justify-content: flex-start;
+  padding-top: 48px;
   pointer-events: none;
 }
-.poster-banner-pre,
-.poster-banner-post {
-  font-size: 16px;
-  color: #c9a96e;
+.poster-banner-text {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 18px;
+  color: #2a1f0a;
   text-transform: uppercase;
-  letter-spacing: 1px;
+  letter-spacing: 2px;
+  text-align: center;
+  text-shadow: 0 1px 2px rgba(232,220,200,0.6);
+  max-width: 500px;
+  line-height: 1.3;
 }
 .poster-banner-name {
   font-size: 22px;
-  color: #f5dca0;
-  text-transform: uppercase;
-  letter-spacing: 2px;
   font-weight: 700;
+  letter-spacing: 3px;
+  color: #1e140a;
 }
 
 @media print {
@@ -620,12 +619,16 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   .nameplate { opacity: 1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
   .grid-overlay { display: none !important; }
 
-  /* Banner prints dark-on-parchment for contrast */
+  /* Banner prints with image background and readable text */
   .poster-banner {
-    background: rgba(30, 20, 10, 0.9) !important;
-    border-color: #b89a5e !important;
+    background: url('poster-banner-bg.jpg') no-repeat center top !important;
+    background-size: 100% auto !important;
     -webkit-print-color-adjust: exact;
     print-color-adjust: exact;
+  }
+  .poster-banner-text {
+    color: #1e140a !important;
+    text-shadow: 0 1px 2px rgba(232,220,200,0.6) !important;
   }
 }
 </style>
@@ -644,9 +647,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 
 <!-- Heraldic banner — shows the subject's family name -->
 <div class="poster-banner" id="posterBanner">
-  <span class="poster-banner-pre">The</span>
-  <span class="poster-banner-name" id="bannerName">Family</span>
-  <span class="poster-banner-post">Family Tree</span>
+  <div class="poster-banner-text">
+    The <span class="poster-banner-name" id="bannerName">Family</span> Family Tree
+  </div>
 </div>
 
 <!-- Gen 0: Subject -->
