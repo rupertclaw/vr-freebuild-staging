@@ -504,6 +504,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     </div>
     <div style="display:flex;align-items:center;gap:6px;">
       <button class="dark-mode-toggle" id="darkModeToggle" title="Toggle dark mode">🌙</button>
+      <button class="header-btn" id="viewPosterBtn" title="View as Poster" style="font-size:13px;padding:6px 10px;">🖼️ Poster</button>
       <select id="countrySelect" class="country-select" title="Research country">
         <option value="" disabled>Country...</option>
       </select>
@@ -3150,6 +3151,11 @@ document.getElementById('darkModeToggle').addEventListener('click', function() {
     html.setAttribute('data-theme', 'dark');
     localStorage.setItem('vaultedRootsTheme', 'dark');
   }
+});
+
+// View as Poster button — opens heritage poster with current tree data
+document.getElementById('viewPosterBtn').addEventListener('click', () => {
+  window.open('heritage-poster.html', '_blank');
 });
 </script>
 <style>

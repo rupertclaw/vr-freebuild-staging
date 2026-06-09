@@ -776,6 +776,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <button id="saveSessionBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#3e3225;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">⬇ Save Session</button>
   <button id="loadSessionBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#3e3225;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">⬆ Load Session</button>
   <button id="guideBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#5a7a3a;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">🔍 Next Steps</button>
+  <button id="backToTreeBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#3e5a8a;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);display:none;">🌳 Back to Tree</button>
   <input type="file" id="sessionFileInput" accept=".familytree,.json,application/json" style="display:none;">
 </div>
 
@@ -1587,6 +1588,11 @@ sessionFileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) importSession(file);
   sessionFileInput.value = '';
+});
+
+// Back to Tree button — navigates back to data-tree app
+document.getElementById('backToTreeBtn').addEventListener('click', () => {
+  window.location.href = 'data-tree.html';
 });
 
 certRetry.addEventListener('click', () => {
@@ -3544,6 +3550,168 @@ function getSourceForCouple(name1, name2) {
     console.error('[RESTORE] Failed:', err);
   }
 })();
+
+// ========== Data-Tree Integration Layer ==========
+// Maps poster slot names to binary tree paths (0=father/paternal, 1=mother/maternal)
+function slotToPath(slot) {
+  if (slot === 'subject') return [];
+  const path = [];
+  const parts = slot.split('-');
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    if (p === 'father' || p === 'paternal' || p === 'pat' || p === 'grandfather') {
+      path.push(0);
+    } else if (p === 'mother' || p === 'maternal' || p === 'mat' || p === 'grandmother') {
+      path.push(1);
+    }
+  }
+  return path;
+}
+
+// Follow parent chain from root person using binary path
+function getPersonByPath(rootId, path, peopleMap) {
+  let currentId = rootId;
+  for (const direction of path) {
+    const person = peopleMap.get(currentId);
+    if (!person || !person.parents || person.parents.length < 2) return null;
+    currentId = person.parents[direction];
+    if (currentId == null) return null;
+  }
+  return peopleMap.get(currentId) || null;
+}
+
+// Format years from person data
+function formatPersonYears(person) {
+  if (person.years && person.years !== 'YYYY — YYYY') return person.years;
+  let y = '';
+  if (person.birthDate) {
+    const m = person.birthDate.match(/\d{4}/);
+    if (m) y = m[0];
+  }
+  y += ' —';
+  if (person.deathDate) {
+    const m = person.deathDate.match(/\d{4}/);
+    if (m) y = y.replace(' —', '') + ' — ' + m[0];
+  }
+  if (!y || y === ' —') return 'YYYY — YYYY';
+  return y;
+}
+
+// Short name for display (mimics heritage-poster shortName)
+function dtShortName(fullName, gen) {
+  if (!fullName || fullName === 'Name') return 'Name';
+  const maxChars = gen <= 1 ? 22 : gen === 2 ? 20 : gen === 3 ? 18 : 16;
+  if (fullName.length <= maxChars) return fullName;
+  const parts = fullName.split(' ');
+  if (parts.length < 3) return fullName.length > maxChars ? fullName.slice(0, maxChars - 1) + '\u2026' : fullName;
+  const surname = parts[parts.length - 1];
+  const initials = parts.slice(0, -1).map(p => p.charAt(0) + '.').join(' ');
+  const short = initials + ' ' + surname;
+  return short.length > maxChars ? fullName.slice(0, maxChars - 1) + '\u2026' : short;
+}
+
+let dtPeopleMap = new Map();
+let dtSubjectId = null;
+let dtModeActive = false;
+
+// Populate all poster slots from a given subject person ID
+function populatePosterFromDataTree(subjectId) {
+  if (!dtPeopleMap.has(subjectId)) return;
+  dtSubjectId = subjectId;
+  dtModeActive = true;
+
+  // Clear existing
+  document.querySelectorAll('.nameplate').forEach(plate => {
+    plate.dataset.fullname = '';
+    plate.dataset.maiden = '';
+    plate.dataset.docs = '';
+    plate.querySelector('.name').textContent = 'Name';
+    plate.querySelector('.years').textContent = 'YYYY — YYYY';
+    plate.style.opacity = '1';
+  });
+
+  // Fill each slot
+  document.querySelectorAll('.nameplate').forEach(plate => {
+    const slot = plate.dataset.slot;
+    const path = slotToPath(slot);
+    const person = getPersonByPath(subjectId, path, dtPeopleMap);
+    if (!person) return;
+    const name = person.name || person.fullName || '';
+    if (!name || name === 'Name') return;
+
+    const years = formatPersonYears(person);
+    const gen = parseInt(plate.dataset.gen || '0', 10);
+
+    plate.dataset.fullname = name;
+    if (person.maidenName) plate.dataset.maiden = person.maidenName;
+
+    // Doc badges
+    if (person.docs && person.docs.length) {
+      const codes = [];
+      person.docs.forEach(d => {
+        const type = typeof d === 'string' ? d : d.type;
+        const code = type === 'birth' ? 'BC' : type === 'marriage' ? 'MC' : type === 'death' ? 'DC' : '';
+        if (code && !codes.includes(code)) codes.push(code);
+      });
+      if (codes.length) plate.dataset.docs = codes.join(',');
+    }
+
+    plate.querySelector('.name').textContent = dtShortName(name, gen);
+    plate.querySelector('.years').textContent = years;
+  });
+
+  // Show back button
+  const backBtn = document.getElementById('backToTreeBtn');
+  if (backBtn) backBtn.style.display = 'inline-block';
+}
+
+// Load from data-tree localStorage key
+function loadFromDataTree() {
+  const raw = localStorage.getItem('familytree_data_v5');
+  if (!raw) return false;
+  let data;
+  try { data = JSON.parse(raw); } catch (e) { return false; }
+  if (!data.people || !Array.isArray(data.people)) return false;
+
+  dtPeopleMap = new Map();
+  data.people.forEach(p => dtPeopleMap.set(p.id, p));
+
+  // Find subject: gen 0, or status='you', or first confirmed, or first person
+  const subject = data.people.find(p => p.gen === 0) ||
+                  data.people.find(p => p.status === 'you') ||
+                  data.people.find(p => p.status === 'confirmed') ||
+                  data.people[0];
+  if (!subject) return false;
+
+  populatePosterFromDataTree(subject.id);
+  return true;
+}
+
+// Click-to-focus: shift-click or long-press keeps old behavior; normal click shifts subject
+document.querySelectorAll('.nameplate').forEach(np => {
+  np.addEventListener('click', (e) => {
+    if (!dtModeActive) return; // let old handler run
+    e.stopPropagation();
+    e.preventDefault();
+
+    // Shift-click bypasses focus shift
+    if (e.shiftKey) {
+      // fall through to old behavior below
+      return;
+    }
+
+    const slot = np.dataset.slot || '';
+    const path = slotToPath(slot);
+    const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
+    if (person && person.id !== dtSubjectId) {
+      populatePosterFromDataTree(person.id);
+      showToast('Now showing: ' + (person.name || person.fullName || 'Ancestor'));
+    }
+  });
+});
+
+// Try loading from data-tree
+loadFromDataTree();
 </script>
 
 </body>
