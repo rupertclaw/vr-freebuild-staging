@@ -134,9 +134,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   font-size: 10px;
   color: #2a1f10;
   letter-spacing: 0.5px;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
+  line-height: 1.15;
   max-width: 140px;
 }
 .nameplate[data-gen="3"] .name {
@@ -1239,7 +1237,7 @@ let currentPeopleMap = new Map();
 document.querySelectorAll('.nameplate').forEach((np) => {
   np.addEventListener('click', (e) => {
     e.stopPropagation();
-    const name = np.querySelector('.name').textContent;
+    const name = np.dataset.fullname || '';
     const years = np.querySelector('.years').textContent;
     const slot = np.dataset.slot || '';
     const gen = parseInt(np.dataset.gen || '0', 10);
@@ -1324,14 +1322,14 @@ parent1.addEventListener('click', () => {
   const slot = parent1.dataset.parentSlot;
   if (slot) {
     const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
-    if (plate) openDetail(plate.querySelector('.name').textContent, plate.querySelector('.years').textContent, slot);
+    if (plate) openDetail(plate.dataset.fullname || '', plate.querySelector('.years').textContent, slot);
   }
 });
 parent2.addEventListener('click', () => {
   const slot = parent2.dataset.parentSlot;
   if (slot) {
     const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
-    if (plate) openDetail(plate.querySelector('.name').textContent, plate.querySelector('.years').textContent, slot);
+    if (plate) openDetail(plate.dataset.fullname || '', plate.querySelector('.years').textContent, slot);
   }
 });
 
@@ -1358,7 +1356,13 @@ function makeEditable(el, targetPlate, targetSelector) {
       // Write back to the tree nameplate
       if (targetPlate && targetSelector) {
         const targetEl = targetPlate.querySelector(targetSelector);
-        if (targetEl) targetEl.textContent = el.textContent;
+        if (targetEl) {
+          if (targetSelector === '.name') {
+            targetEl.innerHTML = formatNameplateName(el.textContent);
+          } else {
+            targetEl.textContent = el.textContent;
+          }
+        }
       }
     };
     input.addEventListener('blur', commit);
@@ -1400,7 +1404,13 @@ function makeEditableInline(el, targetPlate, targetSelector) {
     input.remove();
     if (targetPlate && targetSelector) {
       const targetEl = targetPlate.querySelector(targetSelector);
-      if (targetEl && newVal) targetEl.textContent = newVal;
+      if (targetEl && newVal) {
+        if (targetSelector === '.name') {
+          targetEl.innerHTML = formatNameplateName(newVal);
+        } else {
+          targetEl.textContent = newVal;
+        }
+      }
       // Also update data-fullname when editing a name, so cert matching works later
       if (targetSelector === '.name' && newVal) {
         targetPlate.dataset.fullname = newVal;
@@ -1546,7 +1556,7 @@ async function importSession(file) {
       if (!plate) return;
       if (info.fullname) {
         plate.dataset.fullname = info.fullname;
-        plate.querySelector('.name').textContent = info.name || info.fullname;
+        plate.querySelector('.name').innerHTML = formatNameplateName(info.name || info.fullname);
       }
       if (info.years) {
         const yEl = plate.querySelector('.years');
@@ -2446,25 +2456,19 @@ const SPOUSE_MAP = {
     return document.querySelector(`.nameplate[data-slot="${slotName}"]`);
   }
 
-  // Helper: shorten a full name for nameplate display
-  // "Andrew Henderson Craigie" → "Andrew H. Craigie" (3+ parts)
-  // "Elizabeth Henderson" → "E. Henderson" (2 parts, if gen 3+ and name > 16 chars)
-  function shortName(fullName, gen) {
-    if (!fullName) return fullName;
+// Helper: split a full name into forename + <br> + surname for nameplate display
+  function formatNameplateName(fullName) {
+    if (!fullName || fullName === 'Name') return 'Name';
     const parts = fullName.trim().split(/\s+/);
-    if (parts.length <= 2) {
-      // Two-part name — abbreviate first name for gen 3+ if too long
-      const total = fullName.length;
-      const maxLen = gen >= 4 ? 14 : gen >= 3 ? 16 : 999;
-      if (total > maxLen && parts[0].length > 1) {
-        return parts[0].charAt(0) + '. ' + parts[1];
-      }
-      return fullName; // "Joseph Mooney" stays as is
-    }
-    // First name + initials + surname
+    if (parts.length < 2) return fullName;
     const surname = parts.pop();
-    const initials = parts.slice(1).map(p => p.charAt(0) + '.').join(' ');
-    return parts[0] + (initials ? ' ' + initials : '') + ' ' + surname;
+    const forename = parts.join(' ');
+    return forename + '<br>' + surname;
+  }
+
+  // Helper: shorten a full name for nameplate display (legacy wrapper)
+  function shortName(fullName, gen) {
+    return formatNameplateName(fullName);
   }
 
   // Helper: fill a nameplate with name + years; stores full name in data-fullname, displays short
@@ -2487,7 +2491,7 @@ const SPOUSE_MAP = {
     plate.dataset.fullname = name;
     if (maidenName) plate.dataset.maiden = maidenName;
     const gen = parseInt(plate.dataset.gen || '0', 10);
-    nameEl.textContent = shortName(name, gen);
+    nameEl.innerHTML = shortName(name, gen);
     if (years) {
       const yearsEl = plate.querySelector('.years');
       if (yearsEl) yearsEl.textContent = years;
@@ -2610,10 +2614,10 @@ const SPOUSE_MAP = {
             keeper.querySelector('.years').textContent = dupYears;
           }
           // Update display name to the fuller version
-          const keeperName = keeper.querySelector('.name')?.textContent || '';
-          const dupName = dup.querySelector('.name')?.textContent || '';
-          if ((keeperName === 'Name' || keeperName.length < dupName.length) && dupName !== 'Name') {
-            keeper.querySelector('.name').textContent = dupName;
+          const keeperFull = keeper.dataset.fullname || '';
+          const dupFull = dup.dataset.fullname || '';
+          if ((!keeperFull || keeperFull.length < dupFull.length) && dupFull) {
+            keeper.dataset.fullname = dupFull;
           }
           // Clear the duplicate
           console.log('[MERGE] Merging duplicate "' + norm + '": kept', keeper.dataset.slot, ', cleared', dup.dataset.slot);
@@ -2624,10 +2628,9 @@ const SPOUSE_MAP = {
           delete dup.dataset.docs;
           mergeCount++;
         });
-        // Re-display keeper with short name from fullname
+        // Re-display keeper with formatted name from fullname
         if (keeper.dataset.fullname) {
-          const gen = parseInt(keeper.dataset.gen || '0', 10);
-          keeper.querySelector('.name').textContent = shortName(keeper.dataset.fullname, gen);
+          keeper.querySelector('.name').innerHTML = formatNameplateName(keeper.dataset.fullname);
         }
       });
       if (mergeCount > 0) showToast('Merged ' + mergeCount + ' duplicate(s)');
@@ -3524,7 +3527,7 @@ function getSourceForCouple(name1, name2) {
       if (!plate) return;
       if (info.fullname) {
         plate.dataset.fullname = info.fullname;
-        plate.querySelector('.name').textContent = info.name || info.fullname;
+        plate.querySelector('.name').innerHTML = formatNameplateName(info.name || info.fullname);
       }
       if (info.years) {
         const yEl = plate.querySelector('.years');
@@ -3609,15 +3612,7 @@ function formatPersonYears(person) {
 
 // Short name for display (mimics heritage-poster shortName)
 function dtShortName(fullName, gen) {
-  if (!fullName || fullName === 'Name') return 'Name';
-  const maxChars = gen <= 1 ? 22 : gen === 2 ? 20 : gen === 3 ? 18 : 16;
-  if (fullName.length <= maxChars) return fullName;
-  const parts = fullName.split(' ');
-  if (parts.length < 3) return fullName.length > maxChars ? fullName.slice(0, maxChars - 1) + '\u2026' : fullName;
-  const surname = parts[parts.length - 1];
-  const initials = parts.slice(0, -1).map(p => p.charAt(0) + '.').join(' ');
-  const short = initials + ' ' + surname;
-  return short.length > maxChars ? fullName.slice(0, maxChars - 1) + '\u2026' : short;
+  return formatNameplateName(fullName);
 }
 
 let dtPeopleMap = new Map();
@@ -3635,7 +3630,7 @@ function populatePosterFromDataTree(subjectId) {
     plate.dataset.fullname = '';
     plate.dataset.maiden = '';
     plate.dataset.docs = '';
-    plate.querySelector('.name').textContent = 'Name';
+    plate.querySelector('.name').innerHTML = 'Name';
     plate.querySelector('.years').textContent = 'YYYY — YYYY';
     plate.style.opacity = '1';
   });
@@ -3666,7 +3661,7 @@ function populatePosterFromDataTree(subjectId) {
       if (codes.length) plate.dataset.docs = codes.join(',');
     }
 
-    plate.querySelector('.name').textContent = dtShortName(name, gen);
+    plate.querySelector('.name').innerHTML = dtShortName(name, gen);
     plate.querySelector('.years').textContent = years;
   });
 
