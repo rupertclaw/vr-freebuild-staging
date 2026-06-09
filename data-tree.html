@@ -445,13 +445,20 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 /* Save/Load buttons */
 .save-bar {
-  position: fixed; bottom: 16px; left: 16px; display: flex; gap: 8px; z-index: 200;
+  position: fixed; bottom: 16px; left: 16px; display: flex; gap: 6px; z-index: 200;
 }
 .save-bar button {
-  padding: 12px 20px; border: none; border-radius: 4px;
-  font-family: 'Cormorant Garamond', serif; font-size: 14px; cursor: pointer;
-  background: var(--bg-save-bar); color: var(--text-save-bar); box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  width: 38px; height: 38px;
+  padding: 0; border: none; border-radius: 6px;
+  font-family: 'Cormorant Garamond', serif; font-size: 18px; cursor: pointer;
+  background: var(--bg-save-bar); color: var(--text-save-bar);
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+  display: inline-flex; align-items: center; justify-content: center;
+  transition: transform 0.1s;
 }
+.save-bar button:active { transform: scale(0.92); }
+.save-bar button#nextStepsBtn { background: #5a7a3a; color: #f0e6d2; }
+.save-bar button#resetBtn { background: #2a3a50; color: #7dd3fc; }
 
 /* Toast */
 #toastMsg {
@@ -637,10 +644,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 <!-- Save/Load bar -->
 <div class="save-bar">
-  <button id="saveBtn">⬇ Save Session</button>
-  <button id="loadBtn">⬆ Load Session</button>
-  <button id="nextStepsBtn">🧭 Next Steps</button>
-  <button id="resetBtn" style="background:#2a3a50;color:#7dd3fc;">↻ Reset</button>
+  <button id="saveBtn" title="Save session">💾</button>
+  <button id="loadBtn" title="Load session">📂</button>
+  <button id="nextStepsBtn" title="Next steps">📖</button>
+  <button id="resetBtn" title="Reset tree" style="background:#2a3a50;color:#7dd3fc;">🔄</button>
   <input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
 </div>
 
@@ -2946,7 +2953,7 @@ function renderOnboardingGuide() {
       <li><strong>Or fill manually.</strong> Tap any card to open the detail panel. Add names, dates, maiden names, occupation, and change status (Confirmed, Probable, Brick Wall, Unknown Parent).</li>
       <li><strong>Attach documents.</strong> In a person's detail panel, tap "Attach Document" to link a certificate image directly to that person.</li>
       <li><strong>Track siblings.</strong> In the detail panel, add brothers and sisters under the Siblings section. A 🍃 leaf appears on cards with siblings recorded.</li>
-      <li><strong>Save your work.</strong> Tap ⬇ Save Session to export a <code>.familytree</code> backup. Load it later with ⬆ Load Session, or send it to someone else.</li>
+      <li><strong>Save your work.</strong> Tap 💾 to export a <code>.familytree</code> backup. Load it later with 📂, or send it to someone else.</li>
       <li><strong>Get suggestions.</strong> This panel shows which certificates to find next, with direct links to source records and cost estimates.</li>
       <li><strong>Zoom and pan.</strong> Pinch to zoom in/out on the tree. Drag to scroll. Use the zoom controls (top right) for precise adjustment.</li>
     </ol>
