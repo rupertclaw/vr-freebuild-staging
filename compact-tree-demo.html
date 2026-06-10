@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Compact Tree Demo</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #f5f0e6; }
+.tree-scroll { position: absolute; top: 0; left: 0; right: 0; bottom: 0; overflow: auto; }
+.tree-wrap { position: relative; min-width: fit-content; min-height: 100%; padding: 20px; }
+.lines-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+.person-card {
+  position: absolute; left: 0; width: 130px;
+  background: #faf5eb;
+  border: 1px solid #c9b896; border-radius: 2px;
+  padding: 3px 6px; text-align: center;
+  z-index: 2; cursor: pointer;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+}
+.person-card .name {
+  font-family: 'Cinzel Decorative', serif; font-size: 9px;
+  color: #2a1f10; letter-spacing: 0.3px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+  line-height: 1.3;
+}
+.person-card .years {
+  font-family: 'Cormorant Garamond', serif; font-size: 8px;
+  color: #7a6545; margin-top: 1px;
+}
+.person-card.confirmed { border-left: 3px solid #22c55e; }
+.person-card.probable { border-left: 3px solid #f59e0b; }
+.person-card.brickwall { border-left: 3px dashed #ef4444; }
+.person-card.you { border: 1px solid #c4a875; background: #fdf6e3; }
+.person-card.blank {
+  background: #f0ebe0; border: 1px dashed #b8a88a; opacity: 0.5; cursor: default;
+}
+</style>
+</head>
+<body>
+<div class="tree-scroll" id="treeScroll">
+  <div class="tree-wrap" id="treeWrap">
+    <svg class="lines-svg" id="linesSvg"></svg>
+  </div>
+</div>
+<script>
+// Demo data: 5 generations
+let people = [];
+let nextId = 1;
+function addP(name, gen, status, parents, spouseId, opts) {
+  opts = opts || {};
+  const p = { id: nextId++, gen, name, status, parents: parents || [], spouseId, years: opts.years || '', birthDate: opts.birthDate || '', deathDate: opts.deathDate || '', marriageDate: opts.marriageDate || '' };
+  people.push(p);
+  return p;
+}
+
+// Gen 0
+addP('Joseph Mooney', 0, 'you', [], null, { years: '1879 — ?' });
+
+// Gen 1
+addP('Edward Lynch', 1, 'confirmed', [], null, { years: '1866 — ?' });
+addP('Mary Graham', 1, 'confirmed', [], null, { years: '~1868' });
+
+// Gen 2
+addP('Thomas Lynch', 2, 'confirmed', [], null, { years: '~1842' });
+addP('Catherine Welsh', 2, 'confirmed', [], null, { years: '~1844' });
+addP('James Graham', 2, 'brickwall', [], null, { years: '?' });
+addP('Bridget Reilly', 2, 'confirmed', [], null, { years: '~1846' });
+
+// Gen 3
+addP('Patrick Lynch', 3, 'confirmed', [], null, { years: '~1818' });
+addP('Mary McDermott', 3, 'confirmed', [], null, { years: '~1820' });
+addP('Thomas Welsh', 3, 'confirmed', [], null, { years: '~1818' });
+addP('Catherine Murray', 3, 'confirmed', [], null, { years: '~1820' });
+addP('?', 3, 'blank', [], null, { years: '?' });
+addP('?', 3, 'blank', [], null, { years: '?' });
+addP('John Reilly', 3, 'confirmed', [], null, { years: '~1818' });
+addP('Margaret Daly', 3, 'confirmed', [], null, { years: '~1820' });
+
+// Gen 4 (16 cards)
+for (let i = 0; i < 16; i++) {
+  addP(i < 8 ? 'Name' : 'Name', 4, i < 8 ? 'confirmed' : 'probable', [], null, { years: 'YYYY — YYYY' });
+}
+
+// Wire parents: each person in gen g gets 2 parents from gen g+1
+function wireParents() {
+  const maxGen = Math.max(...people.map(p => p.gen));
+  for (let g = 0; g < maxGen; g++) {
+    const children = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+    const parents = people.filter(p => p.gen === g + 1).sort((a,b) => a.id - b.id);
+    if (!parents.length) continue;
+    let pi = 0;
+    children.forEach((child, ci) => {
+      if (pi + 1 >= parents.length) pi = 0;
+      child.parents = [parents[pi].id, parents[pi + 1].id];
+      if (!parents[pi].spouseId) { parents[pi].spouseId = parents[pi+1].id; parents[pi+1].spouseId = parents[pi].id; }
+      pi += 2;
+    });
+  }
+}
+wireParents();
+
+const CARD_W = 130, GAP_X = 35, GAP_Y = 4, JUNCT_DIST = 12;
+const wrap = document.getElementById('treeWrap');
+const svg = document.getElementById('linesSvg');
+const svgNS = 'http://www.w3.org/2000/svg';
+let cardEls = new Map();
+
+function renderTree() {
+  wrap.querySelectorAll('.person-card').forEach(el => el.remove());
+  cardEls.clear();
+  const maxGen = Math.max(...people.map(p => p.gen));
+  const gens = [];
+  for (let g = 0; g <= maxGen; g++) gens[g] = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+  const colLeft = gens.map((_, g) => g * (CARD_W + GAP_X));
+
+  people.forEach(person => {
+    const el = document.createElement('div');
+    el.className = 'person-card ' + person.status + (person.gen === 0 ? ' you' : '');
+    el.dataset.id = person.id;
+    const bYear = (person.birthDate || person.years || '').match(/\d{4}/);
+    const dYear = (person.deathDate || '').match(/\d{4}/);
+    let cardYears = '';
+    if (bYear && dYear) cardYears = bYear[0] + ' — ' + dYear[0];
+    else if (bYear) cardYears = 'b. ' + bYear[0];
+    else if (dYear) cardYears = 'd. ' + dYear[0];
+    else cardYears = person.years || '?';
+    el.innerHTML = '<div class="name">' + person.name + '</div><div class="years">' + cardYears + '</div>';
+    el.style.left = colLeft[person.gen] + 'px';
+    el.style.top = '0px'; el.style.opacity = '0';
+    wrap.appendChild(el); cardEls.set(person.id, el);
+  });
+
+  document.body.offsetHeight;
+  const hMap = new Map();
+  cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
+
+  const topMap = new Map();
+  if (gens[maxGen] && gens[maxGen].length > 0) {
+    let y = 20;
+    gens[maxGen].forEach(p => {
+      topMap.set(p.id, y);
+      y += hMap.get(p.id) + GAP_Y;
+    });
+    for (let g = maxGen - 1; g >= 0; g--) {
+      if (!gens[g]) continue;
+      gens[g].forEach(p => {
+        if (!p.parents || p.parents.length < 2) return;
+        const father = people.find(x => x.id === p.parents[0]);
+        const mother = people.find(x => x.id === p.parents[1]);
+        if (!father || !mother) return;
+        const fy = topMap.get(father.id), my = topMap.get(mother.id);
+        if (fy === undefined || my === undefined) return;
+        const fh = hMap.get(father.id), mh = hMap.get(mother.id);
+        const midCenter = (fy + fh/2 + my + mh/2) / 2;
+        topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
+      });
+      y = 20;
+      gens[g].forEach(p => {
+        if (topMap.has(p.id)) {
+          y = Math.max(y, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
+        } else {
+          topMap.set(p.id, y);
+          y += hMap.get(p.id) + GAP_Y;
+        }
+      });
+    }
+  }
+
+  cardEls.forEach((el, id) => { el.style.top = (topMap.get(id) || 20) + 'px'; el.style.opacity = '1'; });
+  const treeWidth = colLeft[maxGen] + CARD_W + 40;
+  const treeHeight = Math.max(400, ...people.map(p => (topMap.get(p.id) || 0) + hMap.get(p.id))) + 40;
+  wrap.style.width = treeWidth + 'px';
+  wrap.style.height = treeHeight + 'px';
+  svg.setAttribute('width', treeWidth);
+  svg.setAttribute('height', treeHeight);
+
+  // Draw connectors
+  svg.innerHTML = '';
+  people.forEach(p => {
+    if (!p.parents || p.parents.length < 2) return;
+    const el = cardEls.get(p.id);
+    const father = people.find(x => x.id === p.parents[0]);
+    const mother = people.find(x => x.id === p.parents[1]);
+    const fel = cardEls.get(father.id);
+    const mel = cardEls.get(mother.id);
+    if (!el || !fel || !mel) return;
+    const fx = parseFloat(fel.style.left), fy = parseFloat(fel.style.top) + hMap.get(father.id)/2;
+    const mx = parseFloat(mel.style.left), my = parseFloat(mel.style.top) + hMap.get(mother.id)/2;
+    const cx = parseFloat(el.style.left) + CARD_W, cy = parseFloat(el.style.top) + hMap.get(p.id)/2;
+    const jx = cx + JUNCT_DIST, midY = (fy + my) / 2;
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', `M${cx},${cy} L${jx},${cy} L${jx},${midY} L${fx},${midY} L${fx},${fy} M${jx},${midY} L${mx},${midY} L${mx},${my}`);
+    path.setAttribute('stroke', '#b89a5e');
+    path.setAttribute('stroke-width', '1');
+    path.setAttribute('fill', 'none');
+    svg.appendChild(path);
+  });
+}
+
+renderTree();
+</script>
+</body>
+</html>
