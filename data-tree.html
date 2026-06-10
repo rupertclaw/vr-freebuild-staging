@@ -3021,16 +3021,69 @@ function saveSession() {
   a.href = url; a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
   a.click(); URL.revokeObjectURL(url); showToast('Session saved');
 }
+async function getDocById(docId) {
+  if (!docId) return null;
+  if (!_docDB) await openDocDB();
+  const tx = _docDB.transaction(DOC_STORE_NAME, 'readonly');
+  const store = tx.objectStore(DOC_STORE_NAME);
+  return new Promise((resolve, reject) => {
+    const req = store.get(docId);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveSession() {
+  // Deep clone people and inline document images so the file is self-contained
+  const payloadPeople = JSON.parse(JSON.stringify(people));
+  let inlinedCount = 0;
+  for (const person of payloadPeople) {
+    if (!person.docs || !person.docs.length) continue;
+    for (const doc of person.docs) {
+      if (!doc.docId) continue;
+      const record = await getDocById(doc.docId);
+      if (record && record.image) {
+        doc.image = record.image;
+        inlinedCount++;
+      }
+    }
+  }
+  const payload = { version: 5, exportedAt: new Date().toISOString(), people: payloadPeople, nextId: nextId };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Session saved' + (inlinedCount > 0 ? ' (' + inlinedCount + ' images)' : ''));
+}
 async function loadSession(file) {
   try {
     const text = await file.text();
     const data = JSON.parse(text);
     if (!data.people) { showToast('Invalid session file'); return; }
-    people = data.people; nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
-    renderTree(); showToast('Loaded: ' + people.length + ' people');
-  } catch (err) { showToast('Load failed: ' + (err.message || 'Unknown error')); }
+    people = data.people;
+    nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+    // Restore inlined document images back into IndexedDB
+    let restoredCount = 0;
+    for (const person of people) {
+      if (!person.docs || !person.docs.length) continue;
+      for (const doc of person.docs) {
+        if (doc.image) {
+          const newDocId = await saveDocToDB(person.id, doc.type, doc.image, { personName: person.name, date: doc.date || '', restored: true });
+          doc.docId = newDocId;
+          delete doc.image;
+          restoredCount++;
+        }
+      }
+    }
+    renderTree();
+    showToast('Loaded: ' + people.length + ' people' + (restoredCount > 0 ? ' (' + restoredCount + ' images)' : ''));
+  } catch (err) {
+    console.error('[LOAD]', err);
+    showToast('Load failed: ' + (err.message || 'Unknown error'));
+  }
 }
-document.getElementById('saveBtn').addEventListener('click', saveSession);
+document.getElementById('saveBtn').addEventListener('click', () => { saveSession(); });
 document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('loadFileInput').click());
 document.getElementById('loadFileInput').addEventListener('change', (e) => {
   const file = e.target.files[0]; if (file) loadSession(file); e.target.value = '';
