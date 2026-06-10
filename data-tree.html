@@ -101,6 +101,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .header-top {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; flex-wrap: wrap;
+  padding-right: 96px;
 }
 .header-brand {
   display: flex; flex-direction: column;
@@ -139,10 +140,12 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   padding-top: 6px; border-top: 1px solid rgba(255,248,225,0.08);
   margin-top: 4px;
   gap: 6px;
+  padding-right: 96px;
 }
 .header-actions {
   display: flex; align-items: center; gap: 6px;
   flex-wrap: wrap;
+  justify-content: flex-end;
 }
 .header-emblem {
   position: absolute; right: 14px; top: 6px;
@@ -156,6 +159,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .country-select { padding: 4px 6px; font-size: 11px; min-width: 90px; }
   .header-actions { gap: 4px; }
   .tree-scroll { top: 140px; }
+  .header-top, .header-bottom { padding-right: 70px; }
 }
 @media (max-width: 600px) {
   .header-btn { width: 34px; height: 34px; font-size: 17px; }
@@ -565,14 +569,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
       <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom">⟲</button>
     </div>
+    <select id="countrySelect" class="country-select" title="Research country">
+      <option value="" disabled>Country...</option>
+    </select>
     <div class="header-actions">
       <button class="header-btn" id="saveBtn" title="Save session">💾</button>
       <button class="header-btn" id="loadBtn" title="Load session">📂</button>
       <button class="header-btn" id="nextStepsBtn" title="Next steps">📖</button>
       <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)">🌳</button>
-      <select id="countrySelect" class="country-select" title="Research country">
-        <option value="" disabled>Country...</option>
-      </select>
       <button class="header-btn cert-btn" id="certToggle" title="Upload certificate">📎</button>
       <button class="header-btn" id="darkModeToggle" title="Toggle dark mode">🌙</button>
       <button class="header-btn" id="printTreeBtn" title="Print tree">🖨️</button>
