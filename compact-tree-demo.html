@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Compact Tree Demo — Root Centered, 5 Generations</title>
+<title>Compact Tree Demo — Overlapping Columns</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -39,7 +39,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #f5f0e6; }
   </div>
 </div>
 <script>
-// Demo data: 5 generations. Parents are in the NEXT generation (to the right).
 let people = [];
 let nextId = 1;
 function addP(name, gen, parents, opts) {
@@ -49,7 +48,7 @@ function addP(name, gen, parents, opts) {
   return p.id;
 }
 
-// RIGHTMOST generation first: gen 4 (great-great-grandparents)
+// RIGHTMOST first: Gen 4 (great-great-grandparents)
 const g4_ids = [];
 const g4_names = [
   ['Richard ANDERSON','1740 — 1811'], ['Lillis TROMBLE','1778 — 1837'],
@@ -63,7 +62,7 @@ const g4_names = [
 ];
 g4_names.forEach(([n,y]) => { g4_ids.push(addP(n, 4, [], { years: y })); });
 
-// Gen 3 (great-grandparents) — each pair is parents of a gen 2 person
+// Gen 3
 const p3_fff = addP('George W. ANDERSON', 3, [g4_ids[0], g4_ids[1]], { years: '1812 — 1875' });
 const p3_ffm = addP('Eliza SWANSON', 3, [g4_ids[2], g4_ids[3]], { years: '1815 — 1851' });
 const p3_fmf = addP('William G. MILTON', 3, [g4_ids[4], g4_ids[5]], { years: '1825 — ??' });
@@ -73,20 +72,23 @@ const p3_mfm = addP('Rebecca JOHNSON', 3, [g4_ids[10], g4_ids[11]], { years: '18
 const p3_mmf = addP('Hugh LARSON', 3, [g4_ids[12], g4_ids[13]], { years: '1811 — 1873' });
 const p3_mmm = addP('Ann Marie JACOBS', 3, [g4_ids[14], g4_ids[15]], { years: '1815 — ??' });
 
-// Gen 2 (grandparents)
+// Gen 2
 const p2_ff = addP('Reiley ANDERSON', 2, [p3_fff, p3_ffm], { years: '1838 — 1922' });
 const p2_fm = addP('Alice MILTON', 2, [p3_fmf, p3_fmm], { years: '1844 — 1878' });
 const p2_mf = addP('William Alfred POLE', 2, [p3_mff, p3_mfm], { years: '1858 — 1924' });
 const p2_mm = addP('Marion LARSON', 2, [p3_mmf, p3_mmm], { years: '1858 — 1932' });
 
-// Gen 1 (parents)
+// Gen 1
 const p1_f = addP('William ANDERSON', 1, [p2_ff, p2_fm], { years: '1882 — 1965' });
 const p1_m = addP('Gladys POLE', 1, [p2_mf, p2_mm], { years: '1894 — 1946' });
 
-// Gen 0 (root/subject)
+// Gen 0
 addP('Olivia ANDERSON', 0, [p1_f, p1_m], { years: '1911 — 1935' });
 
-const CARD_W = 130, GAP_X = 35, GAP_Y = 3;
+const CARD_W = 130, GAP_Y = 3;
+// KEY CHANGE: each generation steps by half a card width, so cards overlap into the next column
+const COL_STEP = CARD_W * 0.5;
+
 const wrap = document.getElementById('treeWrap');
 const svg = document.getElementById('linesSvg');
 const svgNS = 'http://www.w3.org/2000/svg';
@@ -96,7 +98,10 @@ function renderTree() {
   const maxGen = Math.max(...people.map(p => p.gen));
   const gens = [];
   for (let g = 0; g <= maxGen; g++) gens[g] = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
-  const colLeft = gens.map((_, g) => g * (CARD_W + GAP_X));
+
+  // Column left edges: each gen is halfway into the next gen's space
+  const colLeft = [];
+  for (let g = 0; g <= maxGen; g++) colLeft[g] = g * COL_STEP;
 
   const cardEls = new Map();
   const hMap = new Map();
@@ -117,7 +122,7 @@ function renderTree() {
 
   const topMap = new Map();
 
-  // RIGHTMOST generation: spread evenly from top to bottom
+  // RIGHTMOST gen: spread evenly
   const rightGen = gens[maxGen];
   let currentY = 10;
   rightGen.forEach(p => {
@@ -125,7 +130,7 @@ function renderTree() {
     currentY += hMap.get(p.id) + GAP_Y;
   });
 
-  // CASCADE LEFT: each person's Y is the midpoint between their two parents (in the next gen to the right)
+  // CASCADE LEFT: child sits centered between its two parents
   for (let g = maxGen - 1; g >= 0; g--) {
     gens[g].forEach(p => {
       if (!p.parents || p.parents.length < 2) return;
@@ -150,7 +155,7 @@ function renderTree() {
   svg.setAttribute('width', treeWidth);
   svg.setAttribute('height', treeHeight);
 
-  // Draw connectors
+  // Connectors
   svg.innerHTML = '';
   people.forEach(p => {
     if (!p.parents || p.parents.length < 2) return;
@@ -163,9 +168,10 @@ function renderTree() {
     const fx = parseFloat(fel.style.left), fy = parseFloat(fel.style.top) + hMap.get(f.id)/2;
     const mx = parseFloat(mel.style.left), my = parseFloat(mel.style.top) + hMap.get(m.id)/2;
     const cx = parseFloat(el.style.left) + CARD_W, cy = parseFloat(el.style.top) + hMap.get(p.id)/2;
-    const jx = cx + 10, midY = (fy + my) / 2;
+    const midY = (fy + my) / 2;
+    // Junction at child's right edge, then split to parents
     const path = document.createElementNS(svgNS, 'path');
-    path.setAttribute('d', `M${cx},${cy} L${jx},${cy} L${jx},${midY} L${fx},${midY} L${fx},${fy} M${jx},${midY} L${mx},${midY} L${mx},${my}`);
+    path.setAttribute('d', `M${cx},${cy} L${fx + 6},${cy} L${fx + 6},${midY} L${fx},${midY} L${fx},${fy} M${fx + 6},${midY} L${mx},${midY} L${mx},${my}`);
     path.setAttribute('stroke', '#b89a5e');
     path.setAttribute('stroke-width', '1');
     path.setAttribute('fill', 'none');
