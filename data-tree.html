@@ -960,7 +960,7 @@ function initDefaultData() {
   }
 }
 
-const CARD_W = 130, GAP_X = 50, GAP_Y = 12, JUNCT_DIST = 18;
+const CARD_W = 130, GAP_Y = 3;
 const MINI_W = 100, MINI_H = 14;
 let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
 
@@ -1143,30 +1143,30 @@ function drawLines() {
   svg.innerHTML = '';
   const displayMax = Math.min(visibleMaxGen, Math.max(...people.map(p => p.gen)));
   const visiblePeople = people.filter(p => p.gen <= displayMax);
-  visiblePeople.forEach(child => {
-    if (!child.parents || child.parents.length < 2) return;
-    const childEl = cardEls.get(child.id), fatherEl = cardEls.get(child.parents[0]), motherEl = cardEls.get(child.parents[1]);
-    if (!childEl || !fatherEl || !motherEl) return;
-    const cx = childEl.offsetLeft + childEl.offsetWidth;
-    const cy = childEl.offsetTop + childEl.offsetHeight / 2;
-    const fx = fatherEl.offsetLeft;
-    const fy = fatherEl.offsetTop + fatherEl.offsetHeight / 2;
-    const mx = motherEl.offsetLeft;
-    const my = motherEl.offsetTop + motherEl.offsetHeight / 2;
-    const jx = fx - JUNCT_DIST, midY = (fy + my) / 2;
-    const curve = document.createElementNS(svgNS, 'path');
-    curve.setAttribute('d', 'M' + cx + ',' + cy + ' C' + (cx+16) + ',' + cy + ' ' + (jx-8) + ',' + midY + ' ' + jx + ',' + midY);
-    curve.setAttribute('stroke', '#7a6a4a'); curve.setAttribute('stroke-width', '1.5'); curve.setAttribute('fill', 'none');
-    svg.appendChild(curve);
-    const vLine = document.createElementNS(svgNS, 'line');
-    vLine.setAttribute('x1', jx); vLine.setAttribute('y1', fy); vLine.setAttribute('x2', jx); vLine.setAttribute('y2', my);
-    vLine.setAttribute('stroke', '#7a6a4a'); vLine.setAttribute('stroke-width', '1.5'); svg.appendChild(vLine);
-    const fLine = document.createElementNS(svgNS, 'line');
-    fLine.setAttribute('x1', jx); fLine.setAttribute('y1', fy); fLine.setAttribute('x2', fx); fLine.setAttribute('y2', fy);
-    fLine.setAttribute('stroke', '#7a6a4a'); fLine.setAttribute('stroke-width', '1.5'); svg.appendChild(fLine);
-    const mLine = document.createElementNS(svgNS, 'line');
-    mLine.setAttribute('x1', jx); mLine.setAttribute('y1', my); mLine.setAttribute('x2', mx); mLine.setAttribute('y2', my);
-    mLine.setAttribute('stroke', '#7a6a4a'); mLine.setAttribute('stroke-width', '1.5'); svg.appendChild(mLine);
+  const hMap = new Map();
+  cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
+  visiblePeople.forEach(p => {
+    if (!p.parents || p.parents.length < 2) return;
+    const el = cardEls.get(p.id);
+    const f = visiblePeople.find(x => x.id === p.parents[0]);
+    const m = visiblePeople.find(x => x.id === p.parents[1]);
+    const fel = cardEls.get(f.id);
+    const mel = cardEls.get(m.id);
+    if (!el || !fel || !mel) return;
+    const childW = (displayMax >= 5 && p.gen === displayMax) ? MINI_W : CARD_W;
+    const cx = parseFloat(el.style.left) + childW;
+    const cy = parseFloat(el.style.top) + hMap.get(p.id) / 2;
+    const fx = parseFloat(fel.style.left);
+    const fy = parseFloat(fel.style.top) + hMap.get(f.id) / 2;
+    const mx = parseFloat(mel.style.left);
+    const my = parseFloat(mel.style.top) + hMap.get(m.id) / 2;
+    const midY = (fy + my) / 2;
+    const path = document.createElementNS(svgNS, 'path');
+    path.setAttribute('d', 'M' + cx + ',' + cy + ' L' + cx + ',' + midY + ' L' + fx + ',' + midY + ' L' + fx + ',' + fy + ' M' + cx + ',' + midY + ' L' + mx + ',' + midY + ' L' + mx + ',' + my);
+    path.setAttribute('stroke', '#b89a5e');
+    path.setAttribute('stroke-width', '1');
+    path.setAttribute('fill', 'none');
+    svg.appendChild(path);
   });
 }
 scroll.addEventListener('scroll', drawLines);
