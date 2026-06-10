@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Compact Tree Demo — Overlapping Columns</title>
+<title>Compact Tree Demo — Gen 5 Minicards</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -30,6 +30,15 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #f5f0e6; }
   color: #7a6545; margin-top: 1px;
 }
 .person-card.blank { background: #f0ebe0; border: 1px dashed #b8a88a; opacity: 0.4; }
+
+/* Gen 5 minicard style */
+.person-card.minicard {
+  width: 100px;
+  padding: 2px 3px;
+  border: 1px solid #c9b896;
+}
+.person-card.minicard .name { font-size: 7px; letter-spacing: 0.1px; }
+.person-card.minicard .years { font-size: 6px; margin-top: 0; }
 </style>
 </head>
 <body>
@@ -62,6 +71,16 @@ const g4_names = [
 ];
 g4_names.forEach(([n,y]) => { g4_ids.push(addP(n, 4, [], { years: y })); });
 
+// Gen 5: half-height minicards, two beside each gen 4 card
+const g5_ids = [];
+g4_names.forEach(([n,y], idx) => {
+  const p4 = people.find(p => p.id === g4_ids[idx]);
+  const pf_id = addP('Father', 5, [], { years: '' });
+  const pm_id = addP('Mother', 5, [], { years: '' });
+  p4.parents = [pf_id, pm_id];
+  g5_ids.push(pf_id, pm_id);
+});
+
 // Gen 3
 const p3_fff = addP('George W. ANDERSON', 3, [g4_ids[0], g4_ids[1]], { years: '1812 — 1875' });
 const p3_ffm = addP('Eliza SWANSON', 3, [g4_ids[2], g4_ids[3]], { years: '1815 — 1851' });
@@ -86,11 +105,13 @@ const p1_m = addP('Gladys POLE', 1, [p2_mf, p2_mm], { years: '1894 — 1946' });
 addP('Olivia ANDERSON', 0, [p1_f, p1_m], { years: '1911 — 1935' });
 
 const CARD_W = 130, GAP_Y = 3;
-// Overlap gens 0-2 by half card width. Gen 3 starts just past gen 2 with 4px gap. Gen 4 is standard.
 function colLeftForGen(g) {
-  if (g <= 2) return g * (CARD_W * 0.5);
-  if (g === 3) return (CARD_W * 2) + 4; // 264px, 4px gap after gen 2's right edge (260)
-  return colLeftForGen(3) + CARD_W;
+  if (g === 0) return 0;
+  if (g === 1) return CARD_W * 0.75;   // 97.5 — moved 1/4 card right (was 65)
+  if (g === 2) return CARD_W * 1.0;    // 130
+  if (g === 3) return colLeftForGen(2) + CARD_W + 4; // 264
+  if (g === 4) return colLeftForGen(3) + CARD_W;      // 394
+  return colLeftForGen(4) + CARD_W + 4;               // 528 (gen 5 beside gen 4)
 }
 
 const wrap = document.getElementById('treeWrap');
@@ -99,19 +120,18 @@ const svgNS = 'http://www.w3.org/2000/svg';
 
 function renderTree() {
   wrap.querySelectorAll('.person-card').forEach(el => el.remove());
-  const maxGen = Math.max(...people.map(p => p.gen));
+  const maxGen = 4; // cascade stops at gen 4; gen 5 is positioned separately
   const gens = [];
-  for (let g = 0; g <= maxGen; g++) gens[g] = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+  for (let g = 0; g <= 5; g++) gens[g] = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
 
-  // Column left edges: each gen is halfway into the next gen's space
   const colLeft = [];
-  for (let g = 0; g <= maxGen; g++) colLeft[g] = colLeftForGen(g);
+  for (let g = 0; g <= 5; g++) colLeft[g] = colLeftForGen(g);
 
   const cardEls = new Map();
   const hMap = new Map();
   people.forEach(p => {
     const el = document.createElement('div');
-    el.className = 'person-card ' + (p.status === 'blank' ? 'blank' : '');
+    el.className = 'person-card ' + (p.status === 'blank' ? 'blank ' : '') + (p.gen === 5 ? 'minicard' : '');
     const displayYears = p.years || (p.status === 'blank' ? 'YYYY — YYYY' : '');
     el.innerHTML = '<div class="name">' + p.name + '</div>' + (displayYears ? '<div class="years">' + displayYears + '</div>' : '');
     el.style.left = colLeft[p.gen] + 'px';
@@ -126,16 +146,14 @@ function renderTree() {
 
   const topMap = new Map();
 
-  // RIGHTMOST gen: spread evenly
-  const rightGen = gens[maxGen];
+  // CASCADE: gen 4 evenly spread, then cascade left to gens 3..0
   let currentY = 10;
-  rightGen.forEach(p => {
+  gens[4].forEach(p => {
     topMap.set(p.id, currentY);
     currentY += hMap.get(p.id) + GAP_Y;
   });
 
-  // CASCADE LEFT: child sits centered between its two parents
-  for (let g = maxGen - 1; g >= 0; g--) {
+  for (let g = 3; g >= 0; g--) {
     gens[g].forEach(p => {
       if (!p.parents || p.parents.length < 2) return;
       const f = people.find(x => x.id === p.parents[0]);
@@ -147,12 +165,32 @@ function renderTree() {
     });
   }
 
+  // GEN 5: position each pair bracketed around their gen 4 child's center
+  gens[4].forEach(p4 => {
+    if (!p4.parents || p4.parents.length < 2) return;
+    const p4_el = cardEls.get(p4.id);
+    const p4_top = topMap.get(p4.id);
+    const p4_h = hMap.get(p4.id);
+    const p4_center = p4_top + p4_h / 2;
+
+    const p5f = people.find(x => x.id === p4.parents[0]);
+    const p5m = people.find(x => x.id === p4.parents[1]);
+    const fh = hMap.get(p5f.id), mh = hMap.get(p5m.id);
+    const gap = 2;
+    const total_h = fh + mh + gap;
+    const f_top = p4_center - total_h / 2;
+    const m_top = f_top + fh + gap;
+
+    topMap.set(p5f.id, f_top);
+    topMap.set(p5m.id, m_top);
+  });
+
   cardEls.forEach((el, id) => {
     el.style.top = topMap.get(id) + 'px';
     el.style.opacity = '1';
   });
 
-  const treeWidth = colLeft[maxGen] + CARD_W + 40;
+  const treeWidth = colLeft[5] + CARD_W + 40;
   const treeHeight = Math.max(400, ...people.map(p => (topMap.get(p.id) || 0) + hMap.get(p.id))) + 20;
   wrap.style.width = treeWidth + 'px';
   wrap.style.height = treeHeight + 'px';
@@ -171,9 +209,13 @@ function renderTree() {
     if (!el || !fel || !mel) return;
     const fx = parseFloat(fel.style.left), fy = parseFloat(fel.style.top) + hMap.get(f.id)/2;
     const mx = parseFloat(mel.style.left), my = parseFloat(mel.style.top) + hMap.get(m.id)/2;
-    const cx = parseFloat(el.style.left) + CARD_W, cy = parseFloat(el.style.top) + hMap.get(p.id)/2;
+
+    // Child right edge is the junction point
+    const cx = parseFloat(el.style.left) + (p.gen === 5 ? 100 : CARD_W);
+    const cy = parseFloat(el.style.top) + hMap.get(p.id)/2;
     const midY = (fy + my) / 2;
-    const jx = cx; // no horizontal stub — start vertical split at card's right edge
+    const jx = parseFloat(el.style.left) + (p.gen === 5 ? 100 : CARD_W); // same as cx
+
     const path = document.createElementNS(svgNS, 'path');
     path.setAttribute('d', `M${cx},${cy} L${jx},${midY} L${fx},${midY} L${fx},${fy} M${jx},${midY} L${mx},${midY} L${mx},${my}`);
     path.setAttribute('stroke', '#b89a5e');
