@@ -86,10 +86,10 @@ const p1_m = addP('Gladys POLE', 1, [p2_mf, p2_mm], { years: '1894 — 1946' });
 addP('Olivia ANDERSON', 0, [p1_f, p1_m], { years: '1911 — 1935' });
 
 const CARD_W = 130, GAP_Y = 3;
-// Overlap gens 0-3 by half card width. Gen 4 is standard (no overlap).
+// Overlap gens 0-2 by half card width. Gen 3 starts just past gen 2 with 4px gap. Gen 4 is standard.
 function colLeftForGen(g) {
-  if (g <= 3) return g * (CARD_W * 0.5);
-  // Gen 4 starts exactly where gen 3's card ends
+  if (g <= 2) return g * (CARD_W * 0.5);
+  if (g === 3) return (CARD_W * 2) + 4; // 264px, 4px gap after gen 2's right edge (260)
   return colLeftForGen(3) + CARD_W;
 }
 
