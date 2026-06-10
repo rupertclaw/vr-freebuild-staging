@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Compact Tree Demo — Family Clustered</title>
+<title>Compact Tree Demo</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -45,7 +45,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #f5f0e6; }
   </div>
 </div>
 <script>
-// Demo data: 5 generations, clustered by family
+// Demo data: 5 generations
 let people = [];
 let nextId = 1;
 function addP(name, gen, status, parents, spouseId, opts) {
@@ -56,39 +56,34 @@ function addP(name, gen, status, parents, spouseId, opts) {
 }
 
 // Gen 0
-addP('Olivia ANDERSON', 0, 'you', [], null, { years: '1911 — 1935' });
+addP('Joseph Harrow', 0, 'you', [], null, { years: '1879 — ?' });
 
 // Gen 1
-addP('William ANDERSON', 1, 'confirmed', [], null, { years: '1882 — 1965' });
-addP('Gladys POLE', 1, 'confirmed', [], null, { years: '1894 — 1946' });
+addP('Edward Marsh', 1, 'confirmed', [], null, { years: '1866 — ?' });
+addP('Mary Ashdown', 1, 'confirmed', [], null, { years: '~1868' });
 
 // Gen 2
-addP('Reiley ANDERSON', 2, 'confirmed', [], null, { years: '1838 — 1922' });
-addP('Alice MILTON', 2, 'confirmed', [], null, { years: '1844 — 1878' });
-addP('William Alfred POLE', 2, 'confirmed', [], null, { years: '1858 — 1924' });
-addP('Marion LARSON', 2, 'confirmed', [], null, { years: '1858 — 1932' });
+addP('Thomas Marsh', 2, 'confirmed', [], null, { years: '~1842' });
+addP('Catherine Loxley', 2, 'confirmed', [], null, { years: '~1844' });
+addP('James Ashdown', 2, 'brickwall', [], null, { years: '?' });
+addP('Bridget Easton', 2, 'confirmed', [], null, { years: '~1846' });
 
 // Gen 3
-addP('George W. ANDERSON', 3, 'confirmed', [], null, { years: '1812 — 1875' });
-addP('Eliza SWANSON', 3, 'confirmed', [], null, { years: '1815 — 1851' });
-addP('William G. MILTON', 3, 'confirmed', [], null, { years: '1825 — ??' });
-addP('Malina BOTTS', 3, 'confirmed', [], null, { years: '1825 — ??' });
-addP('Mark G. POLE', 3, 'confirmed', [], null, { years: '1815 — 1858' });
-addP('Rebecca JOHNSON', 3, 'confirmed', [], null, { years: '1838 — 1915' });
-addP('Hugh LARSON', 3, 'confirmed', [], null, { years: '1811 — 1873' });
-addP('Ann Marie JACOBS', 3, 'confirmed', [], null, { years: '1815 — ??' });
+addP('Patrick Marsh', 3, 'confirmed', [], null, { years: '~1818' });
+addP('Mary Jessop', 3, 'confirmed', [], null, { years: '~1820' });
+addP('Thomas Loxley', 3, 'confirmed', [], null, { years: '~1818' });
+addP('Catherine Pickering', 3, 'confirmed', [], null, { years: '~1820' });
+addP('?', 3, 'blank', [], null, { years: '?' });
+addP('?', 3, 'blank', [], null, { years: '?' });
+addP('John Easton', 3, 'confirmed', [], null, { years: '~1818' });
+addP('Margaret Lockhart', 3, 'confirmed', [], null, { years: '~1820' });
 
-// Gen 4 (partial, 8 of 16 for demo)
-addP('Richard ANDERSON', 4, 'confirmed', [], null, { years: '1740 — 1811' });
-addP('Lillis TROMBLE', 4, 'confirmed', [], null, { years: '1778 — 1837' });
-addP('Harlon SWANSON', 4, 'confirmed', [], null, { years: '1771 — 1858' });
-addP('Mary Jane DARREL', 4, 'confirmed', [], null, { years: '1782 — 1837' });
-addP('George W. MILTON', 4, 'confirmed', [], null, { years: '1795 — 1855' });
-addP('Holly PASSWATERS', 4, 'confirmed', [], null, { years: '1802 — ??' });
-addP('Thomas BOTTS', 4, 'confirmed', [], null, { years: '1798 — 1858' });
-addP('Sarah', 4, 'confirmed', [], null, { years: '?? — 1858' });
+// Gen 4 (16 cards)
+for (let i = 0; i < 16; i++) {
+  addP(i < 8 ? 'Name' : 'Name', 4, i < 8 ? 'confirmed' : 'probable', [], null, { years: 'YYYY — YYYY' });
+}
 
-// Wire parents
+// Wire parents: each person in gen g gets 2 parents from gen g+1
 function wireParents() {
   const maxGen = Math.max(...people.map(p => p.gen));
   for (let g = 0; g < maxGen; g++) {
@@ -96,7 +91,7 @@ function wireParents() {
     const parents = people.filter(p => p.gen === g + 1).sort((a,b) => a.id - b.id);
     if (!parents.length) continue;
     let pi = 0;
-    children.forEach((child) => {
+    children.forEach((child, ci) => {
       if (pi + 1 >= parents.length) pi = 0;
       child.parents = [parents[pi].id, parents[pi + 1].id];
       if (!parents[pi].spouseId) { parents[pi].spouseId = parents[pi+1].id; parents[pi+1].spouseId = parents[pi].id; }
@@ -106,10 +101,7 @@ function wireParents() {
 }
 wireParents();
 
-const CARD_W = 130, GAP_X = 35;
-const PAIR_GAP = 3;    // gap between spouses (small)
-const FAMILY_GAP = 18; // gap between different families (larger)
-const JUNCT_DIST = 12;
+const CARD_W = 130, GAP_X = 35, GAP_Y = 4, JUNCT_DIST = 12;
 const wrap = document.getElementById('treeWrap');
 const svg = document.getElementById('linesSvg');
 const svgNS = 'http://www.w3.org/2000/svg';
@@ -144,83 +136,39 @@ function renderTree() {
   const hMap = new Map();
   cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
 
-  // Build family groups per generation: each pair of spouses is a "family"
-  const families = []; // families[g] = array of {parents: [id, id], children: [id, id, ...]}
-  for (let g = 0; g <= maxGen; g++) {
-    families[g] = [];
-    const genPeople = gens[g];
-    const seen = new Set();
-    for (const p of genPeople) {
-      if (seen.has(p.id)) continue;
-      if (p.spouseId) {
-        const spouse = people.find(x => x.id === p.spouseId);
-        if (spouse && spouse.gen === g) {
-          families[g].push({ parents: [p.id, spouse.id], children: [] });
-          seen.add(p.id); seen.add(spouse.id);
-          continue;
-        }
-      }
-      // Single person (no spouse in same gen)
-      families[g].push({ parents: [p.id], children: [] });
-      seen.add(p.id);
-    }
-    // Link children to families in this generation
-    if (g > 0) {
-      for (const child of gens[g - 1]) {
-        if (!child.parents || child.parents.length === 0) continue;
-        for (const fam of families[g]) {
-          if (child.parents.every(pid => fam.parents.includes(pid))) {
-            fam.children.push(child.id);
-            break;
-          }
-        }
-      }
-    }
-  }
-
   const topMap = new Map();
-
-  // Layout rightmost generation first: stack families with internal pair gap + family gap
-  function layoutGen(g) {
-    const genFams = families[g];
-    let y = 30;
-    for (const fam of genFams) {
-      for (let i = 0; i < fam.parents.length; i++) {
-        const pid = fam.parents[i];
-        topMap.set(pid, y);
-        y += hMap.get(pid) + (i < fam.parents.length - 1 ? PAIR_GAP : FAMILY_GAP);
-      }
-    }
-  }
-  layoutGen(maxGen);
-
-  // Cascade leftward: each child's Y = center of its two parents
-  for (let g = maxGen - 1; g >= 0; g--) {
-    // Position children based on their parents (already positioned in g+1)
-    for (const p of gens[g]) {
-      if (!p.parents || p.parents.length < 2) continue;
-      const father = people.find(x => x.id === p.parents[0]);
-      const mother = people.find(x => x.id === p.parents[1]);
-      if (!father || !mother) continue;
-      const fy = topMap.get(father.id), my = topMap.get(mother.id);
-      if (fy === undefined || my === undefined) continue;
-      const fh = hMap.get(father.id), mh = hMap.get(mother.id);
-      const midCenter = (fy + fh/2 + my + mh/2) / 2;
-      topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
-    }
-    // Any gen[g] person without parents positioned gets stacked below
-    let y = 30;
-    for (const p of gens[g]) {
-      if (topMap.has(p.id)) {
-        y = Math.max(y, topMap.get(p.id) + hMap.get(p.id) + FAMILY_GAP);
-      } else {
-        topMap.set(p.id, y);
-        y += hMap.get(p.id) + FAMILY_GAP;
-      }
+  if (gens[maxGen] && gens[maxGen].length > 0) {
+    let y = 20;
+    gens[maxGen].forEach(p => {
+      topMap.set(p.id, y);
+      y += hMap.get(p.id) + GAP_Y;
+    });
+    for (let g = maxGen - 1; g >= 0; g--) {
+      if (!gens[g]) continue;
+      gens[g].forEach(p => {
+        if (!p.parents || p.parents.length < 2) return;
+        const father = people.find(x => x.id === p.parents[0]);
+        const mother = people.find(x => x.id === p.parents[1]);
+        if (!father || !mother) return;
+        const fy = topMap.get(father.id), my = topMap.get(mother.id);
+        if (fy === undefined || my === undefined) return;
+        const fh = hMap.get(father.id), mh = hMap.get(mother.id);
+        const midCenter = (fy + fh/2 + my + mh/2) / 2;
+        topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
+      });
+      y = 20;
+      gens[g].forEach(p => {
+        if (topMap.has(p.id)) {
+          y = Math.max(y, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
+        } else {
+          topMap.set(p.id, y);
+          y += hMap.get(p.id) + GAP_Y;
+        }
+      });
     }
   }
 
-  cardEls.forEach((el, id) => { el.style.top = (topMap.get(id) || 30) + 'px'; el.style.opacity = '1'; });
+  cardEls.forEach((el, id) => { el.style.top = (topMap.get(id) || 20) + 'px'; el.style.opacity = '1'; });
   const treeWidth = colLeft[maxGen] + CARD_W + 40;
   const treeHeight = Math.max(400, ...people.map(p => (topMap.get(p.id) || 0) + hMap.get(p.id))) + 40;
   wrap.style.width = treeWidth + 'px';
