@@ -298,6 +298,40 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .person-card.blank .name,
 .person-card.blank .years { color: var(--text-card-blank); }
 
+/* Minicard style for progressive expansion rightmost gen */
+.person-card.minicard {
+  width: 100px;
+  padding: 1px 3px;
+  border: 1px solid var(--border-card);
+  height: 14px;
+  min-height: 0;
+  overflow: hidden;
+}
+.person-card.minicard .name { font-size: 6px; letter-spacing: 0.1px; line-height: 1.1; }
+.person-card.minicard .years { display: none; }
+
+/* Progressive expansion button */
+.expand-gen-btn {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 500;
+  padding: 10px 24px;
+  background: #2a1f10;
+  color: #c4a875;
+  border: 1px solid #c4a875;
+  border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+.expand-gen-btn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+
 /* SVG connectors */
 .lines-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
 
@@ -601,6 +635,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     </div>
   </div>
 </div>
+
+<button id="expandGenBtn" class="expand-gen-btn" title="Reveal next generation">Reveal Generation 5</button>
 
 <div class="tree-scroll" id="treeScroll">
   <div id="zoomSizer" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0;"></div>
@@ -924,7 +960,10 @@ function initDefaultData() {
   }
 }
 
-const CARD_W = 160, GAP_X = 50, GAP_Y = 12, JUNCT_DIST = 18;
+const CARD_W = 130, GAP_X = 50, GAP_Y = 12, JUNCT_DIST = 18;
+const MINI_W = 100, MINI_H = 14;
+let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
+
 const wrap = document.getElementById('treeWrap');
 const svg = document.getElementById('linesSvg');
 const scroll = document.getElementById('treeScroll');
@@ -934,18 +973,51 @@ let cardEls = new Map();
 let treeWidth = 0, treeHeight = 0;
 let zoom = 0.25;
 
+function colLeftForGen(g, maxGen) {
+  if (g === 0) return CARD_W * 0.5;        // 65
+  if (g === 1) return CARD_W * 0.75;     // 97.5
+  if (g === 2) return CARD_W * 1.0;      // 130
+  let pos = CARD_W;
+  for (let i = 3; i <= g; i++) {
+    const isLast = i === maxGen;
+    const isMinicard = isLast && maxGen >= 5;
+    if (isMinicard) {
+      pos += CARD_W + 4;
+    } else if (isLast) {
+      pos += CARD_W;
+    } else {
+      if ((i - 3) % 2 === 0) {
+        pos += CARD_W + 4;
+      } else {
+        pos += CARD_W;
+      }
+    }
+  }
+  return pos;
+}
+
 function renderTree() {
   wrap.querySelectorAll('.person-card').forEach(el => el.remove());
   cardEls.clear();
-  const maxGen = Math.max(...people.map(p => p.gen));
+
+  const displayMax = Math.min(visibleMaxGen, Math.max(...people.map(p => p.gen)));
+  const visiblePeople = people.filter(p => p.gen <= displayMax);
   const gens = [];
-  for (let g = 0; g <= maxGen; g++) gens[g] = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
-  const colLeft = gens.map((_, g) => g * (CARD_W + GAP_X));
-  people.forEach(person => {
+  for (let g = 0; g <= displayMax; g++) {
+    gens[g] = visiblePeople.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+  }
+
+  const colLeft = [];
+  for (let g = 0; g <= displayMax; g++) colLeft[g] = colLeftForGen(g, displayMax);
+
+  const hMap = new Map();
+
+  visiblePeople.forEach(person => {
+    const isMini = displayMax >= 5 && person.gen === displayMax;
     const el = document.createElement('div');
-    el.className = 'person-card ' + person.status + (person.id === 1 ? ' you' : '');
+    el.className = 'person-card ' + person.status + (person.id === 1 ? ' you' : '') + (isMini ? ' minicard' : '');
     el.dataset.id = person.id;
-    // Compact card display: birth year — death year, marriage line
+
     const bYear = (person.birthDate || person.years || '').match(/\d{4}/);
     const dYear = (person.deathDate || '').match(/\d{4}/);
     const mYear = (person.marriageDate || '').match(/\d{4}/);
@@ -954,79 +1026,112 @@ function renderTree() {
     else if (bYear) cardYears = 'b. ' + bYear[0];
     else if (dYear) cardYears = 'd. ' + dYear[0];
     else cardYears = person.years || '?';
-    let h = '<div class="name">' + person.name + '</div><div class="years">' + cardYears + '</div>';
-    if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
-    if (person.siblings && person.siblings.length) {
-      h += '<div style="position:absolute;top:2px;right:2px;font-size:11px;">🍃</div>';
+
+    let h = '<div class="name">' + person.name + '</div>' + (cardYears ? '<div class="years">' + cardYears + '</div>' : '');
+    if (!isMini) {
+      if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
+      if (person.siblings && person.siblings.length) {
+        h += '<div style="position:absolute;top:2px;right:2px;font-size:11px;">🍃</div>';
+      }
+      if (person.docs && person.docs.length) {
+        h += '<div class="doc-badges">';
+        person.docs.forEach(d => {
+          const t = (d.type || 'bc').toLowerCase();
+          h += '<span class="doc-badge ' + t + '" data-doc-type="' + t + '" data-doc-id="' + (d.docId || '') + '" data-date="' + (d.date || '') + '" data-person="' + person.id + '" onclick="event.stopPropagation(); openDocImage(' + d.docId + ')">' + t.toUpperCase() + '</span>';
+        });
+        h += '</div>';
+      }
     }
-    if (person.docs && person.docs.length) {
-      h += '<div class="doc-badges">';
-      person.docs.forEach(d => { const t = (d.type || 'bc').toLowerCase(); h += '<span class="doc-badge ' + t + '">' + t.toUpperCase() + '</span>'; });
-      h += '</div>';
-    }
+
     el.innerHTML = h;
     el.style.left = colLeft[person.gen] + 'px';
-    el.style.top = '0px'; el.style.opacity = '0';
+    el.style.top = '0px';
+    el.style.opacity = '0';
+    if (isMini) {
+      el.style.height = MINI_H + 'px';
+      el.style.minHeight = '0';
+    }
     el.onclick = () => openDetail(person);
-    wrap.appendChild(el); cardEls.set(person.id, el);
+    wrap.appendChild(el);
+    cardEls.set(person.id, el);
   });
+
   document.body.offsetHeight;
-  const hMap = new Map();
   cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
 
-  // Cascading layout: start from rightmost gen, position equally, then cascade left
   const topMap = new Map();
-  if (gens[maxGen] && gens[maxGen].length > 0) {
-    // Position rightmost generation with equal spacing from top
-    let y = 80;
-    gens[maxGen].forEach(p => {
-      topMap.set(p.id, y);
-      y += hMap.get(p.id) + GAP_Y;
+  const rightmostFull = displayMax >= 5 ? displayMax - 1 : displayMax;
+
+  let y = 80;
+  gens[rightmostFull].forEach(p => {
+    topMap.set(p.id, y);
+    y += hMap.get(p.id) + GAP_Y;
+  });
+
+  for (let g = rightmostFull - 1; g >= 0; g--) {
+    if (!gens[g]) continue;
+    gens[g].forEach(p => {
+      if (!p.parents || p.parents.length < 2) return;
+      const father = visiblePeople.find(x => x.id === p.parents[0]);
+      const mother = visiblePeople.find(x => x.id === p.parents[1]);
+      if (!father || !mother) return;
+      const fy = topMap.get(father.id), my = topMap.get(mother.id);
+      if (fy === undefined || my === undefined) return;
+      const fh = hMap.get(father.id), mh = hMap.get(mother.id);
+      const midCenter = (fy + fh/2 + my + mh/2) / 2;
+      topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
     });
-    // Cascade leftward: each card centered between its two parents in the next gen
-    for (let g = maxGen - 1; g >= 0; g--) {
-      if (!gens[g]) continue;
-      gens[g].forEach(p => {
-        if (!p.parents || p.parents.length < 2) return;
-        const father = people.find(x => x.id === p.parents[0]);
-        const mother = people.find(x => x.id === p.parents[1]);
-        if (!father || !mother) return;
-        const fy = topMap.get(father.id);
-        const my = topMap.get(mother.id);
-        if (fy === undefined || my === undefined) return;
-        const fh = hMap.get(father.id);
-        const mh = hMap.get(mother.id);
-        const midCenter = (fy + fh/2 + my + mh/2) / 2;
-        topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
-      });
-      // Position any remaining people in this gen without parents in next gen
-      y = 80;
-      gens[g].forEach(p => {
-        if (topMap.has(p.id)) {
-          y = Math.max(y, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
-        } else {
-          topMap.set(p.id, y);
-          y += hMap.get(p.id) + GAP_Y;
-        }
-      });
-    }
+    y = 80;
+    gens[g].forEach(p => {
+      if (topMap.has(p.id)) {
+        y = Math.max(y, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
+      } else {
+        topMap.set(p.id, y);
+        y += hMap.get(p.id) + GAP_Y;
+      }
+    });
   }
 
-  cardEls.forEach((el, id) => { el.style.top = (topMap.get(id) || 80) + 'px'; el.style.opacity = '1'; });
-  treeWidth = colLeft[maxGen] + CARD_W + 40;
-  treeHeight = Math.max(scroll.clientHeight, ...people.map(p => (topMap.get(p.id) || 0) + hMap.get(p.id))) + 60;
+  // Position minicards bracketed around their children
+  if (displayMax >= 5) {
+    gens[rightmostFull].forEach(child => {
+      if (!child.parents || child.parents.length < 2) return;
+      const f = visiblePeople.find(x => x.id === child.parents[0]);
+      const m = visiblePeople.find(x => x.id === child.parents[1]);
+      if (!f || !m) return;
+      const ctop = topMap.get(child.id);
+      const ch = hMap.get(child.id);
+      const ccenter = ctop + ch / 2;
+      const fh = hMap.get(f.id), mh = hMap.get(m.id);
+      const gap = 2;
+      const total = fh + mh + gap;
+      const ftop = ccenter - total / 2;
+      const mtop = ftop + fh + gap;
+      topMap.set(f.id, ftop);
+      topMap.set(m.id, mtop);
+    });
+  }
+
+  cardEls.forEach((el, id) => {
+    el.style.top = (topMap.get(id) || 80) + 'px';
+    el.style.opacity = '1';
+  });
+
+  treeWidth = colLeft[displayMax] + (displayMax >= 5 ? MINI_W : CARD_W) + 40;
+  treeHeight = Math.max(scroll.clientHeight, ...visiblePeople.map(p => (topMap.get(p.id) || 0) + hMap.get(p.id))) + 60;
   wrap.style.width = treeWidth + 'px';
   wrap.style.height = treeHeight + 'px';
-  // Update zoom sizer for scroll area
+
   const sizer = document.getElementById('zoomSizer');
   if (sizer) {
     sizer.style.width = (treeWidth * zoom) + 'px';
     sizer.style.height = (treeHeight * zoom) + 'px';
   }
   wrap.style.setProperty('--zoom', zoom);
-  document.getElementById('statPeople').textContent = people.length;
-  document.getElementById('statConfirmed').textContent = people.filter(p => p.status === 'confirmed' || p.status === 'you').length;
-  document.getElementById('statWalls').textContent = people.filter(p => p.status === 'brickwall').length;
+  document.getElementById('statPeople').textContent = visiblePeople.length;
+  document.getElementById('statConfirmed').textContent = visiblePeople.filter(p => p.status === 'confirmed' || p.status === 'you').length;
+  document.getElementById('statWalls').textContent = visiblePeople.filter(p => p.status === 'brickwall').length;
+
   drawLines();
 }
 
@@ -1034,11 +1139,12 @@ function drawLines() {
   svg.setAttribute('width', treeWidth);
   svg.setAttribute('height', treeHeight);
   svg.innerHTML = '';
-  people.forEach(child => {
+  const displayMax = Math.min(visibleMaxGen, Math.max(...people.map(p => p.gen)));
+  const visiblePeople = people.filter(p => p.gen <= displayMax);
+  visiblePeople.forEach(child => {
     if (!child.parents || child.parents.length < 2) return;
     const childEl = cardEls.get(child.id), fatherEl = cardEls.get(child.parents[0]), motherEl = cardEls.get(child.parents[1]);
     if (!childEl || !fatherEl || !motherEl) return;
-    // Use offset coordinates relative to treeWrap (unaffected by zoom transform)
     const cx = childEl.offsetLeft + childEl.offsetWidth;
     const cy = childEl.offsetTop + childEl.offsetHeight / 2;
     const fx = fatherEl.offsetLeft;
@@ -3040,7 +3146,7 @@ async function saveSession() {
       }
     }
   }
-  const payload = { version: 5, exportedAt: new Date().toISOString(), people: payloadPeople, nextId: nextId };
+  const payload = { version: 5, exportedAt: new Date().toISOString(), people: payloadPeople, nextId: nextId, visibleMaxGen: visibleMaxGen };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -3092,6 +3198,27 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   };
 });
 
+// Progressive expansion button
+document.getElementById('expandGenBtn').addEventListener('click', () => {
+  if (visibleMaxGen < 8) {
+    visibleMaxGen++;
+    renderTree();
+    const btn = document.getElementById('expandGenBtn');
+    const actualMax = Math.max(...people.map(p => p.gen));
+    if (visibleMaxGen >= actualMax) {
+      btn.textContent = 'All ' + (actualMax + 1) + ' generations visible';
+      btn.disabled = true;
+    } else {
+      btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
+    }
+    // Auto-scroll right to reveal new gen
+    setTimeout(() => {
+      const sc = document.getElementById('treeScroll');
+      sc.scrollTo({ left: wrap.scrollWidth, behavior: 'smooth' });
+    }, 50);
+  }
+});
+
 document.getElementById('nextStepsBtn').addEventListener('click', openGuidancePanel);
 document.getElementById('guidanceClose').addEventListener('click', closeGuidancePanel);
 document.getElementById('guidancePanel').addEventListener('click', (e) => {
@@ -3099,7 +3226,7 @@ document.getElementById('guidancePanel').addEventListener('click', (e) => {
 });
 
 
-setInterval(() => { localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId})); }, 30000);
+setInterval(() => { localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId, visibleMaxGen: visibleMaxGen})); }, 30000);
 function autoRestore() {
   const saved = localStorage.getItem('familytree_data_v5');
   if (saved) {
@@ -3107,6 +3234,7 @@ function autoRestore() {
       const data = JSON.parse(saved);
       if (data.people && data.people.length > 0) {
         people = data.people; nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+        if (data.visibleMaxGen !== undefined) visibleMaxGen = data.visibleMaxGen;
         showToast('Restored ' + people.length + ' people from auto-save'); return true;
       }
     } catch (e) {}
@@ -3205,6 +3333,18 @@ if (!autoRestore()) initDefaultData();
 backfillComputedFields();
 renderTree();
 document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+
+// Update expand button text after render
+(function updateExpandBtn() {
+  const btn = document.getElementById('expandGenBtn');
+  const actualMax = Math.max(...people.map(p => p.gen));
+  if (visibleMaxGen >= actualMax) {
+    btn.textContent = 'All ' + (actualMax + 1) + ' generations visible';
+    btn.disabled = true;
+  } else {
+    btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
+  }
+})();
 
 // Deferred listener: ambiguity modal cancel button (guarded: button lives in HTML after script block)
 const ambigCancelBtn = document.getElementById('ambigCancel');
