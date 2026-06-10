@@ -108,7 +108,7 @@ addP('Olivia ANDERSON', 0, [p1_f, p1_m], { years: '1911 — 1935' });
 
 const CARD_W = 130, GAP_Y = 3;
 function colLeftForGen(g) {
-  if (g === 0) return 0;
+  if (g === 0) return CARD_W * 0.5;     // 65 — moved half card right
   if (g === 1) return CARD_W * 0.75;   // 97.5 — moved 1/4 card right (was 65)
   if (g === 2) return CARD_W * 1.0;    // 130
   if (g === 3) return colLeftForGen(2) + CARD_W + 4; // 264
