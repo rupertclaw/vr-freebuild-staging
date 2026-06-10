@@ -39,6 +39,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #f5f0e6; }
   </div>
 </div>
 <script>
+// Demo data: 5 generations. Parents are in the NEXT generation (to the right).
 let people = [];
 let nextId = 1;
 function addP(name, gen, parents, opts) {
@@ -48,46 +49,42 @@ function addP(name, gen, parents, opts) {
   return p.id;
 }
 
-// Gen 0
-const p0 = addP('Olivia ANDERSON', 0, [], { years: '1911 — 1935' });
-
-// Gen 1
-const p1_father = addP('William ANDERSON', 1, [p0], { years: '1882 — 1965' });
-const p1_mother = addP('Gladys POLE', 1, [p0], { years: '1894 — 1946' });
-
-// Gen 2
-const p2_ff = addP('Reiley ANDERSON', 2, [p1_father], { years: '1838 — 1922' });
-const p2_fm = addP('Alice MILTON', 2, [p1_father], { years: '1844 — 1878' });
-const p2_mf = addP('William Alfred POLE', 2, [p1_mother], { years: '1858 — 1924' });
-const p2_mm = addP('Marion LARSON', 2, [p1_mother], { years: '1858 — 1932' });
-
-// Gen 3
-const p3_fff = addP('George W. ANDERSON', 3, [p2_ff], { years: '1812 — 1875' });
-const p3_ffm = addP('Eliza SWANSON', 3, [p2_ff], { years: '1815 — 1851' });
-const p3_fmf = addP('William G. MILTON', 3, [p2_fm], { years: '1825 — ??' });
-const p3_fmm = addP('Malina BOTTS', 3, [p2_fm], { years: '1825 — ??' });
-const p3_mff = addP('Mark G. POLE', 3, [p2_mf], { years: '1815 — 1858' });
-const p3_mfm = addP('Rebecca JOHNSON', 3, [p2_mf], { years: '1838 — 1915' });
-const p3_mmf = addP('Hugh LARSON', 3, [p2_mm], { years: '1811 — 1873' });
-const p3_mmm = addP('Ann Marie JACOBS', 3, [p2_mm], { years: '1815 — ??' });
-
-// Gen 4 (16 cards — all 8 couples from gen 3)
-const g4_data = [
-  ['Richard ANDERSON', '1740 — 1811'], ['Lillis TROMBLE', '1778 — 1837'],
-  ['Harlon SWANSON', '1771 — 1858'], ['Mary Jane DARREL', '1782 — 1837'],
-  ['George W. MILTON', '1795 — 1855'], ['Holly PASSWATERS', '1802 — ??'],
-  ['Thomas BOTTS', '1798 — 1858'], ['Sarah', '?? — 1858'],
-  ['William S. POLE', '1785 — 1870'], ['Malina STORT', '1791 — 1875'],
-  ['Name', ''], ['Catherine HILDER', ''],
-  ['James LARSON', '1791 — 1858'], ['Hannah BENSON', '1793 — 1848'],
-  ['Edward JACOBS', '1783 — 1868'], ['Cynthia JOHNSON', '1795 — 1867'],
+// RIGHTMOST generation first: gen 4 (great-great-grandparents)
+const g4_ids = [];
+const g4_names = [
+  ['Richard ANDERSON','1740 — 1811'], ['Lillis TROMBLE','1778 — 1837'],
+  ['Harlon SWANSON','1771 — 1858'], ['Mary Jane DARREL','1782 — 1837'],
+  ['George W. MILTON','1795 — 1855'], ['Holly PASSWATERS','1802 — ??'],
+  ['Thomas BOTTS','1798 — 1858'], ['Sarah','?? — 1858'],
+  ['William S. POLE','1785 — 1870'], ['Malina STORT','1791 — 1875'],
+  ['Name',''], ['Catherine HILDER',''],
+  ['James LARSON','1791 — 1858'], ['Hannah BENSON','1793 — 1848'],
+  ['Edward JACOBS','1783 — 1868'], ['Cynthia JOHNSON','1795 — 1867'],
 ];
-const g3_ids = [p3_fff, p3_ffm, p3_fmf, p3_fmm, p3_mff, p3_mfm, p3_mmf, p3_mmm];
-let g4_idx = 0;
-g3_ids.forEach(g3_id => {
-  addP(g4_data[g4_idx][0], 4, [g3_id], { years: g4_data[g4_idx][1] }); g4_idx++;
-  addP(g4_data[g4_idx][0], 4, [g3_id], { years: g4_data[g4_idx][1] }); g4_idx++;
-});
+g4_names.forEach(([n,y]) => { g4_ids.push(addP(n, 4, [], { years: y })); });
+
+// Gen 3 (great-grandparents) — each pair is parents of a gen 2 person
+const p3_fff = addP('George W. ANDERSON', 3, [g4_ids[0], g4_ids[1]], { years: '1812 — 1875' });
+const p3_ffm = addP('Eliza SWANSON', 3, [g4_ids[2], g4_ids[3]], { years: '1815 — 1851' });
+const p3_fmf = addP('William G. MILTON', 3, [g4_ids[4], g4_ids[5]], { years: '1825 — ??' });
+const p3_fmm = addP('Malina BOTTS', 3, [g4_ids[6], g4_ids[7]], { years: '1825 — ??' });
+const p3_mff = addP('Mark G. POLE', 3, [g4_ids[8], g4_ids[9]], { years: '1815 — 1858' });
+const p3_mfm = addP('Rebecca JOHNSON', 3, [g4_ids[10], g4_ids[11]], { years: '1838 — 1915' });
+const p3_mmf = addP('Hugh LARSON', 3, [g4_ids[12], g4_ids[13]], { years: '1811 — 1873' });
+const p3_mmm = addP('Ann Marie JACOBS', 3, [g4_ids[14], g4_ids[15]], { years: '1815 — ??' });
+
+// Gen 2 (grandparents)
+const p2_ff = addP('Reiley ANDERSON', 2, [p3_fff, p3_ffm], { years: '1838 — 1922' });
+const p2_fm = addP('Alice MILTON', 2, [p3_fmf, p3_fmm], { years: '1844 — 1878' });
+const p2_mf = addP('William Alfred POLE', 2, [p3_mff, p3_mfm], { years: '1858 — 1924' });
+const p2_mm = addP('Marion LARSON', 2, [p3_mmf, p3_mmm], { years: '1858 — 1932' });
+
+// Gen 1 (parents)
+const p1_f = addP('William ANDERSON', 1, [p2_ff, p2_fm], { years: '1882 — 1965' });
+const p1_m = addP('Gladys POLE', 1, [p2_mf, p2_mm], { years: '1894 — 1946' });
+
+// Gen 0 (root/subject)
+addP('Olivia ANDERSON', 0, [p1_f, p1_m], { years: '1911 — 1935' });
 
 const CARD_W = 130, GAP_X = 35, GAP_Y = 3;
 const wrap = document.getElementById('treeWrap');
@@ -120,7 +117,7 @@ function renderTree() {
 
   const topMap = new Map();
 
-  // RIGHTMOST generation: spread evenly top to bottom
+  // RIGHTMOST generation: spread evenly from top to bottom
   const rightGen = gens[maxGen];
   let currentY = 10;
   rightGen.forEach(p => {
@@ -128,7 +125,7 @@ function renderTree() {
     currentY += hMap.get(p.id) + GAP_Y;
   });
 
-  // CASCADE LEFT: each person sits centered between their two parents
+  // CASCADE LEFT: each person's Y is the midpoint between their two parents (in the next gen to the right)
   for (let g = maxGen - 1; g >= 0; g--) {
     gens[g].forEach(p => {
       if (!p.parents || p.parents.length < 2) return;
@@ -153,7 +150,7 @@ function renderTree() {
   svg.setAttribute('width', treeWidth);
   svg.setAttribute('height', treeHeight);
 
-  // Connectors
+  // Draw connectors
   svg.innerHTML = '';
   people.forEach(p => {
     if (!p.parents || p.parents.length < 2) return;
