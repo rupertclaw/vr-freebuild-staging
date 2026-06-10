@@ -2987,7 +2987,11 @@ function renderGuidanceResults({ suggestions, stats }) {
   html += '</div>';
 
   if (suggestions.length === 0) {
-    html += '<div class="guidance-empty"><div class="icon">🎉</div><div style="font-family: Cinzel Decorative,serif;font-size:16px;color:#5a7a3a;margin-bottom:8px;">Tree Complete!</div><div>All known ancestors have documents attached. Great work!</div></div>';
+    if (stats.filled === 0) {
+      html += '<div class="guidance-empty"><div class="icon">🌱</div><div style="font-family: Cinzel Decorative,serif;font-size:16px;color:#5a7a3a;margin-bottom:8px;">Start Building Your Tree</div><div>Confirm your own name, then add your parents and grandparents. The guide will show which certificates to find next.</div></div>';
+    } else {
+      html += '<div class="guidance-empty"><div class="icon">🎉</div><div style="font-family: Cinzel Decorative,serif;font-size:16px;color:#5a7a3a;margin-bottom:8px;">Tree Complete!</div><div>All known ancestors have documents attached. Great work!</div></div>';
+    }
     body.innerHTML = html;
     return;
   }
