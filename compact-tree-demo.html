@@ -86,8 +86,12 @@ const p1_m = addP('Gladys POLE', 1, [p2_mf, p2_mm], { years: '1894 — 1946' });
 addP('Olivia ANDERSON', 0, [p1_f, p1_m], { years: '1911 — 1935' });
 
 const CARD_W = 130, GAP_Y = 3;
-// KEY CHANGE: each generation steps by half a card width, so cards overlap into the next column
-const COL_STEP = CARD_W * 0.5;
+// Overlap gens 0-3 by half card width. Gen 4 is standard (no overlap).
+function colLeftForGen(g) {
+  if (g <= 3) return g * (CARD_W * 0.5);
+  // Gen 4 starts exactly where gen 3's card ends
+  return colLeftForGen(3) + CARD_W;
+}
 
 const wrap = document.getElementById('treeWrap');
 const svg = document.getElementById('linesSvg');
@@ -101,7 +105,7 @@ function renderTree() {
 
   // Column left edges: each gen is halfway into the next gen's space
   const colLeft = [];
-  for (let g = 0; g <= maxGen; g++) colLeft[g] = g * COL_STEP;
+  for (let g = 0; g <= maxGen; g++) colLeft[g] = colLeftForGen(g);
 
   const cardEls = new Map();
   const hMap = new Map();
@@ -169,9 +173,9 @@ function renderTree() {
     const mx = parseFloat(mel.style.left), my = parseFloat(mel.style.top) + hMap.get(m.id)/2;
     const cx = parseFloat(el.style.left) + CARD_W, cy = parseFloat(el.style.top) + hMap.get(p.id)/2;
     const midY = (fy + my) / 2;
-    // Junction at child's right edge, then split to parents
+    const jx = cx + 12; // junction to the right of child card
     const path = document.createElementNS(svgNS, 'path');
-    path.setAttribute('d', `M${cx},${cy} L${fx + 6},${cy} L${fx + 6},${midY} L${fx},${midY} L${fx},${fy} M${fx + 6},${midY} L${mx},${midY} L${mx},${my}`);
+    path.setAttribute('d', `M${cx},${cy} L${jx},${cy} L${jx},${midY} L${fx},${midY} L${fx},${fy} M${jx},${midY} L${mx},${midY} L${mx},${my}`);
     path.setAttribute('stroke', '#b89a5e');
     path.setAttribute('stroke-width', '1');
     path.setAttribute('fill', 'none');
