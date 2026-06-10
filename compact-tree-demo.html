@@ -3,7 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>Compact Tree Demo — Gen 5 Minicards</title>
+<title>Compact Tree Demo — Progressive Expansion</title>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
 * { box-sizing: border-box; margin: 0; padding: 0; }
@@ -32,90 +32,180 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #f5f0e6; }
 }
 .person-card.blank { background: #f0ebe0; border: 1px dashed #b8a88a; opacity: 0.4; }
 
-/* Gen 5 minicard style — half height of regular card (14px vs 28px) */
+/* Minicard — rightmost visible gen when visibleMaxGen >= 5 */
 .person-card.minicard {
   width: 100px;
   padding: 1px 3px;
   border: 1px solid #c9b896;
   height: 14px;
-  min-height: 0; /* override .person-card min-height: 28px */
+  min-height: 0;
   overflow: hidden;
 }
 .person-card.minicard .name { font-size: 6px; letter-spacing: 0.1px; line-height: 1.1; }
 .person-card.minicard .years { display: none; }
+
+/* Expand button */
+#expandBtn {
+  position: fixed;
+  bottom: 20px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 100;
+  padding: 10px 24px;
+  background: #2a1f10;
+  color: #c4a875;
+  border: 1px solid #c4a875;
+  border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 12px;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.3);
+}
+#expandBtn:disabled {
+  opacity: 0.5;
+  cursor: default;
+}
+#genIndicator {
+  position: fixed;
+  top: 10px;
+  right: 14px;
+  z-index: 100;
+  padding: 4px 10px;
+  background: rgba(42,31,16,0.85);
+  color: #c4a875;
+  border: 1px solid #c4a875;
+  border-radius: 3px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 10px;
+}
 </style>
 </head>
 <body>
+<div id="genIndicator">5 generations</div>
 <div class="tree-scroll" id="treeScroll">
   <div class="tree-wrap" id="treeWrap">
     <svg class="lines-svg" id="linesSvg"></svg>
   </div>
 </div>
+<button id="expandBtn">Reveal Generation 5</button>
 <script>
 let people = [];
 let nextId = 1;
-function addP(name, gen, parents, opts) {
-  opts = opts || {};
-  const p = { id: nextId++, gen, name, status: name === 'Name' || !name ? 'blank' : 'confirmed', parents: parents || [], spouseId: null, years: opts.years || '' };
+let visibleMaxGen = 4; // default: show gens 0-4
+
+const CARD_W = 130, GAP_Y = 3;
+const MINI_W = 100, MINI_H = 14;
+
+function createPerson(gen, name, parents, years) {
+  const p = {
+    id: nextId++,
+    gen,
+    name: name || 'Name',
+    status: (!name || name === 'Name') ? 'blank' : 'confirmed',
+    parents: parents || [],
+    years: years || '',
+    spouseId: null
+  };
   people.push(p);
   return p.id;
 }
 
-// RIGHTMOST first: Gen 4 (great-great-grandparents)
-const g4_ids = [];
-const g4_names = [
-  ['Richard ANDERSON','1740 — 1811'], ['Lillis TROMBLE','1778 — 1837'],
-  ['Harlon SWANSON','1771 — 1858'], ['Mary Jane DARREL','1782 — 1837'],
-  ['George W. MILTON','1795 — 1855'], ['Holly PASSWATERS','1802 — ??'],
-  ['Thomas BOTTS','1798 — 1858'], ['Sarah','?? — 1858'],
-  ['William S. POLE','1785 — 1870'], ['Malina STORT','1791 — 1875'],
-  ['Name',''], ['Catherine HIDLER','1810 — 1885'],
-  ['James LARSON','1791 — 1858'], ['Hannah BENSON','1793 — 1848'],
-  ['Edward JACOBS','1783 — 1868'], ['Cynthia JOHNSON','1795 — 1867'],
-];
-g4_names.forEach(([n,y]) => { g4_ids.push(addP(n, 4, [], { years: y })); });
+function buildTree() {
+  people = [];
+  nextId = 1;
 
-// Gen 5: half-height minicards, two beside each gen 4 card
-const g5_ids = [];
-g4_names.forEach(([n,y], idx) => {
-  const p4 = people.find(p => p.id === g4_ids[idx]);
-  const pf_id = addP('Father', 5, [], { years: '' });
-  const pm_id = addP('Mother', 5, [], { years: '' });
-  p4.parents = [pf_id, pm_id];
-  g5_ids.push(pf_id, pm_id);
-});
+  // Gen 0
+  const p0 = createPerson(0, 'Olivia ANDERSON', [], '1911 — 1935');
 
-// Gen 3
-const p3_fff = addP('George W. ANDERSON', 3, [g4_ids[0], g4_ids[1]], { years: '1812 — 1875' });
-const p3_ffm = addP('Eliza SWANSON', 3, [g4_ids[2], g4_ids[3]], { years: '1815 — 1851' });
-const p3_fmf = addP('William G. MILTON', 3, [g4_ids[4], g4_ids[5]], { years: '1825 — ??' });
-const p3_fmm = addP('Malina BOTTS', 3, [g4_ids[6], g4_ids[7]], { years: '1825 — ??' });
-const p3_mff = addP('Mark G. POLE', 3, [g4_ids[8], g4_ids[9]], { years: '1815 — 1858' });
-const p3_mfm = addP('Rebecca JOHNSON', 3, [g4_ids[10], g4_ids[11]], { years: '1838 — 1915' });
-const p3_mmf = addP('Hugh LARSON', 3, [g4_ids[12], g4_ids[13]], { years: '1811 — 1873' });
-const p3_mmm = addP('Ann Marie JACOBS', 3, [g4_ids[14], g4_ids[15]], { years: '1815 — ??' });
+  // Gen 1
+  const p1_f = createPerson(1, 'William ANDERSON', [], '1882 — 1965');
+  const p1_m = createPerson(1, 'Gladys POLE', [], '1894 — 1946');
+  people.find(p => p.id === p0).parents = [p1_f, p1_m];
 
-// Gen 2
-const p2_ff = addP('Reiley ANDERSON', 2, [p3_fff, p3_ffm], { years: '1838 — 1922' });
-const p2_fm = addP('Alice MILTON', 2, [p3_fmf, p3_fmm], { years: '1844 — 1878' });
-const p2_mf = addP('William Alfred POLE', 2, [p3_mff, p3_mfm], { years: '1858 — 1924' });
-const p2_mm = addP('Marion LARSON', 2, [p3_mmf, p3_mmm], { years: '1858 — 1932' });
+  // Gen 2
+  const p2_ff = createPerson(2, 'Reiley ANDERSON', [], '1838 — 1922');
+  const p2_fm = createPerson(2, 'Alice MILTON', [], '1844 — 1878');
+  const p2_mf = createPerson(2, 'William Alfred POLE', [], '1858 — 1924');
+  const p2_mm = createPerson(2, 'Marion LARSON', [], '1858 — 1932');
+  people.find(p => p.id === p1_f).parents = [p2_ff, p2_fm];
+  people.find(p => p.id === p1_m).parents = [p2_mf, p2_mm];
 
-// Gen 1
-const p1_f = addP('William ANDERSON', 1, [p2_ff, p2_fm], { years: '1882 — 1965' });
-const p1_m = addP('Gladys POLE', 1, [p2_mf, p2_mm], { years: '1894 — 1946' });
+  // Gen 3
+  const p3_fff = createPerson(3, 'George W. ANDERSON', [], '1812 — 1875');
+  const p3_ffm = createPerson(3, 'Eliza SWANSON', [], '1815 — 1851');
+  const p3_fmf = createPerson(3, 'William G. MILTON', [], '1825 — ??');
+  const p3_fmm = createPerson(3, 'Malina BOTTS', [], '1825 — ??');
+  const p3_mff = createPerson(3, 'Mark G. POLE', [], '1815 — 1858');
+  const p3_mfm = createPerson(3, 'Rebecca JOHNSON', [], '1838 — 1915');
+  const p3_mmf = createPerson(3, 'Hugh LARSON', [], '1811 — 1873');
+  const p3_mmm = createPerson(3, 'Ann Marie JACOBS', [], '1815 — ??');
+  people.find(p => p.id === p2_ff).parents = [p3_fff, p3_ffm];
+  people.find(p => p.id === p2_fm).parents = [p3_fmf, p3_fmm];
+  people.find(p => p.id === p2_mf).parents = [p3_mff, p3_mfm];
+  people.find(p => p.id === p2_mm).parents = [p3_mmf, p3_mmm];
 
-// Gen 0
-addP('Olivia ANDERSON', 0, [p1_f, p1_m], { years: '1911 — 1935' });
+  // Gen 4
+  const g4_data = [
+    ['Richard ANDERSON','1740 — 1811'], ['Lillis TROMBLE','1778 — 1837'],
+    ['Harlon SWANSON','1771 — 1858'], ['Mary Jane DARREL','1782 — 1837'],
+    ['George W. MILTON','1795 — 1855'], ['Holly PASSWATERS','1802 — ??'],
+    ['Thomas BOTTS','1798 — 1858'], ['Sarah','?? — 1858'],
+    ['William S. POLE','1785 — 1870'], ['Malina STORT','1791 — 1875'],
+    ['Name',''], ['Catherine HIDLER','1810 — 1885'],
+    ['James LARSON','1791 — 1858'], ['Hannah BENSON','1793 — 1848'],
+    ['Edward JACOBS','1783 — 1868'], ['Cynthia JOHNSON','1795 — 1867'],
+  ];
+  const g3_ids = [p3_fff, p3_ffm, p3_fmf, p3_fmm, p3_mff, p3_mfm, p3_mmf, p3_mmm];
+  let idx = 0;
+  const g4_ids = [];
+  g3_ids.forEach(pid => {
+    const p3 = people.find(p => p.id === pid);
+    const f = createPerson(4, g4_data[idx][0], [], g4_data[idx][1]);
+    const m = createPerson(4, g4_data[idx+1][0], [], g4_data[idx+1][1]);
+    p3.parents = [f, m];
+    g4_ids.push(f, m);
+    idx += 2;
+  });
 
-const CARD_W = 130, GAP_Y = 3;
-function colLeftForGen(g) {
-  if (g === 0) return CARD_W * 0.5;     // 65 — moved half card right
-  if (g === 1) return CARD_W * 0.75;   // 97.5 — moved 1/4 card right (was 65)
-  if (g === 2) return CARD_W * 1.0;    // 130
-  if (g === 3) return colLeftForGen(2) + CARD_W + 4; // 264
-  if (g === 4) return colLeftForGen(3) + CARD_W;      // 394
-  return colLeftForGen(4) + CARD_W + 4;               // 528 (gen 5 beside gen 4)
+  // Gens 5-8: auto-generate Father/Mother placeholders
+  function autoGen(startIds, gen) {
+    if (gen > 8) return;
+    const nextIds = [];
+    startIds.forEach(cid => {
+      const child = people.find(p => p.id === cid);
+      const f = createPerson(gen, 'Father', [], '');
+      const m = createPerson(gen, 'Mother', [], '');
+      child.parents = [f, m];
+      nextIds.push(f, m);
+    });
+    autoGen(nextIds, gen + 1);
+  }
+  autoGen(g4_ids, 5);
+}
+
+function colLeftForGen(g, maxGen) {
+  if (g === 0) return CARD_W * 0.5;      // 65
+  if (g === 1) return CARD_W * 0.75;     // 97.5
+  if (g === 2) return CARD_W * 1.0;      // 130
+
+  let pos = CARD_W; // gen 2 position
+  for (let i = 3; i <= g; i++) {
+    const isLast = i === maxGen;
+    const isMinicard = isLast && maxGen >= 5;
+    if (isMinicard) {
+      pos += CARD_W + 4; // gap before minicard
+    } else if (isLast) {
+      pos += CARD_W; // full card rightmost, touching
+    } else {
+      // Alternate: gap (odd i-3), touch (even i-3)
+      if ((i - 3) % 2 === 0) {
+        pos += CARD_W + 4;
+      } else {
+        pos += CARD_W;
+      }
+    }
+  }
+  return pos;
 }
 
 const wrap = document.getElementById('treeWrap');
@@ -124,18 +214,22 @@ const svgNS = 'http://www.w3.org/2000/svg';
 
 function renderTree() {
   wrap.querySelectorAll('.person-card').forEach(el => el.remove());
-  const maxGen = 4; // cascade stops at gen 4; gen 5 is positioned separately
+
+  const visiblePeople = people.filter(p => p.gen <= visibleMaxGen);
   const gens = [];
-  for (let g = 0; g <= 5; g++) gens[g] = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+  for (let g = 0; g <= visibleMaxGen; g++) {
+    gens[g] = visiblePeople.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+  }
 
   const colLeft = [];
-  for (let g = 0; g <= 5; g++) colLeft[g] = colLeftForGen(g);
+  for (let g = 0; g <= visibleMaxGen; g++) colLeft[g] = colLeftForGen(g, visibleMaxGen);
 
   const cardEls = new Map();
   const hMap = new Map();
-  people.forEach(p => {
+
+  visiblePeople.forEach(p => {
+    const isMini = visibleMaxGen >= 5 && p.gen === visibleMaxGen;
     const el = document.createElement('div');
-    const isMini = p.gen === 5;
     el.className = 'person-card ' + (p.status === 'blank' ? 'blank ' : '') + (isMini ? 'minicard' : '');
     const displayYears = p.years || (p.status === 'blank' ? 'YYYY — YYYY' : '');
     el.innerHTML = '<div class="name">' + p.name + '</div>' + (displayYears ? '<div class="years">' + displayYears + '</div>' : '');
@@ -143,7 +237,7 @@ function renderTree() {
     el.style.top = '0px';
     el.style.opacity = '0';
     if (isMini) {
-      el.style.height = '14px';
+      el.style.height = MINI_H + 'px';
       el.style.minHeight = '0';
     }
     wrap.appendChild(el);
@@ -155,52 +249,59 @@ function renderTree() {
 
   const topMap = new Map();
 
-  // CASCADE: gen 4 evenly spread, then cascade left to gens 3..0
-  let currentY = 10;
-  gens[4].forEach(p => {
-    topMap.set(p.id, currentY);
-    currentY += hMap.get(p.id) + GAP_Y;
+  // Rightmost FULL gen is evenly spread
+  const rightmostFull = visibleMaxGen >= 5 ? visibleMaxGen - 1 : visibleMaxGen;
+  let y = 10;
+  gens[rightmostFull].forEach(p => {
+    topMap.set(p.id, y);
+    y += hMap.get(p.id) + GAP_Y;
   });
 
-  for (let g = 3; g >= 0; g--) {
+  // Cascade left from rightmostFull down to gen 0
+  for (let g = rightmostFull - 1; g >= 0; g--) {
     gens[g].forEach(p => {
       if (!p.parents || p.parents.length < 2) return;
-      const f = people.find(x => x.id === p.parents[0]);
-      const m = people.find(x => x.id === p.parents[1]);
+      const f = visiblePeople.find(x => x.id === p.parents[0]);
+      const m = visiblePeople.find(x => x.id === p.parents[1]);
+      if (!f || !m) return;
       const fy = topMap.get(f.id), my = topMap.get(m.id);
+      if (fy === undefined || my === undefined) return;
       const fh = hMap.get(f.id), mh = hMap.get(m.id);
       const centerY = (fy + fh/2 + my + mh/2) / 2;
       topMap.set(p.id, centerY - hMap.get(p.id)/2);
     });
   }
 
-  // GEN 5: position each pair bracketed around their gen 4 child's center
-  gens[4].forEach(p4 => {
-    if (!p4.parents || p4.parents.length < 2) return;
-    const p4_el = cardEls.get(p4.id);
-    const p4_top = topMap.get(p4.id);
-    const p4_h = hMap.get(p4.id);
-    const p4_center = p4_top + p4_h / 2;
+  // Minicard gen: bracket around each child in rightmostFull
+  if (visibleMaxGen >= 5) {
+    gens[rightmostFull].forEach(child => {
+      if (!child.parents || child.parents.length < 2) return;
+      const f = visiblePeople.find(x => x.id === child.parents[0]);
+      const m = visiblePeople.find(x => x.id === child.parents[1]);
+      if (!f || !m) return;
 
-    const p5f = people.find(x => x.id === p4.parents[0]);
-    const p5m = people.find(x => x.id === p4.parents[1]);
-    const fh = hMap.get(p5f.id), mh = hMap.get(p5m.id);
-    const gap = 2;
-    const total_h = fh + mh + gap;
-    const f_top = p4_center - total_h / 2;
-    const m_top = f_top + fh + gap;
+      const ctop = topMap.get(child.id);
+      const ch = hMap.get(child.id);
+      const ccenter = ctop + ch / 2;
 
-    topMap.set(p5f.id, f_top);
-    topMap.set(p5m.id, m_top);
-  });
+      const fh = hMap.get(f.id), mh = hMap.get(m.id);
+      const gap = 2;
+      const total = fh + mh + gap;
+      const ftop = ccenter - total / 2;
+      const mtop = ftop + fh + gap;
+
+      topMap.set(f.id, ftop);
+      topMap.set(m.id, mtop);
+    });
+  }
 
   cardEls.forEach((el, id) => {
     el.style.top = topMap.get(id) + 'px';
     el.style.opacity = '1';
   });
 
-  const treeWidth = colLeft[5] + CARD_W + 40;
-  const treeHeight = Math.max(400, ...people.map(p => (topMap.get(p.id) || 0) + hMap.get(p.id))) + 20;
+  const treeWidth = colLeft[visibleMaxGen] + (visibleMaxGen >= 5 ? MINI_W : CARD_W) + 40;
+  const treeHeight = Math.max(400, ...visiblePeople.map(p => (topMap.get(p.id) || 0) + hMap.get(p.id))) + 20;
   wrap.style.width = treeWidth + 'px';
   wrap.style.height = treeHeight + 'px';
   svg.setAttribute('width', treeWidth);
@@ -208,25 +309,26 @@ function renderTree() {
 
   // Connectors
   svg.innerHTML = '';
-  people.forEach(p => {
+  visiblePeople.forEach(p => {
     if (!p.parents || p.parents.length < 2) return;
     const el = cardEls.get(p.id);
-    const f = people.find(x => x.id === p.parents[0]);
-    const m = people.find(x => x.id === p.parents[1]);
+    const f = visiblePeople.find(x => x.id === p.parents[0]);
+    const m = visiblePeople.find(x => x.id === p.parents[1]);
     const fel = cardEls.get(f.id);
     const mel = cardEls.get(m.id);
     if (!el || !fel || !mel) return;
-    const fx = parseFloat(fel.style.left), fy = parseFloat(fel.style.top) + hMap.get(f.id)/2;
-    const mx = parseFloat(mel.style.left), my = parseFloat(mel.style.top) + hMap.get(m.id)/2;
 
-    // Child right edge is the junction point
-    const cx = parseFloat(el.style.left) + (p.gen === 5 ? 100 : CARD_W);
+    const childW = (visibleMaxGen >= 5 && p.gen === visibleMaxGen) ? MINI_W : CARD_W;
+    const cx = parseFloat(el.style.left) + childW;
     const cy = parseFloat(el.style.top) + hMap.get(p.id)/2;
+    const fx = parseFloat(fel.style.left);
+    const fy = parseFloat(fel.style.top) + hMap.get(f.id)/2;
+    const mx = parseFloat(mel.style.left);
+    const my = parseFloat(mel.style.top) + hMap.get(m.id)/2;
     const midY = (fy + my) / 2;
-    const jx = parseFloat(el.style.left) + (p.gen === 5 ? 100 : CARD_W); // same as cx
 
     const path = document.createElementNS(svgNS, 'path');
-    path.setAttribute('d', `M${cx},${cy} L${jx},${midY} L${fx},${midY} L${fx},${fy} M${jx},${midY} L${mx},${midY} L${mx},${my}`);
+    path.setAttribute('d', `M${cx},${cy} L${cx},${midY} L${fx},${midY} L${fx},${fy} M${cx},${midY} L${mx},${midY} L${mx},${my}`);
     path.setAttribute('stroke', '#b89a5e');
     path.setAttribute('stroke-width', '1');
     path.setAttribute('fill', 'none');
@@ -234,7 +336,35 @@ function renderTree() {
   });
 }
 
+function updateUI() {
+  const btn = document.getElementById('expandBtn');
+  const ind = document.getElementById('genIndicator');
+  ind.textContent = (visibleMaxGen + 1) + ' generations visible';
+  if (visibleMaxGen >= 8) {
+    btn.textContent = 'All 9 generations visible';
+    btn.disabled = true;
+  } else {
+    btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
+    btn.disabled = false;
+  }
+}
+
+document.getElementById('expandBtn').addEventListener('click', () => {
+  if (visibleMaxGen < 8) {
+    visibleMaxGen++;
+    renderTree();
+    updateUI();
+    // Smooth scroll to reveal new gen
+    setTimeout(() => {
+      const sc = document.getElementById('treeScroll');
+      sc.scrollTo({ left: wrap.scrollWidth, behavior: 'smooth' });
+    }, 50);
+  }
+});
+
+buildTree();
 renderTree();
+updateUI();
 </script>
 </body>
 </html>
