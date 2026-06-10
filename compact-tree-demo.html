@@ -173,9 +173,9 @@ function renderTree() {
     const mx = parseFloat(mel.style.left), my = parseFloat(mel.style.top) + hMap.get(m.id)/2;
     const cx = parseFloat(el.style.left) + CARD_W, cy = parseFloat(el.style.top) + hMap.get(p.id)/2;
     const midY = (fy + my) / 2;
-    const jx = cx + 12; // junction to the right of child card
+    const jx = cx; // no horizontal stub — start vertical split at card's right edge
     const path = document.createElementNS(svgNS, 'path');
-    path.setAttribute('d', `M${cx},${cy} L${jx},${cy} L${jx},${midY} L${fx},${midY} L${fx},${fy} M${jx},${midY} L${mx},${midY} L${mx},${my}`);
+    path.setAttribute('d', `M${cx},${cy} L${jx},${midY} L${fx},${midY} L${fx},${fy} M${jx},${midY} L${mx},${midY} L${mx},${my}`);
     path.setAttribute('stroke', '#b89a5e');
     path.setAttribute('stroke-width', '1');
     path.setAttribute('fill', 'none');
