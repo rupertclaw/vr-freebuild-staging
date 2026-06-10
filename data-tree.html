@@ -982,7 +982,7 @@ function colLeftForGen(g, maxGen) {
     const isLast = i === maxGen;
     const isMinicard = isLast && maxGen >= 5;
     if (isMinicard) {
-      pos += CARD_W + 20;  // wider gap before minicard gen
+      pos += CARD_W + 4;  // small gap before minicard gen
     } else if (isLast) {
       pos += CARD_W;
     } else {
