@@ -632,15 +632,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 </head>
 <body>
 
-<button class="grid-toggle" id="gridToggle">Show Grid</button>
-<div class="coord-readout" id="coordReadout">Hover to see coordinates</div>
-
 <div class="viewport" id="viewport">
 <div class="scroll-wrapper">
 <div class="poster-wrap">
 <div class="poster" id="poster">
-
-<div class="grid-overlay" id="gridOverlay"></div>
 
 <!-- Heraldic banner — shows the subject's family name -->
 <div class="poster-banner" id="posterBanner">
@@ -869,8 +864,6 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   <button class="zoom-btn" id="zoomOut">−</button>
   <button class="zoom-btn" id="zoomReset">↻</button>
 </div>
-
-<button class="edit-toggle" id="editToggle">✎ Upload Cert</button>
 
 <div style="position:fixed;bottom:16px;left:16px;display:flex;gap:6px;z-index:200;">
   <button class="poster-icon-btn" id="saveSessionBtn" title="Save session" style="background:#3e3225;color:#f0e6d2;">💾</button>
@@ -1567,7 +1560,6 @@ const certConfirm = document.getElementById('certConfirm');
 const certCancel = document.getElementById('certCancel');
 const certRetry = document.getElementById('certRetry');
 const certRetryScan = document.getElementById('certRetryScan');
-const editToggle = document.getElementById('editToggle');
 
 let pendingDocFile = null; // Store the last uploaded file for retries
 
@@ -1592,7 +1584,6 @@ function resetCertPanel() {
   certFileInput.value = '';
 }
 
-editToggle.addEventListener('click', openCertPanel);
 certClose.addEventListener('click', closeCertPanel);
 certOverlay.addEventListener('click', closeCertPanel);
 certCancel.addEventListener('click', closeCertPanel);
