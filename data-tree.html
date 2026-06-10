@@ -974,18 +974,20 @@ let treeWidth = 0, treeHeight = 0;
 let zoom = 0.25;
 
 function colLeftForGen(g, maxGen) {
-  if (g === 0) return CARD_W * 0.5;
-  if (g === 1) return CARD_W * 0.75;
-  if (g === 2) return CARD_W * 1.0;
-  let pos = CARD_W;
+  if (g === 0) return CARD_W * 0.5;      // 65
+  if (g === 1) return CARD_W * 0.75;     // 97.5
+  if (g === 2) return CARD_W * 1.5;     // 195 — half card to the right
+
+  let pos = CARD_W * 1.5; // gen 2 position
   for (let i = 3; i <= g; i++) {
     const isLast = i === maxGen;
     const isMinicard = isLast && maxGen >= 5;
     if (isMinicard) {
-      pos += CARD_W + 4;  // small gap before minicard gen
+      pos += CARD_W + 4; // gap before minicard
     } else if (isLast) {
-      pos += CARD_W;
+      pos += CARD_W; // full card rightmost, touching
     } else {
+      // Alternate: gap (odd i-3), touch (even i-3)
       if ((i - 3) % 2 === 0) {
         pos += CARD_W + 4;
       } else {
