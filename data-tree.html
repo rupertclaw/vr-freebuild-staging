@@ -158,6 +158,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .header-btn { width: 28px; height: 28px; font-size: 14px; }
   .country-select { padding: 3px 5px; font-size: 10px; min-width: 70px; }
   .header-actions { gap: 2px; }
+  .header-left-group { gap: 3px; }
   .tree-scroll { top: 160px; }
   .header-top, .header-bottom { padding-right: 70px; }
   .zoom-controls span { font-size: 11px; min-width: 36px; }
@@ -208,6 +209,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   flex-wrap: nowrap;
   flex-shrink: 0;
   justify-content: flex-end;
+}
+.header-left-group {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
 }
 
 /* Tree wrap */
@@ -573,15 +578,17 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   </div>
   <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
   <div class="header-bottom">
-    <div class="zoom-controls">
-      <button class="header-btn zoom-btn" id="zoomOut" title="Zoom out">−</button>
-      <span id="zoomLevel">100%</span>
-      <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
-      <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom">⟲</button>
+    <div class="header-left-group">
+      <div class="zoom-controls">
+        <button class="header-btn zoom-btn" id="zoomOut" title="Zoom out">−</button>
+        <span id="zoomLevel">100%</span>
+        <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
+        <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom">⟲</button>
+      </div>
+      <select id="countrySelect" class="country-select" title="Research country">
+        <option value="" disabled>Country...</option>
+      </select>
     </div>
-    <select id="countrySelect" class="country-select" title="Research country">
-      <option value="" disabled>Country...</option>
-    </select>
     <div class="header-actions">
       <button class="header-btn" id="saveBtn" title="Save session">💾</button>
       <button class="header-btn" id="loadBtn" title="Load session">📂</button>
