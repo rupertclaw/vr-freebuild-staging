@@ -32,15 +32,17 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #f5f0e6; }
 }
 .person-card.blank { background: #f0ebe0; border: 1px dashed #b8a88a; opacity: 0.4; }
 
-/* Gen 5 minicard style */
+/* Gen 5 minicard style — half height of regular card (14px vs 28px) */
 .person-card.minicard {
   width: 100px;
-  padding: 2px 3px;
+  padding: 1px 3px;
   border: 1px solid #c9b896;
-  min-height: 20px;
+  height: 14px;
+  min-height: 0; /* override .person-card min-height: 28px */
+  overflow: hidden;
 }
-.person-card.minicard .name { font-size: 7px; letter-spacing: 0.1px; }
-.person-card.minicard .years { font-size: 6px; margin-top: 0; }
+.person-card.minicard .name { font-size: 6px; letter-spacing: 0.1px; line-height: 1.1; }
+.person-card.minicard .years { display: none; }
 </style>
 </head>
 <body>
@@ -133,12 +135,17 @@ function renderTree() {
   const hMap = new Map();
   people.forEach(p => {
     const el = document.createElement('div');
-    el.className = 'person-card ' + (p.status === 'blank' ? 'blank ' : '') + (p.gen === 5 ? 'minicard' : '');
+    const isMini = p.gen === 5;
+    el.className = 'person-card ' + (p.status === 'blank' ? 'blank ' : '') + (isMini ? 'minicard' : '');
     const displayYears = p.years || (p.status === 'blank' ? 'YYYY — YYYY' : '');
     el.innerHTML = '<div class="name">' + p.name + '</div>' + (displayYears ? '<div class="years">' + displayYears + '</div>' : '');
     el.style.left = colLeft[p.gen] + 'px';
     el.style.top = '0px';
     el.style.opacity = '0';
+    if (isMini) {
+      el.style.height = '14px';
+      el.style.minHeight = '0';
+    }
     wrap.appendChild(el);
     cardEls.set(p.id, el);
   });
