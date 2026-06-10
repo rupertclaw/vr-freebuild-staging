@@ -1066,7 +1066,7 @@ function renderTree() {
   const topMap = new Map();
   const rightmostFull = displayMax >= 5 ? displayMax - 1 : displayMax;
 
-  let y = 80;
+  let y = 10;
   gens[rightmostFull].forEach(p => {
     topMap.set(p.id, y);
     y += hMap.get(p.id) + GAP_Y;
@@ -1085,39 +1085,10 @@ function renderTree() {
       const midCenter = (fy + fh/2 + my + mh/2) / 2;
       topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
     });
-    y = 80;
-    gens[g].forEach(p => {
-      if (topMap.has(p.id)) {
-        y = Math.max(y, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
-      } else {
-        topMap.set(p.id, y);
-        y += hMap.get(p.id) + GAP_Y;
-      }
-    });
-  }
-
-  // Position minicards bracketed around their children
-  if (displayMax >= 5) {
-    gens[rightmostFull].forEach(child => {
-      if (!child.parents || child.parents.length < 2) return;
-      const f = visiblePeople.find(x => x.id === child.parents[0]);
-      const m = visiblePeople.find(x => x.id === child.parents[1]);
-      if (!f || !m) return;
-      const ctop = topMap.get(child.id);
-      const ch = hMap.get(child.id);
-      const ccenter = ctop + ch / 2;
-      const fh = hMap.get(f.id), mh = hMap.get(m.id);
-      const gap = 2;
-      const total = fh + mh + gap;
-      const ftop = ccenter - total / 2;
-      const mtop = ftop + fh + gap;
-      topMap.set(f.id, ftop);
-      topMap.set(m.id, mtop);
-    });
   }
 
   cardEls.forEach((el, id) => {
-    el.style.top = (topMap.get(id) || 80) + 'px';
+    el.style.top = (topMap.get(id) || 10) + 'px';
     el.style.opacity = '1';
   });
 
