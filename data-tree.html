@@ -3013,14 +3013,6 @@ function renderGuidanceResults({ suggestions, stats }) {
   body.innerHTML = html;
 }
 
-function saveSession() {
-  const payload = { version: 5, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
-  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url; a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
-  a.click(); URL.revokeObjectURL(url); showToast('Session saved');
-}
 async function getDocById(docId) {
   if (!docId) return null;
   if (!_docDB) await openDocDB();
