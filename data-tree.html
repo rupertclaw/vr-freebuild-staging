@@ -631,7 +631,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   </div>
 </div>
 
-<button id="expandGenBtn" class="expand-gen-btn" title="Reveal next generation">Reveal Generation 5</button>
+<button id="expandGenBtn" class="expand-gen-btn" title="Reveal next generation">Reveal Next Generation</button>
 
 <div class="tree-scroll" id="treeScroll">
   <div id="zoomSizer" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0;"></div>
@@ -3146,6 +3146,7 @@ async function loadSession(file) {
     if (!data.people) { showToast('Invalid session file'); return; }
     people = data.people;
     nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+    visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : Math.max(...people.map(p => p.gen));
     // Restore inlined document images back into IndexedDB
     let restoredCount = 0;
     for (const person of people) {
@@ -3194,7 +3195,7 @@ document.getElementById('expandGenBtn').addEventListener('click', () => {
       btn.textContent = 'All ' + (actualMax + 1) + ' generations visible';
       btn.disabled = true;
     } else {
-      btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
+      btn.textContent = 'Reveal Next Generation';
     }
     // Auto-scroll right to reveal new gen
     setTimeout(() => {
@@ -3328,7 +3329,7 @@ document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
     btn.textContent = 'All ' + (actualMax + 1) + ' generations visible';
     btn.disabled = true;
   } else {
-    btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
+    btn.textContent = 'Reveal Next Generation';
   }
 })();
 
