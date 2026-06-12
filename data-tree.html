@@ -625,8 +625,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn" id="nextStepsBtn" title="Next steps">📖</button>
       <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)">🌳</button>
       <button class="header-btn cert-btn" id="certToggle" title="Upload certificate">📎</button>
-      <button class="header-btn" id="darkModeToggle" title="Toggle dark mode">🌙</button>
-      <button class="header-btn" id="printTreeBtn" title="Print tree">🖨️</button>
+      <button class="header-btn" id="darkModeToggle" title="Toggle dark mode" onclick="toggleDarkMode()">🌙</button>
+      <button class="header-btn" id="printTreeBtn" title="Print tree" onclick="openPrintDialog()">🖨️</button>
       <button class="header-btn" id="resetBtn" title="Reset tree">🔄</button>
     </div>
   </div>
@@ -3411,7 +3411,7 @@ function centerOnGen0() {
 setTimeout(() => centerOnGen0(), 150);
 
 // Dark mode toggle
-document.getElementById('darkModeToggle').addEventListener('click', function() {
+function toggleDarkMode() {
   const html = document.documentElement;
   const isDark = html.getAttribute('data-theme') === 'dark';
   if (isDark) {
@@ -3421,7 +3421,8 @@ document.getElementById('darkModeToggle').addEventListener('click', function() {
     html.setAttribute('data-theme', 'dark');
     localStorage.setItem('vaultedRootsTheme', 'dark');
   }
-});
+}
+document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
 
 // View as Poster button — opens heritage poster with current tree data
 // Explicitly save to localStorage before opening to avoid sync lag
@@ -3431,7 +3432,7 @@ document.getElementById('viewPosterBtn').addEventListener('click', () => {
 });
 
 // Print — ask user which format they want, then route accordingly
-document.getElementById('printTreeBtn').addEventListener('click', () => {
+function openPrintDialog() {
   closeDetail();
   const certPanel = document.getElementById('certPanel');
   if (certPanel) certPanel.classList.remove('open');
@@ -3503,7 +3504,8 @@ document.getElementById('printTreeBtn').addEventListener('click', () => {
 
   dlg.querySelector('#dlgCancel').addEventListener('click', cleanup);
   dlg.addEventListener('click', (e) => { if (e.target === dlg) cleanup(); });
-});
+}
+document.getElementById('printTreeBtn').addEventListener('click', openPrintDialog);
 </script>
 <style>
 @media (max-width: 480px) {
