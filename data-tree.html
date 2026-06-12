@@ -301,6 +301,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   height: 14px;
   min-height: 0;
   overflow: hidden;
+  box-sizing: border-box;
 }
 .person-card.minicard .name { font-size: 6px; letter-spacing: 0.1px; line-height: 1.1; }
 .person-card.minicard .years { display: none; }
@@ -1057,7 +1058,7 @@ function renderTree() {
   cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
 
   const topMap = new Map();
-  const rightmostFull = displayMax >= 5 ? displayMax - 1 : displayMax;
+  const rightmostFull = displayMax;
 
   let y = 10;
   gens[rightmostFull].forEach(p => {
@@ -3161,6 +3162,15 @@ async function loadSession(file) {
       }
     }
     renderTree();
+    const btn = document.getElementById('expandGenBtn');
+    const actualMax = Math.max(...people.map(p => p.gen));
+    if (visibleMaxGen >= actualMax) {
+      btn.textContent = 'All ' + (actualMax + 1) + ' generations visible';
+      btn.disabled = true;
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
+    }
     showToast('Loaded: ' + people.length + ' people' + (restoredCount > 0 ? ' (' + restoredCount + ' images)' : ''));
   } catch (err) {
     console.error('[LOAD]', err);
