@@ -3496,44 +3496,84 @@ function openPrintDialog() {
 
   dlg.querySelector('#dlgMulti').addEventListener('click', () => {
     cleanup();
-    // Show toast before print attempt
-    showToast('Preparing tree for printing...', 1500);
-    // Multi-page print — fit tree to page width, hide UI, trigger browser print
-    const originalZoom = zoom;
     const treeWrap = document.getElementById('treeWrap');
+    // Detect mobile / touch devices where window.print() is broken
+    const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || ('ontouchstart' in window && window.innerWidth < 1024);
 
-    // Step 1: set zoom to 1 and re-render so treeWidth/treeHeight reflect natural size
+    if (!isMobile) {
+      // Desktop path: native print dialog (works reliably)
+      showToast('Preparing tree for printing...', 1500);
+      const originalZoom = zoom;
+      zoom = 1;
+      renderTree();
+      const pageW = 1040;
+      const pageH = 720;
+      const scale = Math.max(0.05, Math.min(1, pageW / treeWidth, pageH / treeHeight));
+      document.documentElement.style.setProperty('--print-scale', scale);
+      let restored = false;
+      const restore = () => {
+        if (restored) return;
+        restored = true;
+        zoom = originalZoom;
+        renderTree();
+        document.documentElement.style.removeProperty('--print-scale');
+        window.removeEventListener('afterprint', restore);
+      };
+      window.addEventListener('afterprint', restore);
+      setTimeout(restore, 10000);
+      setTimeout(() => {
+        try { window.print(); } catch (e) {
+          showToast('Print not available. Please use your browser\'s Share menu.');
+          restore();
+        }
+      }, 400);
+      return;
+    }
+
+    // Mobile path: capture as high-res image download
+    showToast('Generating tree image...', 3000);
+    const originalZoom = zoom;
     zoom = 1;
     renderTree();
 
-    // Step 2: compute scale to fit landscape page
-    const pageW = 1040;
-    const pageH = 720;
-    const scale = Math.max(0.05, Math.min(1, pageW / treeWidth, pageH / treeHeight));
-
-    // Step 3: apply scale via CSS custom property on html (cascades to @media print)
-    document.documentElement.style.setProperty('--print-scale', scale);
-
-    // Step 4: print
-    let restored = false;
-    const restore = () => {
-      if (restored) return;
-      restored = true;
-      zoom = originalZoom;
-      renderTree();
-      document.documentElement.style.removeProperty('--print-scale');
-      window.removeEventListener('afterprint', restore);
+    // Dynamically load html2canvas if not already present
+    const captureAndDownload = () => {
+      html2canvas(treeWrap, { scale: 2, backgroundColor: '#f5eedc', useCORS: true, logging: false })
+        .then(canvas => {
+          canvas.toBlob(blob => {
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'family-tree.png';
+            document.body.appendChild(a);
+            a.click();
+            setTimeout(() => { URL.revokeObjectURL(url); a.remove(); }, 5000);
+            showToast('Image saved! Check your downloads.', 3000);
+          }, 'image/png');
+        })
+        .catch(err => {
+          console.error('[html2canvas]', err);
+          showToast('Unable to generate image. Use your browser\'s Share → Print → Save as PDF.');
+        })
+        .finally(() => {
+          zoom = originalZoom;
+          renderTree();
+        });
     };
-    window.addEventListener('afterprint', restore);
-    setTimeout(restore, 10000); // fallback safety
-    setTimeout(() => {
-      try {
-        window.print();
-      } catch (e) {
-        showToast('Print not supported on this device. Try the Heritage Poster option.');
-        restore();
-      }
-    }, 400);
+
+    if (typeof html2canvas !== 'undefined') {
+      captureAndDownload();
+    } else {
+      const script = document.createElement('script');
+      script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      script.onload = captureAndDownload;
+      script.onerror = () => {
+        showToast('Unable to load image generator. Use your browser\'s Share → Print → Save as PDF.');
+        zoom = originalZoom;
+        renderTree();
+      };
+      document.head.appendChild(script);
+    }
   });
 
   dlg.querySelector('#dlgCancel').addEventListener('click', cleanup);
