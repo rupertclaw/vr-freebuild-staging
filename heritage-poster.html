@@ -823,7 +823,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 
 <div class="detail-overlay" id="detailOverlay"></div>
 <div class="detail-panel" id="detailPanel">
-  <button class="detail-close" id="detailClose">×</button>
+  <button class="detail-close" id="detailClose" onclick="closeDetail()">×</button>
   <div class="detail-header">
     <div class="detail-name" id="detailName">Name</div>
     <div class="detail-years" id="detailYears">YYYY — YYYY</div>
@@ -859,25 +859,25 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 </div>
 
 <div class="zoom-controls">
-  <button class="zoom-btn" id="zoomIn">+</button>
+  <button class="zoom-btn" id="zoomIn" onclick="zoomIn()">+</button>
   <div class="zoom-level" id="zoomLevel">100%</div>
-  <button class="zoom-btn" id="zoomOut">−</button>
-  <button class="zoom-btn" id="zoomReset">↻</button>
+  <button class="zoom-btn" id="zoomOut" onclick="zoomOut()">−</button>
+  <button class="zoom-btn" id="zoomReset" onclick="zoomReset()">↻</button>
 </div>
 
 <div style="position:fixed;bottom:16px;left:16px;display:flex;gap:6px;z-index:200;">
-  <button class="poster-icon-btn" id="saveSessionBtn" title="Save session" style="background:#3e3225;color:#f0e6d2;">💾</button>
-  <button class="poster-icon-btn" id="loadSessionBtn" title="Load session" style="background:#3e3225;color:#f0e6d2;">📂</button>
-  <button class="poster-icon-btn" id="guideBtn" title="Next steps" style="background:#5a7a3a;color:#f0e6d2;">📖</button>
-  <button class="poster-icon-btn" id="backToTreeBtn" title="Back to tree" style="background:#3e5a8a;color:#f0e6d2;">🌳</button>
-  <button class="poster-icon-btn" id="printBtn" title="Print / PDF" style="background:#5a3a2a;color:#f0e6d2;">🖨️</button>
+  <button class="poster-icon-btn" id="saveSessionBtn" title="Save session" style="background:#3e3225;color:#f0e6d2;" onclick="hpSaveSession()">💾</button>
+  <button class="poster-icon-btn" id="loadSessionBtn" title="Load session" style="background:#3e3225;color:#f0e6d2;" onclick="hpLoadSession()">📂</button>
+  <button class="poster-icon-btn" id="guideBtn" title="Next steps" style="background:#5a7a3a;color:#f0e6d2;" onclick="openGuide()">📖</button>
+  <button class="poster-icon-btn" id="backToTreeBtn" title="Back to tree" style="background:#3e5a8a;color:#f0e6d2;" onclick="hpBackToTree()">🌳</button>
+  <button class="poster-icon-btn" id="printBtn" title="Print / PDF" style="background:#5a3a2a;color:#f0e6d2;" onclick="hpPrintPDF()">🖨️</button>
   <input type="file" id="sessionFileInput" accept=".familytree,.json,application/json" style="display:none;">
 </div>
 
 <!-- Cert upload panel -->
 <div class="cert-overlay" id="certOverlay"></div>
 <div class="cert-panel" id="certPanel">
-  <button class="cert-close" id="certClose">×</button>
+  <button class="cert-close" id="certClose" onclick="closeCertPanel()">×</button>
   <div class="cert-header">
     <h2>Scan Certificate</h2>
     <p>Snap a photo or upload an image</p>
@@ -919,7 +919,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <!-- Research Guidance panel -->
 <div class="cert-overlay" id="guideOverlay"></div>
 <div class="cert-panel" id="guidePanel">
-  <button class="cert-close" id="guideClose">×</button>
+  <button class="cert-close" id="guideClose" onclick="closeGuide()">×</button>
   <div class="cert-header">
     <h2>Research Guidance</h2>
     <p>What to get next and where to find it</p>
@@ -943,42 +943,47 @@ const gridToggle = document.getElementById('gridToggle');
 const poster = document.getElementById('poster');
 
 // Build grid
-for (let i = 0; i <= cols; i++) {
-  const x = i * cellW;
-  const line = document.createElement('div');
-  line.className = 'grid-line-v';
-  line.style.left = x + 'px';
-  gridOverlay.appendChild(line);
+if (gridOverlay && gridToggle) {
+  for (let i = 0; i <= cols; i++) {
+    const x = i * cellW;
+    const line = document.createElement('div');
+    line.className = 'grid-line-v';
+    line.style.left = x + 'px';
+    gridOverlay.appendChild(line);
 
-  if (i < cols && i % 5 === 0) {
-    const label = document.createElement('div');
-    label.className = 'grid-label-x';
-    label.style.left = (x + cellW/2) + 'px';
-    label.textContent = i;
-    gridOverlay.appendChild(label);
+    if (i < cols && i % 5 === 0) {
+      const label = document.createElement('div');
+      label.className = 'grid-label-x';
+      label.style.left = (x + cellW/2) + 'px';
+      label.textContent = i;
+      gridOverlay.appendChild(label);
+    }
   }
-}
 
-for (let i = 0; i <= rows; i++) {
-  const y = i * cellH;
-  const line = document.createElement('div');
-  line.className = 'grid-line-h';
-  line.style.top = y + 'px';
-  gridOverlay.appendChild(line);
+  for (let i = 0; i <= rows; i++) {
+    const y = i * cellH;
+    const line = document.createElement('div');
+    line.className = 'grid-line-h';
+    line.style.top = y + 'px';
+    gridOverlay.appendChild(line);
 
-  if (i < rows && i % 5 === 0) {
-    const label = document.createElement('div');
-    label.className = 'grid-label-y';
-    label.style.top = (y + cellH/2) + 'px';
-    label.textContent = i;
-    gridOverlay.appendChild(label);
+    if (i < rows && i % 5 === 0) {
+      const label = document.createElement('div');
+      label.className = 'grid-label-y';
+      label.style.top = (y + cellH/2) + 'px';
+      label.textContent = i;
+      gridOverlay.appendChild(label);
+    }
   }
-}
 
-gridToggle.addEventListener('click', () => {
-  gridOverlay.classList.toggle('active');
-  gridToggle.textContent = gridOverlay.classList.contains('active') ? 'Hide Grid' : 'Show Grid';
-});
+  gridToggle.addEventListener('click', () => {
+    gridOverlay.classList.toggle('active');
+    gridToggle.textContent = gridOverlay.classList.contains('active') ? 'Hide Grid' : 'Show Grid';
+  });
+} else {
+  // Grid elements missing from DOM: silently skip grid features
+  console.warn('[heritage-poster] gridOverlay or gridToggle not found in DOM; skipping grid features');
+}
 
 // Coordinate readout on hover
 const coordReadout = document.getElementById('coordReadout');
@@ -1005,13 +1010,17 @@ function zoomHandler(delta) {
   updateZoom();
 }
 
-document.getElementById('zoomIn').addEventListener('click', () => { zoomHandler(0.2); });
-document.getElementById('zoomOut').addEventListener('click', () => { zoomHandler(-0.2); });
-document.getElementById('zoomReset').addEventListener('click', () => { scale = 1; updateZoom(); });
+function zoomIn() { zoomHandler(0.2); }
+function zoomOut() { zoomHandler(-0.2); }
+function zoomReset() { scale = 1; updateZoom(); }
+
+document.getElementById('zoomIn').addEventListener('click', zoomIn);
+document.getElementById('zoomOut').addEventListener('click', zoomOut);
+document.getElementById('zoomReset').addEventListener('click', zoomReset);
 // Touch support for zoom buttons on mobile
-document.getElementById('zoomIn').addEventListener('touchstart', (e) => { e.preventDefault(); zoomHandler(0.2); }, {passive: false});
-document.getElementById('zoomOut').addEventListener('touchstart', (e) => { e.preventDefault(); zoomHandler(-0.2); }, {passive: false});
-document.getElementById('zoomReset').addEventListener('touchstart', (e) => { e.preventDefault(); scale = 1; updateZoom(); }, {passive: false});
+document.getElementById('zoomIn').addEventListener('touchstart', (e) => { e.preventDefault(); zoomIn(); }, {passive: false});
+document.getElementById('zoomOut').addEventListener('touchstart', (e) => { e.preventDefault(); zoomOut(); }, {passive: false});
+document.getElementById('zoomReset').addEventListener('touchstart', (e) => { e.preventDefault(); zoomReset(); }, {passive: false});
 
 // Pinch-to-zoom on the poster (for browsers where CSS zoom doesn't work)
 let pinchStartDist = 0;
@@ -1718,42 +1727,46 @@ async function importSession(file) {
   }
 }
 
-saveSessionBtn.addEventListener('click', exportSession);
-loadSessionBtn.addEventListener('click', () => sessionFileInput.click());
+function hpSaveSession() { exportSession(); }
+function hpLoadSession() { sessionFileInput.click(); }
+function hpBackToTree() { window.location.href = 'data-tree.html'; }
+function hpPrintPDF() {
+  const wasGridOn = gridOverlay && gridOverlay.style.display !== 'none';
+  const wasZoom = scale;
+  // Reset to clean state for print
+  scale = 1;
+  updateZoom();
+  if (gridOverlay) gridOverlay.style.display = 'none';
+  if (gridToggle) gridToggle.textContent = 'Show Grid';
+  // Small delay so the browser sees the clean layout
+  setTimeout(() => {
+    try {
+      window.print();
+    } catch (e) {
+      // Mobile Chrome often blocks print — silently ignore
+    }
+    // Restore after print dialog closes
+    setTimeout(() => {
+      scale = wasZoom;
+      updateZoom();
+      if (gridOverlay && wasGridOn) {
+        gridOverlay.style.display = '';
+        if (gridToggle) gridToggle.textContent = 'Hide Grid';
+      }
+    }, 100);
+  }, 50);
+}
+
+saveSessionBtn.addEventListener('click', hpSaveSession);
+loadSessionBtn.addEventListener('click', hpLoadSession);
 sessionFileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) importSession(file);
   sessionFileInput.value = '';
 });
 
-// Back to Tree button — navigates back to data-tree app
-document.getElementById('backToTreeBtn').addEventListener('click', () => {
-  window.location.href = 'data-tree.html';
-});
-
-// Print / PDF — reset zoom, hide grid, trigger browser print
-document.getElementById('printBtn').addEventListener('click', () => {
-  const wasGridOn = gridOverlay.style.display !== 'none';
-  const wasZoom = scale;
-  // Reset to clean state for print
-  scale = 1;
-  updateZoom();
-  gridOverlay.style.display = 'none';
-  gridToggle.textContent = 'Show Grid';
-  // Small delay so the browser sees the clean layout
-  setTimeout(() => {
-    window.print();
-    // Restore after print dialog closes
-    setTimeout(() => {
-      scale = wasZoom;
-      updateZoom();
-      if (wasGridOn) {
-        gridOverlay.style.display = '';
-        gridToggle.textContent = 'Hide Grid';
-      }
-    }, 100);
-  }, 50);
-});
+document.getElementById('backToTreeBtn').addEventListener('click', hpBackToTree);
+document.getElementById('printBtn').addEventListener('click', hpPrintPDF);
 
 certRetry.addEventListener('click', () => {
   if (pendingDocFile) {
@@ -3337,18 +3350,19 @@ const guideOverlay = document.getElementById('guideOverlay');
 const guideClose = document.getElementById('guideClose');
 const guideResults = document.getElementById('guideResults');
 
-guideBtn.addEventListener('click', () => {
+function openGuide() {
   guidePanel.classList.add('active');
   guideOverlay.classList.add('active');
   runGuidanceAnalysis();
-});
-guideClose.addEventListener('click', closeGuide);
-guideOverlay.addEventListener('click', closeGuide);
-
+}
 function closeGuide() {
   guidePanel.classList.remove('active');
   guideOverlay.classList.remove('active');
 }
+
+guideBtn.addEventListener('click', openGuide);
+guideClose.addEventListener('click', closeGuide);
+guideOverlay.addEventListener('click', closeGuide);
 
 function runGuidanceAnalysis() {
   guideResults.style.display = 'block';
