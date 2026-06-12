@@ -971,7 +971,7 @@ let zoom = 0.25;
 function colLeftForGen(g, maxGen) {
   if (g === 0) return CARD_W * 0.5;      // 65
   if (g === 1) return CARD_W * 0.75;     // 97.5
-  if (g === 2) return CARD_W * 1.0;       // 130
+  if (g === 2) return CARD_W * 1.5;       // 195 — shifted half a card right
 
   let pos = CARD_W; // gen 2 position
   for (let i = 3; i <= g; i++) {
@@ -990,7 +990,6 @@ function colLeftForGen(g, maxGen) {
       }
     }
   }
-  if (g === 3) pos += CARD_W / 2; // shift gen 3 half a card right
   return pos;
 }
 
