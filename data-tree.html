@@ -620,14 +620,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </select>
     </div>
     <div class="header-actions">
-      <button class="header-btn" id="saveBtn" title="Save session">💾</button>
-      <button class="header-btn" id="loadBtn" title="Load session">📂</button>
-      <button class="header-btn" id="nextStepsBtn" title="Next steps">📖</button>
-      <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)">🌳</button>
-      <button class="header-btn cert-btn" id="certToggle" title="Upload certificate">📎</button>
+      <button class="header-btn" id="saveBtn" title="Save session" onclick="saveSession()">💾</button>
+      <button class="header-btn" id="loadBtn" title="Load session" onclick="document.getElementById('loadFileInput').click()">📂</button>
+      <button class="header-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖</button>
+      <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)" onclick="openPoster()">🌳</button>
+      <button class="header-btn cert-btn" id="certToggle" title="Upload certificate" onclick="toggleCertPanel()">📎</button>
       <button class="header-btn" id="darkModeToggle" title="Toggle dark mode" onclick="toggleDarkMode()">🌙</button>
       <button class="header-btn" id="printTreeBtn" title="Print tree" onclick="openPrintDialog()">🖨️</button>
-      <button class="header-btn" id="resetBtn" title="Reset tree">🔄</button>
+      <button class="header-btn" id="resetBtn" title="Reset tree" onclick="doResetTree()">🔄</button>
     </div>
   </div>
 </div>
@@ -1482,18 +1482,15 @@ function saveDetail() {
 document.getElementById('detailClose').addEventListener('click', closeDetail);
 
 const certPanel = document.getElementById('certPanel');
-document.getElementById('certToggle').addEventListener('click', () => {
+function toggleCertPanel() {
   const isOpening = !certPanel.classList.contains('active');
   certPanel.classList.toggle('active');
   if (isOpening) {
     clearCertPanel();
     history.pushState({panel: 'cert'}, '');
-  } else {
-    if (certPanel.classList.contains('active')) {
-      /* just closed via toggle, no history action needed */
-    }
   }
-});
+}
+document.getElementById('certToggle').addEventListener('click', toggleCertPanel);
 document.getElementById('certClose').addEventListener('click', () => {
   certPanel.classList.remove('active');
   certPanel.classList.remove('has-results');
@@ -3182,7 +3179,7 @@ document.getElementById('loadBtn').addEventListener('click', () => document.getE
 document.getElementById('loadFileInput').addEventListener('change', (e) => {
   const file = e.target.files[0]; if (file) loadSession(file); e.target.value = '';
 });
-document.getElementById('resetBtn').addEventListener('click', () => {
+function doResetTree() {
   const dlg = document.getElementById('confirmDialog');
   dlg.style.display = 'flex';
   document.getElementById('confirmOk').onclick = () => {
@@ -3192,10 +3189,11 @@ document.getElementById('resetBtn').addEventListener('click', () => {
   document.getElementById('confirmCancel').onclick = () => {
     dlg.style.display = 'none';
   };
-});
+}
+document.getElementById('resetBtn').addEventListener('click', doResetTree);
 
 // Progressive expansion button
-document.getElementById('expandGenBtn').addEventListener('click', () => {
+function expandNextGen() {
   if (visibleMaxGen < 8) {
     visibleMaxGen++;
     renderTree();
@@ -3213,7 +3211,8 @@ document.getElementById('expandGenBtn').addEventListener('click', () => {
       sc.scrollTo({ left: wrap.scrollWidth, behavior: 'smooth' });
     }, 50);
   }
-});
+}
+document.getElementById('expandGenBtn').addEventListener('click', expandNextGen);
 
 document.getElementById('nextStepsBtn').addEventListener('click', openGuidancePanel);
 document.getElementById('guidanceClose').addEventListener('click', closeGuidancePanel);
@@ -3413,29 +3412,47 @@ setTimeout(() => centerOnGen0(), 150);
 // Dark mode toggle
 function toggleDarkMode() {
   const html = document.documentElement;
+  const btn = document.getElementById('darkModeToggle');
   const isDark = html.getAttribute('data-theme') === 'dark';
   if (isDark) {
     html.removeAttribute('data-theme');
     localStorage.setItem('vaultedRootsTheme', 'light');
+    if (btn) btn.textContent = '🌙';
   } else {
     html.setAttribute('data-theme', 'dark');
     localStorage.setItem('vaultedRootsTheme', 'dark');
+    if (btn) btn.textContent = '☀️';
   }
 }
 document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
+// Sync icon on page load
+(function() {
+  const btn = document.getElementById('darkModeToggle');
+  const saved = localStorage.getItem('vaultedRootsTheme');
+  if (saved === 'dark' && btn) btn.textContent = '☀️';
+  else if (saved === 'light' && btn) btn.textContent = '🌙';
+})();
 
 // View as Poster button — opens heritage poster with current tree data
 // Explicitly save to localStorage before opening to avoid sync lag
-document.getElementById('viewPosterBtn').addEventListener('click', () => {
+function openPoster() {
   localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
-  window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
-});
+  try {
+    const w = window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
+    if (!w || w.closed || typeof w.closed === 'undefined') {
+      location.href = 'heritage-poster.html?_t=' + Date.now();
+    }
+  } catch (e) {
+    location.href = 'heritage-poster.html?_t=' + Date.now();
+  }
+}
+document.getElementById('viewPosterBtn').addEventListener('click', openPoster);
 
 // Print — ask user which format they want, then route accordingly
 function openPrintDialog() {
   closeDetail();
   const certPanel = document.getElementById('certPanel');
-  if (certPanel) certPanel.classList.remove('open');
+  if (certPanel) certPanel.classList.remove('active');
 
   const personCount = people.length;
   const genCount = Math.max(...people.map(p => p.gen)) + 1;
@@ -3466,11 +3483,21 @@ function openPrintDialog() {
   dlg.querySelector('#dlgPoster').addEventListener('click', () => {
     cleanup();
     localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
-    window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
+    try {
+      const w = window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
+      if (!w || w.closed || typeof w.closed === 'undefined') {
+        // Popup blocked — fallback to same-tab
+        location.href = 'heritage-poster.html?_t=' + Date.now();
+      }
+    } catch (e) {
+      location.href = 'heritage-poster.html?_t=' + Date.now();
+    }
   });
 
   dlg.querySelector('#dlgMulti').addEventListener('click', () => {
     cleanup();
+    // Show toast before print attempt
+    showToast('Preparing tree for printing...', 1500);
     // Multi-page print — fit tree to page width, hide UI, trigger browser print
     const originalZoom = zoom;
     const treeWrap = document.getElementById('treeWrap');
@@ -3484,8 +3511,8 @@ function openPrintDialog() {
     const pageH = 720;
     const scale = Math.max(0.05, Math.min(1, pageW / treeWidth, pageH / treeHeight));
 
-    // Step 3: apply scale via CSS custom property (used by @media print)
-    treeWrap.style.setProperty('--print-scale', scale);
+    // Step 3: apply scale via CSS custom property on html (cascades to @media print)
+    document.documentElement.style.setProperty('--print-scale', scale);
 
     // Step 4: print
     let restored = false;
@@ -3494,12 +3521,19 @@ function openPrintDialog() {
       restored = true;
       zoom = originalZoom;
       renderTree();
-      treeWrap.style.removeProperty('--print-scale');
+      document.documentElement.style.removeProperty('--print-scale');
       window.removeEventListener('afterprint', restore);
     };
     window.addEventListener('afterprint', restore);
     setTimeout(restore, 10000); // fallback safety
-    setTimeout(() => window.print(), 150);
+    setTimeout(() => {
+      try {
+        window.print();
+      } catch (e) {
+        showToast('Print not supported on this device. Try the Heritage Poster option.');
+        restore();
+      }
+    }, 400);
   });
 
   dlg.querySelector('#dlgCancel').addEventListener('click', cleanup);
