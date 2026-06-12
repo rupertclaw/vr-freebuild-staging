@@ -1080,6 +1080,19 @@ function renderTree() {
     });
   }
 
+  // Position the newest (rightmost) generation if not already placed by cascade
+  if (displayMax > rightmostFull && gens[displayMax]) {
+    let y = 10;
+    gens[displayMax].forEach(p => {
+      if (topMap.has(p.id)) {
+        y = Math.max(y, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
+      } else {
+        topMap.set(p.id, y);
+        y += hMap.get(p.id) + GAP_Y;
+      }
+    });
+  }
+
   // Clamp: ensure no card goes above the padding edge (negative top)
   const minTop = Math.min(10, ...topMap.values());
   const topOffset = minTop < 0 ? -minTop + 10 : 0;
@@ -3303,7 +3316,7 @@ function backfillComputedFields() {
 }
 if (!autoRestore()) initDefaultData();
 backfillComputedFields();
-zoom = 0.25; // always start at 25%
+zoom = 0.70; // always start at 70%
 renderTree();
 document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
 
