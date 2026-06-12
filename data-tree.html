@@ -1080,13 +1080,17 @@ function renderTree() {
     });
   }
 
+  // Clamp: ensure no card goes above the padding edge (negative top)
+  const minTop = Math.min(10, ...topMap.values());
+  const topOffset = minTop < 0 ? -minTop + 10 : 0;
+
   cardEls.forEach((el, id) => {
-    el.style.top = (topMap.get(id) || 10) + 'px';
+    el.style.top = ((topMap.get(id) || 10) + topOffset) + 'px';
     el.style.opacity = '1';
   });
 
   treeWidth = colLeft[displayMax] + (displayMax >= 5 ? MINI_W : CARD_W) + 40;
-  treeHeight = Math.max(scroll.clientHeight, ...visiblePeople.map(p => (topMap.get(p.id) || 0) + hMap.get(p.id))) + 60;
+  treeHeight = Math.max(scroll.clientHeight, ...visiblePeople.map(p => ((topMap.get(p.id) || 0) + topOffset) + hMap.get(p.id))) + 60;
   wrap.style.width = treeWidth + 'px';
   wrap.style.height = treeHeight + 'px';
 
@@ -3299,6 +3303,7 @@ function backfillComputedFields() {
 }
 if (!autoRestore()) initDefaultData();
 backfillComputedFields();
+zoom = 0.25; // always start at 25%
 renderTree();
 document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
 
