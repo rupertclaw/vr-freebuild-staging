@@ -3192,7 +3192,7 @@ document.getElementById('expandGenBtn').addEventListener('click', () => {
     const btn = document.getElementById('expandGenBtn');
     const actualMax = Math.max(...people.map(p => p.gen));
     if (visibleMaxGen >= actualMax) {
-      btn.textContent = 'All ' + (actualMax + 1) + ' generations visible';
+      btn.textContent = 'Max ' + (actualMax + 1) + ' gens reached';
       btn.disabled = true;
     } else {
       btn.textContent = 'Reveal Next Generation';
@@ -3326,7 +3326,7 @@ document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
   const btn = document.getElementById('expandGenBtn');
   const actualMax = Math.max(...people.map(p => p.gen));
   if (visibleMaxGen >= actualMax) {
-    btn.textContent = 'All ' + (actualMax + 1) + ' generations visible';
+    btn.textContent = 'Max ' + (actualMax + 1) + ' gens reached';
     btn.disabled = true;
   } else {
     btn.textContent = 'Reveal Next Generation';
