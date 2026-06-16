@@ -3091,9 +3091,13 @@ function renderOnboardingGuide() {
     <p style="margin:0 0 8px;"><strong>Moving from Ancestry, FamilySearch, or MyHeritage?</strong></p>
     <ol style="margin:0;padding-left:18px;">
       <li><strong>Export as GEDCOM.</strong> On your current site, look for "Export" or "Download" and choose the GEDCOM format. This is the universal family tree format.</li>
-      <li><strong>Convert (optional).</strong> If you have a GEDCOM file, use a free online converter to turn it into JSON, or email it to us and we'll convert it for you.</li>
+      <li><strong>Convert right here.</strong> Tap the button below, select your <code>.ged</code> file, and Vaulted Roots will convert it to a <code>.familytree</code> file you can load immediately. Your file never leaves your device.</li>
       <li><strong>Load into Vaulted Roots.</strong> Tap the 📂 Load button and select your <code>.familytree</code> file. Your tree, names, dates, and documents will appear.</li>
     </ol>
+    <div style="margin:10px 0;text-align:center;">
+      <input type="file" id="gedcomFileInput" accept=".ged" style="display:none">
+      <button onclick="document.getElementById('gedcomFileInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Convert GEDCOM File</button>
+    </div>
     <p style="margin:8px 0 0;"><em>Tip: Start with what you know. Even a partial tree with 3-4 generations is enough to begin.</em></p>
   </div>
 </div>
@@ -3632,6 +3636,268 @@ function openPrintDialog() {
   dlg.addEventListener('click', (e) => { if (e.target === dlg) cleanup(); });
 }
 document.getElementById('printTreeBtn').addEventListener('click', openPrintDialog);
+
+// ═══════════════════════════════════════════════════════════════
+// GEDCOM IMPORT (client-side converter)
+// ═══════════════════════════════════════════════════════════════
+
+function parseGedcom(text) {
+  const lines = text.split(/\r?\n/);
+  const records = {};
+  let current = null;
+  let currentLevel0 = null;
+  let stack = [];
+
+  for (let raw of lines) {
+    raw = raw.trim();
+    if (!raw) continue;
+    // Parse level
+    const m = raw.match(/^(\d+)\s+(\S+)(?:\s+(.+))?$/);
+    if (!m) continue;
+    const level = parseInt(m[1]);
+    const tag = m[2];
+    let value = m[3] || '';
+
+    if (level === 0) {
+      // xref like @I1@ INDI or just 0 HEAD
+      let xref = null;
+      if (tag.startsWith('@') && tag.endsWith('@')) {
+        xref = tag;
+        // Next token is the actual tag
+        const vm = value.match(/^(\S+)(?:\s+(.+))?$/);
+        if (!vm) continue;
+        current = { xref: xref, tag: vm[1], data: {} };
+        records[xref] = current;
+        currentLevel0 = current;
+        stack = [current];
+        // If there's more data
+        if (vm[2]) current.data[vm[1]] = vm[2];
+      } else {
+        current = { tag: tag, data: {} };
+        currentLevel0 = current;
+        stack = [current];
+      }
+    } else if (level > 0 && currentLevel0) {
+      // Ensure stack is correct depth
+      while (stack.length > level) stack.pop();
+      const parent = stack[stack.length - 1];
+      if (!parent) continue;
+      let container = parent.data || parent;
+      // If value starts with @...@ it's a pointer
+      let child;
+      if (value.startsWith('@') && value.endsWith('@')) {
+        child = { tag: tag, pointer: value, data: {} };
+      } else {
+        child = { tag: tag, value: value, data: {} };
+      }
+      if (!container[tag]) container[tag] = [];
+      container[tag].push(child);
+      stack.push(child);
+    }
+  }
+
+  // Extract individuals
+  const indis = {};
+  const fams = {};
+  for (const [xref, rec] of Object.entries(records)) {
+    if (rec.tag === 'INDI') {
+      const nameArr = rec.data['NAME'] || [];
+      const name = nameArr[0]?.value || '';
+      const surname = name.replace(/.*\//, '').replace(/\/$/, '');
+      const given = name.replace(/\s*\/.*\//, '').trim();
+      const fullName = given + (surname ? ' ' + surname : '');
+      const birth = rec.data['BIRT']?.[0]?.data;
+      const death = rec.data['DEAT']?.[0]?.data;
+      const famc = rec.data['FAMC']?.[0]?.pointer;
+      const famsSpouse = rec.data['FAMS']?.map(f => f.pointer) || [];
+      indis[xref] = {
+        id: xref,
+        name: fullName || name,
+        givenName: given,
+        surname: surname,
+        birthDate: birth?.DATE?.[0]?.value || '',
+        birthPlace: birth?.PLAC?.[0]?.value || '',
+        deathDate: death?.DATE?.[0]?.value || '',
+        deathPlace: death?.PLAC?.[0]?.value || '',
+        famc: famc,
+        fams: famsSpouse,
+        sex: rec.data['SEX']?.[0]?.value || ''
+      };
+    } else if (rec.tag === 'FAM') {
+      const husb = rec.data['HUSB']?.[0]?.pointer;
+      const wife = rec.data['WIFE']?.[0]?.pointer;
+      const children = (rec.data['CHIL'] || []).map(c => c.pointer);
+      const marr = rec.data['MARR']?.[0]?.data;
+      fams[xref] = {
+        id: xref,
+        husb: husb,
+        wife: wife,
+        children: children,
+        marriageDate: marr?.DATE?.[0]?.value || ''
+      };
+    }
+  }
+
+  // Build tree: assign generations
+  // Find root: person with no FAMC (no parents)
+  const roots = Object.values(indis).filter(p => !p.famc);
+  // If multiple roots, pick the first one with children
+  const root = roots.find(p => p.fams.length > 0) || roots[0] || Object.values(indis)[0];
+  if (!root) return null;
+
+  const people = [];
+  let nextId = 1;
+  const xrefMap = {}; // gedcom xref -> our id
+
+  function addPerson(gedIndi, gen) {
+    if (xrefMap[gedIndi.id]) return xrefMap[gedIndi.id];
+    const id = nextId++;
+    xrefMap[gedIndi.id] = id;
+    let years = '?';
+    const bYear = (gedIndi.birthDate || '').match(/\d{4}/);
+    const dYear = (gedIndi.deathDate || '').match(/\d{4}/);
+    if (bYear && dYear) years = bYear[0] + ' \u2014 ' + dYear[0];
+    else if (bYear) years = 'b. ' + bYear[0];
+    const p = {
+      id: id,
+      name: gedIndi.name || 'Unknown',
+      fullName: gedIndi.name || '',
+      birthDate: gedIndi.birthDate || '',
+      deathDate: gedIndi.deathDate || '',
+      birthplace: gedIndi.birthPlace || '',
+      marriageDate: '',
+      maidenName: gedIndi.sex === 'F' ? gedIndi.surname : '',
+      spouseName: '',
+      occupation: '',
+      gen: gen,
+      years: years,
+      status: 'probable',
+      docs: [],
+      parents: [],
+      siblings: [],
+      children: [],
+      spouseId: null,
+      notes: ''
+    };
+    people.push(p);
+
+    // Add parents
+    if (gedIndi.famc && fams[gedIndi.famc]) {
+      const fam = fams[gedIndi.famc];
+      const father = fam.husb ? indis[fam.husb] : null;
+      const mother = fam.wife ? indis[fam.wife] : null;
+      if (father) {
+        const fid = addPerson(father, gen + 1);
+        p.parents.push(fid);
+      }
+      if (mother) {
+        const mid = addPerson(mother, gen + 1);
+        p.parents.push(mid);
+      }
+      // Add siblings from same family
+      for (const sibXref of fam.children) {
+        if (sibXref === gedIndi.id) continue;
+        const sib = indis[sibXref];
+        if (sib) {
+          // Add sibling name to this person
+          const sibName = sib.name || 'Unknown';
+          if (!p.siblings.includes(sibName)) p.siblings.push(sibName);
+        }
+      }
+    }
+
+    // Add spouse and children
+    for (const famXref of gedIndi.fams) {
+      const fam = fams[famXref];
+      if (!fam) continue;
+      const spouseXref = (fam.husb === gedIndi.id) ? fam.wife : fam.husb;
+      if (spouseXref && indis[spouseXref]) {
+        const spouse = indis[spouseXref];
+        const spouseId = xrefMap[spouseXref] || addPerson(spouse, gen);
+        p.spouseId = spouseId;
+        p.spouseName = spouse.name || '';
+        if (fam.marriageDate) p.marriageDate = fam.marriageDate;
+        const spousePerson = people.find(pp => pp.id === spouseId);
+        if (spousePerson) {
+          spousePerson.spouseId = id;
+          spousePerson.spouseName = p.name;
+        }
+        // Add children
+        for (const childXref of fam.children) {
+          const child = indis[childXref];
+          if (child) {
+            const childId = xrefMap[childXref] || addPerson(child, gen - 1);
+            if (!p.children.includes(childId)) p.children.push(childId);
+            const childPerson = people.find(pp => pp.id === childId);
+            if (childPerson) {
+              childPerson.parents = childPerson.parents.filter(pid => pid !== id);
+              childPerson.parents.push(id);
+            }
+          }
+        }
+      }
+    }
+
+    return id;
+  }
+
+  addPerson(root, 0);
+
+  // Mark root as "you"
+  const rootPerson = people.find(p => p.id === xrefMap[root.id]);
+  if (rootPerson) rootPerson.status = 'you';
+
+  // Second pass: fix parent links for children discovered via FAMC
+  for (const p of people) {
+    if (p.parents.length === 0 && p.famc && fams[p.famc]) {
+      const fam = fams[p.famc];
+      if (fam.husb && xrefMap[fam.husb]) p.parents.push(xrefMap[fam.husb]);
+      if (fam.wife && xrefMap[fam.wife]) p.parents.push(xrefMap[fam.wife]);
+    }
+  }
+
+  return { people: people, nextId: nextId };
+}
+
+function convertGedcomFile(file) {
+  const reader = new FileReader();
+  reader.onload = (e) => {
+    try {
+      const result = parseGedcom(e.target.result);
+      if (!result || result.people.length === 0) {
+        showToast('Could not parse GEDCOM file. Check the format.');
+        return;
+      }
+      const payload = {
+        version: 5,
+        exportedAt: new Date().toISOString(),
+        people: result.people,
+        nextId: result.nextId,
+        visibleMaxGen: Math.max(...result.people.map(p => p.gen))
+      };
+      const json = JSON.stringify(payload, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'vaultedroots_import_' + new Date().toISOString().slice(0, 10) + '.familytree';
+      a.click();
+      URL.revokeObjectURL(url);
+      showToast('Converted ' + result.people.length + ' people. Tap Load to open it.');
+    } catch (err) {
+      console.error('[GEDCOM]', err);
+      showToast('GEDCOM parse error: ' + err.message);
+    }
+  };
+  reader.onerror = () => showToast('Could not read file');
+  reader.readAsText(file);
+}
+
+document.getElementById('gedcomFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (file) convertGedcomFile(file);
+  e.target.value = '';
+});
 
 // Privacy splash page — show on first visit
 function showPrivacyModal() {
