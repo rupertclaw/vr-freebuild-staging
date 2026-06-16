@@ -623,6 +623,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn" id="saveBtn" title="Save session" onclick="saveSession()">💾</button>
       <button class="header-btn" id="loadBtn" title="Load session" onclick="document.getElementById('loadFileInput').click()">📂</button>
       <button class="header-btn" id="shareBtn" title="Share tree" onclick="shareTree()">📤</button>
+      <button class="header-btn" id="privacyBtn" title="Privacy &amp; data protection" onclick="showPrivacyModal()">🔒</button>
       <button class="header-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖</button>
       <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)" onclick="openPoster()">🌳</button>
       <button class="header-btn cert-btn" id="certToggle" title="Upload certificate" onclick="toggleCertPanel()">📎</button>
@@ -1306,6 +1307,7 @@ function openDetail(person) {
     <div style="margin-top:8px;text-align:center;display:flex;flex-direction:column;gap:8px;">
       <button id="attachDocBtn" style="background:#faf6ee;border:2px solid #4a6b4a;color:#2a4a2a;padding:8px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">📎 Attach Document to This Person</button>
       <button id="clearCardBtn" style="background:transparent;border:1px solid #5c2a2a;color:#5c2a2a;padding:6px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">↻ Clear Data from Card</button>
+      <button onclick="showPrivacyModal()" style="background:transparent;border:none;color:#6b5537;padding:4px;font-family:'Cormorant Garamond',serif;font-size:11px;cursor:pointer;text-decoration:underline;width:100%;">🔒 How we keep your data private</button>
     </div>
   `;
   detailPanel.classList.add('active');
@@ -3134,6 +3136,10 @@ function renderGuidanceResults({ suggestions, stats }) {
     } else {
       html += '<div class="guidance-empty"><div class="icon">🎉</div><div style="font-family: Cinzel Decorative,serif;font-size:16px;color:#5a7a3a;margin-bottom:8px;">Tree Complete!</div><div>All known ancestors have documents attached. Great work!</div></div>';
     }
+    html += '<div style="border-top:2px solid #c4b89a;margin-top:16px;padding-top:12px;">';
+    html += '<button onclick="showPrivacyModal()" style="width:100%;text-align:left;background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;padding:10px 12px;font-family:\'Cinzel Decorative\',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">';
+    html += '<span>🔒 Privacy &amp; Data Protection</span><span style="font-size:12px;">▶</span></button>';
+    html += '</div>';
     body.innerHTML = html;
     return;
   }
@@ -3152,6 +3158,10 @@ function renderGuidanceResults({ suggestions, stats }) {
     html += '<span class="cost-note">🛒 ' + s.type + ' cert: ' + s.cost + '</span>';
     html += '</div></div>';
   }
+  html += '<div style="border-top:2px solid #c4b89a;margin-top:16px;padding-top:12px;">';
+  html += '<button onclick="showPrivacyModal()" style="width:100%;text-align:left;background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;padding:10px 12px;font-family:\'Cinzel Decorative\',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">';
+  html += '<span>🔒 Privacy &amp; Data Protection</span><span style="font-size:12px;">▶</span></button>';
+  html += '</div>';
   body.innerHTML = html;
 }
 
