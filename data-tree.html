@@ -1177,7 +1177,7 @@ function drawLines() {
     if (!el || !f || !m) return;
     const fel = cardEls.get(f.id);
     const mel = cardEls.get(m.id);
-    if (!el || !fel || !mel) return;
+    if (!fel || !mel) return;
     const childW = (displayMax >= 5 && p.gen === displayMax) ? MINI_W : CARD_W;
     const cx = parseFloat(el.style.left) + childW;
     const cy = parseFloat(el.style.top) + hMap.get(p.id) / 2;
