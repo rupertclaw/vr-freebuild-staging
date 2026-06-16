@@ -772,6 +772,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 })();
 
 // ═══════════════════════════════════════════════════════════════
+// UTILITY: safe Math.max over arrays (prevents -Infinity from empty spread)
+// ═══════════════════════════════════════════════════════════════
+function maxGen(arr, key) { return arr.length ? Math.max(...arr.map(key)) : 0; }
+
+// ═══════════════════════════════════════════════════════════════
 // DEBUG LOG CAPTURE (for mobile troubleshooting)
 // ═══════════════════════════════════════════════════════════════
 const debugLogs = [];
@@ -1038,7 +1043,7 @@ function renderTree() {
   wrap.querySelectorAll('.person-card').forEach(el => el.remove());
   cardEls.clear();
 
-  const displayMax = Math.min(visibleMaxGen, Math.max(...people.map(p => p.gen)));
+  const displayMax = Math.min(visibleMaxGen, maxGen(people, p => p.gen));
   const visiblePeople = people.filter(p => p.gen <= displayMax);
   const gens = [];
   for (let g = 0; g <= displayMax; g++) {
@@ -1165,7 +1170,7 @@ function drawLines() {
   svg.setAttribute('width', treeWidth);
   svg.setAttribute('height', treeHeight);
   svg.innerHTML = '';
-  const displayMax = Math.min(visibleMaxGen, Math.max(...people.map(p => p.gen)));
+  const displayMax = Math.min(visibleMaxGen, maxGen(people, p => p.gen));
   const visiblePeople = people.filter(p => p.gen <= displayMax);
   const hMap = new Map();
   cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
@@ -2326,6 +2331,7 @@ function findPersonGenAware(name, opts) {
   }
 
   // Fall back: lowest-gen top-scoring match
+  if (topMatches.length === 0) return null;
   return topMatches.sort((a, b) => a.person.gen - b.person.gen)[0].person;
 }
 
@@ -3259,8 +3265,8 @@ async function loadSession(file) {
     const data = JSON.parse(text);
     if (!data.people) { showToast('Invalid session file'); return; }
     people = data.people;
-    nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
-    visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : Math.max(...people.map(p => p.gen));
+    nextId = data.nextId || maxGen(people, p => p.id) + 1;
+    visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
     // Restore inlined document images back into IndexedDB
     let restoredCount = 0;
     for (const person of people) {
@@ -3276,7 +3282,7 @@ async function loadSession(file) {
     }
     renderTree();
     const btn = document.getElementById('expandGenBtn');
-    const actualMax = Math.max(...people.map(p => p.gen));
+    const actualMax = maxGen(people, p => p.gen);
     if (visibleMaxGen >= actualMax) {
       btn.textContent = 'All ' + (actualMax + 1) + ' generations visible';
       btn.disabled = true;
@@ -3314,7 +3320,7 @@ function expandNextGen() {
     visibleMaxGen++;
     renderTree();
     const btn = document.getElementById('expandGenBtn');
-    const actualMax = Math.max(...people.map(p => p.gen));
+    const actualMax = maxGen(people, p => p.gen);
     if (visibleMaxGen >= actualMax) {
       btn.textContent = 'Max ' + (actualMax + 1) + ' gens reached';
       btn.disabled = true;
@@ -3344,7 +3350,7 @@ function autoRestore() {
     try {
       const data = JSON.parse(saved);
       if (data.people && data.people.length > 0) {
-        people = data.people; nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+        people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
         if (data.visibleMaxGen !== undefined) visibleMaxGen = data.visibleMaxGen;
         showToast('Restored ' + people.length + ' people from auto-save'); return true;
       }
@@ -3449,7 +3455,7 @@ document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
 // Update expand button text after render
 (function updateExpandBtn() {
   const btn = document.getElementById('expandGenBtn');
-  const actualMax = Math.max(...people.map(p => p.gen));
+  const actualMax = maxGen(people, p => p.gen);
   if (visibleMaxGen >= actualMax) {
     btn.textContent = 'Max ' + (actualMax + 1) + ' gens reached';
     btn.disabled = true;
@@ -3458,15 +3464,24 @@ document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
   }
 })();
 
-// Deferred listener: ambiguity modal cancel button (guarded: button lives in HTML after script block)
-const ambigCancelBtn = document.getElementById('ambigCancel');
-if (ambigCancelBtn) {
-  ambigCancelBtn.addEventListener('click', () => {
-    document.getElementById('ambigModal').style.display = 'none';
-    pendingAmbigTarget = null;
-    showToast('Cancelled — cert not applied');
-    updateExpandGenBtn();
-  });
+// Deferred listener: ambiguity modal cancel button (element lives in HTML after script block)
+// Use DOMContentLoaded to ensure the element exists before attaching
+function attachAmbigCancelListener() {
+  const btn = document.getElementById('ambigCancel');
+  if (btn && !btn._ambigListening) {
+    btn._ambigListening = true;
+    btn.addEventListener('click', () => {
+      document.getElementById('ambigModal').style.display = 'none';
+      pendingAmbigTarget = null;
+      showToast('Cancelled — cert not applied');
+      updateExpandGenBtn();
+    });
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', attachAmbigCancelListener);
+} else {
+  attachAmbigCancelListener();
 }
 
 // Mobile back button closes panels
@@ -3574,7 +3589,7 @@ function openPrintDialog() {
   if (certPanel) certPanel.classList.remove('active');
 
   const personCount = people.length;
-  const genCount = Math.max(...people.map(p => p.gen)) + 1;
+  const genCount = maxGen(people, p => p.gen) + 1;
 
   // Build a small inline dialog
   const dlg = document.createElement('div');
