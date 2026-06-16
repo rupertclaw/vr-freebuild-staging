@@ -1440,6 +1440,7 @@ function updateExpandGenBtn() {
     document.getElementById('certPanel')?.classList.contains('active') ||
     document.getElementById('detailPanel')?.classList.contains('active') ||
     document.getElementById('guidancePanel')?.classList.contains('active') ||
+    document.getElementById('privacyModal')?.style.display !== 'none' ||
     document.getElementById('printChoiceDlg') ||
     document.getElementById('ambigModal')?.style.display !== 'none';
   btn.style.display = anyPanelOpen ? 'none' : 'block';
