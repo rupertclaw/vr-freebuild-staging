@@ -3923,7 +3923,11 @@ document.getElementById('privacyModalOk').addEventListener('click', () => {
   updateExpandGenBtn();
 });
 if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
-  window.addEventListener('DOMContentLoaded', () => showPrivacyModal());
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => showPrivacyModal());
+  } else {
+    showPrivacyModal();
+  }
 }
 
 // Share tree functionality
@@ -3975,7 +3979,7 @@ function shareTree() {
     <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#2a1f10;line-height:1.6;margin-bottom:16px;">
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">📱</div>
-        <div><strong>Stays on your phone.</strong> Everything is saved locally in your browser. No servers, no cloud, no accounts.</div>
+        <div><strong>Stays on your device.</strong> Everything is saved locally in your browser. No servers, no cloud, no accounts.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">🔐</div>
