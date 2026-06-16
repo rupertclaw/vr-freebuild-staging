@@ -622,6 +622,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     <div class="header-actions">
       <button class="header-btn" id="saveBtn" title="Save session" onclick="saveSession()">💾</button>
       <button class="header-btn" id="loadBtn" title="Load session" onclick="document.getElementById('loadFileInput').click()">📂</button>
+      <button class="header-btn" id="shareBtn" title="Share tree" onclick="shareTree()">📤</button>
       <button class="header-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖</button>
       <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)" onclick="openPoster()">🌳</button>
       <button class="header-btn cert-btn" id="certToggle" title="Upload certificate" onclick="toggleCertPanel()">📎</button>
@@ -3071,7 +3072,7 @@ function renderOnboardingGuide() {
     <ol style="margin:0;padding-left:18px;">
       <li><strong>Start with yourself.</strong> Tap the rightmost card (top of the tree), enter your name and birth date, set status to "You".</li>
       <li><strong>Add your parents.</strong> Tap the two cards to the left of yours (Generation 1). Fill in father and mother. The tree holds 9 generations total.</li>
-      <li><strong>Upload certificates for speed.</strong> Use the 📜 Certificate panel (top-left button). Snap a photo of a birth, marriage, or death certificate and tap "Apply to Tree" to autofill cards.</li>
+      <li><strong>Upload certificates for speed.</strong> Use the 📎 Certificate panel (top-left button). Snap a photo of a birth, marriage, or death certificate and tap "Apply to Tree" to autofill cards.</li>
       <li><strong>Or fill manually.</strong> Tap any card to open the detail panel. Add names, dates, maiden names, occupation, and change status (Confirmed, Probable, Brick Wall, Unknown Parent).</li>
       <li><strong>Attach documents.</strong> In a person's detail panel, tap "Attach Document" to link a certificate image directly to that person.</li>
       <li><strong>Track siblings.</strong> In the detail panel, add brothers and sisters under the Siblings section. A 🍃 leaf appears on cards with siblings recorded.</li>
@@ -3079,6 +3080,36 @@ function renderOnboardingGuide() {
       <li><strong>Get suggestions.</strong> This panel shows which certificates to find next, with direct links to source records and cost estimates.</li>
       <li><strong>Zoom and pan.</strong> Pinch to zoom in/out on the tree. Drag to scroll. Use the zoom controls (top right) for precise adjustment.</li>
     </ol>
+  </div>
+</div>
+<div id="importGuide" style="background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;margin-bottom:10px;overflow:hidden;">
+  <button onclick="document.getElementById('importBody').style.display=(document.getElementById('importBody').style.display==='none'?'block':'none');this.querySelector('span').style.transform=(document.getElementById('importBody').style.display==='none'?'rotate(0deg)':'rotate(180deg)')" style="width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-family:'Cinzel Decorative',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+    Import from Another Site
+    <span style="display:inline-block;transition:transform 0.2s;font-size:12px;">▼</span>
+  </button>
+  <div id="importBody" style="display:none;padding:0 12px 12px;font-size:12px;color:#3e2b1a;line-height:1.6;">
+    <p style="margin:0 0 8px;"><strong>Moving from Ancestry, FamilySearch, or MyHeritage?</strong></p>
+    <ol style="margin:0;padding-left:18px;">
+      <li><strong>Export as GEDCOM.</strong> On your current site, look for "Export" or "Download" and choose the GEDCOM format. This is the universal family tree format.</li>
+      <li><strong>Convert (optional).</strong> If you have a GEDCOM file, use a free online converter to turn it into JSON, or email it to us and we'll convert it for you.</li>
+      <li><strong>Load into Vaulted Roots.</strong> Tap the 📂 Load button and select your <code>.familytree</code> file. Your tree, names, dates, and documents will appear.</li>
+    </ol>
+    <p style="margin:8px 0 0;"><em>Tip: Start with what you know. Even a partial tree with 3-4 generations is enough to begin.</em></p>
+  </div>
+</div>
+<div id="shareGuide" style="background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;margin-bottom:10px;overflow:hidden;">
+  <button onclick="document.getElementById('shareBody').style.display=(document.getElementById('shareBody').style.display==='none'?'block':'none');this.querySelector('span').style.transform=(document.getElementById('shareBody').style.display==='none'?'rotate(0deg)':'rotate(180deg)')" style="width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-family:'Cinzel Decorative',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+    Share Your Tree
+    <span style="display:inline-block;transition:transform 0.2s;font-size:12px;">▼</span>
+  </button>
+  <div id="shareBody" style="display:none;padding:0 12px 12px;font-size:12px;color:#3e2b1a;line-height:1.6;">
+    <p style="margin:0 0 8px;"><strong>Share with family or collaborators:</strong></p>
+    <ol style="margin:0;padding-left:18px;">
+      <li><strong>Export the file.</strong> Tap the 📤 Share button in the header. This downloads a <code>.familytree</code> file containing your entire tree and documents.</li>
+      <li><strong>Send the file.</strong> Email it, WhatsApp it, or save it to Dropbox/iCloud. The file is self-contained and works offline.</li>
+      <li><strong>Recipient opens it.</strong> They visit Vaulted Roots and tap 📂 Load, then select your file. The tree appears instantly.</li>
+    </ol>
+    <p style="margin:8px 0 0;"><em>Your data stays private. You only share what you choose to send. No central server, no passwords.</em></p>
   </div>
 </div>`;
 }
@@ -3601,6 +3632,36 @@ function openPrintDialog() {
   dlg.addEventListener('click', (e) => { if (e.target === dlg) cleanup(); });
 }
 document.getElementById('printTreeBtn').addEventListener('click', openPrintDialog);
+
+// Privacy splash page — show on first visit
+function showPrivacyModal() {
+  const modal = document.getElementById('privacyModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  updateExpandGenBtn();
+}
+document.getElementById('privacyModalOk').addEventListener('click', () => {
+  document.getElementById('privacyModal').style.display = 'none';
+  localStorage.setItem('vaultedRootsPrivacySeen', '1');
+  updateExpandGenBtn();
+});
+if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
+  setTimeout(() => showPrivacyModal(), 500);
+}
+
+// Share tree functionality
+function shareTree() {
+  const payload = { version: 5, exportedAt: new Date().toISOString(), people: people, nextId: nextId, visibleMaxGen: visibleMaxGen };
+  const json = JSON.stringify(payload, null, 2);
+  const blob = new Blob([json], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'vaultedroots_tree_' + new Date().toISOString().slice(0, 10) + '.familytree';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Tree file ready to share');
+}
 </script>
 <style>
 @media (max-width: 480px) {
@@ -3623,6 +3684,43 @@ document.getElementById('printTreeBtn').addEventListener('click', openPrintDialo
     <div style="display:flex;gap:10px;justify-content:center;">
       <button id="ambigCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
     </div>
+  </div>
+</div>
+
+<!-- Privacy Splash Modal (first visit) -->
+<div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:48px;margin-bottom:8px;">🔒</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:4px;">Your Data. Your Device.</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b5537;">How Vaulted Roots protects your family history</div>
+    </div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#2a1f10;line-height:1.6;margin-bottom:16px;">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+        <div style="font-size:20px;flex-shrink:0;">📱</div>
+        <div><strong>Stays on your phone.</strong> Everything is saved locally in your browser. No servers, no cloud, no accounts.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+        <div style="font-size:20px;flex-shrink:0;">🔐</div>
+        <div><strong>Encrypted storage.</strong> Your tree is encrypted in your device's own storage. We cannot read it, even if we wanted to.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+        <div style="font-size:20px;flex-shrink:0;">🚫</div>
+        <div><strong>No tracking.</strong> No analytics, no cookies, no ads. We don't know who you are or what you're researching.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+        <div style="font-size:20px;flex-shrink:0;">📤</div>
+        <div><strong>You control sharing.</strong> Export your tree as a file to share with family. Only send it to people you trust.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="font-size:20px;flex-shrink:0;">🗑️</div>
+        <div><strong>Delete anytime.</strong> Clear your browser data and your tree is gone forever. No backups we keep, no hidden copies.</div>
+      </div>
+    </div>
+    <div style="background:#e8f0e0;border:1px solid #6b8e5a;border-radius:6px;padding:10px;margin-bottom:16px;font-family:'Cormorant Garamond',serif;font-size:12px;color:#3a5a2a;">
+      <strong>Compare:</strong> Ancestry and FamilySearch upload your family data to their servers and use it to train AI. Vaulted Roots never does this.
+    </div>
+    <button id="privacyModalOk" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;">I understand — Start Researching</button>
   </div>
 </div>
 </body>
