@@ -1490,7 +1490,6 @@ function toggleCertPanel() {
     history.pushState({panel: 'cert'}, '');
   }
 }
-document.getElementById('certToggle').addEventListener('click', toggleCertPanel);
 document.getElementById('certClose').addEventListener('click', () => {
   certPanel.classList.remove('active');
   certPanel.classList.remove('has-results');
