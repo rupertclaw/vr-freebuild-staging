@@ -3923,7 +3923,7 @@ document.getElementById('privacyModalOk').addEventListener('click', () => {
   updateExpandGenBtn();
 });
 if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
-  setTimeout(() => showPrivacyModal(), 500);
+  window.addEventListener('DOMContentLoaded', () => showPrivacyModal());
 }
 
 // Share tree functionality
