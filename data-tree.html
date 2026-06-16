@@ -1174,6 +1174,7 @@ function drawLines() {
     const el = cardEls.get(p.id);
     const f = visiblePeople.find(x => x.id === p.parents[0]);
     const m = visiblePeople.find(x => x.id === p.parents[1]);
+    if (!el || !f || !m) return;
     const fel = cardEls.get(f.id);
     const mel = cardEls.get(m.id);
     if (!el || !fel || !mel) return;
