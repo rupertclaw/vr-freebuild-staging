@@ -3160,6 +3160,18 @@ function renderOnboardingGuide() {
 </div>`;
 }
 
+function attachGedcomListener() {
+  const input = document.getElementById('gedcomFileInput');
+  if (input && !input._gedcomListening) {
+    input._gedcomListening = true;
+    input.addEventListener('change', (e) => {
+      const file = e.target.files[0];
+      if (file) convertGedcomFile(file);
+      e.target.value = '';
+    });
+  }
+}
+
 function renderGuidanceResults({ suggestions, stats }) {
   const body = document.getElementById('guidanceBody');
   let html = renderOnboardingGuide();
@@ -3180,6 +3192,7 @@ function renderGuidanceResults({ suggestions, stats }) {
     html += '<span>🔒 Privacy &amp; Data Protection</span><span style="font-size:12px;">▶</span></button>';
     html += '</div>';
     body.innerHTML = html;
+    attachGedcomListener();
     return;
   }
 
@@ -3202,6 +3215,7 @@ function renderGuidanceResults({ suggestions, stats }) {
   html += '<span>🔒 Privacy &amp; Data Protection</span><span style="font-size:12px;">▶</span></button>';
   html += '</div>';
   body.innerHTML = html;
+  attachGedcomListener();
 }
 
 async function getDocById(docId) {
