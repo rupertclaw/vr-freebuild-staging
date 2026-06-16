@@ -1308,6 +1308,7 @@ function openDetail(person) {
     </div>
   `;
   detailPanel.classList.add('active');
+  updateExpandGenBtn();
   // Wire up Clear Card button (exists in detailBody innerHTML)
   const clearCardBtnEl = document.getElementById('clearCardBtn');
   if (clearCardBtnEl) {
@@ -1429,6 +1430,18 @@ function closeDetail() {
   }
   detailPanel.classList.remove('active');
   selectedPersonId = null;
+  updateExpandGenBtn();
+}
+function updateExpandGenBtn() {
+  const btn = document.getElementById('expandGenBtn');
+  if (!btn) return;
+  const anyPanelOpen =
+    document.getElementById('certPanel')?.classList.contains('active') ||
+    document.getElementById('detailPanel')?.classList.contains('active') ||
+    document.getElementById('guidancePanel')?.classList.contains('active') ||
+    document.getElementById('printChoiceDlg') ||
+    document.getElementById('ambigModal')?.style.display !== 'none';
+  btn.style.display = anyPanelOpen ? 'none' : 'block';
 }
 function clearCertPanel() {
   lastTranscription = null;
@@ -1489,11 +1502,13 @@ function toggleCertPanel() {
     clearCertPanel();
     history.pushState({panel: 'cert'}, '');
   }
+  updateExpandGenBtn();
 }
 document.getElementById('certClose').addEventListener('click', () => {
   certPanel.classList.remove('active');
   certPanel.classList.remove('has-results');
   history.back();
+  updateExpandGenBtn();
 });
 document.getElementById('certUploadArea').addEventListener('click', () => document.getElementById('certFileInput').click());
 document.getElementById('certFileBtn').addEventListener('click', () => document.getElementById('certFileInput').click());
@@ -1960,6 +1975,7 @@ function openAmbigDialog(entry, type, docImage, targetName, matches, certKey) {
     options.appendChild(btn);
   });
   modal.style.display = 'flex';
+  updateExpandGenBtn();
 }
 
 function normalizeName(name) {
@@ -2850,10 +2866,12 @@ function openGuidancePanel() {
   panel.classList.add('active');
   history.pushState({panel: 'guidance'}, '');
   runGuidanceAnalysis();
+  updateExpandGenBtn();
 }
 
 function closeGuidancePanel() {
   document.getElementById('guidancePanel').classList.remove('active');
+  updateExpandGenBtn();
 }
 
 function runGuidanceAnalysis() {
@@ -3348,6 +3366,7 @@ if (ambigCancelBtn) {
     document.getElementById('ambigModal').style.display = 'none';
     pendingAmbigTarget = null;
     showToast('Cancelled — cert not applied');
+    updateExpandGenBtn();
   });
 }
 
@@ -3382,12 +3401,14 @@ function showCountryModal() {
     modalSel.appendChild(opt);
   });
   modal.style.display = 'flex';
+  updateExpandGenBtn();
 }
 document.getElementById('countryModalOk').addEventListener('click', () => {
   const val = document.getElementById('countryModalSelect').value;
   if (!val) return;
   setCountry(val);
   document.getElementById('countryModal').style.display = 'none';
+  updateExpandGenBtn();
 });
 if (!getCountry()) {
   setTimeout(() => showCountryModal(), 800);
@@ -3476,8 +3497,9 @@ function openPrintDialog() {
     </div>
   `;
   document.body.appendChild(dlg);
+  updateExpandGenBtn();
 
-  const cleanup = () => { dlg.remove(); };
+  const cleanup = () => { dlg.remove(); updateExpandGenBtn(); };
 
   dlg.querySelector('#dlgPoster').addEventListener('click', () => {
     cleanup();
