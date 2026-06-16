@@ -3943,7 +3943,7 @@ function convertGedcomFile(file) {
   reader.readAsText(file);
 }
 
-document.getElementById('gedcomFileInput').addEventListener('change', (e) => {
+document.getElementById('gedcomFileInput')?.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) convertGedcomFile(file);
   e.target.value = '';
