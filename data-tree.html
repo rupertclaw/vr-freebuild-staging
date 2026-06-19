@@ -3316,23 +3316,25 @@ document.getElementById('resetBtn').addEventListener('click', doResetTree);
 
 // Progressive expansion button
 function expandNextGen() {
-  if (visibleMaxGen < 8) {
-    visibleMaxGen++;
-    renderTree();
-    const btn = document.getElementById('expandGenBtn');
-    const actualMax = maxGen(people, p => p.gen);
-    if (visibleMaxGen >= actualMax) {
-      btn.textContent = 'Max ' + (actualMax + 1) + ' gens reached';
-      btn.disabled = true;
-    } else {
-      btn.textContent = 'Reveal Next Generation';
-    }
-    // Auto-scroll right to reveal new gen
-    setTimeout(() => {
-      const sc = document.getElementById('treeScroll');
-      sc.scrollTo({ left: wrap.scrollWidth, behavior: 'smooth' });
-    }, 50);
+  const actualMax = maxGen(people, p => p.gen);
+  if (visibleMaxGen >= actualMax) return;
+  visibleMaxGen++;
+  if (visibleMaxGen >= 12) {
+    showToast('Large tree — may be slow to scroll at this depth');
   }
+  renderTree();
+  const btn = document.getElementById('expandGenBtn');
+  if (visibleMaxGen >= actualMax) {
+    btn.textContent = 'Max ' + (actualMax + 1) + ' gens reached';
+    btn.disabled = true;
+  } else {
+    btn.textContent = 'Reveal Next Generation';
+  }
+  // Auto-scroll right to reveal new gen
+  setTimeout(() => {
+    const sc = document.getElementById('treeScroll');
+    sc.scrollTo({ left: wrap.scrollWidth, behavior: 'smooth' });
+  }, 50);
 }
 document.getElementById('expandGenBtn').addEventListener('click', expandNextGen);
 
