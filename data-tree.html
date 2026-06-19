@@ -1344,6 +1344,12 @@ function openDetail(person) {
       </div>
       <div id="d_siblingList" style="display:flex;flex-direction:column;gap:4px;"></div>
     </div>
+    ${(!person.parents || person.parents.length < 2) ? `
+    <div class="detail-field">
+      <button id="addParentsBtn" style="background:#faf6ee;border:2px solid #8a7a5a;color:#4a3a22;padding:8px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">➕ Add Parents</button>
+      <p style="font-size:11px;color:#6b5537;margin-top:4px;">Creates blank father and mother slots at Generation ${person.gen + 1}</p>
+    </div>
+    ` : ''}
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
       <button class="save-btn" onclick="saveDetail()">Save Changes</button>
@@ -1376,6 +1382,13 @@ function openDetail(person) {
       showToast('Select a certificate image to attach to ' + person.name);
       document.getElementById('certFileInput').value = '';
       document.getElementById('certFileInput').click();
+    });
+  }
+  // Wire up Add Parents button
+  const addParentsBtn = document.getElementById('addParentsBtn');
+  if (addParentsBtn) {
+    addParentsBtn.addEventListener('click', () => {
+      addParentsForPerson(person);
     });
   }
   // Wire up country source buttons
@@ -2484,6 +2497,19 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
       const mother = nextGen[2 * childIdx + 1];
       if (father && mother) child.parents = [father.id, mother.id];
     }
+    // If still no parents, create them dynamically
+    if (!child.parents || child.parents.length < 2) {
+      const parentGen = child.gen + 1;
+      const father = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+      const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+      father.spouseId = mother.id;
+      mother.spouseId = father.id;
+      father.spouseName = mother.name;
+      mother.spouseName = father.name;
+      people.push(father);
+      people.push(mother);
+      child.parents = [father.id, mother.id];
+    }
   }
 
   if (child.parents && child.parents.length >= 2) {
@@ -3371,6 +3397,26 @@ function showToast(msg, duration) {
   document.body.appendChild(el);
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
   setTimeout(() => el.remove(), duration + 500);
+}
+
+function addParentsForPerson(person) {
+  if (!person) return;
+  if (person.parents && person.parents.length >= 2) {
+    showToast('This person already has parents');
+    return;
+  }
+  const parentGen = person.gen + 1;
+  const father = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+  const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+  father.spouseId = mother.id;
+  mother.spouseId = father.id;
+  father.spouseName = mother.name;
+  mother.spouseName = father.name;
+  people.push(father);
+  people.push(mother);
+  person.parents = [father.id, mother.id];
+  renderTree();
+  showToast('Added parents for ' + person.name + ' (Gen ' + parentGen + ')');
 }
 
 function clearCard() {
