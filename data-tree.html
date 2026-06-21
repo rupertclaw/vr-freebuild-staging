@@ -1139,6 +1139,27 @@ function renderTree() {
     });
   }
 
+  // Fallback: vertically stack any cards that the cascade missed
+  // (happens when dynamically adding parents beyond the original tree)
+  for (let g = rightmostFull; g >= 0; g--) {
+    if (!gens[g]) continue;
+    const unplaced = gens[g].filter(p => !topMap.has(p.id));
+    if (unplaced.length === 0) continue;
+
+    // Find an anchor: stack below the last placed card in this generation
+    let anchorY = 10;
+    const placed = gens[g].filter(p => topMap.has(p.id));
+    if (placed.length > 0) {
+      const lastPlaced = placed[placed.length - 1];
+      anchorY = topMap.get(lastPlaced.id) + hMap.get(lastPlaced.id) + GAP_Y * 3;
+    }
+
+    for (const p of unplaced) {
+      topMap.set(p.id, anchorY);
+      anchorY += hMap.get(p.id) + GAP_Y;
+    }
+  }
+
   // Clamp: ensure no card goes above the padding edge (negative top)
   const minTop = Math.min(10, ...topMap.values());
   const topOffset = minTop < 0 ? -minTop + 10 : 0;
