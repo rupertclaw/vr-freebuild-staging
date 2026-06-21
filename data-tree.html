@@ -3158,21 +3158,22 @@ function renderOnboardingGuide() {
 </div>
 <div id="importGuide" style="background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;margin-bottom:10px;overflow:hidden;">
   <button onclick="document.getElementById('importBody').style.display=(document.getElementById('importBody').style.display==='none'?'block':'none');this.querySelector('span').style.transform=(document.getElementById('importBody').style.display==='none'?'rotate(0deg)':'rotate(180deg)')" style="width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-family:'Cinzel Decorative',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-    Import from Another Site
+    Import & Export GEDCOM
     <span style="display:inline-block;transition:transform 0.2s;font-size:12px;">▼</span>
   </button>
   <div id="importBody" style="display:none;padding:0 12px 12px;font-size:12px;color:#3e2b1a;line-height:1.6;">
-    <p style="margin:0 0 8px;"><strong>Moving from Ancestry, FamilySearch, or MyHeritage?</strong></p>
+    <p style="margin:0 0 8px;"><strong>Moving to or from another genealogy site?</strong> GEDCOM is the universal family tree format. Import from Ancestry, FamilySearch, or MyHeritage, or export your tree to take anywhere.</p>
     <ol style="margin:0;padding-left:18px;">
       <li><strong>Export as GEDCOM.</strong> On your current site, look for "Export" or "Download" and choose the GEDCOM format. This is the universal family tree format.</li>
       <li><strong>Convert right here.</strong> Tap the button below, select your <code>.ged</code> file, and Vaulted Roots will convert it to a <code>.familytree</code> file you can load immediately. Your file never leaves your device.</li>
       <li><strong>Load into Vaulted Roots.</strong> Tap the 📂 Load button and select your <code>.familytree</code> file. Your tree, names, dates, and documents will appear.</li>
     </ol>
-    <div style="margin:10px 0;text-align:center;">
+    <div style="margin:10px 0;text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <input type="file" id="gedcomFileInput" accept=".ged" style="display:none">
-      <button onclick="document.getElementById('gedcomFileInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Convert GEDCOM File</button>
+      <button onclick="document.getElementById('gedcomFileInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
+      <button onclick="exportGedcom()" style="padding:10px 16px;border:2px solid #4a5a8a;border-radius:4px;background:#4a5a8a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">📤 Export GEDCOM</button>
     </div>
-    <p style="margin:8px 0 0;"><em>Tip: Start with what you know. Even a partial tree with 3-4 generations is enough to begin.</em></p>
+    <p style="margin:8px 0 0;"><em>Export creates a standard <code>.ged</code> file that any genealogy software can read. Your data never leaves your device.</em></p>
   </div>
 </div>
 <div id="shareGuide" style="background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;margin-bottom:10px;overflow:hidden;">
@@ -4097,6 +4098,198 @@ function shareTree() {
   a.click();
   URL.revokeObjectURL(url);
   showToast('Tree file ready to share');
+}
+
+// GEDCOM EXPORT (client-side, privacy-first)
+function formatGedcomDate(dateStr) {
+  if (!dateStr) return '';
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  // Try YYYY-MM-DD
+  let m = dateStr.match(/(\d{4})-(\d{1,2})-(\d{1,2})/);
+  if (m) return parseInt(m[3]) + ' ' + months[parseInt(m[2]) - 1] + ' ' + m[1];
+  // Try "15 March 1865" or "15 Mar 1865"
+  m = dateStr.match(/(\d{1,2})\s+([A-Za-z]{3,})\s+(\d{4})/);
+  if (m) {
+    const monthIdx = months.findIndex(mo => mo === m[2].substring(0,3).toUpperCase());
+    if (monthIdx >= 0) return parseInt(m[1]) + ' ' + months[monthIdx] + ' ' + m[3];
+  }
+  // Try "March 1865" or "Mar 1865"
+  m = dateStr.match(/([A-Za-z]{3,})\s+(\d{4})/);
+  if (m) {
+    const monthIdx = months.findIndex(mo => mo === m[1].substring(0,3).toUpperCase());
+    if (monthIdx >= 0) return months[monthIdx] + ' ' + m[2];
+  }
+  // Just a year
+  m = dateStr.match(/(\d{4})/);
+  if (m) return m[1];
+  return dateStr;
+}
+
+function inferSex(person) {
+  // If maidenName is set, likely female
+  if (person.maidenName) return 'F';
+  // Check parent position: fathers are always parents[0], mothers parents[1]
+  let asFather = false, asMother = false;
+  for (const p of people) {
+    if (p.parents && p.parents.length >= 2) {
+      if (p.parents[0] === person.id) asFather = true;
+      if (p.parents[1] === person.id) asMother = true;
+    }
+  }
+  if (asFather && !asMother) return 'M';
+  if (asMother && !asFather) return 'F';
+  // Check GEDCOM import data if it left a sex field
+  if (person.sex) return person.sex;
+  return '';
+}
+
+function exportGedcom() {
+  // Filter out blank/placeholder cards
+  const realPeople = people.filter(p => p.name && p.name !== 'Name' && p.status !== 'blank');
+  if (realPeople.length === 0) {
+    showToast('No people to export. Add some names first.');
+    return;
+  }
+
+  // Map our IDs to GEDCOM xrefs
+  const idMap = {};
+  let indiCount = 0;
+  for (const p of realPeople) {
+    indiCount++;
+    idMap[p.id] = '@I' + indiCount + '@';
+  }
+
+  // Build family records: unique parent pairs
+  const famMap = {};
+  let famCount = 0;
+  const personFams = {};
+  const personFamc = {};
+
+  for (const p of realPeople) {
+    if (p.parents && p.parents.length === 2) {
+      const fatherId = p.parents[0];
+      const motherId = p.parents[1];
+      if (!idMap[fatherId] || !idMap[motherId]) continue;
+      const key = fatherId + '_' + motherId;
+      if (!famMap[key]) {
+        famCount++;
+        famMap[key] = '@F' + famCount + '@';
+      }
+      const famXref = famMap[key];
+      personFamc[p.id] = famXref;
+      if (!personFams[fatherId]) personFams[fatherId] = [];
+      if (!personFams[fatherId].includes(famXref)) personFams[fatherId].push(famXref);
+      if (!personFams[motherId]) personFams[motherId] = [];
+      if (!personFams[motherId].includes(famXref)) personFams[motherId].push(famXref);
+    }
+  }
+
+  const lines = [];
+  // Header
+  lines.push('0 HEAD');
+  lines.push('1 SOUR Vaulted Roots');
+  lines.push('2 NAME Vaulted Roots Family Tree Builder');
+  lines.push('2 VERS 1.0');
+  lines.push('1 DEST ANY');
+  const now = new Date();
+  const months = ['JAN','FEB','MAR','APR','MAY','JUN','JUL','AUG','SEP','OCT','NOV','DEC'];
+  lines.push('1 DATE ' + now.getDate() + ' ' + months[now.getMonth()] + ' ' + now.getFullYear());
+  lines.push('1 CHAR UTF-8');
+  lines.push('1 GEDC');
+  lines.push('2 VERS 5.5.1');
+  lines.push('2 FORM LINEAGE-LINKED');
+
+  // Individual records
+  for (const p of realPeople) {
+    lines.push('0 ' + idMap[p.id] + ' INDI');
+
+    // Name: Given /Surname/
+    let given = '', surname = '';
+    if (p.maidenName) {
+      surname = p.maidenName;
+      given = p.name.replace(p.maidenName, '').replace(/\s+/g, ' ').trim();
+    } else {
+      const parts = (p.fullName || p.name || '').trim().split(/\s+/);
+      if (parts.length > 1) {
+        surname = parts[parts.length - 1];
+        given = parts.slice(0, -1).join(' ');
+      } else {
+        given = p.name || '';
+      }
+    }
+    lines.push('1 NAME ' + given + ' /' + surname + '/');
+
+    // Sex
+    const sex = inferSex(p);
+    if (sex) lines.push('1 SEX ' + sex);
+
+    // Birth
+    if (p.birthDate || p.birthplace) {
+      lines.push('1 BIRT');
+      if (p.birthDate) lines.push('2 DATE ' + formatGedcomDate(p.birthDate));
+      if (p.birthplace) lines.push('2 PLAC ' + p.birthplace);
+    }
+
+    // Death
+    if (p.deathDate) {
+      lines.push('1 DEAT');
+      lines.push('2 DATE ' + formatGedcomDate(p.deathDate));
+    }
+
+    // Occupation
+    if (p.occupation) lines.push('1 OCCU ' + p.occupation);
+
+    // Notes
+    if (p.notes) {
+      const noteLines = p.notes.split('\n');
+      lines.push('1 NOTE ' + noteLines[0]);
+      for (let i = 1; i < noteLines.length; i++) {
+        lines.push('2 CONT ' + noteLines[i]);
+      }
+    }
+
+    // FAMC
+    if (personFamc[p.id]) lines.push('1 FAMC ' + personFamc[p.id]);
+
+    // FAMS
+    if (personFams[p.id]) {
+      for (const famXref of personFams[p.id]) lines.push('1 FAMS ' + famXref);
+    }
+  }
+
+  // Family records
+  for (const [key, famXref] of Object.entries(famMap)) {
+    const [fatherId, motherId] = key.split('_').map(Number);
+    lines.push('0 ' + famXref + ' FAM');
+    if (idMap[fatherId]) lines.push('1 HUSB ' + idMap[fatherId]);
+    if (idMap[motherId]) lines.push('1 WIFE ' + idMap[motherId]);
+
+    // Marriage date (from either parent)
+    const father = people.find(x => x.id === fatherId);
+    const mother = people.find(x => x.id === motherId);
+    const marrDate = (father && father.marriageDate) || (mother && mother.marriageDate);
+    if (marrDate) {
+      lines.push('1 MARR');
+      lines.push('2 DATE ' + formatGedcomDate(marrDate));
+    }
+
+    // Children
+    for (const p of realPeople) {
+      if (personFamc[p.id] === famXref) lines.push('1 CHIL ' + idMap[p.id]);
+    }
+  }
+
+  lines.push('0 TRLR');
+
+  const gedcom = lines.join('\n');
+  const blob = new Blob([gedcom], { type: 'text/plain;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'vaultedroots_export_' + new Date().toISOString().slice(0, 10) + '.ged';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('GEDCOM exported: ' + realPeople.length + ' people, ' + famCount + ' families');
 }
 </script>
 <style>
