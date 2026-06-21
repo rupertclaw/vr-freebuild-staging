@@ -3415,8 +3415,43 @@ function addParentsForPerson(person) {
   people.push(father);
   people.push(mother);
   person.parents = [father.id, mother.id];
+
+  // Auto-reveal the new generation so parents are visible
+  let didExpand = false;
+  if (parentGen > visibleMaxGen) {
+    visibleMaxGen = parentGen;
+    didExpand = true;
+  }
+
   renderTree();
-  showToast('Added parents for ' + person.name + ' (Gen ' + parentGen + ')');
+
+  // Update expand button state
+  const btn = document.getElementById('expandGenBtn');
+  if (btn) {
+    const actualMax = maxGen(people, p => p.gen);
+    if (visibleMaxGen >= actualMax) {
+      btn.textContent = 'Max ' + (actualMax + 1) + ' gens reached';
+      btn.disabled = true;
+    } else {
+      btn.disabled = false;
+      btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
+    }
+  }
+
+  // Auto-scroll to the new parents and open father for editing
+  setTimeout(() => {
+    const fel = cardEls.get(father.id);
+    if (fel) {
+      const sc = document.getElementById('treeScroll');
+      if (sc) {
+        const targetLeft = parseFloat(fel.style.left) * zoom - sc.clientWidth * 0.3;
+        sc.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
+      }
+      openDetail(father);
+    }
+  }, 100);
+
+  showToast('Added parents for ' + person.name + ' (Gen ' + parentGen + ')' + (didExpand ? ' — revealed' : ''));
 }
 
 function clearCard() {
