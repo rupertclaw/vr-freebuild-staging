@@ -1103,14 +1103,77 @@ function renderTree() {
   cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
 
   const topMap = new Map();
-  const rightmostFull = displayMax;
 
+  // Determine the "rightmost full" generation — the last generation with enough
+  // cards to serve as a layout anchor. If the user added parents beyond the
+  // original tree, we anchor on the original rightmost generation (gen 8) so
+  // the cascade works for all lower generations, then we cascade forward for
+  // the sparse new generations.
+  let rightmostFull = displayMax;
+  while (rightmostFull > 0) {
+    const count = gens[rightmostFull] ? gens[rightmostFull].length : 0;
+    const typicalCount = Math.pow(2, rightmostFull);
+    // If this generation has less than half the typical cards, it's probably
+    // a sparse dynamically-added generation. Step back.
+    if (count < typicalCount * 0.5) {
+      rightmostFull--;
+    } else {
+      break;
+    }
+  }
+
+  // Place the rightmost FULL generation as a neat vertical column
   let y = 10;
-  gens[rightmostFull].forEach(p => {
-    topMap.set(p.id, y);
-    y += hMap.get(p.id) + GAP_Y;
-  });
+  if (rightmostFull < displayMax) {
+    // We're anchoring on an earlier generation. First, place all gens
+    // beyond rightmostFull. They cascade forward from their children.
+    // We must go UP (rightmostFull+1 → displayMax) so each generation's
+    // children in the next-lower generation are already placed.
+    for (let g = rightmostFull + 1; g <= displayMax; g++) {
+      if (!gens[g]) continue;
+      let nextY = 10;
+      gens[g].forEach(p => {
+        // Find this person's children at the NEXT generation (closer to rightmostFull)
+        const children = visiblePeople.filter(child =>
+          child.parents && child.parents.includes(p.id)
+        );
+        if (children.length > 0) {
+          let totalCenter = 0;
+          let validChildren = 0;
+          children.forEach(child => {
+            const cy = topMap.get(child.id);
+            const ch = hMap.get(child.id);
+            if (cy !== undefined) {
+              totalCenter += cy + ch / 2;
+              validChildren++;
+            }
+          });
+          if (validChildren > 0) {
+            const avgCenter = totalCenter / validChildren;
+            topMap.set(p.id, avgCenter - hMap.get(p.id) / 2);
+          } else {
+            topMap.set(p.id, nextY);
+            nextY += hMap.get(p.id) + GAP_Y;
+          }
+        } else {
+          // No children: just stack below previous
+          topMap.set(p.id, nextY);
+          nextY += hMap.get(p.id) + GAP_Y;
+        }
+      });
+    }
+  }
 
+  // Place the rightmostFull generation as a neat column
+  y = 10;
+  if (gens[rightmostFull]) {
+    gens[rightmostFull].forEach(p => {
+      topMap.set(p.id, y);
+      y += hMap.get(p.id) + GAP_Y;
+    });
+  }
+
+  // Cascade backwards from rightmostFull-1 down to 0
   for (let g = rightmostFull - 1; g >= 0; g--) {
     if (!gens[g]) continue;
     gens[g].forEach(p => {
@@ -1124,40 +1187,6 @@ function renderTree() {
       const midCenter = (fy + fh/2 + my + mh/2) / 2;
       topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
     });
-  }
-
-  // Position the newest (rightmost) generation if not already placed by cascade
-  if (displayMax > rightmostFull && gens[displayMax]) {
-    let y = 10;
-    gens[displayMax].forEach(p => {
-      if (topMap.has(p.id)) {
-        y = Math.max(y, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
-      } else {
-        topMap.set(p.id, y);
-        y += hMap.get(p.id) + GAP_Y;
-      }
-    });
-  }
-
-  // Fallback: vertically stack any cards that the cascade missed
-  // (happens when dynamically adding parents beyond the original tree)
-  for (let g = rightmostFull; g >= 0; g--) {
-    if (!gens[g]) continue;
-    const unplaced = gens[g].filter(p => !topMap.has(p.id));
-    if (unplaced.length === 0) continue;
-
-    // Find an anchor: stack below the last placed card in this generation
-    let anchorY = 10;
-    const placed = gens[g].filter(p => topMap.has(p.id));
-    if (placed.length > 0) {
-      const lastPlaced = placed[placed.length - 1];
-      anchorY = topMap.get(lastPlaced.id) + hMap.get(lastPlaced.id) + GAP_Y * 3;
-    }
-
-    for (const p of unplaced) {
-      topMap.set(p.id, anchorY);
-      anchorY += hMap.get(p.id) + GAP_Y;
-    }
   }
 
   // Clamp: ensure no card goes above the padding edge (negative top)
