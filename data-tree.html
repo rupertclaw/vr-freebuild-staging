@@ -97,6 +97,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   display: flex; flex-direction: column;
   justify-content: space-between;
   padding: 6px 14px; z-index: 300;
+  overflow: visible;
 }
 .header-top {
   display: flex; align-items: center; justify-content: space-between;
@@ -1268,6 +1269,15 @@ function syncHeaderHeight() {
   if (detailPanel) { detailPanel.style.top = h + 'px'; detailPanel.style.bottom = '0px'; detailPanel.style.height = 'auto'; }
 }
 window.addEventListener('resize', syncHeaderHeight);
+
+// ResizeObserver: catches header height changes from button wrapping,
+// font loading, and orientation changes that resize/timeout miss.
+if (typeof ResizeObserver !== 'undefined') {
+  const headerEl = document.querySelector('.header');
+  if (headerEl) {
+    new ResizeObserver(() => syncHeaderHeight()).observe(headerEl);
+  }
+}
 
 // Call after every renderTree
 const originalRenderTree = renderTree;
