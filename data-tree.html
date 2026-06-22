@@ -140,7 +140,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   padding-top: 6px; border-top: 1px solid rgba(255,248,225,0.08);
   margin-top: 4px;
   gap: 6px;
-  padding-right: 96px;
 }
 .header-actions {
   display: flex; align-items: center; gap: 6px;
@@ -160,7 +159,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .header-actions { gap: 2px; }
   .header-left-group { gap: 3px; }
   .tree-scroll { top: 160px; }
-  .header-top, .header-bottom { padding-right: 70px; }
+  .header-top { padding-right: 70px; }
   .zoom-controls span { font-size: 11px; min-width: 36px; }
 }
 @media (max-width: 600px) {
@@ -610,6 +609,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   <div class="header-bottom">
     <div class="header-left-group">
       <div class="zoom-controls">
+        <button class="header-btn zoom-btn" id="backBtn" title="Go back" onclick="window.history.back()">⬅️</button>
         <button class="header-btn zoom-btn" id="zoomOut" title="Zoom out">−</button>
         <span id="zoomLevel">100%</span>
         <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
@@ -621,7 +621,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     </div>
     <div class="header-actions">
       <button class="header-btn" id="saveBtn" title="Save session" onclick="saveSession()">💾</button>
-      <button class="header-btn" id="loadBtn" title="Load session" onclick="document.getElementById('loadFileInput').click()">📂</button>
+      <button class="header-btn" id="loadBtn" title="Load session">📂</button>
       <button class="header-btn" id="shareBtn" title="Share tree" onclick="shareTree()">📤</button>
       <button class="header-btn" id="privacyBtn" title="Privacy &amp; data protection" onclick="showPrivacyModal()">🔒</button>
       <button class="header-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖</button>
@@ -1210,7 +1210,13 @@ function renderTree() {
   document.getElementById('statConfirmed').textContent = visiblePeople.filter(p => p.status === 'confirmed' || p.status === 'you').length;
   document.getElementById('statWalls').textContent = visiblePeople.filter(p => p.status === 'brickwall').length;
 
+  adjustTreeScrollTop();
   drawLines();
+}
+
+function adjustTreeScrollTop() {
+  const headerH = document.querySelector('.header').offsetHeight;
+  document.getElementById('treeScroll').style.top = headerH + 'px';
 }
 
 function drawLines() {
