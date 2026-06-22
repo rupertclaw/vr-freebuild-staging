@@ -163,7 +163,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .header-bottom { flex-direction: column; align-items: stretch; }
   .zoom-controls span { font-size: 11px; min-width: 36px; }
 }
-@media (max-width: 600px) {
+@media (max-width: 600px) and (min-width: 381px) {
   .header-btn { width: 34px; height: 34px; font-size: 17px; }
   .country-select { padding: 5px 7px; font-size: 12px; min-width: 95px; }
 }
@@ -3365,7 +3365,7 @@ async function loadSession(file) {
     const btn = document.getElementById('expandGenBtn');
     const actualMax = maxGen(people, p => p.gen);
     if (visibleMaxGen >= actualMax) {
-      btn.textContent = 'All ' + (actualMax + 1) + ' generations visible';
+      btn.textContent = 'All visible — tap any person to add parents';
       btn.disabled = true;
     } else {
       btn.disabled = false;
@@ -3588,6 +3588,9 @@ if (!autoRestore()) initDefaultData();
 backfillComputedFields();
 zoom = 0.70; // always start at 70%
 renderTree();
+// Ensure syncHeaderHeight catches flexbox layout after initial render
+setTimeout(syncHeaderHeight, 50);
+setTimeout(syncHeaderHeight, 200);
 document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
 
 // Update expand button text after render
