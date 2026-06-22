@@ -1106,9 +1106,9 @@ function renderTree() {
 
   // Determine the "rightmost full" generation — the last generation with enough
   // cards to serve as a layout anchor. If the user added parents beyond the
-  // original tree, we anchor on the original rightmost generation (gen 8) so
-  // the cascade works for all lower generations, then we cascade forward for
-  // the sparse new generations.
+  // original tree, we anchor on the original rightmost generation so the
+  // backwards cascade works for all lower generations, then cascade forward
+  // for the sparse new generations.
   let rightmostFull = displayMax;
   while (rightmostFull > 0) {
     const count = gens[rightmostFull] ? gens[rightmostFull].length : 0;
@@ -1122,18 +1122,41 @@ function renderTree() {
     }
   }
 
-  // Place the rightmost FULL generation as a neat vertical column
+  // STEP 1: Place the rightmost FULL generation as a neat vertical column.
+  // This is the anchor generation — everything else positions relative to it.
   let y = 10;
+  if (gens[rightmostFull]) {
+    gens[rightmostFull].forEach(p => {
+      topMap.set(p.id, y);
+      y += hMap.get(p.id) + GAP_Y;
+    });
+  }
+
+  // STEP 2: Cascade backwards from rightmostFull-1 down to 0.
+  // Each card centers itself between its two parents in the next generation.
+  for (let g = rightmostFull - 1; g >= 0; g--) {
+    if (!gens[g]) continue;
+    gens[g].forEach(p => {
+      if (!p.parents || p.parents.length < 2) return;
+      const father = visiblePeople.find(x => x.id === p.parents[0]);
+      const mother = visiblePeople.find(x => x.id === p.parents[1]);
+      if (!father || !mother) return;
+      const fy = topMap.get(father.id), my = topMap.get(mother.id);
+      if (fy === undefined || my === undefined) return;
+      const fh = hMap.get(father.id), mh = hMap.get(mother.id);
+      const midCenter = (fy + fh/2 + my + mh/2) / 2;
+      topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
+    });
+  }
+
+  // STEP 3: Cascade forwards from rightmostFull+1 up to displayMax.
+  // Each new ancestor positions itself by averaging its children's centers.
+  // This runs AFTER step 1 so gen 8 (and any already-placed gens) are in topMap.
   if (rightmostFull < displayMax) {
-    // We're anchoring on an earlier generation. First, place all gens
-    // beyond rightmostFull. They cascade forward from their children.
-    // We must go UP (rightmostFull+1 → displayMax) so each generation's
-    // children in the next-lower generation are already placed.
     for (let g = rightmostFull + 1; g <= displayMax; g++) {
       if (!gens[g]) continue;
       let nextY = 10;
       gens[g].forEach(p => {
-        // Find this person's children at the NEXT generation (closer to rightmostFull)
         const children = visiblePeople.filter(child =>
           child.parents && child.parents.includes(p.id)
         );
@@ -1156,37 +1179,11 @@ function renderTree() {
             nextY += hMap.get(p.id) + GAP_Y;
           }
         } else {
-          // No children: just stack below previous
           topMap.set(p.id, nextY);
           nextY += hMap.get(p.id) + GAP_Y;
         }
       });
     }
-  }
-
-  // Place the rightmostFull generation as a neat column
-  y = 10;
-  if (gens[rightmostFull]) {
-    gens[rightmostFull].forEach(p => {
-      topMap.set(p.id, y);
-      y += hMap.get(p.id) + GAP_Y;
-    });
-  }
-
-  // Cascade backwards from rightmostFull-1 down to 0
-  for (let g = rightmostFull - 1; g >= 0; g--) {
-    if (!gens[g]) continue;
-    gens[g].forEach(p => {
-      if (!p.parents || p.parents.length < 2) return;
-      const father = visiblePeople.find(x => x.id === p.parents[0]);
-      const mother = visiblePeople.find(x => x.id === p.parents[1]);
-      if (!father || !mother) return;
-      const fy = topMap.get(father.id), my = topMap.get(mother.id);
-      if (fy === undefined || my === undefined) return;
-      const fh = hMap.get(father.id), mh = hMap.get(mother.id);
-      const midCenter = (fy + fh/2 + my + mh/2) / 2;
-      topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
-    });
   }
 
   // Clamp: ensure no card goes above the padding edge (negative top)
