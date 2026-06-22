@@ -859,13 +859,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 </div>
 
 <div class="zoom-controls">
+  <button class="zoom-btn" id="backBtn" onclick="window.history.back()" title="Go back">⬅️</button>
   <button class="zoom-btn" id="zoomIn" onclick="zoomIn()">+</button>
   <div class="zoom-level" id="zoomLevel">100%</div>
   <button class="zoom-btn" id="zoomOut" onclick="zoomOut()">−</button>
   <button class="zoom-btn" id="zoomReset" onclick="zoomReset()">↻</button>
 </div>
 
-<div style="position:fixed;bottom:16px;left:16px;display:flex;gap:6px;z-index:200;">
+<div style="position:fixed;bottom:16px;right:16px;display:flex;gap:6px;z-index:200;">
   <button class="poster-icon-btn" id="saveSessionBtn" title="Save session" style="background:#3e3225;color:#f0e6d2;" onclick="hpSaveSession()">💾</button>
   <button class="poster-icon-btn" id="loadSessionBtn" title="Load session" style="background:#3e3225;color:#f0e6d2;" onclick="hpLoadSession()">📂</button>
   <button class="poster-icon-btn" id="guideBtn" title="Next steps" style="background:#5a7a3a;color:#f0e6d2;" onclick="openGuide()">📖</button>
