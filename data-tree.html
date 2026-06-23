@@ -274,6 +274,47 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .doc-badge.bc { background: #dcfce7; color: #166534; }
 .doc-badge.mc { background: #dbeafe; color: #1e40af; }
 .doc-badge.dc { background: #fee2e2; color: #991b1b; }
+.doc-badge.photo { background: #fef3c7; color: #92400e; }
+.doc-badge.article { background: #f3e8ff; color: #6b21a8; }
+.doc-badge.other { background: #e5e7eb; color: #374151; }
+
+/* Document gallery in detail panel */
+.doc-gallery { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+.doc-item {
+  background: #fff; border: 2px solid #8a7a5a; border-radius: 6px;
+  padding: 8px; cursor: pointer; transition: border-color 0.15s;
+  position: relative; text-align: center;
+}
+.doc-item:hover { border-color: #4a3a22; }
+.doc-item .doc-thumb {
+  width: 100%; height: 56px; background: #f0e8d8; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center; font-size: 22px;
+  margin-bottom: 4px; overflow: hidden;
+}
+.doc-item .doc-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.doc-item .doc-title { font-size: 10px; color: #2a1f10; font-weight: 600; margin-bottom: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.doc-item .doc-meta { font-size: 9px; color: #6b5537; }
+.doc-item .doc-verified { position: absolute; top: 3px; right: 4px; font-size: 10px; }
+
+/* Add document options */
+.doc-add-options { display: flex; gap: 6px; }
+.doc-add-btn {
+  flex: 1; display: flex; flex-direction: column; align-items: center; gap: 2px;
+  padding: 8px 4px; border: 2px dashed #8a7a5a; border-radius: 6px;
+  background: transparent; cursor: pointer; transition: all 0.15s;
+  font-family: 'Cormorant Garamond', serif;
+}
+.doc-add-btn:hover { border-color: #4a3a22; background: #f0e8d8; }
+.doc-add-btn .icon { font-size: 18px; }
+.doc-add-btn .lbl { font-size: 10px; color: #2a1f10; font-weight: 600; text-align: center; }
+
+/* Inline document form */
+.doc-form-section {
+  background: #fff; border: 2px solid #8a7a5a; border-radius: 6px;
+  padding: 12px; margin-top: 8px;
+}
+.doc-form-section .form-title { font-family: 'Cinzel Decorative', serif; font-size: 11px; color: #3e2b1a; margin-bottom: 8px; }
+
 
 .person-card.confirmed { border-left: 4px solid #22c55e; }
 .person-card.probable { border-left: 4px solid #f59e0b; }
@@ -432,9 +473,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .detail-body { padding: 16px; }
 .detail-field { margin-bottom: 12px; }
 .detail-field label { display: block; font-size: 10px; color: #6b5537; text-transform: uppercase; margin-bottom: 3px; font-weight: 600; }
-.detail-field input, .detail-field textarea {
+.detail-field input, .detail-field textarea, .detail-field select {
   width: 100%; padding: 8px; border: 1px solid #8a7a5a; border-radius: 4px;
   background: #fff; font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #2a1f10;
+  box-sizing: border-box;
 }
 .detail-field textarea { min-height: 60px; resize: vertical; }
 .detail-actions { display: flex; gap: 10px; margin-top: 16px; padding: 12px 0 16px 0; border-top: 1px solid #c4b89a; position: sticky; bottom: 0; background: #f5eedc; z-index: 10; }
@@ -1392,7 +1434,49 @@ function openDetail(person) {
     </div>
     <div class="detail-field"><label>Notes</label><textarea id="d_notes">${person.notes}</textarea></div>
     <div class="detail-field"><label>Documents (<span id="docCount">${person.docs.length}</span>)</label>
-      <div id="docThumbs" style="display:flex;flex-wrap:wrap;gap:6px;">${person.docs.length ? '<em style="font-size:12px;color:#6b5537;">Loading...</em>' : '<em style="font-size:12px;color:#6b5537;">No documents</em>'}</div>
+      <div id="docThumbs" class="doc-gallery">${person.docs.length ? '<em style="font-size:12px;color:#6b5537;">Loading...</em>' : '<em style="font-size:12px;color:#6b5537;">No documents</em>'}</div>
+    </div>
+    <div class="detail-field">
+      <label>Add Document</label>
+      <div class="doc-add-options" id="docAddOptions">
+        <button class="doc-add-btn" id="daUploadBtn" type="button"><span class="icon">📤</span><span class="lbl">Upload File</span></button>
+        <button class="doc-add-btn" id="daScanBtn" type="button"><span class="icon">📷</span><span class="lbl">Scan Cert</span></button>
+        <button class="doc-add-btn" id="daManualBtn" type="button"><span class="icon">⌨️</span><span class="lbl">Type In</span></button>
+      </div>
+      <div class="doc-form-section" id="daUploadForm" style="display:none;">
+        <div class="form-title">📤 Upload File</div>
+        <div class="detail-field" style="margin-bottom:8px;"><label>Select File</label><input type="file" id="daUploadFile" accept="image/*,.pdf"></div>
+        <div id="daUploadPreview" style="display:none;margin-bottom:8px;">
+          <div class="doc-thumb" style="height:100px;"><img id="daUploadPreviewImg" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" src="" alt=""></div>
+          <div style="font-size:11px;color:#6b5537;margin-top:4px;"><span id="daUploadFileName">file.jpg</span> · <span id="daUploadFileSize" style="color:#166534;font-weight:600;"></span></div>
+        </div>
+        <div class="detail-field" style="margin-bottom:8px;"><label>Document Type</label><select id="daUploadType"><option value="photo">Photo</option><option value="article">News Article</option><option value="bc">Birth Certificate</option><option value="mc">Marriage Certificate</option><option value="dc">Death Certificate</option><option value="other">Other</option></select></div>
+        <div class="detail-field" style="margin-bottom:8px;"><label>Title (optional)</label><input type="text" id="daUploadTitle" placeholder="e.g. Wedding Day 1938"></div>
+        <div style="display:flex;gap:8px;"><button class="cancel-btn" id="daUploadCancel" type="button" style="flex:1;">Cancel</button><button class="save-btn" id="daUploadSave" type="button" style="flex:1;">Attach</button></div>
+      </div>
+      <div class="doc-form-section" id="daScanForm" style="display:none;">
+        <div class="form-title">📷 Scan Certificate</div>
+        <div class="detail-field" style="margin-bottom:8px;"><label>Certificate Type</label><select id="daScanType"><option value="bc">Birth Certificate</option><option value="mc">Marriage Certificate</option><option value="dc">Death Certificate</option></select></div>
+        <div class="detail-field" style="margin-bottom:8px;"><label>Take Photo or Choose File</label><input type="file" id="daScanFile" accept="image/*"></div>
+        <div id="daScanStatus" style="display:none;padding:8px;border-radius:4px;font-size:12px;margin-bottom:8px;"></div>
+        <div class="detail-field" style="margin-bottom:8px;"><label>Transcription</label><textarea id="daScanTranscription" placeholder="Extracted text appears here... Edit as needed." style="min-height:80px;"></textarea></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;color:#6b5537;">
+          <input type="checkbox" id="daScanUpdateFields" checked><label for="daScanUpdateFields" style="display:inline;font-size:12px;text-transform:none;font-weight:400;margin-bottom:0;">Update person card fields from transcription</label>
+        </div>
+        <div style="display:flex;gap:8px;"><button class="cancel-btn" id="daScanCancel" type="button" style="flex:1;">Cancel</button><button class="save-btn" id="daScanSave" type="button" style="flex:1;">Save & Apply</button></div>
+      </div>
+      <div class="doc-form-section" id="daManualForm" style="display:none;">
+        <div class="form-title">⌨️ Type Manually</div>
+        <div class="detail-field" style="margin-bottom:8px;"><label>Document Type</label><select id="daManualType"><option value="bc">Birth Certificate</option><option value="mc">Marriage Certificate</option><option value="dc">Death Certificate</option><option value="photo">Photo</option><option value="article">News Article</option><option value="other">Other</option></select></div>
+        <div class="detail-field" style="margin-bottom:8px;"><label>Title</label><input type="text" id="daManualTitle" placeholder="e.g. Birth of Joseph Lynch"></div>
+        <div class="detail-field" style="margin-bottom:8px;"><label>Date (if known)</label><input type="text" id="daManualDate" placeholder="1912-03-15"></div>
+        <div class="detail-field" style="margin-bottom:8px;"><label>Source / Location</label><input type="text" id="daManualSource" placeholder="e.g. GRO Dublin"></div>
+        <div class="detail-field" style="margin-bottom:8px;"><label>Details / Transcription</label><textarea id="daManualDetails" placeholder="Enter any details, transcription, or notes..." style="min-height:60px;"></textarea></div>
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;color:#6b5537;">
+          <input type="checkbox" id="daManualUpdateFields"><label for="daManualUpdateFields" style="display:inline;font-size:12px;text-transform:none;font-weight:400;margin-bottom:0;">Update person card fields from this data</label>
+        </div>
+        <div style="display:flex;gap:8px;"><button class="cancel-btn" id="daManualCancel" type="button" style="flex:1;">Cancel</button><button class="save-btn" id="daManualSave" type="button" style="flex:1;">Save Document</button></div>
+      </div>
     </div>
     <div class="detail-field"><label>Find Source Records</label>
       <div id="sourceCountryGrid" style="display:flex;flex-wrap:wrap;gap:6px;">
@@ -1418,7 +1502,6 @@ function openDetail(person) {
       <button class="save-btn" onclick="saveDetail()">Save Changes</button>
     </div>
     <div style="margin-top:8px;text-align:center;display:flex;flex-direction:column;gap:8px;">
-      <button id="attachDocBtn" style="background:#faf6ee;border:2px solid #4a6b4a;color:#2a4a2a;padding:8px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">📎 Attach Document to This Person</button>
       <button id="clearCardBtn" style="background:transparent;border:1px solid #5c2a2a;color:#5c2a2a;padding:6px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">↻ Clear Data from Card</button>
       <button onclick="showPrivacyModal()" style="background:transparent;border:none;color:#6b5537;padding:4px;font-family:'Cormorant Garamond',serif;font-size:11px;cursor:pointer;text-decoration:underline;width:100%;">🔒 How we keep your data private</button>
     </div>
@@ -1433,20 +1516,38 @@ function openDetail(person) {
       clearCard();
     });
   }
-  // Wire up Attach Document button
-  const attachDocBtn = document.getElementById('attachDocBtn');
-  if (attachDocBtn) {
-    attachDocBtn.addEventListener('click', () => {
-      pendingDirectAttachId = person.id;  // Mark this person as the target
-      closeDetail();
-      // Open cert panel and trigger file picker
-      certPanel.classList.add('active');
-      clearCertPanel();
-      showToast('Select a certificate image to attach to ' + person.name);
-      document.getElementById('certFileInput').value = '';
-      document.getElementById('certFileInput').click();
-    });
+  // Wire up Add Document buttons
+  const daUploadBtn = document.getElementById('daUploadBtn');
+  if (daUploadBtn) {
+    daUploadBtn.addEventListener('click', () => { hideDocAddForms(); document.getElementById('daUploadForm').style.display = 'block'; });
   }
+  const daScanBtn = document.getElementById('daScanBtn');
+  if (daScanBtn) {
+    daScanBtn.addEventListener('click', () => { hideDocAddForms(); document.getElementById('daScanForm').style.display = 'block'; });
+  }
+  const daManualBtn = document.getElementById('daManualBtn');
+  if (daManualBtn) {
+    daManualBtn.addEventListener('click', () => { hideDocAddForms(); document.getElementById('daManualForm').style.display = 'block'; });
+  }
+  // Upload form handlers
+  const daUploadFile = document.getElementById('daUploadFile');
+  if (daUploadFile) daUploadFile.addEventListener('change', onDetailUploadFile);
+  const daUploadCancel = document.getElementById('daUploadCancel');
+  if (daUploadCancel) daUploadCancel.addEventListener('click', hideDocAddForms);
+  const daUploadSave = document.getElementById('daUploadSave');
+  if (daUploadSave) daUploadSave.addEventListener('click', () => handleDetailUpload(person));
+  // Scan form handlers
+  const daScanFile = document.getElementById('daScanFile');
+  if (daScanFile) daScanFile.addEventListener('change', onDetailScanFile);
+  const daScanCancel = document.getElementById('daScanCancel');
+  if (daScanCancel) daScanCancel.addEventListener('click', hideDocAddForms);
+  const daScanSave = document.getElementById('daScanSave');
+  if (daScanSave) daScanSave.addEventListener('click', () => handleDetailScan(person));
+  // Manual form handlers
+  const daManualCancel = document.getElementById('daManualCancel');
+  if (daManualCancel) daManualCancel.addEventListener('click', hideDocAddForms);
+  const daManualSave = document.getElementById('daManualSave');
+  if (daManualSave) daManualSave.addEventListener('click', () => handleDetailManual(person));
   // Wire up Add Parents button
   const addParentsBtn = document.getElementById('addParentsBtn');
   if (addParentsBtn) {
@@ -1507,45 +1608,8 @@ function openDetail(person) {
   }
   renderSiblingList();
 
-  // Load document thumbnails from IndexedDB
-  (async function loadDocThumbs() {
-    const container = document.getElementById('docThumbs');
-    const countEl = document.getElementById('docCount');
-    if (!container) return;
-    container.innerHTML = '';
-    if (!person.docs.length) {
-      container.innerHTML = '<em style="font-size:12px;color:#6b5537;">No documents</em>';
-      if (countEl) countEl.textContent = '0';
-      return;
-    }
-    for (let i = 0; i < person.docs.length; i++) {
-      const d = person.docs[i];
-      const wrapper = document.createElement('div');
-      wrapper.style.cssText = 'text-align:center;';
-      const label = document.createElement('div');
-      label.style.cssText = 'font-size:10px;color:#6b5537;margin-top:2px;';
-      label.innerHTML = (d.type || 'doc').toUpperCase() + '<br><span style="color:#8a7a5a;">' + (d.date || 'no date') + '</span>';
-      if (d.docId) {
-        try {
-          const docs = await getDocsForPerson(person.id);
-          const doc = docs.find(rec => rec.id === d.docId);
-          if (doc && doc.image) {
-            const thumb = document.createElement('img');
-            thumb.src = doc.image;
-            thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #8a7a5a;cursor:pointer;';
-            thumb.onclick = () => showDocImageFromDB(d.docId, person.id);
-            wrapper.appendChild(thumb);
-            wrapper.appendChild(label);
-            container.appendChild(wrapper);
-            continue;
-          }
-        } catch(e) {}
-      }
-      // Fallback: text-only label if no image
-      wrapper.appendChild(label);
-      container.appendChild(wrapper);
-    }
-  })();
+  // Load document gallery
+  (async function() { await refreshDocGallery(person); })();
 }
 function closeDetail() {
   if (detailPanel.classList.contains('active')) {
@@ -1579,6 +1643,11 @@ function clearCertPanel() {
   document.getElementById('certResults').innerHTML = '';
   document.getElementById('certUploadBtns').style.display = 'flex';
   certPanel.classList.remove('has-results');
+}
+// Shorthand called by card badges and detail gallery
+function openDocImage(docId) {
+  const person = people.find(p => p.id === selectedPersonId);
+  showDocImageFromDB(docId, person ? person.id : null);
 }
 async function showDocImageFromDB(docId, personId, fallbackSrc) {
   let imgSrc = fallbackSrc || '';
@@ -3326,6 +3395,206 @@ async function getDocById(docId) {
   });
 }
 
+
+// ═══════════════════════════════════════════════════════════════
+// DETAIL PANEL: Document Attachment Helpers
+// ═══════════════════════════════════════════════════════════════
+function hideDocAddForms() {
+  const fids = ['daUploadForm', 'daScanForm', 'daManualForm'];
+  fids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
+  const opts = document.getElementById('docAddOptions');
+  if (opts) opts.style.display = 'flex';
+}
+
+/* ─── Upload File ─── */
+async function onDetailUploadFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const statusEl = document.getElementById('daUploadFileSize');
+  const preview = document.getElementById('daUploadPreview');
+  const img = document.getElementById('daUploadPreviewImg');
+  const nameEl = document.getElementById('daUploadFileName');
+  if (statusEl) statusEl.textContent = 'Compressing...';
+  try {
+    const base64 = await resizeAndCompressImage(file, 1200, 0.85);
+    const sizeKB = Math.round(base64.length * 0.75 / 1024);
+    if (sizeKB > 500) {
+      const base64b = await resizeAndCompressImage(file, 800, 0.75);
+      e.target.dataset.image = base64b;
+      const kb2 = Math.round(base64b.length * 0.75 / 1024);
+      if (statusEl) statusEl.textContent = Math.round(file.size/1024/1024*10)/10 + ' MB → ' + kb2 + ' KB';
+    } else {
+      e.target.dataset.image = base64;
+      if (statusEl) statusEl.textContent = Math.round(file.size/1024/1024*10)/10 + ' MB → ' + sizeKB + ' KB';
+    }
+    if (img) img.src = e.target.dataset.image;
+    if (preview) preview.style.display = 'block';
+    if (nameEl) nameEl.textContent = file.name;
+  } catch (err) {
+    console.error('[UPLOAD PREP]', err);
+    if (statusEl) statusEl.textContent = 'Compression failed';
+  }
+}
+async function handleDetailUpload(person) {
+  const input = document.getElementById('daUploadFile');
+  const typeSel = document.getElementById('daUploadType');
+  const titleIn = document.getElementById('daUploadTitle');
+  if (!input || !input.dataset.image) { showToast('Please select a file first'); return; }
+  const type = typeSel ? typeSel.value : 'other';
+  const title = titleIn ? titleIn.value.trim() : '';
+  const docId = await saveDocToDB(person.id, type, input.dataset.image, { title, manual: true });
+  person.docs.push({ type, date: '', docId, title });
+  showToast('Document attached to ' + person.name);
+  refreshDocGallery(person);
+  hideDocAddForms();
+  renderTree();
+}
+
+/* ─── Scan Certificate ─── */
+let _detailScanImage = null;
+async function onDetailScanFile(e) {
+  const file = e.target.files[0]; if (!file) return;
+  const statusEl = document.getElementById('daScanStatus');
+  if (statusEl) { statusEl.style.display = 'block'; statusEl.className = ''; statusEl.style.background = '#fef3c7'; statusEl.style.color = '#92400e'; statusEl.textContent = 'Preparing image...'; }
+  try {
+    let base64 = await resizeAndCompressImage(file, 1200, 0.85);
+    let sizeKB = Math.round(base64.length * 0.75 / 1024);
+    if (sizeKB > 500) { base64 = await resizeAndCompressImage(file, 800, 0.75); sizeKB = Math.round(base64.length * 0.75 / 1024); }
+    _detailScanImage = base64;
+    if (statusEl) { statusEl.style.background = '#dcfce7'; statusEl.style.color = '#166534'; statusEl.textContent = 'Image ready (' + sizeKB + ' KB). Tap Save to attach.'; }
+    // Background OCR attempt (best effort)
+    const ta = document.getElementById('daScanTranscription');
+    if (ta) {
+      ta.placeholder = 'Transcribing... (or type what you see)';
+      try { await sendToTranscriptionForDetail(base64, ta); }
+      catch(e) { ta.placeholder = 'Transcription unavailable. Please type what you see.'; console.log('[SCAN OCR]', e.message); }
+    }
+  } catch (err) {
+    console.error('[SCAN PREP]', err);
+    if (statusEl) { statusEl.style.background = '#fee2e2'; statusEl.style.color = '#991b1b'; statusEl.textContent = 'Error: ' + err.message; }
+  }
+}
+async function sendToTranscriptionForDetail(base64, textareaEl) {
+  // Minimal OCR call for detail panel: just get the raw text, don't use cert-panel UI
+  const payload = JSON.stringify({ image: base64, country: getCountry() });
+  const resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
+  const json = await resp.json();
+  if (!json.success || !json.data) throw new Error('OCR failed');
+  // Build readable transcription from structured data
+  const data = json.data;
+  let text = '';
+  const entries = data.entries || [data];
+  const type = data.type || 'unknown';
+  entries.forEach((entry, i) => {
+    if (i > 0) text += '\n---\n';
+    text += entrySummary(entry, type) + '\n';
+    const fields = extractEntryFields(entry, type);
+    fields.forEach(f => { text += f.label + ': ' + f.value + '\n'; });
+  });
+  textareaEl.value = text.trim();
+}
+async function handleDetailScan(person) {
+  if (!_detailScanImage) { showToast('Please select an image first'); return; }
+  const typeSel = document.getElementById('daScanType');
+  const ta = document.getElementById('daScanTranscription');
+  const type = typeSel ? typeSel.value : 'other';
+  const transcription = ta ? ta.value.trim() : '';
+  const docId = await saveDocToDB(person.id, type, _detailScanImage, { transcription, manual: true });
+  person.docs.push({ type, date: '', docId, transcription });
+  const updateCheck = document.getElementById('daScanUpdateFields');
+  if (updateCheck && updateCheck.checked) {
+    // Basic field update: date extraction from transcription
+    const dateMatch = transcription.match(/\b(\d{1,2})[\s\/\-]?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\s\/\-]?(\d{2,4})\b/i) ||
+                      transcription.match(/\b(\d{4})[\s\/\-]?(\d{1,2})[\s\/\-]?(\d{1,2})\b/);
+    if (dateMatch && !person.birthDate && type === 'bc') person.birthDate = dateMatch[0];
+    if (dateMatch && !person.marriageDate && type === 'mc') person.marriageDate = dateMatch[0];
+    if (dateMatch && !person.deathDate && type === 'dc') person.deathDate = dateMatch[0];
+  }
+  _detailScanImage = null;
+  showToast('Certificate scanned and attached to ' + person.name);
+  refreshDocGallery(person);
+  hideDocAddForms();
+  renderTree();
+}
+
+/* ─── Type Manually ─── */
+async function handleDetailManual(person) {
+  const typeSel = document.getElementById('daManualType');
+  const titleIn = document.getElementById('daManualTitle');
+  const dateIn = document.getElementById('daManualDate');
+  const sourceIn = document.getElementById('daManualSource');
+  const detailsIn = document.getElementById('daManualDetails');
+  const type = typeSel ? typeSel.value : 'other';
+  const title = titleIn ? titleIn.value.trim() : '';
+  const date = dateIn ? dateIn.value.trim() : '';
+  const source = sourceIn ? sourceIn.value.trim() : '';
+  const details = detailsIn ? detailsIn.value.trim() : '';
+  person.docs.push({ type, date, docId: null, title, source, transcription: details });
+  const updateCheck = document.getElementById('daManualUpdateFields');
+  if (updateCheck && updateCheck.checked) {
+    if (date && !person.birthDate && type === 'bc') person.birthDate = date;
+    if (date && !person.marriageDate && type === 'mc') person.marriageDate = date;
+    if (date && !person.deathDate && type === 'dc') person.deathDate = date;
+  }
+  showToast('Document saved for ' + person.name);
+  refreshDocGallery(person);
+  hideDocAddForms();
+  // Clear inputs
+  if (titleIn) titleIn.value = '';
+  if (dateIn) dateIn.value = '';
+  if (sourceIn) sourceIn.value = '';
+  if (detailsIn) detailsIn.value = '';
+  renderTree();
+}
+
+/* ─── Refresh gallery after adding a doc ─── */
+async function refreshDocGallery(person) {
+  const container = document.getElementById('docThumbs');
+  const countEl = document.getElementById('docCount');
+  if (!container) return;
+  container.innerHTML = '';
+  if (countEl) countEl.textContent = String(person.docs.length);
+  if (!person.docs.length) {
+    container.innerHTML = '<em style="font-size:12px;color:#6b5537;">No documents</em>';
+    return;
+  }
+  for (let i = 0; i < person.docs.length; i++) {
+    const d = person.docs[i];
+    const item = document.createElement('div');
+    item.className = 'doc-item';
+    item.title = (d.title || (d.type || 'doc').toUpperCase()) + (d.date ? ' — ' + d.date : '');
+    const t = (d.type || 'doc').toLowerCase();
+    const emoji = t === 'bc' ? '📄' : t === 'mc' ? '💍' : t === 'dc' ? '⚰️' : t === 'photo' ? '📷' : t === 'article' ? '📰' : '📎';
+    let thumb = '<div class="doc-thumb">' + emoji + '</div>';
+    if (d.docId) {
+      try {
+        const docs = await getDocsForPerson(person.id);
+        const doc = docs.find(rec => rec.id === d.docId);
+        if (doc && doc.image) thumb = '<div class="doc-thumb"><img src="' + doc.image + '" alt=""></div>';
+      } catch(e) {}
+    }
+    item.innerHTML = thumb +
+      '<div class="doc-title">' + (d.title || (d.type || 'doc').toUpperCase()) + '</div>' +
+      '<div class="doc-meta">' + (d.date || (d.source || 'No date')) + '</div>' +
+      (d.transcription ? '<div class="doc-verified">✓</div>' : '');
+    item.addEventListener('click', (ev) => { ev.stopPropagation(); if (d.docId) openDocImage(d.docId); else openDocDetail(person, i); });
+    container.appendChild(item);
+  }
+}
+
+function openDocDetail(person, docIndex) {
+  const d = person.docs[docIndex];
+  const lines = [
+    'Type: ' + (d.type || 'unknown').toUpperCase(),
+    'Title: ' + (d.title || '—'),
+    'Date: ' + (d.date || '—'),
+    'Source: ' + (d.source || '—'),
+    '',
+    d.transcription || '(No transcription)'
+  ];
+  alert(lines.join('\n'));
+}
+
+// ═══════════════════════════════════════════════════════════════
 async function saveSession() {
   // Deep clone people and inline document images so the file is self-contained
   const payloadPeople = JSON.parse(JSON.stringify(people));
