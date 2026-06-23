@@ -1454,17 +1454,6 @@ function openDetail(person) {
         <div class="detail-field" style="margin-bottom:8px;"><label>Title (optional)</label><input type="text" id="daUploadTitle" placeholder="e.g. Wedding Day 1938"></div>
         <div style="display:flex;gap:8px;"><button class="cancel-btn" id="daUploadCancel" type="button" style="flex:1;">Cancel</button><button class="save-btn" id="daUploadSave" type="button" style="flex:1;">Attach</button></div>
       </div>
-      <div class="doc-form-section" id="daScanForm" style="display:none;">
-        <div class="form-title">📷 Scan Certificate</div>
-        <div class="detail-field" style="margin-bottom:8px;"><label>Certificate Type</label><select id="daScanType"><option value="bc">Birth Certificate</option><option value="mc">Marriage Certificate</option><option value="dc">Death Certificate</option></select></div>
-        <div class="detail-field" style="margin-bottom:8px;"><label>Take Photo or Choose File</label><input type="file" id="daScanFile" accept="image/*"></div>
-        <div id="daScanStatus" style="display:none;padding:8px;border-radius:4px;font-size:12px;margin-bottom:8px;"></div>
-        <div class="detail-field" style="margin-bottom:8px;"><label>Transcription</label><textarea id="daScanTranscription" placeholder="Extracted text appears here... Edit as needed." style="min-height:80px;"></textarea></div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;color:#6b5537;">
-          <input type="checkbox" id="daScanUpdateFields" checked><label for="daScanUpdateFields" style="display:inline;font-size:12px;text-transform:none;font-weight:400;margin-bottom:0;">Update person card fields from transcription</label>
-        </div>
-        <div style="display:flex;gap:8px;"><button class="cancel-btn" id="daScanCancel" type="button" style="flex:1;">Cancel</button><button class="save-btn" id="daScanSave" type="button" style="flex:1;">Save & Apply</button></div>
-      </div>
       <div class="doc-form-section" id="daManualForm" style="display:none;">
         <div class="form-title">⌨️ Type Manually</div>
         <div class="detail-field" style="margin-bottom:8px;"><label>Document Type</label><select id="daManualType"><option value="bc">Birth Certificate</option><option value="mc">Marriage Certificate</option><option value="dc">Death Certificate</option><option value="photo">Photo</option><option value="article">News Article</option><option value="other">Other</option></select></div>
@@ -1523,7 +1512,17 @@ function openDetail(person) {
   }
   const daScanBtn = document.getElementById('daScanBtn');
   if (daScanBtn) {
-    daScanBtn.addEventListener('click', () => { hideDocAddForms(); document.getElementById('daScanForm').style.display = 'block'; });
+    daScanBtn.addEventListener('click', () => {
+      pendingDirectAttachId = person.id;
+      closeDetail();
+      certPanel.classList.add('active');
+      clearCertPanel();
+      const headerTitle = certPanel.querySelector('.cert-header div');
+      if (headerTitle) headerTitle.textContent = '📷 Scan Certificate — ' + person.name;
+      showToast('Select a certificate image for ' + person.name);
+      document.getElementById('certFileInput').value = '';
+      document.getElementById('certFileInput').click();
+    });
   }
   const daManualBtn = document.getElementById('daManualBtn');
   if (daManualBtn) {
@@ -1536,13 +1535,6 @@ function openDetail(person) {
   if (daUploadCancel) daUploadCancel.addEventListener('click', hideDocAddForms);
   const daUploadSave = document.getElementById('daUploadSave');
   if (daUploadSave) daUploadSave.addEventListener('click', () => handleDetailUpload(person));
-  // Scan form handlers
-  const daScanFile = document.getElementById('daScanFile');
-  if (daScanFile) daScanFile.addEventListener('change', onDetailScanFile);
-  const daScanCancel = document.getElementById('daScanCancel');
-  if (daScanCancel) daScanCancel.addEventListener('click', hideDocAddForms);
-  const daScanSave = document.getElementById('daScanSave');
-  if (daScanSave) daScanSave.addEventListener('click', () => handleDetailScan(person));
   // Manual form handlers
   const daManualCancel = document.getElementById('daManualCancel');
   if (daManualCancel) daManualCancel.addEventListener('click', hideDocAddForms);
@@ -1700,6 +1692,9 @@ function toggleCertPanel() {
 document.getElementById('certClose').addEventListener('click', () => {
   certPanel.classList.remove('active');
   certPanel.classList.remove('has-results');
+  pendingDirectAttachId = null;
+  const headerTitle = certPanel.querySelector('.cert-header div');
+  if (headerTitle) headerTitle.textContent = '📎 Upload Certificate';
   history.back();
   updateExpandGenBtn();
 });
@@ -1769,77 +1764,7 @@ async function processDocFile(file) {
     return;
   }
   pendingDocImage = base64;
-
-  // DIRECT ATTACH MODE: skip OCR, show simple attach form
-  if (pendingDirectAttachId) {
-    renderDirectAttachForm();
-    return;
-  }
-
   await sendToTranscriptionAPI(base64);
-}
-
-function renderDirectAttachForm() {
-  const container = document.getElementById('certResults');
-  const cs = document.getElementById('certStatus');
-  const person = people.find(p => p.id === pendingDirectAttachId);
-  const personName = person ? person.name : 'this person';
-
-  cs.className = 'cert-status success';
-  cs.textContent = 'Ready to attach';
-  cs.style.display = 'block';
-
-  container.innerHTML = `
-    <div style="background:#fff;border:2px solid #8a7a5a;border-radius:8px;padding:16px;margin-top:10px;font-family:'Cormorant Garamond',serif;">
-      <div style="font-size:14px;font-weight:600;color:#4a3a22;margin-bottom:12px;">Attach document to ${personName}</div>
-      <div style="margin-bottom:10px;">
-        <label style="display:block;font-size:11px;color:#6b5537;text-transform:uppercase;margin-bottom:4px;">Document Type</label>
-        <select id="daType" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:inherit;font-size:13px;background:#faf6ee;color:#2a1f10;">
-          <option value="bc">Birth Certificate</option>
-          <option value="mc">Marriage Certificate</option>
-          <option value="dc">Death Certificate</option>
-          <option value="other">Other</option>
-        </select>
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="display:block;font-size:11px;color:#6b5537;text-transform:uppercase;margin-bottom:4px;">Date (optional)</label>
-        <input type="text" id="daDate" placeholder="e.g. 14 Dec 1911" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:inherit;font-size:13px;background:#faf6ee;color:#2a1f10;box-sizing:border-box;">
-      </div>
-      <div style="display:flex;gap:8px;">
-        <button id="daAttachBtn" style="flex:1;padding:10px;background:#4a6b4a;color:#fff;border:none;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Attach</button>
-        <button id="daCancelBtn" style="flex:1;padding:10px;background:#e8dcc8;color:#4a3a22;border:2px solid #8a7a5a;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
-      </div>
-    </div>
-  `;
-  certPanel.classList.add('has-results');
-
-  document.getElementById('daAttachBtn').addEventListener('click', async () => {
-    const type = document.getElementById('daType').value;
-    const date = document.getElementById('daDate').value.trim();
-    if (!pendingDirectAttachId || !pendingDocImage) return;
-
-    const p = people.find(pe => pe.id === pendingDirectAttachId);
-    if (!p) return;
-
-    const docId = await saveDocToDB(p.id, type, pendingDocImage, { personName: p.name, date: date || '', manual: true });
-    p.docs.push({ type: type, date: date || '', docId: docId });
-
-    showToast('Document attached to ' + p.name);
-    renderTree();
-
-    // Close panel and reset
-    pendingDirectAttachId = null;
-    certPanel.classList.remove('active');
-    certPanel.classList.remove('has-results');
-    clearCertPanel();
-  });
-
-  document.getElementById('daCancelBtn').addEventListener('click', () => {
-    pendingDirectAttachId = null;
-    certPanel.classList.remove('active');
-    certPanel.classList.remove('has-results');
-    clearCertPanel();
-  });
 }
 
 async function resizeAndCompressImage(file, maxDim, quality) {
@@ -3400,7 +3325,7 @@ async function getDocById(docId) {
 // DETAIL PANEL: Document Attachment Helpers
 // ═══════════════════════════════════════════════════════════════
 function hideDocAddForms() {
-  const fids = ['daUploadForm', 'daScanForm', 'daManualForm'];
+  const fids = ['daUploadForm', 'daManualForm'];
   fids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
   const opts = document.getElementById('docAddOptions');
   if (opts) opts.style.display = 'flex';
@@ -3444,73 +3369,6 @@ async function handleDetailUpload(person) {
   const docId = await saveDocToDB(person.id, type, input.dataset.image, { title, manual: true });
   person.docs.push({ type, date: '', docId, title });
   showToast('Document attached to ' + person.name);
-  refreshDocGallery(person);
-  hideDocAddForms();
-  renderTree();
-}
-
-/* ─── Scan Certificate ─── */
-let _detailScanImage = null;
-async function onDetailScanFile(e) {
-  const file = e.target.files[0]; if (!file) return;
-  const statusEl = document.getElementById('daScanStatus');
-  if (statusEl) { statusEl.style.display = 'block'; statusEl.className = ''; statusEl.style.background = '#fef3c7'; statusEl.style.color = '#92400e'; statusEl.textContent = 'Preparing image...'; }
-  try {
-    let base64 = await resizeAndCompressImage(file, 1200, 0.85);
-    let sizeKB = Math.round(base64.length * 0.75 / 1024);
-    if (sizeKB > 500) { base64 = await resizeAndCompressImage(file, 800, 0.75); sizeKB = Math.round(base64.length * 0.75 / 1024); }
-    _detailScanImage = base64;
-    if (statusEl) { statusEl.style.background = '#dcfce7'; statusEl.style.color = '#166534'; statusEl.textContent = 'Image ready (' + sizeKB + ' KB). Tap Save to attach.'; }
-    // Background OCR attempt (best effort)
-    const ta = document.getElementById('daScanTranscription');
-    if (ta) {
-      ta.placeholder = 'Transcribing... (or type what you see)';
-      try { await sendToTranscriptionForDetail(base64, ta); }
-      catch(e) { ta.placeholder = 'Transcription unavailable. Please type what you see.'; console.log('[SCAN OCR]', e.message); }
-    }
-  } catch (err) {
-    console.error('[SCAN PREP]', err);
-    if (statusEl) { statusEl.style.background = '#fee2e2'; statusEl.style.color = '#991b1b'; statusEl.textContent = 'Error: ' + err.message; }
-  }
-}
-async function sendToTranscriptionForDetail(base64, textareaEl) {
-  // Minimal OCR call for detail panel: just get the raw text, don't use cert-panel UI
-  const payload = JSON.stringify({ image: base64, country: getCountry() });
-  const resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload });
-  const json = await resp.json();
-  if (!json.success || !json.data) throw new Error('OCR failed');
-  // Build readable transcription from structured data
-  const data = json.data;
-  let text = '';
-  const entries = data.entries || [data];
-  const type = data.type || 'unknown';
-  entries.forEach((entry, i) => {
-    if (i > 0) text += '\n---\n';
-    text += entrySummary(entry, type) + '\n';
-    const fields = extractEntryFields(entry, type);
-    fields.forEach(f => { text += f.label + ': ' + f.value + '\n'; });
-  });
-  textareaEl.value = text.trim();
-}
-async function handleDetailScan(person) {
-  if (!_detailScanImage) { showToast('Please select an image first'); return; }
-  const typeSel = document.getElementById('daScanType');
-  const ta = document.getElementById('daScanTranscription');
-  const type = typeSel ? typeSel.value : 'other';
-  const transcription = ta ? ta.value.trim() : '';
-  const docId = await saveDocToDB(person.id, type, _detailScanImage, { transcription, manual: true });
-  person.docs.push({ type, date: '', docId, transcription });
-  const updateCheck = document.getElementById('daScanUpdateFields');
-  if (updateCheck && updateCheck.checked) {
-    // Basic field update: date extraction from transcription
-    const dateMatch = transcription.match(/\b(\d{1,2})[\s\/\-]?(Jan|Feb|Mar|Apr|May|Jun|Jul|Aug|Sep|Oct|Nov|Dec)[\s\/\-]?(\d{2,4})\b/i) ||
-                      transcription.match(/\b(\d{4})[\s\/\-]?(\d{1,2})[\s\/\-]?(\d{1,2})\b/);
-    if (dateMatch && !person.birthDate && type === 'bc') person.birthDate = dateMatch[0];
-    if (dateMatch && !person.marriageDate && type === 'mc') person.marriageDate = dateMatch[0];
-    if (dateMatch && !person.deathDate && type === 'dc') person.deathDate = dateMatch[0];
-  }
-  _detailScanImage = null;
-  showToast('Certificate scanned and attached to ' + person.name);
   refreshDocGallery(person);
   hideDocAddForms();
   renderTree();
