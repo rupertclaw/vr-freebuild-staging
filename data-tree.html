@@ -776,7 +776,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     <!-- Gemini Section -->
     <div class="gemini-section" id="geminiSection">
       <div class="gemini-privacy-banner">
-        <div class="warn-title">⚠️ Privacy Notice</div>
+        <div class="warn-title">Privacy Notice</div>
         <div class="warn-text">By uploading your document to Gemini, Google will receive and may retain a copy. For total privacy, use the Upload &amp; Scan option instead.</div>
       </div>
 
@@ -787,17 +787,21 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
         <button class="cert-type-btn" data-type="death" onclick="setGeminiType('death')">Death</button>
       </div>
 
-      <a class="gemini-open-btn" id="geminiOpenBtn" href="https://gemini.google.com/app" target="_blank" rel="noopener">Open Gemini with Prompt →</a>
+      <button class="gemini-open-btn" id="geminiCopyBtn" onclick="copyGeminiPrompt()">📋 Copy Prompt to Clipboard</button>
 
-      <div class="gemini-status" id="geminiStatus" style="display:none;font-size:12px;color:#166534;background:#dcfce7;padding:8px 10px;border-radius:6px;margin-bottom:10px;">
-        Gemini opened in a new tab. Upload your certificate image there, then paste the response below.
+      <div class="gemini-status" id="geminiStatus" style="display:none;font-size:12px;color:#166534;background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;line-height:1.5;">
+        <b>Prompt copied!</b><br>
+        1. Open <a href="https://gemini.google.com/app" target="_blank" rel="noopener" style="color:#166534;font-weight:600;">gemini.google.com</a> in your browser<br>
+        2. Paste the prompt into Gemini's chat box<br>
+        3. Upload your certificate image<br>
+        4. Copy Gemini's JSON response and paste it below
       </div>
 
       <div style="margin-bottom:10px;">
         <button onclick="toggleGeminiPrompt()" style="background:none;border:none;color:#4a3a22;font-size:12px;font-family:'Cormorant Garamond',serif;cursor:pointer;text-decoration:underline;">
           View the prompt
         </button>
-        <div id="geminiPromptBox" style="display:none;background:#2a1f15;color:#e8dcc8;padding:10px;border-radius:6px;font-size:11px;font-family:'Courier New',monospace;white-space:pre-wrap;max-height:160px;overflow:auto;margin-top:6px;border:1px solid #4a3a22;"></div>
+        <div id="geminiPromptBox" style="display:none;background:#2a1f15;color:#e8dcc8;padding:10px;border-radius:6px;font-size:11px;font-family:'Courier New',monospace;white-space:pre-wrap;max-height:200px;overflow:auto;margin-top:6px;border:1px solid #4a3a22;"></div>
       </div>
 
       <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;">Paste Gemini's JSON response:</div>
@@ -2165,28 +2169,35 @@ function getGeminiPrompt(type) {
 
 function updateGeminiPrompt() {
   var prompt = getGeminiPrompt(geminiCertType);
-  var btn = document.getElementById('geminiOpenBtn');
-  btn.href = 'https://gemini.google.com/app';
+  // Store prompt for copy function
+  document.getElementById('geminiCopyBtn').dataset.prompt = prompt;
+}
 
-  btn.onclick = function(e) {
-    // Let the link open naturally (no preventDefault)
-    // Copy prompt to clipboard
-    if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(prompt).then(function() {
-        showToast('Prompt copied! Paste into Gemini chat.');
-      }).catch(function() {
-        showToast('Opening Gemini. Copy prompt from below if needed.');
-      });
-    } else {
-      showToast('Opening Gemini. Copy prompt from below if needed.');
-    }
-    // Show status
-    var status = document.getElementById('geminiStatus');
-    status.style.display = 'block';
-    // Populate the prompt box
-    document.getElementById('geminiPromptBox').textContent = prompt;
-    // Let the default link action proceed (opens tab naturally)
-  };
+function copyGeminiPrompt() {
+  var btn = document.getElementById('geminiCopyBtn');
+  var prompt = btn.dataset.prompt || getGeminiPrompt(geminiCertType);
+  var status = document.getElementById('geminiStatus');
+
+  // Copy to clipboard
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(function() {
+      showToast('Prompt copied to clipboard!');
+    }).catch(function() {
+      showToast('Could not copy automatically. Tap "View the prompt" below.');
+    });
+  } else {
+    // Fallback: select and copy
+    var box = document.getElementById('geminiPromptBox');
+    box.textContent = prompt;
+    box.style.display = 'block';
+    showToast('Prompt shown below. Select and copy it.');
+  }
+
+  // Show step-by-step instructions
+  status.style.display = 'block';
+
+  // Populate prompt box
+  document.getElementById('geminiPromptBox').textContent = prompt;
 }
 
 function toggleGeminiPrompt() {
