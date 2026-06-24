@@ -777,16 +777,30 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     <div class="gemini-section" id="geminiSection">
       <div class="gemini-privacy-banner">
         <div class="warn-title">⚠️ Privacy Notice</div>
-        <div class="warn-text">By uploading your document to Gemini, Google will receive and may retain a copy of your image. For total privacy, use the Upload &amp; Scan option instead.</div>
+        <div class="warn-text">By uploading your document to Gemini, Google will receive and may retain a copy. For total privacy, use the Upload &amp; Scan option instead.</div>
       </div>
+
       <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
       <div class="cert-type-selector" id="geminiCertType">
         <button class="cert-type-btn active" data-type="birth" onclick="setGeminiType('birth')">Birth</button>
         <button class="cert-type-btn" data-type="marriage" onclick="setGeminiType('marriage')">Marriage</button>
         <button class="cert-type-btn" data-type="death" onclick="setGeminiType('death')">Death</button>
       </div>
-      <a class="gemini-open-btn" id="geminiOpenBtn" href="https://gemini.google.com/app" target="_blank" rel="noopener">1. Open Gemini →</a>
-      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;">2. Paste Gemini's JSON result below:</div>
+
+      <a class="gemini-open-btn" id="geminiOpenBtn" href="https://gemini.google.com/app" target="_blank" rel="noopener">Open Gemini with Prompt →</a>
+
+      <div class="gemini-status" id="geminiStatus" style="display:none;font-size:12px;color:#166534;background:#dcfce7;padding:8px 10px;border-radius:6px;margin-bottom:10px;">
+        Gemini opened in a new tab. Upload your certificate image there, then paste the response below.
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <button onclick="toggleGeminiPrompt()" style="background:none;border:none;color:#4a3a22;font-size:12px;font-family:'Cormorant Garamond',serif;cursor:pointer;text-decoration:underline;">
+          View the prompt
+        </button>
+        <div id="geminiPromptBox" style="display:none;background:#2a1f15;color:#e8dcc8;padding:10px;border-radius:6px;font-size:11px;font-family:'Courier New',monospace;white-space:pre-wrap;max-height:160px;overflow:auto;margin-top:6px;border:1px solid #4a3a22;"></div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;">Paste Gemini's JSON response:</div>
       <textarea class="gemini-paste-box" id="geminiPasteBox" placeholder="Paste the JSON output from Gemini here..."></textarea>
       <div style="display:flex;gap:8px;">
         <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
@@ -2152,19 +2166,29 @@ function getGeminiPrompt(type) {
 function updateGeminiPrompt() {
   var prompt = getGeminiPrompt(geminiCertType);
   var btn = document.getElementById('geminiOpenBtn');
-  btn.onclick = function() {
+  var encodedPrompt = encodeURIComponent(prompt);
+
+  // Try URL parameter for pre-filling Gemini (format may vary)
+  btn.href = 'https://gemini.google.com/app?b=' + encodedPrompt;
+
+  btn.onclick = function(e) {
+    // Fallback if Gemini doesn't support the URL param
     if (navigator.clipboard && navigator.clipboard.writeText) {
-      navigator.clipboard.writeText(prompt).then(function() {
-        showToast('Prompt copied! Paste into Gemini chat.');
-      }).catch(function() {
-        showToast('Opening Gemini. Copy prompt from below if needed.');
-      });
-    } else {
-      showToast('Opening Gemini. Copy prompt from below if needed.');
+      navigator.clipboard.writeText(prompt).catch(function(){});
     }
-    document.getElementById('geminiPasteBox').placeholder = 'Paste Gemini\'s JSON result here...\n\nPrompt (if clipboard failed):\n' + prompt;
+    // Show status
+    var status = document.getElementById('geminiStatus');
+    status.style.display = 'block';
+    showToast('Opening Gemini with prompt pre-filled');
+    // Populate the prompt box
+    document.getElementById('geminiPromptBox').textContent = prompt;
     return true;
   };
+}
+
+function toggleGeminiPrompt() {
+  var box = document.getElementById('geminiPromptBox');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
 }
 
 function transformGeminiToNested(flat, type) {
