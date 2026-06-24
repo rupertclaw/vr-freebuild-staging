@@ -2166,27 +2166,26 @@ function getGeminiPrompt(type) {
 function updateGeminiPrompt() {
   var prompt = getGeminiPrompt(geminiCertType);
   var btn = document.getElementById('geminiOpenBtn');
+  btn.href = 'https://gemini.google.com/app';
 
   btn.onclick = function(e) {
-    e.preventDefault();
-    // Open Gemini in new tab
-    window.open('https://gemini.google.com/app', '_blank', 'noopener,noreferrer');
-    // Show status
-    var status = document.getElementById('geminiStatus');
-    status.style.display = 'block';
+    // Let the link open naturally (no preventDefault)
     // Copy prompt to clipboard
     if (navigator.clipboard && navigator.clipboard.writeText) {
       navigator.clipboard.writeText(prompt).then(function() {
-        showToast('Prompt copied to clipboard. Paste into Gemini.');
+        showToast('Prompt copied! Paste into Gemini chat.');
       }).catch(function() {
-        showToast('Gemini opened. Copy prompt from below.');
+        showToast('Opening Gemini. Copy prompt from below if needed.');
       });
     } else {
-      showToast('Gemini opened. Copy prompt from below.');
+      showToast('Opening Gemini. Copy prompt from below if needed.');
     }
+    // Show status
+    var status = document.getElementById('geminiStatus');
+    status.style.display = 'block';
     // Populate the prompt box
     document.getElementById('geminiPromptBox').textContent = prompt;
-    return false;
+    // Let the default link action proceed (opens tab naturally)
   };
 }
 
