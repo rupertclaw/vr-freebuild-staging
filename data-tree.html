@@ -460,6 +460,56 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .cert-retry { background: #f5eedc; color: #4a3a22; }
 .cert-swap { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
 
+/* ─── Cert method selection ─── */
+.cert-method-select { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.cert-method-row { display:flex; gap:10px; }
+.cert-method-btn {
+  flex:1; padding:16px 10px; border:2px solid #8a7a5a; border-radius:8px;
+  background:#faf6ee; cursor:pointer; text-align:center;
+  font-family:'Cormorant Garamond',serif; color:#4a3a22;
+  transition:border-color 0.15s, background 0.15s;
+}
+.cert-method-btn:hover { border-color:#4a3a22; background:#f0e8d8; }
+.cert-method-btn .method-icon { font-size:28px; display:block; margin-bottom:4px; }
+.cert-method-btn .method-label { font-size:13px; font-weight:600; display:block; }
+.cert-method-btn .method-desc { font-size:11px; color:#8a7a5a; display:block; margin-top:2px; }
+
+/* ─── Gemini section ─── */
+.gemini-section { display:none; }
+.gemini-section.active { display:block; }
+.gemini-privacy-banner {
+  background:#fef3c7; border:2px solid #f59e0b; border-radius:8px;
+  padding:12px; margin-bottom:12px;
+}
+.gemini-privacy-banner .warn-title { color:#92400e; font-weight:600; font-size:13px; margin-bottom:4px; }
+.gemini-privacy-banner .warn-text { color:#92400e; font-size:12px; line-height:1.4; }
+.gemini-paste-box {
+  width:100%; min-height:120px; padding:10px;
+  border:2px solid #8a7a5a; border-radius:6px;
+  font-family:'Courier New',monospace; font-size:11px;
+  background:#fff; margin-bottom:10px; resize:vertical;
+}
+.gemini-open-btn {
+  display:block; width:100%; padding:14px;
+  background:#4a3a22; color:#f5eedc; border:none; border-radius:8px;
+  font-family:'Cinzel Decorative',serif; font-size:14px;
+  cursor:pointer; text-align:center; margin-bottom:12px;
+  text-decoration:none;
+}
+.gemini-open-btn:hover { opacity:0.9; }
+.gemini-back-btn {
+  padding:8px 14px; border:2px solid #8a7a5a; border-radius:4px;
+  background:#faf6ee; color:#4a3a22; cursor:pointer;
+  font-family:'Cormorant Garamond',serif; font-size:12px;
+}
+.cert-type-selector { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.cert-type-btn {
+  padding:6px 12px; border:2px solid #8a7a5a; border-radius:4px;
+  background:#faf6ee; cursor:pointer; font-family:'Cormorant Garamond',serif;
+  font-size:12px; color:#4a3a22;
+}
+.cert-type-btn.active { background:#4a3a22; color:#f5eedc; border-color:#4a3a22; }
+
 /* Detail panel */
 .detail-panel {
   display: none; position: fixed; top: 124px; right: 0;
@@ -700,10 +750,50 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     </div>
   </div>
   <div class="cert-body" id="certBody">
-    <div class="cert-upload-btns" id="certUploadBtns">
+    <!-- Method Selection -->
+    <div class="cert-method-select" id="certMethodSelect">
+      <div style="font-size:12px;color:#6b5537;margin-bottom:4px;font-weight:600;text-align:center">Extract data using:</div>
+      <div class="cert-method-row">
+        <button class="cert-method-btn" onclick="selectCertMethod('upload')">
+          <span class="method-icon">📷</span>
+          <span class="method-label">Upload &amp; Scan</span>
+          <span class="method-desc">Auto-detect with AI</span>
+        </button>
+        <button class="cert-method-btn" onclick="selectCertMethod('gemini')">
+          <span class="method-icon">🤖</span>
+          <span class="method-label">Gemini Scan</span>
+          <span class="method-desc">Best accuracy</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Upload Section (existing, shown when Upload selected) -->
+    <div class="cert-upload-btns" id="certUploadBtns" style="display:none">
       <button class="camera-btn" id="certCameraBtn"><span>📷</span>Camera</button>
       <button class="file-btn" id="certFileBtn"><span>📁</span>Choose File</button>
     </div>
+
+    <!-- Gemini Section -->
+    <div class="gemini-section" id="geminiSection">
+      <div class="gemini-privacy-banner">
+        <div class="warn-title">⚠️ Privacy Notice</div>
+        <div class="warn-text">By uploading your document to Gemini, Google will receive and may retain a copy of your image. For total privacy, use the Upload &amp; Scan option instead.</div>
+      </div>
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
+      <div class="cert-type-selector" id="geminiCertType">
+        <button class="cert-type-btn active" data-type="birth" onclick="setGeminiType('birth')">Birth</button>
+        <button class="cert-type-btn" data-type="marriage" onclick="setGeminiType('marriage')">Marriage</button>
+        <button class="cert-type-btn" data-type="death" onclick="setGeminiType('death')">Death</button>
+      </div>
+      <a class="gemini-open-btn" id="geminiOpenBtn" href="https://gemini.google.com/app" target="_blank" rel="noopener">1. Open Gemini →</a>
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;">2. Paste Gemini's JSON result below:</div>
+      <textarea class="gemini-paste-box" id="geminiPasteBox" placeholder="Paste the JSON output from Gemini here..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
+        <button class="gemini-back-btn" style="background:#4a3a22;color:#f5eedc;border-color:#4a3a22;" onclick="parseGeminiResult()">Parse Result</button>
+      </div>
+    </div>
+
     <div class="cert-upload-area" id="certUploadArea" style="display:none">
       <div style="font-size:24px;margin-bottom:8px;">📄</div>
       <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#4a3a22;">Tap to upload cert</div>
@@ -1634,7 +1724,10 @@ function clearCertPanel() {
   document.getElementById('certStatus').textContent = '';
   document.getElementById('certStatus').className = 'cert-status';
   document.getElementById('certResults').innerHTML = '';
-  document.getElementById('certUploadBtns').style.display = 'flex';
+  document.getElementById('certMethodSelect').style.display = 'flex';
+  document.getElementById('certUploadBtns').style.display = 'none';
+  document.getElementById('geminiSection').classList.remove('active');
+  document.getElementById('geminiPasteBox').value = '';
   certPanel.classList.remove('has-results');
 }
 // Shorthand called by card badges and detail gallery
@@ -1731,6 +1824,7 @@ async function processDocFile(file) {
     pendingDocImage = ev.target.result;
     document.getElementById('certPreviewImg').src = pendingDocImage;
     document.getElementById('certPreviewArea').style.display = 'block';
+    document.getElementById('certMethodSelect').style.display = 'none';
     document.getElementById('certUploadBtns').style.display = 'none';
     document.getElementById('certUploadArea').style.display = 'none';
   };
@@ -2008,6 +2102,186 @@ function entrySummary(entry, type) {
   if (type === 'birth') return name + (date ? ' — b. ' + date : '');
   if (type === 'death') return name + (date ? ' — d. ' + date : '');
   return name;
+}
+
+// ─── GEMINI SCAN FLOW ───
+let geminiCertType = 'birth';
+
+function selectCertMethod(method) {
+  document.getElementById('certMethodSelect').style.display = 'none';
+  if (method === 'upload') {
+    document.getElementById('certUploadBtns').style.display = 'flex';
+    document.getElementById('certUploadArea').style.display = 'block';
+  } else if (method === 'gemini') {
+    document.getElementById('geminiSection').classList.add('active');
+    updateGeminiPrompt();
+  }
+}
+
+function showCertMethods() {
+  document.getElementById('certMethodSelect').style.display = 'flex';
+  document.getElementById('certUploadBtns').style.display = 'none';
+  document.getElementById('certUploadArea').style.display = 'none';
+  document.getElementById('geminiSection').classList.remove('active');
+  document.getElementById('certStatus').style.display = 'none';
+  document.getElementById('certResults').innerHTML = '';
+  lastTranscription = null;
+  certPanel.classList.remove('has-results');
+}
+
+function setGeminiType(type) {
+  geminiCertType = type;
+  document.querySelectorAll('#geminiCertType .cert-type-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+  updateGeminiPrompt();
+}
+
+function getGeminiPrompt(type) {
+  var base = 'You are a document transcription assistant. I will upload an image of a Scottish ' + type + ' certificate. Extract the following fields and return ONLY a JSON object with these exact keys. No markdown, no explanation, no extra text before or after the JSON.\n\n';
+  if (type === 'birth') {
+    return base + 'Required keys:\n- registration_date\n- child_name\n- child_sex\n- father_name\n- father_profession\n- mother_name\n- mother_maiden_name\n- district\n- county\n\nIf any field is not visible or unreadable, use an empty string as the value.';
+  } else if (type === 'marriage') {
+    return base + 'Required keys:\n- marriage_date\n- groom_name\n- groom_age\n- groom_profession\n- bride_name\n- bride_age\n- bride_profession\n- groom_father_name\n- groom_mother_name\n- groom_mother_maiden\n- bride_father_name\n- bride_mother_name\n- bride_mother_maiden\n- minister_name\n- district\n\nIf any field is not visible or unreadable, use an empty string as the value.';
+  } else if (type === 'death') {
+    return base + 'Required keys:\n- death_date\n- deceased_name\n- deceased_age\n- deceased_profession\n- deceased_spouse_name\n- father_name\n- mother_name\n- mother_maiden_name\n- cause_of_death\n- district\n- county\n- informant_name\n- informant_relationship\n\nIf any field is not visible or unreadable, use an empty string as the value.';
+  }
+  return base;
+}
+
+function updateGeminiPrompt() {
+  var prompt = getGeminiPrompt(geminiCertType);
+  var btn = document.getElementById('geminiOpenBtn');
+  btn.onclick = function() {
+    if (navigator.clipboard && navigator.clipboard.writeText) {
+      navigator.clipboard.writeText(prompt).then(function() {
+        showToast('Prompt copied! Paste into Gemini chat.');
+      }).catch(function() {
+        showToast('Opening Gemini. Copy prompt from below if needed.');
+      });
+    } else {
+      showToast('Opening Gemini. Copy prompt from below if needed.');
+    }
+    document.getElementById('geminiPasteBox').placeholder = 'Paste Gemini\'s JSON result here...\n\nPrompt (if clipboard failed):\n' + prompt;
+    return true;
+  };
+}
+
+function transformGeminiToNested(flat, type) {
+  if (type === 'marriage') {
+    return {
+      type: 'marriage',
+      date: flat.marriage_date || flat.date || '',
+      groom: {
+        name: flat.groom_name || '',
+        age: flat.groom_age || '',
+        profession: flat.groom_profession || ''
+      },
+      bride: {
+        name: flat.bride_name || '',
+        age: flat.bride_age || '',
+        profession: flat.bride_profession || ''
+      },
+      groomFather: {
+        name: flat.groom_father_name || ''
+      },
+      groomMother: {
+        name: flat.groom_mother_name || '',
+        maidenName: flat.groom_mother_maiden || ''
+      },
+      brideFather: {
+        name: flat.bride_father_name || ''
+      },
+      brideMother: {
+        name: flat.bride_mother_name || '',
+        maidenName: flat.bride_mother_maiden || ''
+      }
+    };
+  } else if (type === 'birth') {
+    return {
+      type: 'birth',
+      child: {
+        name: flat.child_name || '',
+        birthDate: flat.registration_date || flat.child_birthDate || flat.date || ''
+      },
+      father: {
+        name: flat.father_name || '',
+        profession: flat.father_profession || ''
+      },
+      mother: {
+        name: flat.mother_name || '',
+        maidenName: flat.mother_maiden_name || flat.mother_maiden || ''
+      },
+      district: flat.district || ''
+    };
+  } else if (type === 'death') {
+    return {
+      type: 'death',
+      deathDate: flat.death_date || flat.date || '',
+      deceased: {
+        name: flat.deceased_name || '',
+        age: flat.deceased_age || '',
+        profession: flat.deceased_profession || '',
+        spouseName: flat.deceased_spouse_name || flat.spouse_name || ''
+      },
+      father: {
+        name: flat.father_name || ''
+      },
+      mother: {
+        name: flat.mother_name || '',
+        maidenName: flat.mother_maiden_name || flat.mother_maiden || ''
+      },
+      causeOfDeath: flat.cause_of_death || '',
+      district: flat.district || ''
+    };
+  }
+  return flat;
+}
+
+function parseGeminiResult() {
+  var raw = document.getElementById('geminiPasteBox').value.trim();
+  var cs = document.getElementById('certStatus');
+
+  if (!raw) {
+    cs.className = 'cert-status error';
+    cs.textContent = 'Please paste Gemini result first.';
+    cs.style.display = 'block';
+    return;
+  }
+
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Parsing...';
+  cs.style.display = 'block';
+
+  var parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    var jsonMatch = raw.match(/\{[\s\S]*\}\s*$/);
+    if (jsonMatch) {
+      try {
+        parsed = JSON.parse(jsonMatch[0]);
+      } catch (e2) {
+        cs.className = 'cert-status error';
+        cs.innerHTML = 'Could not parse JSON. Make sure you copied only the JSON object from Gemini.';
+        cs.style.display = 'block';
+        return;
+      }
+    } else {
+      cs.className = 'cert-status error';
+      cs.innerHTML = 'No JSON object found. Please paste the JSON output from Gemini.';
+      cs.style.display = 'block';
+      return;
+    }
+  }
+
+  var entry = transformGeminiToNested(parsed, geminiCertType);
+  lastTranscription = { type: geminiCertType, entries: [entry] };
+
+  cs.className = 'cert-status success';
+  cs.textContent = '\u2713 Parsed ' + geminiCertType + ' certificate';
+  renderTranscriptionResults(lastTranscription);
+  certPanel.classList.add('has-results');
 }
 
 // Apply scanned cert data to the people array
@@ -4496,6 +4770,10 @@ function exportGedcom() {
   .cert-upload-btns button { padding: 12px 6px; font-size: 11px; }
   .cert-upload-btns button span { font-size: 22px !important; }
   .cert-actions button { flex: 1 1 100%; }
+  .cert-method-btn { padding: 12px 8px; }
+  .cert-method-btn .method-icon { font-size: 22px; }
+  .cert-method-btn .method-label { font-size: 12px; }
+  .gemini-paste-box { min-height: 100px; font-size: 10px; }
 }
 </style>
 <!-- Ambiguity Resolution Modal -->
