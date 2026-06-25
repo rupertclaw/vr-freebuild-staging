@@ -6,13 +6,13 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="20250624-gemini12">
+<meta name="version" content="20250624-gemini13">
 <title>Vaulted Roots</title>
 <link rel="manifest" href="./manifest.json">
 <script>
 // Cache-bust: force refresh on version change
 (function(){
-  var expectedVersion = '20250624-gemini12';
+  var expectedVersion = '20250624-gemini13';
   var urlVersion = new URLSearchParams(location.search).get('v');
   if (urlVersion !== expectedVersion) {
     var url = new URL(location.href);
@@ -2235,7 +2235,7 @@ function setGeminiType(type) {
 }
 
 function getGeminiPrompt(type) {
-  var base = 'You are a document transcription assistant. I will upload an image of a Scottish ' + type + ' certificate. Extract the following fields and return ONLY a JSON object with these exact keys. No markdown, no explanation, no extra text before or after the JSON.\n\n';
+  var base = 'You are a document transcription assistant. I will upload an image of a ' + type + ' certificate. Extract the following fields and return ONLY a JSON object with these exact keys. No markdown, no explanation, no extra text before or after the JSON.\n\n';
   if (type === 'birth') {
     return base + 'Required keys:\n- registration_date\n- child_name\n- child_sex\n- father_name\n- father_profession\n- mother_name\n- mother_maiden_name\n- district\n- county\n\nIf any field is not visible or unreadable, use an empty string as the value.';
   } else if (type === 'marriage') {
