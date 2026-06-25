@@ -923,7 +923,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   </div>
 </div>
 
-<!-- Country Selector Modal (first use) -->
+<!-- Country Selector Modal (first use) — DISABLED: users pick via toolbar dropdown or card links -->
+<!--
 <div id="countryModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10001;justify-content:center;align-items:center;">
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:340px;width:90%;text-align:center;">
     <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:8px;">Welcome to Vaulted Roots</div>
@@ -934,6 +935,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     <button id="countryModalOk" style="padding:10px 24px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;">Start Researching</button>
   </div>
 </div>
+-->
 
 <!-- Privacy Splash Modal (first visit) -->
 <div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
@@ -1071,7 +1073,8 @@ function setCountry(code) {
 function populateCountrySelect() {
   const sel = document.getElementById('countrySelect');
   if (!sel) return;
-  sel.innerHTML = '<option value="" disabled>Country...</option>';
+  // Add an explicit "All" option for no country filter
+  sel.innerHTML = '<option value="" selected>All Countries</option>';
   Object.entries(COUNTRY_SOURCES).forEach(([code, info]) => {
     const opt = document.createElement('option');
     opt.value = code; opt.textContent = info.name;
@@ -4154,28 +4157,9 @@ populateCountrySelect();
 document.getElementById('countrySelect').addEventListener('change', (e) => {
   setCountry(e.target.value);
 });
-function showCountryModal() {
-  const modal = document.getElementById('countryModal');
-  const modalSel = document.getElementById('countryModalSelect');
-  modalSel.innerHTML = '<option value="" disabled selected>Choose a country...</option>';
-  Object.entries(COUNTRY_SOURCES).forEach(([code, info]) => {
-    const opt = document.createElement('option');
-    opt.value = code; opt.textContent = info.name;
-    modalSel.appendChild(opt);
-  });
-  modal.style.display = 'flex';
-  updateExpandGenBtn();
-}
-document.getElementById('countryModalOk').addEventListener('click', () => {
-  const val = document.getElementById('countryModalSelect').value;
-  if (!val) return;
-  setCountry(val);
-  document.getElementById('countryModal').style.display = 'none';
-  updateExpandGenBtn();
-});
-if (!getCountry()) {
-  setTimeout(() => showCountryModal(), 800);
-}
+// NOTE: country modal removed — users select via toolbar dropdown or card links
+// If we ever want to re-enable the first-use modal, restore:
+// if (!getCountry()) { setTimeout(() => showCountryModal(), 800); }
 
 function centerOnGen0() {
   // Find Graeme (the root person, ID 1, gen 0)
