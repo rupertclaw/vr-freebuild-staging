@@ -3,7 +3,23 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+<meta http-equiv="Pragma" content="no-cache">
+<meta http-equiv="Expires" content="0">
+<meta name="version" content="20250624-gemini">
 <title>Vaulted Roots</title>
+<script>
+// Cache-bust: force refresh on version change
+(function(){
+  var expectedVersion = '20250624-gemini';
+  var urlVersion = new URLSearchParams(location.search).get('v');
+  if (urlVersion !== expectedVersion) {
+    var url = new URL(location.href);
+    url.searchParams.set('v', expectedVersion);
+    location.replace(url.toString());
+  }
+})();
+</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
 
@@ -789,12 +805,31 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
       <button class="gemini-open-btn" id="geminiCopyBtn" onclick="copyGeminiPrompt()">📋 Copy Prompt to Clipboard</button>
 
+      <div class="gemini-steps" style="background:#f0e8d8;border:1px solid #c4b49a;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:#4a3a22;">
+        <div style="font-weight:600;margin-bottom:6px;font-size:13px;">📱 How this works:</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">1</span>
+            <span>Tap the button above to copy the extraction prompt</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">2</span>
+            <span>Open your web browser and go to <b>gemini.google.com</b></span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">3</span>
+            <span>Paste the prompt, then upload your certificate photo</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">4</span>
+            <span>Copy Gemini's JSON output and paste it in the box below</span>
+          </div>
+        </div>
+      </div>
+
       <div class="gemini-status" id="geminiStatus" style="display:none;font-size:12px;color:#166534;background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;line-height:1.5;">
         <b>Prompt copied!</b><br>
-        1. Open <a href="https://gemini.google.com/app" target="_blank" rel="noopener" style="color:#166534;font-weight:600;">gemini.google.com</a> in your browser<br>
-        2. Paste the prompt into Gemini's chat box<br>
-        3. Upload your certificate image<br>
-        4. Copy Gemini's JSON response and paste it below
+        Now open gemini.google.com in your browser and follow the steps above.
       </div>
 
       <div style="margin-bottom:10px;">
