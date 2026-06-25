@@ -6,13 +6,13 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="20250624-gemini11">
+<meta name="version" content="20250624-gemini12">
 <title>Vaulted Roots</title>
 <link rel="manifest" href="./manifest.json">
 <script>
 // Cache-bust: force refresh on version change
 (function(){
-  var expectedVersion = '20250624-gemini11';
+  var expectedVersion = '20250624-gemini12';
   var urlVersion = new URLSearchParams(location.search).get('v');
   if (urlVersion !== expectedVersion) {
     var url = new URL(location.href);
@@ -3917,7 +3917,8 @@ async function loadSession(file) {
     showToast('Load failed: ' + (err.message || 'Unknown error'));
   }
 }
-document.getElementById('saveBtn').addEventListener('click', () => { saveSession(); });
+// Removed duplicate listener — saveBtn uses inline onclick="saveSession()" in HTML
+// document.getElementById('saveBtn') binding already exists at top-level button markup
 document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('loadFileInput').click());
 document.getElementById('loadFileInput').addEventListener('change', (e) => {
   const file = e.target.files[0]; if (file) loadSession(file); e.target.value = '';
@@ -3959,7 +3960,7 @@ function expandNextGen() {
 }
 document.getElementById('expandGenBtn').addEventListener('click', expandNextGen);
 
-document.getElementById('nextStepsBtn').addEventListener('click', openGuidancePanel);
+// Removed duplicate listen
 document.getElementById('guidanceClose').addEventListener('click', closeGuidancePanel);
 document.getElementById('guidancePanel').addEventListener('click', (e) => {
   if (e.target === document.getElementById('guidancePanel')) closeGuidancePanel();
@@ -4224,7 +4225,7 @@ function toggleDarkMode() {
     if (btn) btn.textContent = '☀️';
   }
 }
-document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
+// Removed duplicate listen
 // Sync icon on page load
 (function() {
   const btn = document.getElementById('darkModeToggle');
@@ -4246,7 +4247,7 @@ function openPoster() {
     location.href = 'heritage-poster.html?_t=' + Date.now();
   }
 }
-document.getElementById('viewPosterBtn').addEventListener('click', openPoster);
+// Removed duplicate listen
 
 // Print — ask user which format they want, then route accordingly
 function openPrintDialog() {
@@ -4380,7 +4381,7 @@ function openPrintDialog() {
   dlg.querySelector('#dlgCancel').addEventListener('click', cleanup);
   dlg.addEventListener('click', (e) => { if (e.target === dlg) cleanup(); });
 }
-document.getElementById('printTreeBtn').addEventListener('click', openPrintDialog);
+// Removed duplicate listen
 
 // ═══════════════════════════════════════════════════════════════
 // GEDCOM IMPORT (client-side converter)
