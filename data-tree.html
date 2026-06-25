@@ -6,13 +6,13 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="20250624-gemini9">
+<meta name="version" content="20250624-gemini10">
 <title>Vaulted Roots</title>
 <link rel="manifest" href="./manifest.json">
 <script>
 // Cache-bust: force refresh on version change
 (function(){
-  var expectedVersion = '20250624-gemini9';
+  var expectedVersion = '20250624-gemini10';
   var urlVersion = new URLSearchParams(location.search).get('v');
   if (urlVersion !== expectedVersion) {
     var url = new URL(location.href);
@@ -171,11 +171,13 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   justify-content: flex-end;
 }
 .header-emblem {
-  align-self: center;
-  height: 56px; width: 56px;
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  height: 100px; width: 100px;
   border-radius: 50%;
-  object-fit: cover; flex-shrink: 0;
-  margin: 2px auto;
+  object-fit: cover;
+  z-index: 301;
 }
 .offline-badge {
   display: none;
