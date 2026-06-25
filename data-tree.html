@@ -6,13 +6,13 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="20250624-gemini7">
+<meta name="version" content="20250624-gemini8">
 <title>Vaulted Roots</title>
 <link rel="manifest" href="./manifest.json">
 <script>
 // Cache-bust: force refresh on version change
 (function(){
-  var expectedVersion = '20250624-gemini7';
+  var expectedVersion = '20250624-gemini8';
   var urlVersion = new URLSearchParams(location.search).get('v');
   if (urlVersion !== expectedVersion) {
     var url = new URL(location.href);
@@ -816,8 +816,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     <!-- Gemini Section -->
     <div class="gemini-section" id="geminiSection">
       <div class="gemini-privacy-banner">
-        <div class="warn-title">Privacy Notice</div>
-        <div class="warn-text">By uploading your document to Gemini, Google will receive and may retain a copy. For total privacy, use the Upload &amp; Scan option instead.</div>
+        <div class="warn-title">⚠️ Self-Custody Break</div>
+        <div class="warn-text">By uploading your document to Gemini, Google will receive and may retain a copy. For true self-custody, use the Upload &amp; Scan option instead.</div>
       </div>
 
       <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
@@ -943,17 +943,17 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
     <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:48px;margin-bottom:8px;">🔒</div>
-      <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:4px;">Your Data. Your Device.</div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b5537;">How Vaulted Roots protects your family history</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:4px;">Self-Custody Data</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b5537;">Your family tree. Your device. Nobody else.</div>
     </div>
     <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#2a1f10;line-height:1.6;margin-bottom:16px;">
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">📱</div>
-        <div><strong>Stays on your device.</strong> Everything is saved locally in your browser. No servers, no cloud, no accounts.</div>
+        <div><strong>Self-custody by design.</strong> Everything stays on your device. No servers, no cloud, no accounts.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">🔐</div>
-        <div><strong>Encrypted storage.</strong> Your tree is encrypted in your device's own storage. We cannot read it, even if we wanted to.</div>
+        <div><strong>Encrypted in your browser.</strong> Your tree lives in your device's own encrypted storage. We cannot read it, even if we wanted to.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">🚫</div>
@@ -969,7 +969,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </div>
     </div>
     <div style="background:#e8f0e0;border:1px solid #6b8e5a;border-radius:6px;padding:10px;margin-bottom:16px;font-family:'Cormorant Garamond',serif;font-size:12px;color:#3a5a2a;">
-      <strong>Compare:</strong> Other sites upload your family data to their servers and use it to train AI. Vaulted Roots never does this.
+      <strong>Compare:</strong> Other sites upload your family data to their servers and use it to train AI. Vaulted Roots is self-custody — we never see your tree.
     </div>
     <button id="privacyModalOk" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;margin-bottom:8px;">Dismiss</button>
     <button id="privacyModalDismissForever" style="width:100%;padding:10px;border:none;background:transparent;color:#6b5537;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Dismiss forever — do not show again</button>
@@ -3610,7 +3610,7 @@ function renderOnboardingGuide() {
     <p style="margin:0 0 8px;"><strong>Moving to or from another genealogy site?</strong> GEDCOM is the universal family tree format. Import from Ancestry, FamilySearch, or MyHeritage, or export your tree to take anywhere.</p>
     <ol style="margin:0;padding-left:18px;">
       <li><strong>Export as GEDCOM.</strong> On your current site, look for "Export" or "Download" and choose the GEDCOM format. This is the universal family tree format.</li>
-      <li><strong>Convert right here.</strong> Tap the button below, select your <code>.ged</code> file, and Vaulted Roots will convert it to a <code>.familytree</code> file you can load immediately. Your file never leaves your device.</li>
+      <li><strong>Convert right here.</strong> Tap the button below, select your <code>.ged</code> file, and Vaulted Roots will convert it to a <code>.familytree</code> file you can load immediately. Self-custody: your file never leaves your device.</li>
       <li><strong>Load into Vaulted Roots.</strong> Tap the 📂 Load button and select your <code>.familytree</code> file. Your tree, names, dates, and documents will appear.</li>
     </ol>
     <div style="margin:10px 0;text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
@@ -3618,7 +3618,7 @@ function renderOnboardingGuide() {
       <button onclick="document.getElementById('gedcomFileInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
       <button onclick="exportGedcom()" style="padding:10px 16px;border:2px solid #4a5a8a;border-radius:4px;background:#4a5a8a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">📤 Export GEDCOM</button>
     </div>
-    <p style="margin:8px 0 0;"><em>Export creates a standard <code>.ged</code> file that any genealogy software can read. Your data never leaves your device.</em></p>
+    <p style="margin:8px 0 0;"><em>Export creates a standard <code>.ged</code> file that any genealogy software can read. Self-custody: your data never leaves your device.</em></p>
   </div>
 </div>
 <div id="shareGuide" style="background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;margin-bottom:10px;overflow:hidden;">
