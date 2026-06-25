@@ -8,6 +8,7 @@
 <meta http-equiv="Expires" content="0">
 <meta name="version" content="20250624-gemini">
 <title>Vaulted Roots</title>
+<link rel="manifest" href="./manifest.json">
 <script>
 // Cache-bust: force refresh on version change
 (function(){
@@ -19,6 +20,13 @@
     location.replace(url.toString());
   }
 })();
+
+// Register Service Worker for offline support
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .then(function(reg) { console.log('[SW] Registered', reg.scope); })
+    .catch(function(err) { console.error('[SW] Failed', err); });
+}
 </script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
@@ -169,8 +177,23 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   border-radius: 50%;
   object-fit: cover; flex-shrink: 0;
 }
+.offline-badge {
+  display: none;
+  position: absolute; right: 14px; top: 90px;
+  background: #991b1b;
+  color: #fee2e2;
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 10px;
+  font-family: 'Cormorant Garamond', serif;
+  letter-spacing: 0.5px;
+  z-index: 50;
+}
+.offline-badge.visible { display: block; }
 @media (max-width: 380px) {
   .header-emblem { height: 56px; width: 56px; }
+  .offline-badge { top: 66px; font-size: 9px; padding: 1px 6px; }
   .header-btn { width: 28px; height: 28px; font-size: 14px; }
   .country-select { padding: 3px 5px; font-size: 10px; min-width: 70px; }
   .header-actions { gap: 2px; }
@@ -715,6 +738,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     </div>
   </div>
   <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
+  <div class="offline-badge" id="offlineBadge">OFFLINE</div>
   <div class="header-bottom">
     <div class="header-left-group">
       <div class="zoom-controls">
@@ -4832,6 +4856,18 @@ function exportGedcom() {
   URL.revokeObjectURL(url);
   showToast('GEDCOM exported: ' + realPeople.length + ' people, ' + famCount + ' families');
 }
+
+// Offline indicator
+function updateOfflineBadge() {
+  var badge = document.getElementById('offlineBadge');
+  if (badge) {
+    badge.classList.toggle('visible', !navigator.onLine);
+  }
+}
+window.addEventListener('online', updateOfflineBadge);
+window.addEventListener('offline', updateOfflineBadge);
+// Check initial state after a short delay to let DOM settle
+setTimeout(updateOfflineBadge, 100);
 </script>
 <style>
 @media (max-width: 480px) {

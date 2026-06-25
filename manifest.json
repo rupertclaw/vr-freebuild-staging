@@ -1,0 +1,18 @@
+{
+  "name": "Vaulted Roots",
+  "short_name": "VaultedRoots",
+  "description": "Build your family tree. Private, offline, yours.",
+  "start_url": "./data-tree.html",
+  "display": "standalone",
+  "orientation": "any",
+  "background_color": "#3e2b1a",
+  "theme_color": "#3e2b1a",
+  "icons": [
+    {
+      "src": "./vaulted-roots-shield.png",
+      "sizes": "200x200",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}
