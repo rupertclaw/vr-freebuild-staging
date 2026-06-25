@@ -762,7 +762,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn cert-btn" id="certToggle" title="Upload certificate" onclick="toggleCertPanel()">📎</button>
       <button class="header-btn" id="darkModeToggle" title="Toggle dark mode" onclick="toggleDarkMode()">🌙</button>
       <button class="header-btn" id="printTreeBtn" title="Print tree" onclick="openPrintDialog()">🖨️</button>
-      <button class="header-btn" id="resetBtn" title="Reset tree" onclick="doResetTree()">🔄</button>
+      <button class="header-btn" id="resetBtn" title="Reset tree">🔄</button>
     </div>
   </div>
 </div>
@@ -914,8 +914,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 <!-- Custom Confirm Dialog -->
 <div id="confirmDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;justify-content:center;align-items:center;">
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:320px;width:90%;text-align:center;">
-    <div id="confirmTitle" style="font-family: 'Cinzel Decorative', serif;font-size:16px;color:#3e2b1a;margin-bottom:12px;">Reset Tree</div>
-    <div id="confirmMessage" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;">Clear all data and start fresh? This cannot be undone.</div>
+    <div id="confirmTitle" style="font-family: 'Cinzel Decorative', serif;font-size:16px;color:#991b1b;margin-bottom:12px;">⚠️ Wipe Tree Clean?</div>
+    <div id="confirmMessage" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;">This will permanently remove ALL people, documents, photos, and certificates from your tree.<br><br><b>This cannot be undone.</b><br><br>To keep your data, tap Cancel and use Save Session first.</div>
     <div style="display:flex;gap:10px;justify-content:center;">
       <button id="confirmCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
       <button id="confirmOk" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#5c2a2a;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Reset</button>
