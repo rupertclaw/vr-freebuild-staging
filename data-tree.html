@@ -2084,10 +2084,12 @@ async function sendToTranscriptionAPI(base64) {
         certPanel.classList.add('has-results');
         return;
       }
-      lastTranscription = json.data;
+      // API returns {success, model, type, entries} not {success, data}
+      const responseData = { type: json.type, entries: json.entries };
+      lastTranscription = responseData;
       cs.className = 'cert-status success';
-      cs.textContent = '✓ Cert type: ' + (json.data.type || 'unknown').toUpperCase();
-      renderTranscriptionResults(json.data);
+      cs.textContent = '✓ Cert type: ' + (json.type || 'unknown').toUpperCase();
+      renderTranscriptionResults(responseData);
       certPanel.classList.add('has-results');
       clearTimeout(uploadTimeout);
       return; // Success!
@@ -2144,6 +2146,11 @@ function renderTranscriptionResults(data) {
     });
     container.appendChild(card);
   });
+  // Disclaimer banner
+  const disclaimer = document.createElement('div');
+  disclaimer.style.cssText = 'margin-top:10px;padding:8px 10px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:11px;color:#92400e;line-height:1.4;';
+  disclaimer.innerHTML = '⚠️ <strong>Verify before applying.</strong> AI transcription may contain errors. Please check all names, dates, and places against your certificate before adding to your tree.';
+  container.appendChild(disclaimer);
 }
 
 // Sync editable field values back into lastTranscription
