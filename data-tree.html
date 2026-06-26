@@ -517,6 +517,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 /* ─── Gemini section ─── */
 .gemini-section { display:none; }
 .gemini-section.active { display:block; }
+
+/* ─── Venice section ─── */
+.venice-section { display:none; }
+.venice-section.active { display:block; }
+
 .gemini-privacy-banner {
   background:#fef3c7; border:2px solid #f59e0b; border-radius:8px;
   padding:12px; margin-bottom:12px;
@@ -795,36 +800,83 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     <div class="cert-method-select" id="certMethodSelect">
       <div style="font-size:12px;color:#6b5537;margin-bottom:4px;font-weight:600;text-align:center">Extract data using:</div>
       <div class="cert-method-row">
-        <button class="cert-method-btn" onclick="selectCertMethod('upload')">
-          <span class="method-icon">📷</span>
-          <span class="method-label">Upload &amp; Scan</span>
-          <span class="method-desc">Private — zero data retention</span>
+        <button class="cert-method-btn" onclick="selectCertMethod('venice')">
+          <span class="method-icon">🛡️</span>
+          <span class="method-label">Venice</span>
+          <span class="method-desc">100% private. Best for printed text</span>
         </button>
         <button class="cert-method-btn" onclick="selectCertMethod('gemini')">
           <span class="method-icon">🤖</span>
-          <span class="method-label">Gemini Scan</span>
-          <span class="method-desc">Best accuracy</span>
+          <span class="method-label">Gemini</span>
+          <span class="method-desc">More accurate. Google may see data</span>
         </button>
       </div>
     </div>
 
-    <!-- Upload Section -->
-    <div class="cert-upload-btns" id="certUploadBtns" style="display:none">
-      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;text-align:center">Certificate type:</div>
-      <div class="cert-type-selector" id="uploadCertType">
-        <button class="cert-type-btn active" data-type="birth" onclick="setUploadCertType('birth',this)">Birth</button>
-        <button class="cert-type-btn" data-type="marriage" onclick="setUploadCertType('marriage',this)">Marriage</button>
-        <button class="cert-type-btn" data-type="death" onclick="setUploadCertType('death',this)">Death</button>
+    <!-- Venice Paste Section -->
+    <div class="venice-section" id="veniceSection">
+      <div class="gemini-privacy-banner" style="background:#dcfce7;border-color:#166534;">
+        <div class="warn-title" style="color:#166534;">Privacy Notice</div>
+        <div class="warn-text" style="color:#166534;">Venice AI is 100% private. Your certificate image is processed by Venice and is never stored or used to train models.</div>
       </div>
-      <button class="camera-btn" id="certCameraBtn"><span>📷</span>Camera</button>
-      <button class="file-btn" id="certFileBtn"><span>📁</span>Choose File</button>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
+      <div class="cert-type-selector" id="veniceCertType">
+        <button class="cert-type-btn active" data-type="birth" onclick="setVeniceType('birth')">Birth</button>
+        <button class="cert-type-btn" data-type="marriage" onclick="setVeniceType('marriage')">Marriage</button>
+        <button class="cert-type-btn" data-type="death" onclick="setVeniceType('death')">Death</button>
+      </div>
+
+      <button class="gemini-open-btn" id="veniceCopyBtn" onclick="copyVenicePrompt()">📋 Copy Prompt to Clipboard</button>
+      <button class="gemini-open-btn" style="background:#7c3aed;border-color:#5b21b6;margin-top:8px;" onclick="openVenice()">🛡️ Open Venice</button>
+
+      <div class="gemini-steps" style="background:#f0e8d8;border:1px solid #c4b49a;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:#4a3a22;">
+        <div style="font-weight:600;margin-bottom:6px;font-size:13px;">📱 How this works:</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">1</span>
+            <span>Tap the button above to copy the extraction prompt</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">2</span>
+            <span>Tap <b>Open Venice</b> — or go to <b>venice.ai/chat</b> manually and sign in</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">3</span>
+            <span>Paste the prompt, then upload your certificate photo</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">4</span>
+            <span>Copy Venice's JSON output and paste it in the box below</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gemini-status" id="veniceStatus" style="display:none;font-size:12px;color:#166534;background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;line-height:1.5;">
+        <b>Prompt copied!</b><br>
+        Now tap <b>Open Venice</b> above, or manually go to venice.ai/chat
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <button onclick="toggleVenicePrompt()" style="background:none;border:none;color:#4a3a22;font-size:12px;font-family:'Cormorant Garamond',serif;cursor:pointer;text-decoration:underline;">
+          View the prompt
+        </button>
+        <div id="venicePromptBox" style="display:none;background:#2a1f15;color:#e8dcc8;padding:10px;border-radius:6px;font-size:11px;font-family:'Courier New',monospace;white-space:pre-wrap;max-height:200px;overflow:auto;margin-top:6px;border:1px solid #4a3a22;"></div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;">Paste Venice's JSON response:</div>
+      <textarea class="gemini-paste-box" id="venicePasteBox" placeholder="Paste the JSON output from Venice here..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
+        <button class="gemini-back-btn" style="background:#4a3a22;color:#f5eedc;border-color:#4a3a22;" onclick="parseVeniceResult()">Parse Result</button>
+      </div>
     </div>
 
     <!-- Gemini Section -->
     <div class="gemini-section" id="geminiSection">
       <div class="gemini-privacy-banner">
         <div class="warn-title">Privacy Notice</div>
-        <div class="warn-text">By uploading your document to Gemini, Google will receive and may retain a copy. For total privacy, use the Upload &amp; Scan option instead.</div>
+        <div class="warn-text">By uploading your document to Gemini, Google will receive and may retain a copy. For total privacy, use the Venice option instead.</div>
       </div>
 
       <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
@@ -1714,11 +1766,8 @@ function openDetail(person) {
       updateExpandGenBtn();
       const headerTitle = certPanel.querySelector('.cert-header div');
       if (headerTitle) headerTitle.textContent = '📷 Scan Certificate — ' + person.name;
-      showToast('Select a certificate image for ' + person.name);
-      const fi = document.getElementById('certFileInput');
-      console.log('[SCAN CERT] fileInput exists:', !!fi);
-      fi.value = '';
-      setTimeout(() => { fi.click(); console.log('[SCAN CERT] fileInput.click() fired'); }, 100);
+      showToast('Select Venice (private) or Gemini (accurate) for ' + person.name);
+      showCertMethods();
     });
   }
   const daManualBtn = document.getElementById('daManualBtn');
@@ -1824,7 +1873,6 @@ function clearCertPanel() {
   lastTranscription = null;
   pendingDocFile = null;
   pendingDocImage = null;
-  uploadCertType = 'birth';
   document.getElementById('certPreviewImg').src = '';
   document.getElementById('certPreviewArea').style.display = 'none';
   document.getElementById('certStatus').style.display = 'none';
@@ -1832,7 +1880,8 @@ function clearCertPanel() {
   document.getElementById('certStatus').className = 'cert-status';
   document.getElementById('certResults').innerHTML = '';
   document.getElementById('certMethodSelect').style.display = 'flex';
-  document.getElementById('certUploadBtns').style.display = 'none';
+  document.getElementById('veniceSection')?.classList.remove('active');
+  document.getElementById('venicePasteBox').value = '';
   document.getElementById('geminiSection').classList.remove('active');
   document.getElementById('geminiPasteBox').value = '';
   certPanel.classList.remove('has-results');
@@ -1899,10 +1948,9 @@ document.getElementById('certClose').addEventListener('click', () => {
   history.back();
   updateExpandGenBtn();
 });
-document.getElementById('certUploadArea').addEventListener('click', () => document.getElementById('certFileInput').click());
-document.getElementById('certFileBtn').addEventListener('click', () => document.getElementById('certFileInput').click());
-document.getElementById('certCameraBtn').addEventListener('click', () => document.getElementById('certCameraInput').click());
-document.getElementById('certFileInput').addEventListener('change', async (e) => {
+document.getElementById('certFileBtn')?.addEventListener('click', () => document.getElementById('certFileInput').click());
+document.getElementById('certCameraBtn')?.addEventListener('click', () => document.getElementById('certCameraInput').click());
+document.getElementById('certFileInput')?.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   console.log('[CERT FILE CHANGE] file selected:', !!file, file ? file.name : 'none', file ? Math.round(file.size/1024)+'KB' : '');
   if (!file) return;
@@ -2218,10 +2266,9 @@ let uploadCertType = 'birth';
 
 function selectCertMethod(method) {
   document.getElementById('certMethodSelect').style.display = 'none';
-  if (method === 'upload') {
-    setUploadCertType('birth');
-    document.getElementById('certUploadBtns').style.display = 'flex';
-    document.getElementById('certUploadArea').style.display = 'block';
+  if (method === 'venice') {
+    document.getElementById('veniceSection').classList.add('active');
+    updateVenicePrompt();
   } else if (method === 'gemini') {
     document.getElementById('geminiSection').classList.add('active');
     updateGeminiPrompt();
@@ -2231,8 +2278,7 @@ function selectCertMethod(method) {
 function showCertMethods() {
   uploadCertType = 'birth';
   document.getElementById('certMethodSelect').style.display = 'flex';
-  document.getElementById('certUploadBtns').style.display = 'none';
-  document.getElementById('certUploadArea').style.display = 'none';
+  document.getElementById('veniceSection')?.classList.remove('active');
   document.getElementById('geminiSection').classList.remove('active');
   document.getElementById('certStatus').style.display = 'none';
   document.getElementById('certResults').innerHTML = '';
@@ -2321,6 +2367,112 @@ function openGemini() {
 function toggleGeminiPrompt() {
   var box = document.getElementById('geminiPromptBox');
   box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+// ─── VENICE PASTE FLOW ───
+let veniceCertType = 'birth';
+
+function setVeniceType(type) {
+  veniceCertType = type;
+  document.querySelectorAll('#veniceCertType .cert-type-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+  updateVenicePrompt();
+}
+
+function updateVenicePrompt() {
+  var prompt = getGeminiPrompt(veniceCertType);
+  document.getElementById('veniceCopyBtn').dataset.prompt = prompt;
+}
+
+function copyVenicePrompt() {
+  var btn = document.getElementById('veniceCopyBtn');
+  var prompt = btn.dataset.prompt || getGeminiPrompt(veniceCertType);
+  var status = document.getElementById('veniceStatus');
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(function() {
+      showToast('Prompt copied to clipboard!');
+    }).catch(function() {
+      showToast('Could not copy automatically. Tap "View the prompt" below.');
+    });
+  } else {
+    var box = document.getElementById('venicePromptBox');
+    box.textContent = prompt;
+    box.style.display = 'block';
+    showToast('Prompt shown below. Select and copy it.');
+  }
+
+  status.style.display = 'block';
+  document.getElementById('venicePromptBox').textContent = prompt;
+}
+
+function openVenice() {
+  var url = 'https://venice.ai/chat';
+  var opened = false;
+  try {
+    var win = window.open(url, '_blank');
+    if (win) opened = true;
+  } catch (e) {}
+  if (!opened) {
+    showToast('Could not open Venice automatically. Please open venice.ai/chat manually.');
+  }
+}
+
+function toggleVenicePrompt() {
+  var box = document.getElementById('venicePromptBox');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+function parseVeniceResult() {
+  var raw = document.getElementById('venicePasteBox').value.trim();
+  var cs = document.getElementById('certStatus');
+
+  if (!raw) {
+    cs.className = 'cert-status error';
+    cs.textContent = 'Please paste Venice result first.';
+    cs.style.display = 'block';
+    return;
+  }
+
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Parsing...';
+  cs.style.display = 'block';
+
+  var parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    var clean = raw.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    try {
+      parsed = JSON.parse(clean);
+    } catch (e2) {
+      var jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch (e3) {
+          cs.className = 'cert-status error';
+          cs.innerHTML = 'Could not parse JSON. Make sure you copied only the JSON object from Venice.';
+          cs.style.display = 'block';
+          return;
+        }
+      } else {
+        cs.className = 'cert-status error';
+        cs.innerHTML = 'No JSON object found. Please paste the JSON output from Venice.';
+        cs.style.display = 'block';
+        return;
+      }
+    }
+  }
+
+  var entry = transformGeminiToNested(parsed, veniceCertType);
+  lastTranscription = { type: veniceCertType, entries: [entry] };
+
+  cs.className = 'cert-status success';
+  cs.textContent = '\u2713 Parsed ' + veniceCertType + ' certificate';
+  renderTranscriptionResults(lastTranscription);
+  certPanel.classList.add('has-results');
 }
 
 function transformGeminiToNested(flat, type) {
