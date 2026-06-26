@@ -3811,7 +3811,7 @@ function populatePosterFromDataTree(subjectId) {
     plate.dataset.docs = '';
     plate.querySelector('.name').innerHTML = 'Name';
     plate.querySelector('.years').textContent = 'YYYY — YYYY';
-    plate.style.opacity = '1';
+    plate.style.opacity = '0';
   });
 
   // Fill each slot
@@ -3843,6 +3843,7 @@ function populatePosterFromDataTree(subjectId) {
 
     plate.querySelector('.name').innerHTML = dtShortName(name, gen);
     plate.querySelector('.years').textContent = years;
+    plate.style.opacity = '1';
     filledCount++;
   });
   console.log('[DT POPULATE] filled slots:', filledCount);
