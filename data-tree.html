@@ -1171,6 +1171,7 @@ function createPerson(id, gen, name, years, status, opts) {
     occupation: opts.occupation || '',
     birthplace: opts.birthplace || '',
     maidenName: opts.maidenName || '',
+    marriedName: opts.marriedName || '',
     spouseName: opts.spouseName || '',
     spouseId: opts.spouseId || null,
     parents: opts.parents || null,
@@ -1292,7 +1293,7 @@ function colLeftForGen(g, maxGen) {
   if (g === 1) return CARD_W * 0.75;     // 97.5
   if (g === 2) return CARD_W * 1.5;       // 195 — shifted half a card right
 
-  let pos = CARD_W; // gen 2 position
+  let pos = CARD_W * 1.5; // gen 2 position (195px)
   for (let i = 3; i <= g; i++) {
     const isLast = i === maxGen;
     const isMinicard = isLast && maxGen >= 5;
@@ -1665,6 +1666,7 @@ function openDetail(person) {
     <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${person.ageAtDeath || ''}"></div>
     <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${person.marriageDate || ''}"></div>
     <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${person.maidenName}"></div>
+    <div class="detail-field"><label>Married Name</label><input type="text" id="d_marriedName" value="${person.marriedName || ''}"></div>
     <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${person.spouseName}"></div>
     <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${person.occupation}"></div>
     <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${person.birthplace}"></div>
@@ -1921,6 +1923,7 @@ function saveDetail() {
   person.ageAtDeath = document.getElementById('d_ageAtDeath').value;
   person.marriageDate = document.getElementById('d_marriageDate').value;
   person.maidenName = document.getElementById('d_maidenName').value;
+  person.marriedName = document.getElementById('d_marriedName').value;
   person.spouseName = document.getElementById('d_spouseName').value;
   person.occupation = document.getElementById('d_occupation').value;
   person.birthplace = document.getElementById('d_birthplace').value;
@@ -2941,19 +2944,23 @@ function findPersonGenAware(name, opts) {
     const pNorm = normalizeName(p.name);
     const pFull = normalizeName(p.fullName || '');
     const pMaiden = normalizeName(p.maidenName || '');
+    const pMarried = normalizeName(p.marriedName || '');
+    const pSpouse = normalizeName(p.spouseName || '');
     const pNameLower = (p.name || '').toLowerCase().trim();
     const pFullLower = (p.fullName || '').toLowerCase().trim();
     const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
+    const pMarriedLower = (p.marriedName || '').toLowerCase().trim();
+    const pSpouseLower = (p.spouseName || '').toLowerCase().trim();
     const searchFull = name.toLowerCase().trim();
 
     let score = 0;
-    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
-    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) score = 100;
-    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
-    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
-    else if (pNorm.includes(searchNorm) || searchNorm.includes(pNorm)) score = 50;
+    if (pNorm === searchNorm || pFull === searchNorm || pMarried === searchNorm || pSpouse === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull || pMarriedLower === searchFull || pSpouseLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull) || searchFull.includes(pMarriedLower) || pMarriedLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull) || searchFull.includes(pSpouseLower) || pSpouseLower.includes(searchFull)) score = 75;
+    else if (pNorm.includes(searchNorm) || searchNorm.includes(pNorm) || pMarried.includes(searchNorm) || searchNorm.includes(pMarried)) score = 50;
 
-    // Maiden name check — but reject if first names don't match
+    // Maiden / married name check — but reject if first names don't match
     if (opts.checkMaiden && pMaidenLower) {
       const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
       const searchFirst = name.split(/\s+/)[0]?.toLowerCase() || '';
@@ -3029,7 +3036,8 @@ function findPersonBySurname(name, opts) {
     const pName = (p.name || '').toLowerCase();
     const pFull = (p.fullName || '').toLowerCase();
     const pMaiden = (p.maidenName || '').toLowerCase();
-    if (pName.includes(surname) || pFull.includes(surname) || pMaiden.includes(surname)) {
+    const pMarried = (p.marriedName || '').toLowerCase();
+    if (pName.includes(surname) || pFull.includes(surname) || pMaiden.includes(surname) || pMarried.includes(surname)) {
       candidates.push(p);
     }
   }
@@ -3354,21 +3362,32 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
     changed.push(bride);
   }
 
-  // STEP 6: Wire spouse relationship
+  // STEP 6: Wire spouse relationship IDs
   groom.spouseId = bride.id;
   bride.spouseId = groom.id;
-  groom.spouseName = bride.name;
-  bride.spouseName = groom.name;
 
-  // STEP 7: Update bride's display name to married name if matched by maiden
+  // STEP 7: Maiden/birth name stays primary; married name stored separately
+  const certMaidenName = brideName;
+  const certSurname = certMaidenName.split(/\s+/).pop();
   const groomSurname = groomName.split(/\s+/).pop();
-  const brideSurname = bride.name.split(/\s+/).pop();
-  if (brideSurname.toLowerCase() !== groomSurname.toLowerCase()) {
-    const brideFirst = bride.name.split(/\s+/).slice(0, -1).join(' ') || bride.name.split(/\s+/)[0];
-    bride.name = brideFirst + ' ' + groomSurname;
-    bride.fullName = bride.name;
+
+  // If cert gives a different name than card, migrate card to maiden name
+  if (normalizeName(certMaidenName) !== normalizeName(bride.name)) {
+    bride.name = certMaidenName;
+    bride.fullName = certMaidenName;
     changed.push(bride);
   }
+
+  // Store married name for death-cert matching etc.
+  if (groomSurname.toLowerCase() !== certSurname.toLowerCase()) {
+    const brideFirst = certMaidenName.split(/\s+/).slice(0, -1).join(' ') || certMaidenName.split(/\s+/)[0];
+    bride.marriedName = brideFirst + ' ' + groomSurname;
+    changed.push(bride);
+  }
+
+  // Spouse links show maiden name on each other's cards
+  groom.spouseName = bride.name;
+  bride.spouseName = groom.name;
 
   groom.status = 'confirmed'; bride.status = 'confirmed';
   groom.docs.push({ type: 'mc', date: extractDocDate(entry, 'marriage'), docId: null });
