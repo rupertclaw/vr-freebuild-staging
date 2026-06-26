@@ -3171,10 +3171,9 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
     const father = people.find(p => p.id === child.parents[0]);
     const mother = people.find(p => p.id === child.parents[1]);
 
-    // Father: only update if not illegitimate and father slot is blank/unconfirmed
+    // Father: only update if father slot is blank/unconfirmed
     if (father && entry.father?.name) {
-      const fatherNorm = normalizeName(entry.father.name);
-      if (fatherNorm !== childNorm && (father.name === 'Name' || father.status !== 'confirmed')) {
+      if (father.name === 'Name' || father.status !== 'confirmed') {
         father.name = entry.father.name;
         father.fullName = entry.father.name;
         if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
