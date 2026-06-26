@@ -1929,49 +1929,36 @@ document.getElementById('certCameraInput').addEventListener('change', async (e) 
 
 async function processDocFile(file) {
   console.log('[PROCESS DOC] starting for file:', file.name, Math.round(file.size/1024)+'KB');
-  const reader = new FileReader();
-  reader.onload = (ev) => {
-    pendingDocImage = ev.target.result;
-    document.getElementById('certPreviewImg').src = pendingDocImage;
-    document.getElementById('certPreviewArea').style.display = 'block';
-    document.getElementById('certMethodSelect').style.display = 'none';
-    document.getElementById('certUploadBtns').style.display = 'none';
-    document.getElementById('certUploadArea').style.display = 'none';
-    console.log('[PROCESS DOC] preview set');
-  };
-  reader.readAsDataURL(file);
-
   const cs = document.getElementById('certStatus');
-  cs.className = 'cert-status loading'; cs.textContent = 'Preparing image...'; cs.style.display = 'block';
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Reading image...';
+  cs.style.display = 'block';
   document.getElementById('certResults').innerHTML = '';
   certPanel.classList.remove('has-results');
 
-  let base64;
-  try {
-    console.log('[PROCESS DOC] compressing image...');
-    base64 = await resizeAndCompressImage(file, 1200, 0.85);
-    const sizeKB = Math.round(base64.length * 0.75 / 1024);
-    console.log(`[PROCESS DOC] Compressed image size: ~${sizeKB}KB`);
-    if (sizeKB > 500) {
-      console.log('[PROCESS DOC] Image still large, re-compressing smaller...');
-      base64 = await resizeAndCompressImage(file, 800, 0.75);
-      const sizeKB2 = Math.round(base64.length * 0.75 / 1024);
-      console.log(`[PROCESS DOC] Re-compressed size: ~${sizeKB2}KB`);
-    }
-    const finalKB = Math.round(base64.length * 0.75 / 1024);
-    if (finalKB > 800) {
-      throw new Error('Image too large after compression (' + finalKB + 'KB). Try cropping or a clearer photo.');
-    }
+  // Read file as base64
+  const base64 = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = (e) => {
+      pendingDocImage = e.target.result;
+      document.getElementById('certPreviewImg').src = e.target.result;
+      document.getElementById('certPreviewArea').style.display = 'block';
+      document.getElementById('certMethodSelect').style.display = 'none';
+      document.getElementById('certUploadBtns').style.display = 'none';
+      document.getElementById('certUploadArea').style.display = 'none';
+      resolve(e.target.result);
+    };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+
+  const sizeKB = Math.round(base64.length * 0.75 / 1024);
+  console.log('[PROCESS DOC] Raw image base64 size:', sizeKB, 'KB');
+  if (sizeKB > 1000) {
+    // Warn but still try — large images may work
+    console.log('[PROCESS DOC] Image is very large but attempting anyway');
   }
-  catch (compressErr) {
-    console.error('[COMPRESS ERROR]', compressErr);
-    cs.className = 'cert-status error';
-    cs.innerHTML = 'Image error: ' + compressErr.message + '<br><small>Try a smaller or clearer photo</small>';
-    certPanel.classList.add('has-results');
-    return;
-  }
-  pendingDocImage = base64;
-  console.log('[PROCESS DOC] calling sendToTranscriptionAPI');
+
   await sendToTranscriptionAPI(base64);
 }
 
@@ -2095,7 +2082,8 @@ async function sendToTranscriptionAPI(base64) {
       const responseData = { type: json.type, entries: json.entries };
       lastTranscription = responseData;
       cs.className = 'cert-status success';
-      cs.textContent = '✓ Cert type: ' + (json.type || 'unknown').toUpperCase();
+      const modelLabel = json.model ? ' (' + json.model + ')' : '';
+      cs.textContent = '✓ Cert type: ' + (json.type || 'unknown').toUpperCase() + modelLabel;
       renderTranscriptionResults(responseData);
       certPanel.classList.add('has-results');
       clearTimeout(uploadTimeout);
