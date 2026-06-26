@@ -1700,6 +1700,7 @@ function openDetail(person) {
   const daScanBtn = document.getElementById('daScanBtn');
   if (daScanBtn) {
     daScanBtn.addEventListener('click', () => {
+      console.log('[SCAN CERT CLICK] person:', person.name, 'id:', person.id);
       pendingDirectAttachId = person.id;
       closeDetail();
       certPanel.classList.add('active');
@@ -1708,8 +1709,10 @@ function openDetail(person) {
       const headerTitle = certPanel.querySelector('.cert-header div');
       if (headerTitle) headerTitle.textContent = '📷 Scan Certificate — ' + person.name;
       showToast('Select a certificate image for ' + person.name);
-      document.getElementById('certFileInput').value = '';
-      document.getElementById('certFileInput').click();
+      const fi = document.getElementById('certFileInput');
+      console.log('[SCAN CERT] fileInput exists:', !!fi);
+      fi.value = '';
+      setTimeout(() => { fi.click(); console.log('[SCAN CERT] fileInput.click() fired'); }, 100);
     });
   }
   const daManualBtn = document.getElementById('daManualBtn');
@@ -1893,7 +1896,9 @@ document.getElementById('certUploadArea').addEventListener('click', () => docume
 document.getElementById('certFileBtn').addEventListener('click', () => document.getElementById('certFileInput').click());
 document.getElementById('certCameraBtn').addEventListener('click', () => document.getElementById('certCameraInput').click());
 document.getElementById('certFileInput').addEventListener('change', async (e) => {
-  const file = e.target.files[0]; if (!file) return;
+  const file = e.target.files[0];
+  console.log('[CERT FILE CHANGE] file selected:', !!file, file ? file.name : 'none', file ? Math.round(file.size/1024)+'KB' : '');
+  if (!file) return;
   pendingDocFile = file;
   try { await processDocFile(file); } catch (err) {
     console.error('[UPLOAD ERROR]', err);
@@ -1916,6 +1921,7 @@ document.getElementById('certCameraInput').addEventListener('change', async (e) 
 });
 
 async function processDocFile(file) {
+  console.log('[PROCESS DOC] starting for file:', file.name, Math.round(file.size/1024)+'KB');
   const reader = new FileReader();
   reader.onload = (ev) => {
     pendingDocImage = ev.target.result;
@@ -1924,6 +1930,7 @@ async function processDocFile(file) {
     document.getElementById('certMethodSelect').style.display = 'none';
     document.getElementById('certUploadBtns').style.display = 'none';
     document.getElementById('certUploadArea').style.display = 'none';
+    console.log('[PROCESS DOC] preview set');
   };
   reader.readAsDataURL(file);
 
@@ -1934,14 +1941,15 @@ async function processDocFile(file) {
 
   let base64;
   try {
+    console.log('[PROCESS DOC] compressing image...');
     base64 = await resizeAndCompressImage(file, 1200, 0.85);
     const sizeKB = Math.round(base64.length * 0.75 / 1024);
-    console.log(`[UPLOAD] Compressed image size: ~${sizeKB}KB`);
+    console.log(`[PROCESS DOC] Compressed image size: ~${sizeKB}KB`);
     if (sizeKB > 500) {
-      console.log('[UPLOAD] Image still large, re-compressing smaller...');
+      console.log('[PROCESS DOC] Image still large, re-compressing smaller...');
       base64 = await resizeAndCompressImage(file, 800, 0.75);
       const sizeKB2 = Math.round(base64.length * 0.75 / 1024);
-      console.log(`[UPLOAD] Re-compressed size: ~${sizeKB2}KB`);
+      console.log(`[PROCESS DOC] Re-compressed size: ~${sizeKB2}KB`);
     }
     const finalKB = Math.round(base64.length * 0.75 / 1024);
     if (finalKB > 800) {
@@ -1956,6 +1964,7 @@ async function processDocFile(file) {
     return;
   }
   pendingDocImage = base64;
+  console.log('[PROCESS DOC] calling sendToTranscriptionAPI');
   await sendToTranscriptionAPI(base64);
 }
 
