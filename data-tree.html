@@ -2234,6 +2234,7 @@ function extractEntryFields(entry, type) {
   } else if (type === 'birth') {
     if (entry.child?.name) fields.push({ label: 'Child', value: entry.child.name, key: 'child.name' });
     if (entry.child?.birthDate) fields.push({ label: 'Birth Date', value: entry.child.birthDate, key: 'child.birthDate' });
+    if (entry.sex) fields.push({ label: 'Sex', value: entry.sex, key: 'sex' });
     if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, key: 'father.name' });
     if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : entry.mother.maidenSurname ? ' (m.s. ' + entry.mother.maidenSurname + ')' : ''), key: 'mother.name' });
     if (entry.mother?.maidenName || entry.mother?.maidenSurname) fields.push({ label: 'Mother m.s.', value: entry.mother?.maidenName || entry.mother?.maidenSurname || '', key: 'mother.maidenName' });
@@ -2310,7 +2311,7 @@ function setUploadCertType(type, btn) {
 function getGeminiPrompt(type) {
   var base = 'You are a document transcription assistant. I will upload an image of a ' + type + ' certificate. Extract the following fields and return ONLY a JSON object with these exact keys. No markdown, no explanation, no extra text before or after the JSON.\n\n';
   if (type === 'birth') {
-    return base + 'Required keys:\n- registration_date\n- child_name\n- child_sex\n- father_name\n- father_profession\n- mother_name\n- mother_maiden_name\n- district\n- county\n\nIf any field is not visible or unreadable, use an empty string as the value.';
+    return base + 'Required keys:\n- birth_date\n- registration_date\n- child_name\n- sex\n- father_name\n- father_profession\n- mother_name\n- mother_maiden_name\n- district\n- county\n\nIf any field is not visible or unreadable, use an empty string as the value.';
   } else if (type === 'marriage') {
     return base + 'Required keys:\n- marriage_date\n- groom_name\n- groom_age\n- groom_profession\n- bride_name\n- bride_age\n- bride_profession\n- groom_father_name\n- groom_mother_name\n- groom_mother_maiden\n- bride_father_name\n- bride_mother_name\n- bride_mother_maiden\n- minister_name\n- district\n\nIf any field is not visible or unreadable, use an empty string as the value.';
   } else if (type === 'death') {
@@ -2510,8 +2511,9 @@ function transformGeminiToNested(flat, type) {
       type: 'birth',
       child: {
         name: flat.child_name || '',
-        birthDate: flat.registration_date || flat.child_birthDate || flat.date || ''
+        birthDate: flat.birth_date || flat.child_birthDate || flat.registration_date || flat.date || ''
       },
+      sex: flat.sex || flat.child_sex || '',
       father: {
         name: flat.father_name || '',
         profession: flat.father_profession || ''
