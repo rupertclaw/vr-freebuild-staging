@@ -808,8 +808,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </div>
     </div>
 
-    <!-- Upload Section (existing, shown when Upload selected) -->
+    <!-- Upload Section -->
     <div class="cert-upload-btns" id="certUploadBtns" style="display:none">
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;text-align:center">Certificate type:</div>
+      <div class="cert-type-selector" id="uploadCertType">
+        <button class="cert-type-btn active" data-type="birth" onclick="setUploadCertType('birth',this)">Birth</button>
+        <button class="cert-type-btn" data-type="marriage" onclick="setUploadCertType('marriage',this)">Marriage</button>
+        <button class="cert-type-btn" data-type="death" onclick="setUploadCertType('death',this)">Death</button>
+      </div>
       <button class="camera-btn" id="certCameraBtn"><span>📷</span>Camera</button>
       <button class="file-btn" id="certFileBtn"><span>📁</span>Choose File</button>
     </div>
@@ -1818,6 +1824,7 @@ function clearCertPanel() {
   lastTranscription = null;
   pendingDocFile = null;
   pendingDocImage = null;
+  uploadCertType = 'birth';
   document.getElementById('certPreviewImg').src = '';
   document.getElementById('certPreviewArea').style.display = 'none';
   document.getElementById('certStatus').style.display = 'none';
@@ -2032,7 +2039,7 @@ async function sendToTranscriptionAPI(base64) {
   cs.innerHTML = 'Scanning certificate...<br><small>Image: ' + payloadSize + 'KB. Usually 10-25s</small>';
   document.getElementById('certRetry').style.display = '';
 
-  const payload = JSON.stringify({ image: base64, country: getCountry() });
+  const payload = JSON.stringify({ image: base64, country: getCountry(), type: uploadCertType });
   console.log('[UPLOAD] Payload:', Math.round(payload.length / 1024), 'KB | URL:', API_URL);
 
   // AbortController: 90s timeout for the entire upload session (covers all attempts)
@@ -2219,10 +2226,12 @@ function entrySummary(entry, type) {
 
 // ─── GEMINI SCAN FLOW ───
 let geminiCertType = 'birth';
+let uploadCertType = 'birth';
 
 function selectCertMethod(method) {
   document.getElementById('certMethodSelect').style.display = 'none';
   if (method === 'upload') {
+    setUploadCertType('birth');
     document.getElementById('certUploadBtns').style.display = 'flex';
     document.getElementById('certUploadArea').style.display = 'block';
   } else if (method === 'gemini') {
@@ -2232,6 +2241,7 @@ function selectCertMethod(method) {
 }
 
 function showCertMethods() {
+  uploadCertType = 'birth';
   document.getElementById('certMethodSelect').style.display = 'flex';
   document.getElementById('certUploadBtns').style.display = 'none';
   document.getElementById('certUploadArea').style.display = 'none';
@@ -2248,6 +2258,19 @@ function setGeminiType(type) {
     btn.classList.toggle('active', btn.dataset.type === type);
   });
   updateGeminiPrompt();
+}
+
+function setUploadCertType(type, btn) {
+  uploadCertType = type;
+  if (btn) {
+    document.querySelectorAll('#uploadCertType .cert-type-btn').forEach(function(b) {
+      b.classList.toggle('active', b === btn);
+    });
+  } else {
+    document.querySelectorAll('#uploadCertType .cert-type-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.type === type);
+    });
+  }
 }
 
 function getGeminiPrompt(type) {
