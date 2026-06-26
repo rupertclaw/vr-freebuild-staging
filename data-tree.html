@@ -2311,7 +2311,7 @@ function setUploadCertType(type, btn) {
 function getGeminiPrompt(type) {
   var base = 'You are a document transcription assistant. I will upload an image of a ' + type + ' certificate. Extract the following fields and return ONLY a JSON object with these exact keys. No markdown, no explanation, no extra text before or after the JSON.\n\n';
   if (type === 'birth') {
-    return base + 'Required keys:\n- birth_date\n- registration_date\n- child_name\n- sex\n- father_name\n- father_profession\n- mother_name\n- mother_maiden_name\n- district\n- county\n\nIf any field is not visible or unreadable, use an empty string as the value.';
+    return base + 'Required keys:\n- birth_date\n- child_name\n- sex\n- father_name\n- father_profession\n- mother_name\n- mother_maiden_name\n- district\n- county\n\nIf any field is not visible or unreadable, use an empty string as the value.';
   } else if (type === 'marriage') {
     return base + 'Required keys:\n- marriage_date\n- groom_name\n- groom_age\n- groom_profession\n- bride_name\n- bride_age\n- bride_profession\n- groom_father_name\n- groom_mother_name\n- groom_mother_maiden\n- bride_father_name\n- bride_mother_name\n- bride_mother_maiden\n- minister_name\n- district\n\nIf any field is not visible or unreadable, use an empty string as the value.';
   } else if (type === 'death') {
