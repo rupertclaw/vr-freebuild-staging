@@ -2425,21 +2425,28 @@ function parseGeminiResult() {
   try {
     parsed = JSON.parse(raw);
   } catch (e) {
-    var jsonMatch = raw.match(/\{[\s\S]*\}\s*$/);
-    if (jsonMatch) {
-      try {
-        parsed = JSON.parse(jsonMatch[0]);
-      } catch (e2) {
+    // Strip markdown code blocks: ```json ... ```
+    var clean = raw.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    try {
+      parsed = JSON.parse(clean);
+    } catch (e2) {
+      // Try finding the first { to last }
+      var jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch (e3) {
+          cs.className = 'cert-status error';
+          cs.innerHTML = 'Could not parse JSON. Make sure you copied only the JSON object from Gemini.';
+          cs.style.display = 'block';
+          return;
+        }
+      } else {
         cs.className = 'cert-status error';
-        cs.innerHTML = 'Could not parse JSON. Make sure you copied only the JSON object from Gemini.';
+        cs.innerHTML = 'No JSON object found. Please paste the JSON output from Gemini.';
         cs.style.display = 'block';
         return;
       }
-    } else {
-      cs.className = 'cert-status error';
-      cs.innerHTML = 'No JSON object found. Please paste the JSON output from Gemini.';
-      cs.style.display = 'block';
-      return;
     }
   }
 
