@@ -803,7 +803,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
         <button class="cert-method-btn" onclick="selectCertMethod('venice')">
           <span class="method-icon">🛡️</span>
           <span class="method-label">Venice</span>
-          <span class="method-desc">100% private. Best for printed text</span>
+          <span class="method-desc">100% private. Beta — accuracy varies</span>
         </button>
         <button class="cert-method-btn" onclick="selectCertMethod('gemini')">
           <span class="method-icon">🤖</span>
@@ -2162,6 +2162,13 @@ function renderTranscriptionResults(data) {
   const container = document.getElementById('certResults');
   container.innerHTML = '';
   selectedEntryIndex = 0;
+
+  // RED warning banner at top
+  const topWarning = document.createElement('div');
+  topWarning.style.cssText = 'margin-bottom:10px;padding:10px 12px;background:#fee2e2;border:1px solid #ef4444;border-radius:6px;font-size:12px;color:#991b1b;line-height:1.4;font-weight:600;';
+  topWarning.innerHTML = '⚠️ Check every field. AI often misreads names, dates, and places. Compare each value to your certificate before applying.';
+  container.appendChild(topWarning);
+
   const entries = data.entries || [data];
   let type = data.type || 'unknown';
   if (type === 'unknown' && entries.length > 0) {
@@ -3057,11 +3064,10 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
   const childName = entry.child?.name; if (!childName) return;
   const childNorm = normalizeName(childName);
 
-  // Validate father: if father equals child's own name, treat as illegitimate / OCR error
+  // Validate father: blank or literally says 'illegitimate'
   const fatherNameRaw = entry.father?.name || '';
   const isIllegitimate = !fatherNameRaw
-    || fatherNameRaw.toLowerCase().includes('illegitimate')
-    || normalizeName(fatherNameRaw) === childNorm;
+    || fatherNameRaw.toLowerCase().includes('illegitimate');
   if (isIllegitimate) {
     entry.father = null;  // Clear the false father so we don't write it later
   }
