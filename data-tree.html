@@ -523,6 +523,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .venice-section { display:none; }
 .venice-section.active { display:block; }
 
+/* ─── Upload & Scan section ─── */
+.upload-section { display:none; }
+.upload-section.active { display:block; }
+
 .gemini-privacy-banner {
   background:#fef3c7; border:2px solid #f59e0b; border-radius:8px;
   padding:12px; margin-bottom:12px;
@@ -801,17 +805,50 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     <div class="cert-method-select" id="certMethodSelect">
       <div style="font-size:12px;color:#6b5537;margin-bottom:4px;font-weight:600;text-align:center">Extract data using:</div>
       <div class="cert-method-row">
+        <button class="cert-method-btn" onclick="selectCertMethod('upload')">
+          <span class="method-icon">📷</span>
+          <span class="method-label">Upload & Scan</span>
+          <span class="method-desc">100% private</span>
+        </button>
         <button class="cert-method-btn" onclick="selectCertMethod('venice')">
           <span class="method-icon">🛡️</span>
           <span class="method-label">Venice</span>
-          <span class="method-desc">100% private. Free: 10 scans/day. Beta — accuracy varies</span>
+          <span class="method-desc">External scan</span>
         </button>
         <button class="cert-method-btn" onclick="selectCertMethod('gemini')">
           <span class="method-icon">🤖</span>
           <span class="method-label">Gemini</span>
-          <span class="method-desc">More accurate. Google may see data</span>
+          <span class="method-desc">External scan</span>
         </button>
       </div>
+    </div>
+
+    <!-- Upload & Scan Section -->
+    <div class="upload-section" id="uploadSection">
+      <div class="gemini-privacy-banner" style="background:#dcfce7;border-color:#166534;">
+        <div class="warn-title" style="color:#166534;">Privacy Notice</div>
+        <div class="warn-text" style="color:#166534;">100% private. Your certificate is processed via Venice AI and is never stored or used to train models.</div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
+      <div class="cert-type-selector" id="uploadCertType">
+        <button class="cert-type-btn active" data-type="birth" onclick="setUploadCertType('birth', this)">Birth</button>
+        <button class="cert-type-btn" data-type="marriage" onclick="setUploadCertType('marriage', this)">Marriage</button>
+        <button class="cert-type-btn" data-type="death" onclick="setUploadCertType('death', this)">Death</button>
+      </div>
+
+      <div style="display:flex;gap:10px;margin:12px 0;">
+        <button onclick="document.getElementById('certCameraInput').click()" style="flex:1;padding:12px;border:2px solid #8a7a5a;border-radius:8px;background:#faf6ee;font-family:'Cormorant Garamond',serif;color:#4a3a22;cursor:pointer;font-size:13px;">
+          <span style="font-size:24px;display:block;margin-bottom:4px;">📷</span>
+          Camera
+        </button>
+        <button onclick="document.getElementById('certFileInput').click()" style="flex:1;padding:12px;border:2px solid #8a7a5a;border-radius:8px;background:#faf6ee;font-family:'Cormorant Garamond',serif;color:#4a3a22;cursor:pointer;font-size:13px;">
+          <span style="font-size:24px;display:block;margin-bottom:4px;">📁</span>
+          File
+        </button>
+      </div>
+
+      <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
     </div>
 
     <!-- Venice Paste Section -->
@@ -1885,6 +1922,7 @@ function clearCertPanel() {
   document.getElementById('certStatus').className = 'cert-status';
   document.getElementById('certResults').innerHTML = '';
   document.getElementById('certMethodSelect').style.display = 'flex';
+  document.getElementById('uploadSection')?.classList.remove('active');
   document.getElementById('veniceSection')?.classList.remove('active');
   document.getElementById('venicePasteBox').value = '';
   document.getElementById('geminiSection').classList.remove('active');
@@ -1998,7 +2036,7 @@ async function processDocFile(file) {
       document.getElementById('certPreviewImg').src = e.target.result;
       document.getElementById('certPreviewArea').style.display = 'block';
       document.getElementById('certMethodSelect').style.display = 'none';
-      document.getElementById('certUploadBtns').style.display = 'none';
+      document.getElementById('uploadSection').style.display = 'none';
       document.getElementById('certUploadArea').style.display = 'none';
       resolve(e.target.result);
     };
@@ -2280,7 +2318,9 @@ let uploadCertType = 'birth';
 
 function selectCertMethod(method) {
   document.getElementById('certMethodSelect').style.display = 'none';
-  if (method === 'venice') {
+  if (method === 'upload') {
+    document.getElementById('uploadSection').classList.add('active');
+  } else if (method === 'venice') {
     document.getElementById('veniceSection').classList.add('active');
     updateVenicePrompt();
   } else if (method === 'gemini') {
@@ -2292,6 +2332,7 @@ function selectCertMethod(method) {
 function showCertMethods() {
   uploadCertType = 'birth';
   document.getElementById('certMethodSelect').style.display = 'flex';
+  document.getElementById('uploadSection')?.classList.remove('active');
   document.getElementById('veniceSection')?.classList.remove('active');
   document.getElementById('geminiSection').classList.remove('active');
   document.getElementById('certStatus').style.display = 'none';
