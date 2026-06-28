@@ -2029,7 +2029,7 @@ async function processDocFile(file) {
   certPanel.classList.remove('has-results');
 
   // Read file as base64
-  const base64 = await new Promise((resolve, reject) => {
+  let base64 = await new Promise((resolve, reject) => {
     const r = new FileReader();
     r.onload = (e) => {
       pendingDocImage = e.target.result;
@@ -2044,13 +2044,19 @@ async function processDocFile(file) {
     r.readAsDataURL(file);
   });
 
+  // Compress if large — preserve cert readability
   const sizeKB = Math.round(base64.length * 0.75 / 1024);
-  console.log('[PROCESS DOC] Raw image base64 size:', sizeKB, 'KB');
-  if (sizeKB > 1000) {
-    // Warn but still try — large images may work
-    console.log('[PROCESS DOC] Image is very large but attempting anyway');
+  if (sizeKB > 800) {
+    cs.textContent = 'Compressing image for upload...';
+    base64 = await resizeAndCompressImage(file, 1600, 0.90);
+    const kb2 = Math.round(base64.length * 0.75 / 1024);
+    if (kb2 > 800) {
+      base64 = await resizeAndCompressImage(file, 1200, 0.85);
+    }
+    console.log('[PROCESS DOC] Compressed from', sizeKB, 'KB to', Math.round(base64.length * 0.75 / 1024), 'KB');
   }
 
+  pendingDocImage = base64;
   await sendToTranscriptionAPI(base64);
 }
 
@@ -4003,7 +4009,7 @@ async function onDetailUploadFile(e) {
     const base64 = await resizeAndCompressImage(file, 1200, 0.85);
     const sizeKB = Math.round(base64.length * 0.75 / 1024);
     if (sizeKB > 500) {
-      const base64b = await resizeAndCompressImage(file, 800, 0.75);
+      const base64b = await resizeAndCompressImage(file, 1000, 0.80);
       e.target.dataset.image = base64b;
       const kb2 = Math.round(base64b.length * 0.75 / 1024);
       if (statusEl) statusEl.textContent = Math.round(file.size/1024/1024*10)/10 + ' MB → ' + kb2 + ' KB';
