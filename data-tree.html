@@ -1392,7 +1392,16 @@ function renderTree() {
     else if (dYear) cardYears = 'd. ' + dYear[0];
     else cardYears = person.years || '?';
 
-    let h = '<div class="name">' + person.name + '</div>' + (cardYears ? '<div class="years">' + cardYears + '</div>' : '');
+    let h = '<div class="name">' + (function getDisplayName(p) {
+      // If maidenName exists, show birth identity (firstName + maidenName)
+      if (p.maidenName) {
+        const parts = p.name.split(/\s+/);
+        const surname = parts.pop();
+        const firstName = parts.join(' ');
+        return (firstName + ' ' + p.maidenName).trim();
+      }
+      return p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
+    })(person) + '</div>' + (cardYears ? '<div class="years">' + cardYears + '</div>' : '');
     if (!isMini) {
       if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
       if (person.siblings && person.siblings.length) {
@@ -1705,7 +1714,7 @@ const detailTitle = document.getElementById('detailTitle');
 function openDetail(person) {
   selectedPersonId = person.id;
   history.pushState({panel: 'detail'}, '');
-  detailTitle.textContent = person.name;
+  detailTitle.textContent = (person.maidenName ? person.name.replace(person.name.split(/\s+/).pop(), person.maidenName) : person.name);
   detailBody.innerHTML = `
     <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${person.fullName || person.name}"></div>
     <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${person.name}"></div>
@@ -4293,6 +4302,27 @@ async function loadSession(file) {
     people = data.people;
     nextId = data.nextId || maxGen(people, p => p.id) + 1;
     visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
+    // Migrate stale bracketed names to maidenName/marriedName model (v208+)
+    people.forEach(p => {
+      if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
+        const m = p.name.match(/(.+?)\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/);
+        if (m) {
+          const fullBefore = m[1].trim();
+          const maidenSurname = m[2].trim();
+          const parts = fullBefore.split(/\s+/);
+          const surname = parts.pop();
+          const firstName = parts.join(' ');
+          p.marriedName = p.marriedName || fullBefore;
+          p.maidenName = p.maidenName || maidenSurname;
+          p.name = (firstName + ' ' + maidenSurname).trim();
+          if (p.fullName) p.fullName = p.name;
+        }
+      }
+      if (typeof p.name === 'string') {
+        p.name = p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
+        if (p.name !== p.fullName) p.fullName = p.name;
+      }
+    });
     // Restore inlined document images back into IndexedDB
     let restoredCount = 0;
     for (const person of people) {
@@ -4381,6 +4411,28 @@ function autoRestore() {
       if (data.people && data.people.length > 0) {
         people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
         if (data.visibleMaxGen !== undefined) visibleMaxGen = data.visibleMaxGen;
+        // Migrate stale bracketed names to maidenName/marriedName model (v208+)
+        people.forEach(p => {
+          if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
+            const m = p.name.match(/(.+?)\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/);
+            if (m) {
+              const fullBefore = m[1].trim();
+              const maidenSurname = m[2].trim();
+              const parts = fullBefore.split(/\s+/);
+              const surname = parts.pop();
+              const firstName = parts.join(' ');
+              p.marriedName = p.marriedName || fullBefore;
+              p.maidenName = p.maidenName || maidenSurname;
+              p.name = (firstName + ' ' + maidenSurname).trim();
+              if (p.fullName) p.fullName = p.name;
+            }
+          }
+          // Also strip any other bracketed suffixes from name (e.g., "(born ...)", "[nee ...]")
+          if (typeof p.name === 'string') {
+            p.name = p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
+            if (p.name !== p.fullName) p.fullName = p.name;
+          }
+        });
         showToast('Restored ' + people.length + ' people from auto-save'); return true;
       }
     } catch (e) {}
