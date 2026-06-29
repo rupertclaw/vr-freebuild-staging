@@ -830,6 +830,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
         <div class="warn-text" style="color:#166534;">100% private. Your certificate is processed via Venice AI and is never stored or used to train models.</div>
       </div>
 
+      <div class="gemini-privacy-banner" style="background:#fef3c7;border-color:#f59e0b;">
+        <div class="warn-title" style="color:#92400e;">⚠️ Handwriting Warning</div>
+        <div class="warn-text" style="color:#92400e;">Venice models read printed or typed text well but struggle with handwritten certificates. For handwriting, use Gemini instead.</div>
+      </div>
+
       <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
       <div class="cert-type-selector" id="uploadCertType">
         <button class="cert-type-btn active" data-type="birth" onclick="setUploadCertType('birth', this)">Birth</button>
