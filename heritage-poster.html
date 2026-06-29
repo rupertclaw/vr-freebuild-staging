@@ -3792,8 +3792,10 @@ function formatPersonYears(person) {
 // Defined at top level so both poster internals and data-tree integration can use it
 function formatNameplateName(fullName) {
   if (!fullName || fullName === 'Name') return 'Name';
-  const parts = fullName.trim().split(/\s+/);
-  if (parts.length < 2) return fullName;
+  // Strip parenthetical maiden-name suffix from display name
+  const clean = fullName.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
+  const parts = clean.split(/\s+/);
+  if (parts.length < 2) return clean;
   const surname = parts.pop();
   const forename = parts.join(' ');
   return forename + '<br>' + surname;
