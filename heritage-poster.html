@@ -3748,21 +3748,32 @@ function getPersonByPath(rootId, path, peopleMap) {
   return peopleMap.get(currentId) || null;
 }
 
-// Format years from person data
+// Format years from person data — always extract 4-digit years, show year-only
 function formatPersonYears(person) {
-  if (person.years && person.years !== 'YYYY — YYYY') return person.years;
-  let y = '';
+  let birthYear = '', deathYear = '';
+
   if (person.birthDate) {
     const m = person.birthDate.match(/\d{4}/);
-    if (m) y = m[0];
+    if (m) birthYear = m[0];
   }
-  y += ' —';
+  if (!birthYear && person.years && person.years !== 'YYYY — YYYY') {
+    const years = person.years.match(/\d{4}/g);
+    if (years && years.length >= 1) birthYear = years[0];
+  }
+
   if (person.deathDate) {
     const m = person.deathDate.match(/\d{4}/);
-    if (m) y = y.replace(' —', '') + ' — ' + m[0];
+    if (m) deathYear = m[0];
   }
-  if (!y || y === ' —') return 'YYYY — YYYY';
-  return y;
+  if (!deathYear && person.years && person.years !== 'YYYY — YYYY') {
+    const years = person.years.match(/\d{4}/g);
+    if (years && years.length >= 2) deathYear = years[1];
+  }
+
+  if (birthYear && deathYear) return birthYear + ' — ' + deathYear;
+  if (birthYear) return birthYear + ' —';
+  if (deathYear) return '? — ' + deathYear;
+  return 'YYYY — YYYY';
 }
 
 // Global helper: split a full name into forename + <br> + surname for nameplate display
