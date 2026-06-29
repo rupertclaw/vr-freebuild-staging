@@ -1745,8 +1745,20 @@ function openDetail(person) {
           <div class="doc-thumb" style="height:100px;"><img id="daUploadPreviewImg" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" src="" alt=""></div>
           <div style="font-size:11px;color:#6b5537;margin-top:4px;"><span id="daUploadFileName">file.jpg</span> · <span id="daUploadFileSize" style="color:#166534;font-weight:600;"></span></div>
         </div>
+        <!-- Transcription status -->
+        <div id="daTranscribeStatus" style="display:none;margin-bottom:8px;padding:8px;border-radius:4px;font-size:12px;"></div>
+        <!-- Editable transcription preview -->
+        <div id="daTranscribePreview" style="display:none;margin-bottom:8px;">
+          <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;">AI Transcription — tap any field to edit before saving:</div>
+          <div id="daTranscribeFields" style="display:flex;flex-direction:column;gap:4px;"></div>
+          <div class="detail-field" style="margin-top:8px;margin-bottom:4px;"><label>Full Transcription (editable)</label><textarea id="daTranscribeText" style="min-height:80px;font-size:12px;"></textarea></div>
+        </div>
         <div class="detail-field" style="margin-bottom:8px;"><label>Document Type</label><select id="daUploadType"><option value="photo">Photo</option><option value="article">News Article</option><option value="bc">Birth Certificate</option><option value="mc">Marriage Certificate</option><option value="dc">Death Certificate</option><option value="other">Other</option></select></div>
         <div class="detail-field" style="margin-bottom:8px;"><label>Title (optional)</label><input type="text" id="daUploadTitle" placeholder="e.g. Wedding Day 1938"></div>
+        <div class="detail-field" style="margin-bottom:8px;display:none;" id="daUploadDateWrap"><label>Date</label><input type="text" id="daUploadDate" placeholder="e.g. 7 October 1929"></div>
+        <div id="daUploadUpdateWrap" style="display:none;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;color:#6b5537;">
+          <input type="checkbox" id="daUploadUpdateFields"><label for="daUploadUpdateFields" style="display:inline;font-size:12px;text-transform:none;font-weight:400;margin-bottom:0;">Update person card fields from this data</label>
+        </div>
         <div style="display:flex;gap:8px;"><button class="cancel-btn" id="daUploadCancel" type="button" style="flex:1;">Cancel</button><button class="save-btn" id="daUploadSave" type="button" style="flex:1;">Attach</button></div>
       </div>
       <div class="doc-form-section" id="daManualForm" style="display:none;">
@@ -1828,6 +1840,26 @@ function openDetail(person) {
   // Upload form handlers
   const daUploadFile = document.getElementById('daUploadFile');
   if (daUploadFile) daUploadFile.addEventListener('change', onDetailUploadFile);
+  const daUploadType = document.getElementById('daUploadType');
+  if (daUploadType) daUploadType.addEventListener('change', () => {
+    const input = document.getElementById('daUploadFile');
+    if (input && input.dataset.image) {
+      const type = daUploadType.value;
+      if (type === 'bc' || type === 'mc' || type === 'dc') {
+        runTranscription(input.dataset.image, type);
+      } else {
+        // Hide transcription UI for non-cert types
+        const txStatus = document.getElementById('daTranscribeStatus');
+        const txPreview = document.getElementById('daTranscribePreview');
+        const dateWrap = document.getElementById('daUploadDateWrap');
+        const updateWrap = document.getElementById('daUploadUpdateWrap');
+        if (txStatus) txStatus.style.display = 'none';
+        if (txPreview) txPreview.style.display = 'none';
+        if (dateWrap) dateWrap.style.display = 'none';
+        if (updateWrap) updateWrap.style.display = 'none';
+      }
+    }
+  });
   const daUploadCancel = document.getElementById('daUploadCancel');
   if (daUploadCancel) daUploadCancel.addEventListener('click', hideDocAddForms);
   const daUploadSave = document.getElementById('daUploadSave');
@@ -4005,6 +4037,15 @@ function hideDocAddForms() {
   fids.forEach(id => { const el = document.getElementById(id); if (el) el.style.display = 'none'; });
   const opts = document.getElementById('docAddOptions');
   if (opts) opts.style.display = 'flex';
+  // Reset transcription UI
+  const txStatus = document.getElementById('daTranscribeStatus');
+  const txPreview = document.getElementById('daTranscribePreview');
+  const dateWrap = document.getElementById('daUploadDateWrap');
+  const updateWrap = document.getElementById('daUploadUpdateWrap');
+  if (txStatus) { txStatus.style.display = 'none'; txStatus.textContent = ''; txStatus.className = ''; }
+  if (txPreview) txPreview.style.display = 'none';
+  if (dateWrap) dateWrap.style.display = 'none';
+  if (updateWrap) updateWrap.style.display = 'none';
 }
 
 /* ─── Upload File ─── */
@@ -4014,39 +4055,131 @@ async function onDetailUploadFile(e) {
   const preview = document.getElementById('daUploadPreview');
   const img = document.getElementById('daUploadPreviewImg');
   const nameEl = document.getElementById('daUploadFileName');
+  const txStatus = document.getElementById('daTranscribeStatus');
+  const txPreview = document.getElementById('daTranscribePreview');
   if (statusEl) statusEl.textContent = 'Compressing...';
+  // Reset transcription UI
+  if (txStatus) { txStatus.style.display = 'none'; txStatus.textContent = ''; txStatus.className = ''; }
+  if (txPreview) { txPreview.style.display = 'none'; }
   try {
     const base64 = await resizeAndCompressImage(file, 1200, 0.85);
     const sizeKB = Math.round(base64.length * 0.75 / 1024);
+    let finalBase64 = base64;
     if (sizeKB > 500) {
       const base64b = await resizeAndCompressImage(file, 1000, 0.80);
-      e.target.dataset.image = base64b;
+      finalBase64 = base64b;
       const kb2 = Math.round(base64b.length * 0.75 / 1024);
       if (statusEl) statusEl.textContent = Math.round(file.size/1024/1024*10)/10 + ' MB → ' + kb2 + ' KB';
     } else {
-      e.target.dataset.image = base64;
       if (statusEl) statusEl.textContent = Math.round(file.size/1024/1024*10)/10 + ' MB → ' + sizeKB + ' KB';
     }
-    if (img) img.src = e.target.dataset.image;
+    e.target.dataset.image = finalBase64;
+    if (img) img.src = finalBase64;
     if (preview) preview.style.display = 'block';
     if (nameEl) nameEl.textContent = file.name;
+    // Auto-transcribe if certificate type
+    const typeSel = document.getElementById('daUploadType');
+    const docType = typeSel ? typeSel.value : 'other';
+    if (docType === 'bc' || docType === 'mc' || docType === 'dc') {
+      await runTranscription(finalBase64, docType);
+    }
   } catch (err) {
     console.error('[UPLOAD PREP]', err);
     if (statusEl) statusEl.textContent = 'Compression failed';
+  }
+}
+
+// ─── Call transcription backend ───
+const TRANSCRIBE_ENDPOINT = 'https://genealogy-transcribe.onrender.com/api/transcribe';
+async function runTranscription(base64Image, docType) {
+  const txStatus = document.getElementById('daTranscribeStatus');
+  const txPreview = document.getElementById('daTranscribePreview');
+  const txFields = document.getElementById('daTranscribeFields');
+  const txText = document.getElementById('daTranscribeText');
+  const dateWrap = document.getElementById('daUploadDateWrap');
+  const updateWrap = document.getElementById('daUploadUpdateWrap');
+  if (txStatus) {
+    txStatus.style.display = 'block';
+    txStatus.className = 'cert-status loading';
+    txStatus.textContent = 'Reading certificate with AI... (this may take 10-30 seconds on first use)';
+  }
+  const prompts = {
+    bc: 'Transcribe this Scottish birth certificate. Extract: date of registration, child name, child sex, father name, father profession, mother name, mother maiden name, informant name, informant relationship, district, county. Return structured data.',
+    mc: 'Transcribe this Scottish marriage certificate. Extract: marriage date, groom name, groom age, groom profession, bride name, bride age, bride profession, groom father name, groom mother name, bride father name, bride mother name, minister name, witnesses, district. Return structured data.',
+    dc: 'Transcribe this Scottish death certificate. Extract: date of death, deceased name, deceased age, deceased profession, cause of death, informant name, informant relationship, district, county. Return structured data.'
+  };
+  try {
+    const resp = await fetch(TRANSCRIBE_ENDPOINT, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64Image, prompt: prompts[docType] })
+    });
+    const data = await resp.json();
+    if (!data.success) throw new Error(data.error || 'Transcription failed');
+    const text = data.transcription || '';
+    if (txText) txText.value = text;
+    if (txStatus) {
+      txStatus.className = 'cert-status success';
+      txStatus.textContent = `Transcription ready (${data.duration_ms ? Math.round(data.duration_ms/1000) + 's' : ''}). Review and edit below before saving.`;
+    }
+    if (txPreview) txPreview.style.display = 'block';
+    // Simple field extraction for editable preview
+    const lines = text.split('\n').filter(l => l.trim());
+    const fields = [];
+    lines.forEach(line => {
+      const m = line.match(/^\s*[-*]?\s*([^:]+):\s*(.+)$/);
+      if (m) fields.push({ label: m[1].trim(), value: m[2].trim() });
+    });
+    if (fields.length && txFields) {
+      txFields.innerHTML = fields.map((f, i) =>
+        `<div class="cert-field-edit"><span class="cert-field-label">${escapeHtml(f.label)}</span><input type="text" id="txField_${i}" value="${escapeHtml(f.value)}"></div>`
+      ).join('');
+    } else if (txFields) {
+      txFields.innerHTML = '<em style="font-size:11px;color:#6b5537;">No structured fields detected. See full transcription below.</em>';
+    }
+    // Show date field and update-fields checkbox for certs
+    if (dateWrap) dateWrap.style.display = 'block';
+    if (updateWrap) updateWrap.style.display = 'flex';
+  } catch (err) {
+    console.error('[TRANSCRIBE]', err);
+    if (txStatus) {
+      txStatus.className = 'cert-status error';
+      txStatus.textContent = 'Transcription failed: ' + (err.message || 'Service unavailable. Save the image and transcribe manually.');
+    }
   }
 }
 async function handleDetailUpload(person) {
   const input = document.getElementById('daUploadFile');
   const typeSel = document.getElementById('daUploadType');
   const titleIn = document.getElementById('daUploadTitle');
+  const dateIn = document.getElementById('daUploadDate');
+  const transcribeText = document.getElementById('daTranscribeText');
   if (!input || !input.dataset.image) { showToast('Please select a file first'); return; }
   const type = typeSel ? typeSel.value : 'other';
   const title = titleIn ? titleIn.value.trim() : '';
+  const date = dateIn ? dateIn.value.trim() : '';
+  const transcription = transcribeText ? transcribeText.value.trim() : '';
   const docId = await saveDocToDB(person.id, type, input.dataset.image, { title, manual: true });
-  person.docs.push({ type, date: '', docId, title });
+  person.docs.push({ type, date, docId, title, transcription });
+  // Update person fields if checkbox is checked
+  const updateCheck = document.getElementById('daUploadUpdateFields');
+  if (updateCheck && updateCheck.checked) {
+    if (date && type === 'bc' && !person.birthDate) person.birthDate = date;
+    if (date && type === 'mc' && !person.marriageDate) person.marriageDate = date;
+    if (date && type === 'dc' && !person.deathDate) person.deathDate = date;
+  }
   showToast('Document attached to ' + person.name);
   refreshDocGallery(person);
   hideDocAddForms();
+  // Reset transcription UI
+  const txStatus = document.getElementById('daTranscribeStatus');
+  const txPreview = document.getElementById('daTranscribePreview');
+  const dateWrap = document.getElementById('daUploadDateWrap');
+  const updateWrap = document.getElementById('daUploadUpdateWrap');
+  if (txStatus) txStatus.style.display = 'none';
+  if (txPreview) txPreview.style.display = 'none';
+  if (dateWrap) dateWrap.style.display = 'none';
+  if (updateWrap) updateWrap.style.display = 'none';
   renderTree();
 }
 
