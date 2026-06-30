@@ -840,7 +840,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
     <div class="detail-name" id="detailName">Name</div>
     <div class="detail-years" id="detailYears">YYYY — YYYY</div>
     <div class="detail-maiden" id="detailMaiden" style="display:none;font-family:'Cormorant Garamond',serif;font-size:11px;color:#9a8565;text-align:center;margin-top:2px;font-style:italic;"></div>
-    <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;text-align:center;margin-top:4px;font-style:italic;">Tap name or dates to edit</div>
+    <div id="detailEditHint" style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;text-align:center;margin-top:4px;font-style:italic;">Tap name or dates to edit</div>
   </div>
   <div class="detail-body">
     <div class="detail-section-title">Parents</div>
@@ -871,7 +871,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 </div>
 
 <div class="zoom-controls">
-  <button class="zoom-btn" id="backBtn" onclick="window.history.back()" title="Go back">⬅️</button>
+  <button class="zoom-btn" id="backBtn" onclick="hpBackToTree()" title="Back to tree">⬅️</button>
   <button class="zoom-btn" id="zoomIn" onclick="zoomIn()">+</button>
   <div class="zoom-level" id="zoomLevel">100%</div>
   <button class="zoom-btn" id="zoomOut" onclick="zoomOut()">−</button>
@@ -1268,6 +1268,10 @@ function openDetail(name, years, slot) {
     detailMaiden.style.display = 'none';
   }
 
+  // Show "Tap name or dates to edit" hint in editable mode
+  const editHint = document.getElementById('detailEditHint');
+  if (editHint) editHint.style.display = '';
+
   // Show doc badges
   detailDocs.innerHTML = '';
   const docs = (plate?.dataset.docs || '').split(',').filter(Boolean);
@@ -1324,7 +1328,11 @@ function openDetail(name, years, slot) {
     parent2.querySelector('.p-years').textContent = 'YYYY — YYYY';
     parent2.dataset.parentSlot = '';
   }
+  // Show add-sibling UI in editable mode
+  const addSiblingWrap = document.getElementById('addSiblingWrap');
+  if (addSiblingWrap) addSiblingWrap.style.display = '';
 
+  // Show panel
   detailPanel.classList.add('active');
   detailOverlay.classList.add('active');
 
@@ -1348,6 +1356,110 @@ function closeDetail() {
   detailOverlay.classList.remove('active');
 }
 
+// Show read-only detail popup from data-tree person data
+function openDtDetail(person, slot) {
+  const name = person.name || person.fullName || 'Name';
+  detailName.textContent = name;
+  detailYears.textContent = formatPersonYears(person);
+
+  // Maiden name
+  const maidenName = person.maidenName || '';
+  if (maidenName) {
+    detailMaiden.textContent = 'née ' + maidenName;
+    detailMaiden.style.display = '';
+  } else {
+    detailMaiden.style.display = 'none';
+  }
+
+  // Hide "Tap name or dates to edit" hint in read-only mode
+  const editHint = document.getElementById('detailEditHint');
+  if (editHint) editHint.style.display = 'none';
+
+  // Doc badges from person.docs (data-tree source)
+  detailDocs.innerHTML = '';
+  if (person.docs && person.docs.length) {
+    const codes = [];
+    person.docs.forEach(d => {
+      const type = typeof d === 'string' ? d : d.type;
+      const code = type === 'birth' ? 'BC' : type === 'marriage' ? 'MC' : type === 'death' ? 'DC' : '';
+      if (code && !codes.includes(code)) codes.push(code);
+    });
+    codes.forEach(code => {
+      const badge = document.createElement('span');
+      badge.className = 'doc-badge';
+      badge.textContent = code;
+      detailDocs.appendChild(badge);
+    });
+  } else {
+    detailDocs.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No documents yet</span>';
+  }
+
+  // Doc thumbnails — look up via slot in IndexedDB (read-only view)
+  detailDocThumbs.innerHTML = '';
+  if (slot) {
+    getDocsForSlot(slot).then(docs => {
+      if (docs.length) {
+        docs.forEach(doc => {
+          const thumb = document.createElement('img');
+          thumb.src = doc.image;
+          thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #c9b896;cursor:pointer;';
+          thumb.title = doc.type + ' — ' + (doc.meta?.date || '');
+          thumb.addEventListener('click', () => {
+            const viewer = document.createElement('div');
+            viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+            viewer.innerHTML = '<img src="' + doc.image + '" style="max-width:90vw;max-height:90vh;border-radius:4px;">';
+            viewer.addEventListener('click', () => viewer.remove());
+            document.body.appendChild(viewer);
+          });
+          detailDocThumbs.appendChild(thumb);
+        });
+      }
+    });
+  }
+
+  // Parents — look up from dtPeopleMap using person.parents
+  if (person.parents && person.parents.length >= 2) {
+    const father = dtPeopleMap.get(person.parents[0]);
+    const mother = dtPeopleMap.get(person.parents[1]);
+    parent1.querySelector('.p-name').textContent = father ? (father.name || father.fullName || 'Name') : 'Name';
+    parent1.querySelector('.p-years').textContent = father ? formatPersonYears(father) : 'YYYY — YYYY';
+    parent1.dataset.parentSlot = father ? (father.slot || '') : '';
+    parent2.querySelector('.p-name').textContent = mother ? (mother.name || mother.fullName || 'Name') : 'Name';
+    parent2.querySelector('.p-years').textContent = mother ? formatPersonYears(mother) : 'YYYY — YYYY';
+    parent2.dataset.parentSlot = mother ? (mother.slot || '') : '';
+  } else {
+    parent1.querySelector('.p-name').textContent = 'Name';
+    parent1.querySelector('.p-years').textContent = 'YYYY — YYYY';
+    parent1.dataset.parentSlot = '';
+    parent2.querySelector('.p-name').textContent = 'Name';
+    parent2.querySelector('.p-years').textContent = 'YYYY — YYYY';
+    parent2.dataset.parentSlot = '';
+  }
+
+  // Siblings — from person.siblings (read-only list)
+  const siblingsContainer = document.getElementById('detailSiblings');
+  siblingsContainer.innerHTML = '';
+  if (person.siblings && person.siblings.length) {
+    person.siblings.forEach(s => {
+      const el = document.createElement('div');
+      el.style.cssText = 'font-family:Cormorant Garamond,serif;font-size:11px;color:#3e3225;';
+      el.textContent = typeof s === 'string' ? s : (s.name || '');
+      siblingsContainer.appendChild(el);
+    });
+  } else {
+    siblingsContainer.innerHTML = '<div style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No siblings recorded</div>';
+  }
+
+  // Hide add-sibling UI in read-only mode
+  const addSiblingWrap = document.getElementById('addSiblingWrap');
+  if (addSiblingWrap) addSiblingWrap.style.display = 'none';
+
+  // Show panel
+  detailPanel.classList.add('active');
+  detailOverlay.classList.add('active');
+  detailPanel.dataset.currentSlot = slot || '';
+}
+
 // Click handler for nameplates — branches on data-tree mode
 let currentSubjectId = null;
 let currentPeopleMap = new Map();
@@ -1365,9 +1477,14 @@ document.querySelectorAll('.nameplate').forEach((np) => {
       if (e.shiftKey) return; // shift-click falls through to old behavior (detail panel)
       const path = slotToPath(slot);
       const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
-      if (person && person.id !== dtSubjectId) {
+      if (!person) return;
+      if (gen === 5) {
+        // Gen 5: re-root poster at this person, show their ancestors above
         populatePosterFromDataTree(person.id);
         showToast('Now showing: ' + (person.name || person.fullName || 'Ancestor'));
+      } else {
+        // Gen 0-4: show read-only detail popup from data-tree
+        openDtDetail(person, slot);
       }
       return;
     }
@@ -1437,6 +1554,18 @@ detailOverlay.addEventListener('click', closeDetail);
 
 // Parent cards are also clickable — drill into that person's detail
 parent1.addEventListener('click', () => {
+  if (dtModeActive) {
+    // In data-tree mode, lookup parent from dtPeopleMap and show read-only detail
+    const currentSlot = detailPanel.dataset.currentSlot;
+    if (!currentSlot) return;
+    const path = slotToPath(currentSlot);
+    const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
+    if (person && person.parents && person.parents.length >= 1) {
+      const parent = dtPeopleMap.get(person.parents[0]);
+      if (parent) openDtDetail(parent, parent.slot || '');
+    }
+    return;
+  }
   const slot = parent1.dataset.parentSlot;
   if (slot) {
     const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
@@ -1444,6 +1573,17 @@ parent1.addEventListener('click', () => {
   }
 });
 parent2.addEventListener('click', () => {
+  if (dtModeActive) {
+    const currentSlot = detailPanel.dataset.currentSlot;
+    if (!currentSlot) return;
+    const path = slotToPath(currentSlot);
+    const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
+    if (person && person.parents && person.parents.length >= 2) {
+      const parent = dtPeopleMap.get(person.parents[1]);
+      if (parent) openDtDetail(parent, parent.slot || '');
+    }
+    return;
+  }
   const slot = parent2.dataset.parentSlot;
   if (slot) {
     const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
@@ -1491,7 +1631,7 @@ function makeEditable(el, targetPlate, targetSelector) {
 // Wire up detail panel name + years editing
 detailName.addEventListener('click', (e) => {
   e.stopPropagation();
-  // Find which nameplate this detail refers to
+  if (dtModeActive) return; // read-only in data-tree mode
   const currentSlot = detailPanel.dataset.currentSlot;
   const targetPlate = currentSlot ? document.querySelector(`.nameplate[data-slot="${currentSlot}"]`) : null;
   makeEditableInline(detailName, targetPlate, '.name');
@@ -1499,6 +1639,7 @@ detailName.addEventListener('click', (e) => {
 
 detailYears.addEventListener('click', (e) => {
   e.stopPropagation();
+  if (dtModeActive) return; // read-only in data-tree mode
   const currentSlot = detailPanel.dataset.currentSlot;
   const targetPlate = currentSlot ? document.querySelector(`.nameplate[data-slot="${currentSlot}"]`) : null;
   makeEditableInline(detailYears, targetPlate, '.years');
@@ -1552,6 +1693,7 @@ openDetail = function(name, years, slot) {
 function wireParentEdit(cardEl, selector) {
   cardEl.querySelector(selector).addEventListener('click', (e) => {
     e.stopPropagation();
+    if (dtModeActive) return; // read-only in data-tree mode
     const pSlot = cardEl.dataset.parentSlot;
     const targetPlate = pSlot ? document.querySelector(`.nameplate[data-slot="${pSlot}"]`) : null;
     makeEditableInline(cardEl.querySelector(selector), targetPlate, selector === '.p-name' ? '.name' : '.years');
