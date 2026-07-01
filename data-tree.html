@@ -754,6 +754,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn" id="saveBtn" title="Save session" onclick="saveSession()">💾</button>
       <button class="header-btn" id="loadBtn" title="Load session">📂</button>
       <button class="header-btn" id="shareBtn" title="Share tree" onclick="shareTree()">📤</button>
+      <button class="header-btn" id="treeManagerToggle" title="My trees" onclick="toggleTreeManager()">🗂️</button>
       <button class="header-btn" id="privacyBtn" title="Privacy &amp; data protection" onclick="showPrivacyModal()">🔒</button>
       <button class="header-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖</button>
       <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)" onclick="openPoster()">🌳</button>
@@ -1002,6 +1003,23 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   </div>
 </div>
 
+<!-- Tree Manager Panel -->
+<div class="guidance-panel" id="treeManagerPanel" style="z-index:10003;">
+  <div class="guidance-header">
+    <button class="guidance-close" onclick="closeTreeManager()">&times;</button>
+    <div style="font-size:14px;">🌳 My Trees</div>
+  </div>
+  <div class="guidance-body" id="treeManagerBody">
+    <div id="treeManagerContainer" style="margin-bottom:12px;"></div>
+    <div style="border-top:1px solid #c4b89a;padding-top:12px;margin-top:8px;">
+      <div style="display:flex;gap:8px;align-items:center;">
+        <input type="text" id="newTreeName" placeholder="New tree name..." style="flex:1;padding:8px 10px;border:1px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:13px;color:#2a1f10;">
+        <button onclick="var n=document.getElementById('newTreeName').value;if(n)createTree(n);" style="padding:8px 14px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;white-space:nowrap;">➕ Create</button>
+      </div>
+    </div>
+  </div>
+</div>
+
 <!-- Force cache refresh: toolbar icons moved to header -->
 <!-- Hidden file input for load -->
 <input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
@@ -1214,9 +1232,14 @@ let pendingDirectAttachId = null; // person id for direct-attach from detail pan
 
 // ========== IndexedDB Document Storage ==========
 const DOC_DB_NAME = 'VRTDocs';
-const DOC_DB_VERSION = 1;
+const DOC_DB_VERSION = 2;
 const DOC_STORE_NAME = 'documents';
 let _docDB = null;
+
+const TM_TREES_STORE = 'trees';
+const TM_DATA_STORE = 'treeData';
+let currentTreeId = null;
+let treesList = [];
 
 function openDocDB() {
   return new Promise((resolve, reject) => {
@@ -1225,10 +1248,17 @@ function openDocDB() {
     req.onsuccess = () => { _docDB = req.result; resolve(_docDB); };
     req.onupgradeneeded = (e) => {
       const d = e.target.result;
+      const tx = e.target.transaction;
       if (!d.objectStoreNames.contains(DOC_STORE_NAME)) {
         const store = d.createObjectStore(DOC_STORE_NAME, { keyPath: 'id' });
         store.createIndex('personId', 'personId', { unique: false });
+        store.createIndex('treeId', 'treeId', { unique: false });
+      } else {
+        const store = tx.objectStore(DOC_STORE_NAME);
+        if (!store.indexNames.contains('treeId')) store.createIndex('treeId', 'treeId', { unique: false });
       }
+      if (!d.objectStoreNames.contains(TM_TREES_STORE)) d.createObjectStore(TM_TREES_STORE, { keyPath: 'id' });
+      if (!d.objectStoreNames.contains(TM_DATA_STORE)) d.createObjectStore(TM_DATA_STORE, { keyPath: 'treeId' });
     };
   });
 }
@@ -1237,8 +1267,9 @@ async function saveDocToDB(personId, type, base64Image, meta) {
   const id = personId + '_' + type + '_' + Date.now();
   const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
   const store = tx.objectStore(DOC_STORE_NAME);
+  const treeId = currentTreeId || 'default';
   await new Promise((resolve, reject) => {
-    const req = store.put({ id, personId, type, image: base64Image, meta: meta || {}, created: Date.now() });
+    const req = store.put({ id, treeId, personId, type, image: base64Image, meta: meta || {}, created: Date.now() });
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
@@ -1251,7 +1282,10 @@ async function getDocsForPerson(personId) {
   const idx = store.index('personId');
   return new Promise((resolve, reject) => {
     const req = idx.getAll(personId);
-    req.onsuccess = () => resolve(req.result || []);
+    req.onsuccess = () => {
+      const treeId = currentTreeId || 'default';
+      resolve((req.result || []).filter(d => d.treeId === treeId));
+    };
     req.onerror = () => reject(req.error);
   });
 }
@@ -1295,6 +1329,238 @@ function initDefaultData() {
   }
 }
 
+// ═══════════════════════════════════════════════════════════════
+// TREE MANAGER — Multi-tree storage in IndexedDB
+// ═══════════════════════════════════════════════════════════════
+async function saveTreeMeta(tree) {
+  if (!_docDB) await openDocDB();
+  const tx = _docDB.transaction(TM_TREES_STORE, 'readwrite');
+  const store = tx.objectStore(TM_TREES_STORE);
+  await new Promise((resolve, reject) => {
+    const req = store.put(tree);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteTreeMeta(treeId) {
+  if (!_docDB) await openDocDB();
+  const tx = _docDB.transaction(TM_TREES_STORE, 'readwrite');
+  const store = tx.objectStore(TM_TREES_STORE);
+  await new Promise((resolve, reject) => {
+    const req = store.delete(treeId);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function loadTreeMeta(treeId) {
+  if (!_docDB) await openDocDB();
+  const tx = _docDB.transaction(TM_TREES_STORE, 'readonly');
+  const store = tx.objectStore(TM_TREES_STORE);
+  return new Promise((resolve, reject) => {
+    const req = store.get(treeId);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function loadAllTreeMetas() {
+  if (!_docDB) await openDocDB();
+  const tx = _docDB.transaction(TM_TREES_STORE, 'readonly');
+  const store = tx.objectStore(TM_TREES_STORE);
+  return new Promise((resolve, reject) => {
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveTreeData(treeId, data) {
+  if (!_docDB) await openDocDB();
+  const tx = _docDB.transaction(TM_DATA_STORE, 'readwrite');
+  const store = tx.objectStore(TM_DATA_STORE);
+  await new Promise((resolve, reject) => {
+    const req = store.put({ treeId, ...data, updatedAt: Date.now() });
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function loadTreeData(treeId) {
+  if (!_docDB) await openDocDB();
+  const tx = _docDB.transaction(TM_DATA_STORE, 'readonly');
+  const store = tx.objectStore(TM_DATA_STORE);
+  return new Promise((resolve, reject) => {
+    const req = store.get(treeId);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteTreeData(treeId) {
+  if (!_docDB) await openDocDB();
+  const tx = _docDB.transaction(TM_DATA_STORE, 'readwrite');
+  const store = tx.objectStore(TM_DATA_STORE);
+  await new Promise((resolve, reject) => {
+    const req = store.delete(treeId);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function createTree(name) {
+  const treeId = 'tree_' + Date.now();
+  initDefaultData(); // resets people, nextId to fresh 511 nodes
+  visibleMaxGen = 4;
+  await saveTreeData(treeId, { people, nextId, visibleMaxGen });
+  const meta = { id: treeId, name: name || 'New Tree', createdAt: Date.now(), updatedAt: Date.now() };
+  await saveTreeMeta(meta);
+  currentTreeId = treeId;
+  treesList = await loadAllTreeMetas();
+  renderTree();
+  updateTreeManagerUI();
+  showToast('Created "' + meta.name + '"');
+  return treeId;
+}
+
+async function switchTree(treeId) {
+  if (treeId === currentTreeId) return;
+  // Save current before switching
+  if (currentTreeId) {
+    await saveTreeData(currentTreeId, { people, nextId, visibleMaxGen });
+  }
+  const data = await loadTreeData(treeId);
+  if (!data) { showToast('Tree not found'); return; }
+  people = data.people || [];
+  nextId = data.nextId || maxGen(people, p => p.id) + 1;
+  visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
+  currentTreeId = treeId;
+  // Migrate bracketed names (v208+)
+  people.forEach(p => {
+    if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
+      const m = p.name.match(/(.+?)\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/);
+      if (m) {
+        const fullBefore = m[1].trim();
+        const maidenSurname = m[2].trim();
+        const parts = fullBefore.split(/\s+/);
+        const surname = parts.pop();
+        const firstName = parts.join(' ');
+        p.marriedName = p.marriedName || fullBefore;
+        p.maidenName = p.maidenName || maidenSurname;
+        p.name = (firstName + ' ' + maidenSurname).trim();
+        if (p.fullName) p.fullName = p.name;
+      }
+    }
+    if (typeof p.name === 'string') {
+      p.name = p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
+      if (p.name !== p.fullName) p.fullName = p.name;
+    }
+  });
+  renderTree();
+  updateExpandGenBtn();
+  updateTreeManagerUI();
+  showToast('Switched to "' + (treesList.find(t => t.id === treeId)?.name || 'Tree') + '"');
+}
+
+async function deleteTree(treeId) {
+  if (treesList.length <= 1) { showToast('Cannot delete your only tree'); return; }
+  if (!confirm('Delete this tree permanently? All people and documents will be removed.')) return;
+  await deleteTreeData(treeId);
+  await deleteTreeMeta(treeId);
+  // Also delete scoped docs
+  if (_docDB) {
+    const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(DOC_STORE_NAME);
+    const idx = store.index('treeId');
+    const allDocs = await new Promise((resolve, reject) => {
+      const req = idx.getAll(treeId);
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+    for (const doc of allDocs) {
+      await new Promise((resolve, reject) => {
+        const req = store.delete(doc.id);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    }
+  }
+  treesList = await loadAllTreeMetas();
+  if (currentTreeId === treeId) {
+    // Switch to first remaining tree
+    if (treesList.length > 0) {
+      await switchTree(treesList[0].id);
+    }
+  }
+  updateTreeManagerUI();
+  showToast('Tree deleted');
+}
+
+async function saveCurrentTreeToDB() {
+  if (!currentTreeId) {
+    // Create a default tree if none exists
+    const treeId = 'tree_' + Date.now();
+    await saveTreeData(treeId, { people, nextId, visibleMaxGen });
+    const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
+    await saveTreeMeta(meta);
+    currentTreeId = treeId;
+    treesList = await loadAllTreeMetas();
+    updateTreeManagerUI();
+    return;
+  }
+  await saveTreeData(currentTreeId, { people, nextId, visibleMaxGen });
+  const meta = await loadTreeMeta(currentTreeId);
+  if (meta) {
+    meta.updatedAt = Date.now();
+    await saveTreeMeta(meta);
+  }
+}
+
+// ─── UI ───
+function updateTreeManagerUI() {
+  const container = document.getElementById('treeManagerContainer');
+  if (!container) return;
+  let html = '';
+  for (const t of treesList) {
+    const active = t.id === currentTreeId;
+    html += '<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:4px;cursor:pointer;' + (active ? 'background:rgba(74,107,74,0.2);border:1px solid #4a6b4a;' : 'background:rgba(250,244,230,0.4);border:1px solid transparent;') + 'margin-bottom:4px;" onclick="switchTree(\'' + t.id + '\')"' + (active ? '' : ' onmouseover="this.style.background=\'rgba(250,244,230,0.8)\'" onmouseout="this.style.background=\'rgba(250,244,230,0.4)\'"') + '>';
+    html += '<div style="font-size:18px;">🌳</div>';
+    html += '<div style="flex:1;font-size:12px;font-family:\'Cormorant Garamond\',serif;color:#2a1f10;">' + escapeHtml(t.name) + (active ? ' <span style="color:#4a6b4a;font-size:10px;">(active)</span>' : '') + '</div>';
+    if (!active) {
+      html += '<button onclick="event.stopPropagation();deleteTree(\'' + t.id + '\')" style="background:none;border:none;cursor:pointer;color:#8a3a3a;font-size:14px;padding:2px 4px;" title="Delete">✕</button>';
+    }
+    html += '</div>';
+  }
+  container.innerHTML = html;
+  const btn = document.getElementById('treeManagerToggle');
+  if (btn) btn.textContent = treesList.find(t => t.id === currentTreeId)?.name || '🌳';
+}
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/[<>&"]/g, c => ({'<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'}[c]));
+}
+
+function openTreeManager() {
+  const panel = document.getElementById('treeManagerPanel');
+  if (panel) panel.classList.add('active');
+  updateTreeManagerUI();
+}
+function closeTreeManager() {
+  const panel = document.getElementById('treeManagerPanel');
+  if (panel) panel.classList.remove('active');
+}
+function toggleTreeManager() {
+  const panel = document.getElementById('treeManagerPanel');
+  if (panel && panel.classList.contains('active')) closeTreeManager();
+  else openTreeManager();
+}
+
+// ─── Auto-save to IndexedDB every 30s (replacing localStorage) ───
+setInterval(async () => {
+  if (currentTreeId) await saveCurrentTreeToDB();
+}, 30000);
 const CARD_W = 130, GAP_Y = 3;
 const MINI_W = 100, MINI_H = 14;
 let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
@@ -3999,7 +4265,13 @@ async function getDocById(docId) {
   const store = tx.objectStore(DOC_STORE_NAME);
   return new Promise((resolve, reject) => {
     const req = store.get(docId);
-    req.onsuccess = () => resolve(req.result || null);
+    req.onsuccess = () => {
+      const doc = req.result;
+      if (!doc) { resolve(null); return; }
+      const treeId = currentTreeId || 'default';
+      if (doc.treeId && doc.treeId !== treeId) { resolve(null); return; }
+      resolve(doc);
+    };
     req.onerror = () => reject(req.error);
   });
 }
@@ -4227,9 +4499,37 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
 function doResetTree() {
   const dlg = document.getElementById('confirmDialog');
   dlg.style.display = 'flex';
-  document.getElementById('confirmOk').onclick = () => {
+  document.getElementById('confirmOk').onclick = async () => {
+    dlg.style.display = 'none';
+    // Delete all tree data from IndexedDB
+    if (_docDB) {
+      // Clear treeData store
+      const tx = _docDB.transaction(TM_DATA_STORE, 'readwrite');
+      await new Promise((resolve, reject) => {
+        const req = tx.objectStore(TM_DATA_STORE).clear();
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+      // Clear trees meta store
+      const tx2 = _docDB.transaction(TM_TREES_STORE, 'readwrite');
+      await new Promise((resolve, reject) => {
+        const req = tx2.objectStore(TM_TREES_STORE).clear();
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+      // Clear all documents
+      const tx3 = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
+      await new Promise((resolve, reject) => {
+        const req = tx3.objectStore(DOC_STORE_NAME).clear();
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+    }
+    currentTreeId = null;
+    treesList = [];
     localStorage.removeItem('familytree_data_v5');
-    location.reload();
+    showToast('All trees cleared');
+    setTimeout(() => location.reload(), 800);
   };
   document.getElementById('confirmCancel').onclick = () => {
     dlg.style.display = 'none';
@@ -4268,24 +4568,29 @@ document.getElementById('guidancePanel').addEventListener('click', (e) => {
 });
 
 
-setInterval(() => { localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId, visibleMaxGen: visibleMaxGen})); }, 30000);
-function autoRestore() {
-  const saved = localStorage.getItem('familytree_data_v5');
-  if (saved) {
-    try {
-      const data = JSON.parse(saved);
-      if (data.people && data.people.length > 0) {
-        people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
-        if (data.visibleMaxGen !== undefined) visibleMaxGen = data.visibleMaxGen;
-        // Migrate stale bracketed names to maidenName/marriedName model (v208+)
+// ─── Auto-save to IndexedDB every 30s (replacing localStorage) ───
+setInterval(async () => {
+  if (currentTreeId) await saveCurrentTreeToDB();
+}, 30000);
+async function autoRestore() {
+  // First try IndexedDB multi-tree store
+  treesList = await loadAllTreeMetas();
+  if (treesList.length > 0) {
+    const latest = treesList.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
+    if (latest) {
+      currentTreeId = latest.id;
+      const data = await loadTreeData(currentTreeId);
+      if (data) {
+        people = data.people || [];
+        nextId = data.nextId || maxGen(people, p => p.id) + 1;
+        visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
+        // Migrate bracketed names
         people.forEach(p => {
           if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
             const m = p.name.match(/(.+?)\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/);
             if (m) {
-              const fullBefore = m[1].trim();
-              const maidenSurname = m[2].trim();
-              const parts = fullBefore.split(/\s+/);
-              const surname = parts.pop();
+              const fullBefore = m[1].trim(); const maidenSurname = m[2].trim();
+              const parts = fullBefore.split(/\s+/); const surname = parts.pop();
               const firstName = parts.join(' ');
               p.marriedName = p.marriedName || fullBefore;
               p.maidenName = p.maidenName || maidenSurname;
@@ -4298,7 +4603,40 @@ function autoRestore() {
             if (p.name !== p.fullName) p.fullName = p.name;
           }
         });
-        showToast('Restored ' + people.length + ' people from auto-save'); return true;
+        showToast('Restored ' + people.length + ' people from "' + latest.name + '"');
+        return true;
+      }
+    }
+  }
+  // Fallback: legacy localStorage (migrate once)
+  const saved = localStorage.getItem('familytree_data_v5');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      if (data.people && data.people.length > 0) {
+        people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
+        if (data.visibleMaxGen !== undefined) visibleMaxGen = data.visibleMaxGen;
+        // Migrate stale bracketed names
+        people.forEach(p => {
+          if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
+            const m = p.name.match(/(.+?)\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/);
+            if (m) { /* same migration */ }
+          }
+          if (typeof p.name === 'string') {
+            p.name = p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
+            if (p.name !== p.fullName) p.fullName = p.name;
+          }
+        });
+        // Migrate to IndexedDB tree store
+        const treeId = 'tree_' + Date.now();
+        await saveTreeData(treeId, { people, nextId, visibleMaxGen });
+        const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
+        await saveTreeMeta(meta);
+        currentTreeId = treeId;
+        treesList = [meta];
+        localStorage.removeItem('familytree_data_v5');
+        showToast('Migrated legacy save to new tree store');
+        return true;
       }
     } catch (e) {}
   }
@@ -4476,66 +4814,70 @@ function backfillComputedFields() {
     else if (p.years === '?' || !p.years) p.years = '?';
   }
 }
-if (!autoRestore()) initDefaultData();
-backfillComputedFields();
-// On desktop, auto-fit zoom to fill viewport; on mobile/touch, stay conservative
-if (window.innerWidth > 768 && !('ontouchstart' in window)) {
-  zoom = 1;
-  renderTree();
-  fitZoomToViewport();
-} else {
-  zoom = 0.70; // mobile default
-  renderTree();
-}
-document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
-
-// Update expand button text after render
-(function updateExpandBtn() {
-  const btn = document.getElementById('expandGenBtn');
-  const actualMax = maxGen(people, p => p.gen);
-  if (visibleMaxGen >= actualMax) {
-    btn.textContent = 'All visible — tap any person to add parents';
-    btn.disabled = true;
+(async function init() {
+  if (!await autoRestore()) initDefaultData();
+  backfillComputedFields();
+  // On desktop, auto-fit zoom to fill viewport; on mobile/touch, stay conservative
+  if (window.innerWidth > 768 && !('ontouchstart' in window)) {
+    zoom = 1;
+    renderTree();
+    fitZoomToViewport();
   } else {
-    btn.textContent = 'Reveal Next Generation';
+    zoom = 0.70; // mobile default
+    renderTree();
   }
+  document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+
+  // Update expand button text after render
+  (function updateExpandBtn() {
+    const btn = document.getElementById('expandGenBtn');
+    const actualMax = maxGen(people, p => p.gen);
+    if (visibleMaxGen >= actualMax) {
+      btn.textContent = 'All visible — tap any person to add parents';
+      btn.disabled = true;
+    } else {
+      btn.textContent = 'Reveal Next Generation';
+    }
+  })();
+
+  // Deferred listener: ambiguity modal cancel button (element lives in HTML after script block)
+  function attachAmbigCancelListener() {
+    const btn = document.getElementById('ambigCancel');
+    if (btn && !btn._ambigListening) {
+      btn._ambigListening = true;
+      btn.addEventListener('click', () => {
+        document.getElementById('ambigModal').style.display = 'none';
+        pendingAmbigTarget = null;
+        showToast('Cancelled — cert not applied');
+        updateExpandGenBtn();
+      });
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', attachAmbigCancelListener);
+  } else {
+    attachAmbigCancelListener();
+  }
+
+  // Mobile back button closes panels
+  window.addEventListener('popstate', (e) => {
+    if (!e.state || !e.state.panel) return;
+    if (e.state.panel === 'detail' && detailPanel.classList.contains('active')) {
+      detailPanel.classList.remove('active');
+      selectedPersonId = null;
+    }
+    if (e.state.panel === 'cert' && certPanel.classList.contains('active')) {
+      certPanel.classList.remove('active');
+      certPanel.classList.remove('has-results');
+    }
+    if (e.state.panel === 'guidance' && guidancePanel.classList.contains('active')) {
+      guidancePanel.classList.remove('active');
+    }
+  });
+
+  // Init tree manager UI
+  updateTreeManagerUI();
 })();
-
-// Deferred listener: ambiguity modal cancel button (element lives in HTML after script block)
-// Use DOMContentLoaded to ensure the element exists before attaching
-function attachAmbigCancelListener() {
-  const btn = document.getElementById('ambigCancel');
-  if (btn && !btn._ambigListening) {
-    btn._ambigListening = true;
-    btn.addEventListener('click', () => {
-      document.getElementById('ambigModal').style.display = 'none';
-      pendingAmbigTarget = null;
-      showToast('Cancelled — cert not applied');
-      updateExpandGenBtn();
-    });
-  }
-}
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', attachAmbigCancelListener);
-} else {
-  attachAmbigCancelListener();
-}
-
-// Mobile back button closes panels
-window.addEventListener('popstate', (e) => {
-  if (!e.state || !e.state.panel) return;
-  if (e.state.panel === 'detail' && detailPanel.classList.contains('active')) {
-    detailPanel.classList.remove('active');
-    selectedPersonId = null;
-  }
-  if (e.state.panel === 'cert' && certPanel.classList.contains('active')) {
-    certPanel.classList.remove('active');
-    certPanel.classList.remove('has-results');
-  }
-  if (e.state.panel === 'guidance' && guidancePanel.classList.contains('active')) {
-    guidancePanel.classList.remove('active');
-  }
-});
 
 // Country init
 // NOTE: toolbar country dropdown removed — users select source records via detail panel buttons
