@@ -197,7 +197,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .header-emblem { height: 140px; width: 140px; opacity: 0.50; }
   .offline-badge { top: 120px; font-size: 9px; padding: 1px 6px; }
   .header-btn { width: 28px; height: 28px; font-size: 14px; }
-  .country-select { padding: 3px 5px; font-size: 10px; min-width: 70px; }
   .header-actions { gap: 2px; }
   .header-left-group { gap: 3px; }
   .tree-scroll { top: 180px; }
@@ -211,21 +210,13 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 }
 @media (max-width: 600px) and (min-width: 381px) {
   .header-btn { width: 34px; height: 34px; font-size: 17px; }
-  .country-select { padding: 5px 7px; font-size: 12px; min-width: 95px; }
   .header-emblem { height: 160px; width: 160px; opacity: 0.50; }
 }
 .header-btn {
-  width: 38px; height: 38px; background: var(--bg-btn); color: var(--text-btn);
+  width: 42px; height: 36px; background: var(--bg-btn); color: var(--text-btn);
   border: 1px solid var(--bg-btn-border); border-radius: 6px; font-size: 20px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
-.country-select {
-  background: var(--bg-btn); color: var(--text-btn);
-  border: 1px solid var(--bg-btn-border); border-radius: 6px;
-  padding: 6px 8px; font-family: 'Cormorant Garamond', serif; font-size: 13px;
-  cursor: pointer; min-width: 110px;
-}
-.country-select option { background: #5c4033; color: #e8dcc8; }
 .cert-btn {
   width: 44px; height: 38px;
   background: #6b4c35; border-color: #8a7a5a;
@@ -672,7 +663,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .toast,
   #printTreeBtn,
   .header-btn,
-  .country-select,
   .cert-btn { display: none !important; }
 
   /* Reset body to normal document flow */
@@ -759,9 +749,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
         <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
         <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom">⟲</button>
       </div>
-      <select id="countrySelect" class="country-select" title="Research country">
-        <option value="" disabled>Country...</option>
-      </select>
     </div>
     <div class="header-actions">
       <button class="header-btn" id="saveBtn" title="Save session" onclick="saveSession()">💾</button>
@@ -1174,22 +1161,7 @@ function getCountry() { return localStorage.getItem('vaulted_country') || ''; }
 function setCountry(code) {
   if (!code) return;
   localStorage.setItem('vaulted_country', code);
-  const sel = document.getElementById('countrySelect');
-  if (sel) sel.value = code;
   showToast('Research country: ' + (COUNTRY_SOURCES[code]?.name || code));
-}
-function populateCountrySelect() {
-  const sel = document.getElementById('countrySelect');
-  if (!sel) return;
-  // Add an explicit "All" option for no country filter
-  sel.innerHTML = '<option value="" selected>All Countries</option>';
-  Object.entries(COUNTRY_SOURCES).forEach(([code, info]) => {
-    const opt = document.createElement('option');
-    opt.value = code; opt.textContent = info.name;
-    sel.appendChild(opt);
-  });
-  const saved = getCountry();
-  if (saved && COUNTRY_SOURCES[saved]) sel.value = saved;
 }
 function buildCountryButtons() {
   let html = '';
@@ -4539,11 +4511,7 @@ window.addEventListener('popstate', (e) => {
 });
 
 // Country init
-populateCountrySelect();
-document.getElementById('countrySelect').addEventListener('change', (e) => {
-  setCountry(e.target.value);
-});
-// NOTE: country modal removed — users select via toolbar dropdown or card links
+// NOTE: toolbar country dropdown removed — users select source records via detail panel buttons
 // If we ever want to re-enable the first-use modal, restore:
 // if (!getCountry()) { setTimeout(() => showCountryModal(), 800); }
 
