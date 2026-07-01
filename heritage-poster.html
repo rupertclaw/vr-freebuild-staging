@@ -1357,7 +1357,7 @@ function closeDetail() {
 }
 
 // Show read-only detail popup from data-tree person data
-function openDtDetail(person, slot) {
+async function openDtDetail(person, slot) {
   const name = person.name || person.fullName || 'Name';
   detailName.textContent = name;
   detailYears.textContent = formatPersonYears(person);
@@ -1394,26 +1394,31 @@ function openDtDetail(person, slot) {
     detailDocs.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No documents yet</span>';
   }
 
-  // Doc thumbnails — look up via slot in IndexedDB (read-only view)
+  // Doc thumbnails — fetch from IndexedDB by docId from person.docs (read-only view)
   detailDocThumbs.innerHTML = '';
-  if (slot) {
-    getDocsForSlot(slot).then(docs => {
-      if (docs.length) {
-        docs.forEach(doc => {
-          const thumb = document.createElement('img');
-          thumb.src = doc.image;
-          thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #c9b896;cursor:pointer;';
-          thumb.title = doc.type + ' — ' + (doc.meta?.date || '');
-          thumb.addEventListener('click', () => {
-            const viewer = document.createElement('div');
-            viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
-            viewer.innerHTML = '<img src="' + doc.image + '" style="max-width:90vw;max-height:90vh;border-radius:4px;">';
-            viewer.addEventListener('click', () => viewer.remove());
-            document.body.appendChild(viewer);
-          });
-          detailDocThumbs.appendChild(thumb);
+  if (person.docs && person.docs.length) {
+    if (!db) await openDocDB();
+    const store = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME);
+    person.docs.forEach(d => {
+      const docId = typeof d === 'string' ? null : (d.docId || null);
+      if (!docId) return;
+      const req = store.get(docId);
+      req.onsuccess = () => {
+        const doc = req.result;
+        if (!doc || !doc.image) return;
+        const thumb = document.createElement('img');
+        thumb.src = doc.image;
+        thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #c9b896;cursor:pointer;';
+        thumb.title = (typeof d === 'string' ? d : d.type) + ' — ' + (typeof d === 'string' ? '' : (d.date || ''));
+        thumb.addEventListener('click', () => {
+          const viewer = document.createElement('div');
+          viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+          viewer.innerHTML = '<img src="' + doc.image + '" style="max-width:90vw;max-height:90vh;border-radius:4px;">';
+          viewer.addEventListener('click', () => viewer.remove());
+          document.body.appendChild(viewer);
         });
-      }
+        detailDocThumbs.appendChild(thumb);
+      };
     });
   }
 
