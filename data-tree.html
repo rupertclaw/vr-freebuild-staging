@@ -3904,6 +3904,33 @@ function renderOnboardingGuide() {
     </ol>
     <p style="margin:8px 0 0;"><em>Your data stays private. You only share what you choose to send. No central server, no passwords.</em></p>
   </div>
+</div>
+<div id="iconGuide" style="background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;margin-bottom:10px;overflow:hidden;">
+  <button onclick="document.getElementById('iconBody').style.display=(document.getElementById('iconBody').style.display==='none'?'block':'none');this.querySelector('span').style.transform=(document.getElementById('iconBody').style.display==='none'?'rotate(0deg)':'rotate(180deg)')" style="width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-family:'Cinzel Decorative',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+    Toolbar Icons Reference
+    <span style="display:inline-block;transition:transform 0.2s;font-size:12px;">▼</span>
+  </button>
+  <div id="iconBody" style="display:none;padding:0 12px 12px;font-size:12px;color:#3e2b1a;line-height:1.6;">
+    <p style="margin:0 0 8px;"><strong>Top toolbar buttons:</strong></p>
+    <div style="display:grid;grid-template-columns:30px 1fr;gap:6px 10px;align-items:center;margin-bottom:8px;">
+      <div>💾</div><div><strong>Save</strong> — Full backup with images embedded. Use this for your own backups.</div>
+      <div>📂</div><div><strong>Load</strong> — Load a previously saved <code>.familytree</code> file.</div>
+      <div>📤</div><div><strong>Share</strong> — Lightweight export without images. Send to family members.</div>
+      <div>🔒</div><div><strong>Privacy</strong> — View how your data is protected.</div>
+      <div>📖</div><div><strong>Next Steps</strong> — Open this guidance panel with research suggestions.</div>
+      <div>🌳</div><div><strong>Heritage Poster</strong> — Opens the printable ancestor poster in a new tab.</div>
+      <div>📄</div><div><strong>Scan Certificate</strong> — Upload and scan a birth, marriage, or death certificate.</div>
+      <div>🌙</div><div><strong>Dark Mode</strong> — Toggle between light and dark theme.</div>
+      <div>🖨️</div><div><strong>Print</strong> — Print the current tree view.</div>
+      <div>🔄</div><div><strong>Reset</strong> — Clear the entire tree and start fresh. Use 💾 first!</div>
+    </div>
+    <p style="margin:0 0 8px;"><strong>Zoom controls (left of country dropdown):</strong></p>
+    <div style="display:grid;grid-template-columns:30px 1fr;gap:6px 10px;align-items:center;">
+      <div>⬅️</div><div><strong>Back</strong> — Go back to the previous view.</div>
+      <div>− / +</div><div><strong>Zoom Out / In</strong> — Adjust the tree scale.</div>
+      <div>⟲</div><div><strong>Reset Zoom</strong> — Return to 100% zoom and centered position.</div>
+    </div>
+  </div>
 </div>`;
 }
 
