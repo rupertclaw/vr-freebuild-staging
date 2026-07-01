@@ -1381,7 +1381,7 @@ async function openDtDetail(person, slot) {
     const codes = [];
     person.docs.forEach(d => {
       const type = typeof d === 'string' ? d : d.type;
-      const code = type === 'birth' ? 'BC' : type === 'marriage' ? 'MC' : type === 'death' ? 'DC' : '';
+      const code = type === 'birth' || type === 'bc' ? 'BC' : type === 'marriage' || type === 'mc' ? 'MC' : type === 'death' || type === 'dc' ? 'DC' : '';
       if (code && !codes.includes(code)) codes.push(code);
     });
     codes.forEach(code => {
@@ -4008,7 +4008,7 @@ function populatePosterFromDataTree(subjectId) {
       const codes = [];
       person.docs.forEach(d => {
         const type = typeof d === 'string' ? d : d.type;
-        const code = type === 'birth' ? 'BC' : type === 'marriage' ? 'MC' : type === 'death' ? 'DC' : '';
+        const code = type === 'birth' || type === 'bc' ? 'BC' : type === 'marriage' || type === 'mc' ? 'MC' : type === 'death' || type === 'dc' ? 'DC' : '';
         if (code && !codes.includes(code)) codes.push(code);
       });
       if (codes.length) plate.dataset.docs = codes.join(',');
