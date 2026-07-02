@@ -759,7 +759,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn" id="treeManagerToggle" title="My trees" onclick="toggleTreeManager()">🗂️</button>
       <button class="header-btn" id="privacyBtn" title="Privacy &amp; data protection" onclick="showPrivacyModal()">🔒</button>
       <button class="header-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖</button>
-      <button class="header-btn" id="feedbackBtn" title="Send feedback" onclick="window.location.assign('mailto:hello@vaultedroots.com?subject=Vaulted%20Roots%20Feedback')">💬</button>
+      <button class="header-btn" id="feedbackBtn" title="Send feedback" onclick="showFeedbackModal()">💬</button>
       <a class="header-btn" id="facebookBtn" title="Vaulted Roots on Facebook" href="https://www.facebook.com/profile.php?id=61591673636516" target="_blank" rel="noopener" style="text-decoration:none;background:#1877F2;border-color:#1877F2;border-radius:50%;width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;"><span style="font-family:sans-serif;font-weight:bold;font-size:20px;color:#fff;">f</span></a>
       <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)" onclick="openPoster()">🖼️</button>
       <button class="header-btn cert-btn" id="certToggle" title="Scan certificate" onclick="toggleCertPanel()">📄</button>
@@ -1089,6 +1089,33 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     </div>
     <button id="privacyModalOk" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;margin-bottom:8px;">Dismiss</button>
     <button id="privacyModalDismissForever" style="width:100%;padding:10px;border:none;background:transparent;color:#6b5537;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Dismiss forever — do not show again</button>
+  </div>
+</div>
+
+<!-- Feedback Modal -->
+<div id="feedbackModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:36px;margin-bottom:8px;">💬</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:4px;">Send Feedback</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b5537;">We'd love to hear your thoughts</div>
+    </div>
+    <form id="feedbackForm" action="https://formspree.io/f/xaqglnpa" method="POST">
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-family:'Cinzel Decorative',serif;font-size:12px;color:#4a3a22;margin-bottom:4px;">Name</label>
+        <input type="text" name="name" required style="width:100%;padding:10px;border:2px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;box-sizing:border-box;" placeholder="Your name">
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-family:'Cinzel Decorative',serif;font-size:12px;color:#4a3a22;margin-bottom:4px;">Email</label>
+        <input type="email" name="email" required style="width:100%;padding:10px;border:2px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;box-sizing:border-box;" placeholder="you@example.com">
+      </div>
+      <div style="margin-bottom:16px;">
+        <label style="display:block;font-family:'Cinzel Decorative',serif;font-size:12px;color:#4a3a22;margin-bottom:4px;">Message</label>
+        <textarea name="message" required rows="4" style="width:100%;padding:10px;border:2px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;box-sizing:border-box;resize:vertical;" placeholder="What's on your mind?"></textarea>
+      </div>
+      <button type="submit" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;margin-bottom:8px;">Send Feedback</button>
+      <button type="button" onclick="document.getElementById('feedbackModal').style.display='none'" style="width:100%;padding:10px;border:none;background:transparent;color:#6b5537;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Cancel</button>
+    </form>
   </div>
 </div>
 
@@ -5344,6 +5371,11 @@ function showPrivacyModal() {
   if (!modal) return;
   modal.style.display = 'flex';
   updateExpandGenBtn();
+}
+function showFeedbackModal() {
+  const modal = document.getElementById('feedbackModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
 }
 document.getElementById('privacyModalOk').addEventListener('click', () => {
   document.getElementById('privacyModal').style.display = 'none';
