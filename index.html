@@ -6,13 +6,35 @@
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
-<meta name="version" content="20250624-gemini13">
+<meta name="version" content="20250702-ga-seo">
 <title>Vaulted Roots</title>
+<meta name="description" content="Build your family tree. Private, offline, and yours. Research, document, and visualise your ancestry with Vaulted Roots.">
+<meta name="keywords" content="family tree, genealogy, ancestry, family history, build family tree, genealogy app, heritage, roots">
+<meta name="robots" content="index, follow">
+<link rel="canonical" href="https://vaultedroots.com">
+
+<!-- Open Graph for Facebook sharing -->
+<meta property="og:title" content="Vaulted Roots — Build Your Family Tree">
+<meta property="og:description" content="Build your family tree. Private, offline, and yours. Research, document, and visualise your ancestry.">
+<meta property="og:type" content="website">
+<meta property="og:url" content="https://vaultedroots.com">
+<meta property="og:image" content="https://vaultedroots.com/vaulted-roots-shield.png">
+<meta property="og:site_name" content="Vaulted Roots">
+
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MFQ3DV323Y"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-MFQ3DV323Y');
+</script>
+
 <link rel="manifest" href="./manifest.json">
 <script>
 // Cache-bust: force refresh on version change
 (function(){
-  var expectedVersion = '20250624-gemini13';
+  var expectedVersion = '20250702-ga-seo';
   var urlVersion = new URLSearchParams(location.search).get('v');
   if (urlVersion !== expectedVersion) {
     var url = new URL(location.href);
@@ -1073,7 +1095,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">🚫</div>
-        <div><strong>No tracking.</strong> No analytics, no cookies, no ads. We don't know who you are or what you're researching.</div>
+        <div><strong>No tracking.</strong> No cookies, no ads. We use Google Analytics anonymously to understand site usage — we don't know who you are.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">📤</div>
