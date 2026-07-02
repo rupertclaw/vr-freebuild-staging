@@ -1,6 +1,7 @@
-const CACHE_NAME = 'vaulted-roots-v1';
+const CACHE_NAME = 'vaulted-roots-v2';
 const ASSETS = [
   './',
+  './index.html',
   './data-tree.html',
   './vaulted-roots-shield.png'
 ];
