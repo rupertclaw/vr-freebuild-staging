@@ -663,7 +663,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .toast,
   #printTreeBtn,
   .header-btn,
-  .cert-btn { display: none !important; }
+  .cert-btn,
+  #feedbackBtn { display: none !important; }
 
   /* Reset body to normal document flow */
   body {
@@ -757,6 +758,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn" id="treeManagerToggle" title="My trees" onclick="toggleTreeManager()">🗂️</button>
       <button class="header-btn" id="privacyBtn" title="Privacy &amp; data protection" onclick="showPrivacyModal()">🔒</button>
       <button class="header-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖</button>
+      <a class="header-btn" id="feedbackBtn" title="Send feedback" href="mailto:hello@vaultedroots.com?subject=Vaulted%20Roots%20Feedback" target="_blank" rel="noopener" style="text-decoration:none;">💬</a>
       <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)" onclick="openPoster()">🌳</button>
       <button class="header-btn cert-btn" id="certToggle" title="Scan certificate" onclick="toggleCertPanel()">📄</button>
       <button class="header-btn" id="darkModeToggle" title="Toggle dark mode" onclick="toggleDarkMode()">🌙</button>
