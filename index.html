@@ -745,7 +745,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   <div class="header-top">
     <div class="header-brand">
       <div class="header-logo">Vaulted Roots</div>
-      <div class="header-tagline">Your legacy. Secure.</div>
+      <div class="header-tagline" id="treeNameBanner">Your legacy. Secure.</div>
     </div>
     <div class="header-stats">
       <div class="header-stat">
@@ -1590,6 +1590,11 @@ function updateTreeManagerUI() {
   container.innerHTML = html;
   const btn = document.getElementById('treeManagerToggle');
   if (btn) btn.textContent = treesList.find(t => t.id === currentTreeId)?.name || '🌳';
+  const banner = document.getElementById('treeNameBanner');
+  if (banner) {
+    const activeTree = treesList.find(t => t.id === currentTreeId);
+    banner.textContent = activeTree ? escapeHtml(activeTree.name) : 'Your legacy. Secure.';
+  }
 }
 
 function escapeHtml(s) {
