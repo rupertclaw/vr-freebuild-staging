@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vaulted-roots-v3';
+const CACHE_NAME = 'vaulted-roots-v4';
 const ASSETS = [
   './',
   './index.html',
