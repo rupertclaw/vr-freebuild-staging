@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vaulted-roots-staging-v1';
+const CACHE_NAME = 'vaulted-roots-staging-v2';
 const ASSETS = [
   './',
   './index.html',
