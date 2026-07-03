@@ -1589,7 +1589,7 @@ function updateTreeManagerUI() {
   }
   container.innerHTML = html;
   const btn = document.getElementById('treeManagerToggle');
-  if (btn) btn.textContent = treesList.find(t => t.id === currentTreeId)?.name || '🌳';
+  if (btn) btn.textContent = '🗂️';
   const banner = document.getElementById('treeNameBanner');
   if (banner) {
     const activeTree = treesList.find(t => t.id === currentTreeId);
