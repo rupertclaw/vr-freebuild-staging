@@ -32,17 +32,6 @@
 
 <link rel="manifest" href="./manifest.json">
 <script>
-// Cache-bust: force refresh on version change
-(function(){
-  var expectedVersion = '20250702-ga-seo';
-  var urlVersion = new URLSearchParams(location.search).get('v');
-  if (urlVersion !== expectedVersion) {
-    var url = new URL(location.href);
-    url.searchParams.set('v', expectedVersion);
-    location.replace(url.toString());
-  }
-})();
-
 // Register Service Worker for offline support
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js')
@@ -778,7 +767,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn" id="saveBtn" title="Save session" onclick="saveSession()">💾</button>
       <button class="header-btn" id="loadBtn" title="Load session">📂</button>
       <button class="header-btn" id="shareBtn" title="Share tree" onclick="shareTree()">📤</button>
-      <button class="header-btn" id="treeManagerToggle" title="My trees" onclick="toggleTreeManager()">🗂️</button>
+      <button class="header-btn" id="treeManagerToggle" title="My trees" onclick="toggleTreeManager()">🌳</button>
       <button class="header-btn" id="privacyBtn" title="Privacy &amp; data protection" onclick="showPrivacyModal()">🔒</button>
       <button class="header-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖</button>
       <button class="header-btn" id="feedbackBtn" title="Send feedback" onclick="showFeedbackModal()">💬</button>
@@ -796,6 +785,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 <div class="tree-scroll" id="treeScroll">
   <div id="zoomSizer" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0;"></div>
+  <div id="treeTitle" style="position:absolute; top:12px; left:16px; z-index:10; font-family:'Cinzel Decorative',serif; font-size:18px; color:#2a1f10; background:rgba(250,244,230,0.85); border:1px solid #8a7a5a; border-radius:4px; padding:4px 12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);"></div>
   <div class="tree-wrap" id="treeWrap">
     <svg class="lines-svg" id="linesSvg"></svg>
   </div>
@@ -1589,11 +1579,11 @@ function updateTreeManagerUI() {
   }
   container.innerHTML = html;
   const btn = document.getElementById('treeManagerToggle');
-  if (btn) btn.textContent = treesList.find(t => t.id === currentTreeId)?.name || '🌳';
-  const banner = document.getElementById('treeNameBanner');
-  if (banner) {
+  if (btn) btn.textContent = '🌳';
+  const title = document.getElementById('treeTitle');
+  if (title) {
     const activeTree = treesList.find(t => t.id === currentTreeId);
-    banner.textContent = activeTree ? escapeHtml(activeTree.name) : 'Your legacy. Secure.';
+    title.textContent = activeTree ? escapeHtml(activeTree.name) : '';
   }
 }
 
@@ -4242,15 +4232,17 @@ function renderOnboardingGuide() {
       <div>💾</div><div><strong>Save</strong> — Full backup with images embedded. Use this for your own backups.</div>
       <div>📂</div><div><strong>Load</strong> — Load a previously saved <code>.familytree</code> file.</div>
       <div>📤</div><div><strong>Share</strong> — Lightweight export without images. Send to family members.</div>
+      <div>🌳</div><div><strong>My Trees</strong> — Open the tree manager to create or switch between family trees.</div>
       <div>🔒</div><div><strong>Privacy</strong> — View how your data is protected.</div>
       <div>📖</div><div><strong>Next Steps</strong> — Open this guidance panel with research suggestions.</div>
-      <div>🌳</div><div><strong>Heritage Poster</strong> — Opens the printable ancestor poster in a new tab.</div>
+      <div>💬</div><div><strong>Feedback</strong> — Send feedback or report a problem.</div>
+      <div>🖼️</div><div><strong>Heritage Poster</strong> — Opens the printable ancestor poster in a new tab.</div>
       <div>📄</div><div><strong>Scan Certificate</strong> — Upload and scan a birth, marriage, or death certificate.</div>
       <div>🌙</div><div><strong>Dark Mode</strong> — Toggle between light and dark theme.</div>
       <div>🖨️</div><div><strong>Print</strong> — Print the current tree view.</div>
       <div>🔄</div><div><strong>Reset</strong> — Clear the entire tree and start fresh. Use 💾 first!</div>
     </div>
-    <p style="margin:0 0 8px;"><strong>Zoom controls (left of country dropdown):</strong></p>
+    <p style="margin:0 0 8px;"><strong>Zoom controls (left side):</strong></p>
     <div style="display:grid;grid-template-columns:30px 1fr;gap:6px 10px;align-items:center;">
       <div>⬅️</div><div><strong>Back</strong> — Go back to the previous view.</div>
       <div>− / +</div><div><strong>Zoom Out / In</strong> — Adjust the tree scale.</div>
