@@ -5674,6 +5674,20 @@ setTimeout(updateOfflineBadge, 100);
     </div>
   </div>
 </div>
+
+<script>
+// Cleanup: remove old floating treeTitle if service worker cached stale HTML
+(function() {
+  var treeScroll = document.getElementById('treeScroll');
+  var oldTitles = treeScroll ? treeScroll.querySelectorAll('#treeTitle') : [];
+  oldTitles.forEach(function(el) {
+    if (el.parentElement.id !== 'treeTitleContainer') {
+      el.remove();
+      console.log('[Vaulted Roots] Removed stale floating treeTitle');
+    }
+  });
+})();
+</script>
 </body>
 </html>
 <!-- Build: 1782741103 -->
