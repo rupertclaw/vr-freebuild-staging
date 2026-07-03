@@ -786,6 +786,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 <div class="tree-scroll" id="treeScroll">
   <div id="zoomSizer" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0;"></div>
   <div class="tree-wrap" id="treeWrap">
+    <div id="treeTitle" style="text-align:center; padding: 16px 0 8px; font-family:'Cinzel Decorative',serif; font-size:20px; color:#2a1f10; letter-spacing:1px;"></div>
     <svg class="lines-svg" id="linesSvg"></svg>
   </div>
 </div>
@@ -1579,10 +1580,10 @@ function updateTreeManagerUI() {
   container.innerHTML = html;
   const btn = document.getElementById('treeManagerToggle');
   if (btn) btn.textContent = '🗂️';
-  const banner = document.getElementById('treeNameBanner');
-  if (banner) {
+  const title = document.getElementById('treeTitle');
+  if (title) {
     const activeTree = treesList.find(t => t.id === currentTreeId);
-    banner.textContent = activeTree ? escapeHtml(activeTree.name) : 'Your legacy. Secure.';
+    title.textContent = activeTree ? escapeHtml(activeTree.name) : '';
   }
 }
 
