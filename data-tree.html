@@ -784,9 +784,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 <button id="expandGenBtn" class="expand-gen-btn" title="Reveal next generation">Reveal Next Generation</button>
 
-<div class="tree-scroll" id="treeScroll">
+
+<div id="treeTitleContainer" style="position:fixed; top:114px; left:0; right:0; z-index:100; background:rgba(250,244,230,0.95); border-bottom:1px solid #8a7a5a; padding:8px 16px; font-family:'Cinzel Decorative',serif; font-size:16px; color:#2a1f10; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><span id="treeTitle"></span></div>
+<div class="tree-scroll" id="treeScroll" style="top: 154px;">
   <div id="zoomSizer" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0;"></div>
-  <div id="treeTitle" style="position:absolute; top:12px; left:16px; z-index:10; font-family:'Cinzel Decorative',serif; font-size:18px; color:#2a1f10; background:rgba(250,244,230,0.85); border:1px solid #8a7a5a; border-radius:4px; padding:4px 12px; box-shadow:0 1px 3px rgba(0,0,0,0.1);"></div>
+
   <div class="tree-wrap" id="treeWrap">
     <svg class="lines-svg" id="linesSvg"></svg>
   </div>
@@ -5673,6 +5675,20 @@ setTimeout(updateOfflineBadge, 100);
     </div>
   </div>
 </div>
+
+<script>
+// Cleanup: remove old floating treeTitle if service worker cached stale HTML
+(function() {
+  var treeScroll = document.getElementById('treeScroll');
+  var oldTitles = treeScroll ? treeScroll.querySelectorAll('#treeTitle') : [];
+  oldTitles.forEach(function(el) {
+    if (el.parentElement.id !== 'treeTitleContainer') {
+      el.remove();
+      console.log('[Vaulted Roots] Removed stale floating treeTitle');
+    }
+  });
+})();
+</script>
 </body>
 </html>
 <!-- Build: 1782741103 -->
