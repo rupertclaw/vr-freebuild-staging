@@ -32,17 +32,6 @@
 
 <link rel="manifest" href="./manifest.json">
 <script>
-// Cache-bust: force refresh on version change
-(function(){
-  var expectedVersion = '20250702-ga-seo';
-  var urlVersion = new URLSearchParams(location.search).get('v');
-  if (urlVersion !== expectedVersion) {
-    var url = new URL(location.href);
-    url.searchParams.set('v', expectedVersion);
-    location.replace(url.toString());
-  }
-})();
-
 // Register Service Worker for offline support
 if ('serviceWorker' in navigator) {
   navigator.serviceWorker.register('./sw.js')
