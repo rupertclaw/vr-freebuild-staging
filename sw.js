@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vaulted-roots-staging-v3';
+const CACHE_NAME = 'vaulted-roots-staging-v4';
 
 // Do NOT cache HTML files — always fetch fresh (prevents stale content bugs)
 const ASSETS = [
