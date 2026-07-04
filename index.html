@@ -791,7 +791,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 <button id="expandGenBtn" class="expand-gen-btn" title="Reveal next generation" onclick="checkMemberFeature('expand_generation', expandNextGen)">Reveal Next Generation</button>
 
 
-<div id="treeTitleContainer" style="position:fixed; top:114px; left:0; right:0; z-index:100; background:rgba(250,244,230,0.95); border-bottom:1px solid #8a7a5a; padding:8px 16px; font-family:'Cinzel Decorative',serif; font-size:16px; color:#2a1f10; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><span id="treeTitle"></span></div>
+<div id="treeTitleContainer" style="position:fixed; top:120px; left:12px; z-index:100; background:rgba(250,244,230,0.95); border:1px solid #8a7a5a; border-radius:6px; padding:4px 12px; font-family:'Cinzel Decorative',serif; font-size:14px; color:#2a1f10; box-shadow:0 1px 3px rgba(0,0,0,0.1); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span id="treeTitle"></span></div>
 <div class="tree-scroll" id="treeScroll" style="top: 154px;">
   <div id="zoomSizer" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0;"></div>
 
@@ -1888,19 +1888,14 @@ function drawLines() {
 scroll.addEventListener('scroll', drawLines);
 window.addEventListener('resize', () => renderTree());
 
-// Sync tree-scroll top to actual header height + treeTitleContainer (handles mobile text wrapping)
+// Sync tree-scroll top to actual header height (handles mobile text wrapping)
 function syncHeaderHeight() {
   const header = document.querySelector('.header');
-  const treeTitleContainer = document.getElementById('treeTitleContainer');
   const treeScroll = document.getElementById('treeScroll');
   const certPanel = document.getElementById('certPanel');
   const detailPanel = document.getElementById('detailPanel');
   if (!header) return;
-  let h = header.offsetHeight;
-  // Add treeTitleContainer height if visible (it's position:fixed, not inside header)
-  if (treeTitleContainer && treeTitleContainer.offsetHeight > 0) {
-    h += treeTitleContainer.offsetHeight;
-  }
+  const h = header.offsetHeight;
   if (treeScroll) treeScroll.style.top = h + 'px';
   if (certPanel) { certPanel.style.top = h + 'px'; certPanel.style.bottom = '0px'; certPanel.style.height = 'auto'; }
   if (detailPanel) { detailPanel.style.top = h + 'px'; detailPanel.style.bottom = '0px'; detailPanel.style.height = 'auto'; }
