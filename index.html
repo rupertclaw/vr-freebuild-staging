@@ -1588,7 +1588,12 @@ function updateTreeManagerUI() {
   }
   container.innerHTML = html;
   const btn = document.getElementById('treeManagerToggle');
-  if (btn) btn.textContent = '🌳';
+  if (btn) {
+    // Preserve MEMBER badge — only update the icon text node, not innerHTML
+    var badge = btn.querySelector('.member-badge');
+    btn.textContent = '🌳';
+    if (badge) btn.appendChild(badge);
+  }
   const title = document.getElementById('treeTitle');
   if (title) {
     const activeTree = treesList.find(t => t.id === currentTreeId);
