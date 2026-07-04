@@ -5856,7 +5856,7 @@ setTimeout(updateOfflineBadge, 100);
 }
 </style>
 
-<div id="memberModal">
+<div id="memberModal" style="display:none;">
   <div class="member-modal-box">
     <div class="member-icon" id="memberModalIcon">⭐</div>
     <div class="member-title">Members Feature</div>
@@ -5909,7 +5909,7 @@ function checkMemberFeature(featureKey, callback) {
     document.getElementById('memberModalIcon').textContent = feat.icon;
     document.getElementById('memberModalFeature').innerHTML =
       '<strong>' + escapeHtml(feat.label) + '</strong> is available to Vaulted Roots members.<br>It\'s free during early access while we build the community.';
-    document.getElementById('memberModal').classList.add('active');
+    document.getElementById('memberModal').style.display = 'flex';
   } else {
     // Already seen — just run the callback
     if (callback) callback();
@@ -5917,7 +5917,7 @@ function checkMemberFeature(featureKey, callback) {
 }
 
 function closeMemberModal() {
-  document.getElementById('memberModal').classList.remove('active');
+  document.getElementById('memberModal').style.display = 'none';
   if (_memberCallback) {
     const cb = _memberCallback;
     _memberCallback = null;

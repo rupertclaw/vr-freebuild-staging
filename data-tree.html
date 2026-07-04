@@ -5856,7 +5856,7 @@ setTimeout(updateOfflineBadge, 100);
 }
 </style>
 
-<div id="memberModal" onclick="if(event.target===this){closeMemberModal();}">
+<div id="memberModal" style="display:none;" onclick="if(event.target===this){closeMemberModal();}">
   <div class="member-modal-box">
     <button onclick="closeMemberModal()" style="position:sticky;top:0;float:right;background:none;border:none;font-size:22px;color:#6b5537;cursor:pointer;padding:0 0 8px 8px;line-height:1;" title="Close">×</button>
     <div class="member-icon" id="memberModalIcon">⭐</div>
@@ -5910,7 +5910,7 @@ function checkMemberFeature(featureKey, callback) {
     document.getElementById('memberModalIcon').textContent = feat.icon;
     document.getElementById('memberModalFeature').innerHTML =
       '<strong>' + escapeHtml(feat.label) + '</strong> is available to Vaulted Roots members.<br>It\'s free during early access while we build the community.';
-    document.getElementById('memberModal').classList.add('active');
+    document.getElementById('memberModal').style.display = 'flex';
   } else {
     // Already seen — just run the callback
     if (callback) callback();
@@ -5918,7 +5918,7 @@ function checkMemberFeature(featureKey, callback) {
 }
 
 function closeMemberModal() {
-  document.getElementById('memberModal').classList.remove('active');
+  document.getElementById('memberModal').style.display = 'none';
   if (_memberCallback) {
     const cb = _memberCallback;
     _memberCallback = null;
