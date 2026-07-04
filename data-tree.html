@@ -1888,14 +1888,19 @@ function drawLines() {
 scroll.addEventListener('scroll', drawLines);
 window.addEventListener('resize', () => renderTree());
 
-// Sync tree-scroll top to actual header height (handles mobile text wrapping)
+// Sync tree-scroll top to actual header height + treeTitleContainer (handles mobile text wrapping)
 function syncHeaderHeight() {
   const header = document.querySelector('.header');
+  const treeTitleContainer = document.getElementById('treeTitleContainer');
   const treeScroll = document.getElementById('treeScroll');
   const certPanel = document.getElementById('certPanel');
   const detailPanel = document.getElementById('detailPanel');
   if (!header) return;
-  const h = header.offsetHeight;
+  let h = header.offsetHeight;
+  // Add treeTitleContainer height if visible (it's position:fixed, not inside header)
+  if (treeTitleContainer && treeTitleContainer.offsetHeight > 0) {
+    h += treeTitleContainer.offsetHeight;
+  }
   if (treeScroll) treeScroll.style.top = h + 'px';
   if (certPanel) { certPanel.style.top = h + 'px'; certPanel.style.bottom = '0px'; certPanel.style.height = 'auto'; }
   if (detailPanel) { detailPanel.style.top = h + 'px'; detailPanel.style.bottom = '0px'; detailPanel.style.height = 'auto'; }
