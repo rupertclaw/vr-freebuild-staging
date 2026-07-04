@@ -5675,6 +5675,131 @@ setTimeout(updateOfflineBadge, 100);
     </div>
   </div>
 </div>
+<script>
+// GA4 Event Tracking — click delegation for all meaningful user actions
+(function() {
+  // Map button IDs to GA4 event names + labels
+  var buttonMap = {
+    saveBtn:           { action: 'save_session',    category: 'tree' },
+    shareBtn:          { action: 'share_tree',      category: 'tree' },
+    treeManagerToggle: { action: 'toggle_tree_mgr',  category: 'tree' },
+    privacyBtn:        { action: 'privacy_info',     category: 'ui' },
+    nextStepsBtn:      { action: 'open_guidance',    category: 'ui' },
+    feedbackBtn:       { action: 'feedback_open',    category: 'ui' },
+    viewPosterBtn:     { action: 'open_poster',     category: 'tree' },
+    certToggle:        { action: 'scan_certificate',category: 'docs' },
+    darkModeToggle:    { action: 'toggle_dark_mode',category: 'ui' },
+    printTreeBtn:      { action: 'print_tree',      category: 'tree' },
+    zoomIn:            { action: 'zoom_in',         category: 'ui' },
+    zoomOut:           { action: 'zoom_out',        category: 'ui' },
+    zoomReset:         { action: 'zoom_reset',      category: 'ui' },
+    backBtn:           { action: 'go_back',          category: 'ui' },
+    gedcomFileInput:   { action: 'import_gedcom',   category: 'gedcom' },
+  };
+
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('button, [onclick]');
+    if (!el) return;
+
+    // Track by element ID
+    var id = el.id;
+    if (id && buttonMap[id]) {
+      var m = buttonMap[id];
+      trackEvent(m.action, m.category, id);
+      return;
+    }
+
+    // Track GEDCOM export button (no ID, has onclick with exportGedcom)
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('exportGedcom') > -1) {
+      trackEvent('export_gedcom', 'gedcom', 'exportGedcomBtn');
+      return;
+    }
+
+    // Track GEDCOM import button
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('gedcomFileInput') > -1) {
+      trackEvent('import_gedcom', 'gedcom', 'importGedcomBtn');
+      return;
+    }
+
+    // Track cert method selection
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('selectCertMethod') > -1) {
+      var method = el.getAttribute('onclick').match(/'([^']+)'/);
+      trackEvent('cert_method', 'docs', method ? method[1] : 'unknown');
+      return;
+    }
+
+    // Track tree creation
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('createTree') > -1) {
+      trackEvent('create_tree', 'tree', 'createTreeBtn');
+      return;
+    }
+
+    // Track Venice/Gemini AI
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('openVenice') > -1) {
+      trackEvent('ai_tool_open', 'ai', 'venice');
+      return;
+    }
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('openGemini') > -1) {
+      trackEvent('ai_tool_open', 'ai', 'gemini');
+      return;
+    }
+
+    // Track Facebook/social link clicks
+    if (el.tagName === 'A' || (el.parentElement && el.parentElement.tagName === 'A')) {
+      var href = (el.getAttribute && el.getAttribute('href')) || (el.parentElement && el.parentElement.getAttribute('href'));
+      if (href && (href.indexOf('facebook') > -1 || href.indexOf('twitter') > -1 || href.indexOf('instagram') > -1)) {
+        trackEvent('social_click', 'social', href);
+      }
+    }
+  });
+
+  // Track member popup when shown
+  var origMemberModal = window.checkMemberFeature;
+  if (typeof origMemberModal === 'function') {
+    window.checkMemberFeature = function() {
+      trackEvent('member_popup', 'member', arguments[0] || 'unknown');
+      return origMemberModal.apply(this, arguments);
+    };
+  }
+
+  // Track tree switches
+  var origSwitchTree = window.switchTree;
+  if (typeof origSwitchTree === 'function') {
+    window.switchTree = function(id) {
+      trackEvent('switch_tree', 'tree', id);
+      return origSwitchTree.apply(this, arguments);
+    };
+  }
+
+  // Track person detail opens
+  var origOpenDetail = window.openDetail;
+  if (typeof origOpenDetail === 'function') {
+    window.openDetail = function(person) {
+      trackEvent('view_person', 'tree', person ? (person.name || person.id) : 'unknown');
+      return origOpenDetail.apply(this, arguments);
+    };
+  }
+
+  // Track document image opens
+  var origOpenDoc = window.openDocImage;
+  if (typeof origOpenDoc === 'function') {
+    window.openDocImage = function(docId) {
+      trackEvent('view_document', 'docs', String(docId));
+      return origOpenDoc.apply(this, arguments);
+    };
+  }
+
+  // Helper: fire GA4 event (safe — won't break if gtag missing)
+  function trackEvent(action, category, label) {
+    if (typeof gtag === 'function') {
+      gtag('event', action, {
+        event_category: category,
+        event_label: label
+      });
+    }
+  }
+})();
+</script>
 </body>
 </html>
 <!-- Build: 1782741103 -->
