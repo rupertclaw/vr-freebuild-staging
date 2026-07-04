@@ -5884,8 +5884,6 @@ const MEMBER_FEATURES = {
 let _memberCallback = null;
 
 function checkMemberFeature(featureKey, callback) {
-  // Don't open if privacy modal is showing
-  if (document.getElementById('privacyModal')?.style.display !== 'none') return;
   // Log GA4 event on first use
   const seenKey = 'vr_member_shown_' + featureKey;
   const hasSeen = localStorage.getItem(seenKey);
