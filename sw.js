@@ -1,12 +1,16 @@
-const CACHE_NAME = 'vaulted-roots-v4';
+const CACHE_NAME = 'vaulted-roots-staging-v5';
+
+// Do NOT cache HTML files — always fetch fresh (prevents stale content bugs)
 const ASSETS = [
-  './',
-  './index.html',
-  './data-tree.html',
-  './vaulted-roots-shield.png'
+  './vaulted-roots-shield.png',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-maskable-192.png',
+  './icon-maskable-512.png',
+  './apple-touch-icon.png',
+  './favicon-32.png'
 ];
 
-// Install: cache assets
 self.addEventListener('install', (event) => {
   event.waitUntil(
     caches.open(CACHE_NAME)
@@ -15,42 +19,24 @@ self.addEventListener('install', (event) => {
   );
 });
 
-// Activate: clean old caches, claim clients
 self.addEventListener('activate', (event) => {
   event.waitUntil(
     caches.keys().then((cacheNames) => {
       return Promise.all(
-        cacheNames
-          .filter((name) => name !== CACHE_NAME)
-          .map((name) => caches.delete(name))
+        cacheNames.map((name) => caches.delete(name))
       );
     }).then(() => self.clients.claim())
   );
 });
 
-// Fetch: cache-first for app shell, network-first for external
+// Fetch: only cache images — HTML always goes to network
 self.addEventListener('fetch', (event) => {
-  const url = new URL(event.request.url);
-
-  // External requests (Gemini, Venice, etc.) — go straight to network
-  if (url.origin !== self.location.origin) {
+  if (event.request.url.endsWith('.html') || event.request.url.endsWith('/')) {
     return;
   }
-
-  // App shell assets — serve from cache, fall back to network
   event.respondWith(
     caches.match(event.request).then((cached) => {
-      return cached || fetch(event.request).then((response) => {
-        // Update cache
-        const clone = response.clone();
-        caches.open(CACHE_NAME).then((cache) => {
-          cache.put(event.request, clone);
-        });
-        return response;
-      });
-    }).catch(() => {
-      // If fetch fails and no cache, serve index as fallback
-      return caches.match('./data-tree.html');
+      return cached || fetch(event.request);
     })
   );
 });
