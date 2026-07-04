@@ -4316,7 +4316,7 @@ function renderGuidanceResults({ suggestions, stats }) {
     return;
   }
 
-  html += '<div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#2a1f10;margin-bottom:8px;">Top Priority Suggestions <span class="member-badge-guidance">MEMBER</span></div>';
+  html += '<div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#2a1f10;margin-bottom:8px;">Top Priority Suggestions <span class="member-badge-guidance">M</span></div>';
   const icons = { BC: '📜', MC: '💍', DC: '⚰️' };
 
   // Check if member popup for suggestions has been shown
@@ -5729,34 +5729,40 @@ setTimeout(updateOfflineBadge, 100);
 <!-- ════════ MEMBER FEATURE GATEWAY ════════ -->
 <style>
 .member-badge {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, #d4af37, #f4d03f);
   color: #3a2a10;
-  font-size: 7px;
+  font-size: 8px;
   font-weight: 700;
   font-family: sans-serif;
-  letter-spacing: 0.5px;
-  padding: 1px 3px;
-  border-radius: 2px;
+  width: 14px;
+  height: 14px;
+  border-radius: 50%;
   position: absolute;
   top: -3px;
   right: -3px;
   line-height: 1;
   pointer-events: none;
   z-index: 5;
+  text-transform: uppercase;
 }
 .member-badge-guidance {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
   background: linear-gradient(135deg, #d4af37, #f4d03f);
   color: #3a2a10;
   font-size: 9px;
   font-weight: 700;
   font-family: sans-serif;
-  letter-spacing: 0.5px;
-  padding: 2px 5px;
-  border-radius: 3px;
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
   margin-left: 6px;
   vertical-align: middle;
+  text-transform: uppercase;
 }
 #memberModal {
   display: none;
@@ -5929,7 +5935,7 @@ function closeMemberModal() {
       btn.style.position = 'relative';
       var badge = document.createElement('span');
       badge.className = 'member-badge';
-      badge.textContent = 'MEMBER';
+      badge.textContent = 'M';
       btn.appendChild(badge);
     }
   });
