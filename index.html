@@ -214,7 +214,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 @media (max-width: 380px) {
   .header-emblem { height: 140px; width: 140px; opacity: 0.50; }
   .offline-badge { top: 120px; font-size: 9px; padding: 1px 6px; }
-  .header-btn { width: 28px; height: 28px; font-size: 14px; }
+  .header-btn { width: 44px; height: 44px; font-size: 20px; }
   .header-actions { gap: 2px; }
   .header-left-group { gap: 3px; }
   .tree-scroll { top: 180px; }
@@ -222,18 +222,20 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .zoom-controls span { font-size: 11px; min-width: 36px; }
 }
 @media (max-width: 340px) {
-  .header-btn { width: 26px; height: 26px; font-size: 13px; }
+  .header-btn { width: 40px; height: 40px; font-size: 18px; }
   .header-actions { gap: 1px; }
   .header-left-group { gap: 2px; }
 }
 @media (max-width: 600px) and (min-width: 381px) {
-  .header-btn { width: 34px; height: 34px; font-size: 17px; }
+  .header-btn { width: 44px; height: 44px; font-size: 20px; }
   .header-emblem { height: 160px; width: 160px; opacity: 0.50; }
 }
 .header-btn {
-  width: 42px; height: 36px; background: var(--bg-btn); color: var(--text-btn);
+  width: 44px; height: 44px; background: var(--bg-btn); color: var(--text-btn);
   border: 1px solid var(--bg-btn-border); border-radius: 6px; font-size: 20px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
+  -webkit-tap-highlight-color: rgba(74,58,34,0.3);
+  touch-action: manipulation;
 }
 .cert-btn {
   width: 44px; height: 38px;
