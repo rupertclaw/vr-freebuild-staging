@@ -195,7 +195,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   height: 100px; width: 100px;
   border-radius: 50%;
   object-fit: cover;
-  z-index: 301;
+  z-index: 1;
+  opacity: 0.35;
+  pointer-events: none;
 }
 .offline-badge {
   display: none;
@@ -212,7 +214,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 }
 .offline-badge.visible { display: block; }
 @media (max-width: 380px) {
-  .header-emblem { height: 140px; width: 140px; opacity: 0.50; }
+  .header-emblem { height: 120px; width: 120px; opacity: 0.25; }
   .offline-badge { top: 120px; font-size: 9px; padding: 1px 6px; }
   .header-btn { width: 28px; height: 28px; font-size: 14px; }
   .header-actions { gap: 2px; }
@@ -228,7 +230,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 }
 @media (max-width: 600px) and (min-width: 381px) {
   .header-btn { width: 34px; height: 34px; font-size: 17px; }
-  .header-emblem { height: 160px; width: 160px; opacity: 0.50; }
+  .header-emblem { height: 130px; width: 130px; opacity: 0.25; }
 }
 .header-btn {
   width: 42px; height: 36px; background: var(--bg-btn); color: var(--text-btn);
