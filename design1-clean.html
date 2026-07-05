@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roots — Design 1: Clean Modern</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #faf9f7;
+            color: #1a1a1a;
+            overflow-x: auto;
+            overflow-y: hidden;
+            height: 100vh;
+        }
+
+        .tree-container {
+            display: flex;
+            align-items: center;
+            height: 100vh;
+            padding: 40px 60px;
+            gap: 80px;
+        }
+
+        .generation {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 24px;
+            min-width: 200px;
+            position: relative;
+        }
+
+        .gen-label {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #999;
+        }
+
+        .person-card {
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px 20px;
+            width: 200px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+            border-left: 3px solid transparent;
+            transition: transform 0.2s, box-shadow 0.2s;
+            cursor: pointer;
+        }
+
+        .person-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+
+        .person-card.confirmed { border-left-color: #22c55e; }
+        .person-card.probable { border-left-color: #f59e0b; }
+        .person-card.brickwall { border-left-color: #ef4444; border-left-style: dashed; }
+        .person-card.you { border-left-color: #3b82f6; border-left-width: 4px; }
+
+        .person-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .person-years {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .connector-line {
+            position: absolute;
+            background: #ddd;
+            z-index: -1;
+        }
+
+        /* SVG connectors overlay */
+        .connectors {
+            position: fixed;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .tree-container { padding: 20px; gap: 40px; }
+            .person-card { width: 160px; padding: 12px 16px; }
+            .person-name { font-size: 13px; }
+        }
+    </style>
+</head>
+<body>
+    <div class="tree-container" id="tree">
+        <!-- Gen 0: You -->
+        <div class="generation">
+            <div class="gen-label">Generation 1</div>
+            <div class="person-card you">
+                <div class="person-name">Graeme Mooney</div>
+                <div class="person-years">b. 1966</div>
+            </div>
+        </div>
+
+        <!-- Gen 1: Parents (2) -->
+        <div class="generation">
+            <div class="gen-label">Generation 2</div>
+            <div class="person-card confirmed">
+                <div class="person-name">Joseph Mooney</div>
+                <div class="person-years">1931–2004</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="person-name">Rose Craigie</div>
+                <div class="person-years">b. 1931</div>
+            </div>
+        </div>
+
+        <!-- Gen 2: Grandparents (4) -->
+        <div class="generation">
+            <div class="gen-label">Generation 3</div>
+            <div class="person-card confirmed">
+                <div class="person-name">Joseph Mooney</div>
+                <div class="person-years">1905–1974</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="person-name">Alice Lynch</div>
+                <div class="person-years">1907–1978</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="person-name">Andrew Craigie</div>
+                <div class="person-years">1902–1972</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="person-name">Agnes Crawford</div>
+                <div class="person-years">b. 1902</div>
+            </div>
+        </div>
+
+        <!-- Gen 3: Great-grandparents (8) -->
+        <div class="generation">
+            <div class="gen-label">Generation 4</div>
+            <div class="person-card probable">
+                <div class="person-name">Joseph Mooney</div>
+                <div class="person-years">1879–?</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Catherine Farrell</div>
+                <div class="person-years">b. 1883</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Edward Lynch</div>
+                <div class="person-years">1868–?</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Mary Graham</div>
+                <div class="person-years">1865–?</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">James Craigie</div>
+                <div class="person-years">1872–?</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Agnes Henderson</div>
+                <div class="person-years">?–1938</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Patrick Crawford</div>
+                <div class="person-years">1872–?</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Rose McFarland</div>
+                <div class="person-years">1872–?</div>
+            </div>
+        </div>
+
+        <!-- Gen 4: 2xGG (16) -->
+        <div class="generation">
+            <div class="gen-label">Generation 5</div>
+            <div class="person-card probable"><div class="person-name">Thomas Mooney</div><div class="person-years">1862–1911</div></div>
+            <div class="person-card probable"><div class="person-name">Catherine Lynch</div><div class="person-years">1858–?</div></div>
+            <div class="person-card probable"><div class="person-name">Owen Lynch</div><div class="person-years">1833–?</div></div>
+            <div class="person-card probable"><div class="person-name">Alice Rogers</div><div class="person-years">1831–?</div></div>
+            <div class="person-card probable"><div class="person-name">William Craigie</div><div class="person-years">1841–?</div></div>
+            <div class="person-card probable"><div class="person-name">Elizabeth Craigie</div><div class="person-years">1842–?</div></div>
+            <div class="person-card probable"><div class="person-name">Francis Crawford</div><div class="person-years">1850–?</div></div>
+            <div class="person-card probable"><div class="person-name">Eliza McGinley</div><div class="person-years">1852–?</div></div>
+            <div class="person-card probable"><div class="person-name">James Farrell</div><div class="person-years">Stone Quarry Worker</div></div>
+            <div class="person-card probable"><div class="person-name">Helen McDonald</div><div class="person-years">Jute Spinner</div></div>
+            <div class="person-card probable"><div class="person-name">John McFarland</div><div class="person-years">?–?</div></div>
+            <div class="person-card probable"><div class="person-name">Mary Shields</div><div class="person-years">?–?</div></div>
+            <div class="person-card probable"><div class="person-name">Andrew Henderson</div><div class="person-years">Shoemaker</div></div>
+            <div class="person-card probable"><div class="person-name">Elizabeth Simpson</div><div class="person-years">?–?</div></div>
+            <div class="person-card brickwall"><div class="person-name">? Father</div><div class="person-years">Brick Wall</div></div>
+            <div class="person-card brickwall"><div class="person-name">Hannah Mooney</div><div class="person-years">1833–1862</div></div>
+        </div>
+
+        <!-- Gen 5: 3xGG (32) -->
+        <div class="generation">
+            <div class="gen-label">Generation 6</div>
+            <div class="person-card brickwall"><div class="person-name">? Father</div><div class="person-years">Unknown</div></div>
+            <div class="person-card probable"><div class="person-name">Hannah Mooney</div><div class="person-years">1833–1862</div></div>
+            <div class="person-card probable"><div class="person-name">Thomas Lynch</div><div class="person-years">1815–?</div></div>
+            <div class="person-card probable"><div class="person-name">Catherine Welch</div><div class="person-years">1820–?</div></div>
+            <div class="person-card brickwall"><div class="person-name">? Father</div><div class="person-years">Unknown</div></div>
+            <div class="person-card brickwall"><div class="person-name">? Mother</div><div class="person-years">Unknown</div></div>
+            <div class="person-card probable"><div class="person-name">Alex Craigie</div><div class="person-years">1814–?</div></div>
+            <div class="person-card probable"><div class="person-name">Ann</div><div class="person-years">1822–?</div></div>
+            <div class="person-card probable"><div class="person-name">Francis Crawford</div><div class="person-years">Gen Labourer</div></div>
+            <div class="person-card probable"><div class="person-name">Alice Gourley</div><div class="person-years">?–?</div></div>
+            <div class="person-card probable"><div class="person-name">Peter McGinley</div><div class="person-years">Flaxsmith</div></div>
+            <div class="person-card probable"><div class="person-name">Margaret Crumley</div><div class="person-years">?–?</div></div>
+            <div class="person-card probable"><div class="person-name">John Farrell</div><div class="person-years">Stone Quarry</div></div>
+            <div class="person-card probable"><div class="person-name">Ann Quinn</div><div class="person-years">Deceased</div></div>
+            <div class="person-card probable"><div class="person-name">Patrick McDonald</div><div class="person-years">Carpet Weaver</div></div>
+            <div class="person-card probable"><div class="person-name">Barbara Gordon</div><div class="person-years">?–?</div></div>
+            <div class="person-card probable"><div class="person-name">David Graham</div><div class="person-years">b. 1809</div></div>
+            <div class="person-card probable"><div class="person-name">Elizabeth Rattray</div><div class="person-years">1810–?</div></div>
+            <div class="person-card probable"><div class="person-name">John Reilly</div><div class="person-years">1821–?</div></div>
+            <div class="person-card probable"><div class="person-name">Catherine</div><div class="person-years">1822–?</div></div>
+            <div class="person-card brickwall"><div class="person-name">? Father</div><div class="person-years">Unknown</div></div>
+            <div class="person-card brickwall"><div class="person-name">? Mother</div><div class="person-years">Unknown</div></div>
+            <div class="person-card brickwall"><div class="person-name">? Father</div><div class="person-years">Unknown</div></div>
+            <div class="person-card brickwall"><div class="person-name">? Mother</div><div class="person-years">Unknown</div></div>
+            <div class="person-card probable"><div class="person-name">Michael Mooney</div><div class="person-years">1788–1875</div></div>
+            <div class="person-card probable"><div class="person-name">Agnes Harrington</div><div class="person-years">1799–1887</div></div>
+            <div class="person-card probable"><div class="person-name">John Harrington</div><div class="person-years">?–?</div></div>
+            <div class="person-card probable"><div class="person-name">Betsy McKnight</div><div class="person-years">?–?</div></div>
+            <div class="person-card brickwall"><div class="person-name">? Father</div><div class="person-years">Unknown</div></div>
+            <div class="person-card brickwall"><div class="person-name">? Mother</div><div class="person-years">Unknown</div></div>
+            <div class="person-card brickwall"><div class="person-name">? Father</div><div class="person-years">Unknown</div></div>
+            <div class="person-card brickwall"><div class="person-name">? Mother</div><div class="person-years">Unknown</div></div>
+        </div>
+    </div>
+
+    <!-- Connector lines would be drawn via JS/SVG -->
+    <script>
+        // Simple horizontal scroll hint
+        document.addEventListener('DOMContentLoaded', () => {
+            const tree = document.getElementById('tree');
+            // Auto-scroll to center on "You" initially
+            setTimeout(() => {
+                tree.scrollIntoView({ behavior: 'smooth', block: 'center', inline: 'center' });
+            }, 100);
+        });
+    </script>
+</body>
+</html>

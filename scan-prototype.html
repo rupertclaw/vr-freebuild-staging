@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Vaulted Roots — Scan Certificate</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  :root {
+    --bg-page: #f0e2c5;
+    --bg-header: #3e2b1a;
+    --bg-panel: rgba(255,250,240,0.97);
+    --border-panel: #5c4033;
+    --text-primary: #1a1510;
+    --text-secondary: #6b5a45;
+    --accent: #38bdf8;
+    --accent-hover: #0ea5e9;
+    --danger: #dc2626;
+    --danger-bg: #fef2f2;
+    --success: #16a34a;
+    --success-bg: #f0fdf4;
+    --warning: #d97706;
+    --warning-bg: #fef3c7;
+    --btn-primary: #5c4033;
+    --btn-primary-text: #f0e2c5;
+    --btn-secondary: #e8dcc8;
+    --btn-secondary-text: #3e2b1a;
+  }
+  body {
+    font-family: Georgia, 'Times New Roman', serif;
+    background: var(--bg-page);
+    color: var(--text-primary);
+    min-height: 100vh;
+    display: flex;
+    flex-direction: column;
+  }
+  .header {
+    background: var(--bg-header);
+    padding: 12px 16px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .header h1 {
+    color: var(--accent);
+    font-size: 20px;
+    font-weight: 700;
+    letter-spacing: 1px;
+  }
+  .header .back-btn {
+    position: absolute;
+    left: 12px;
+    background: none;
+    border: none;
+    color: var(--accent);
+    font-size: 24px;
+    cursor: pointer;
+  }
+  .container {
+    flex: 1;
+    padding: 16px;
+    max-width: 600px;
+    margin: 0 auto;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+  .card {
+    background: var(--bg-panel);
+    border: 2px solid var(--border-panel);
+    border-radius: 12px;
+    padding: 16px;
+  }
+  .card h2 {
+    font-size: 17px;
+    margin-bottom: 8px;
+    color: var(--text-primary);
+  }
+  .card p {
+    font-size: 14px;
+    line-height: 1.5;
+    color: var(--text-secondary);
+  }
+  .warning-banner {
+    background: var(--warning-bg);
+    border: 2px solid var(--warning);
+    border-radius: 10px;
+    padding: 14px;
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+  }
+  .warning-banner .icon {
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+  .warning-banner h3 {
+    color: var(--warning);
+    font-size: 15px;
+    margin-bottom: 4px;
+  }
+  .warning-banner p {
+    color: #92400e;
+    font-size: 13px;
+    line-height: 1.4;
+  }
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  .option-btn {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    padding: 18px 16px;
+    border-radius: 12px;
+    border: 2px solid var(--border-panel);
+    background: var(--bg-panel);
+    cursor: pointer;
+    transition: all 0.2s;
+    text-decoration: none;
+    color: var(--text-primary);
+  }
+  .option-btn:hover, .option-btn:focus {
+    border-color: var(--accent);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0,0,0,0.08);
+  }
+  .option-btn .icon-wrap {
+    font-size: 32px;
+    flex-shrink: 0;
+  }
+  .option-btn .opt-text h3 {
+    font-size: 16px;
+    margin-bottom: 3px;
+  }
+  .option-btn .opt-text p {
+    font-size: 13px;
+    color: var(--text-secondary);
+  }
+  .option-btn .opt-text .badge {
+    display: inline-block;
+    background: var(--success);
+    color: white;
+    font-size: 10px;
+    font-weight: bold;
+    padding: 2px 8px;
+    border-radius: 10px;
+    margin-top: 4px;
+  }
+  .option-btn .opt-text .badge-free {
+    background: var(--success);
+  }
+  .option-btn .opt-text .badge-private {
+    background: var(--btn-primary);
+  }
+
+  /* Paste section */
+  .paste-section {
+    display: none;
+  }
+  .paste-section.active {
+    display: block;
+  }
+  .paste-box {
+    width: 100%;
+    min-height: 160px;
+    padding: 12px;
+    border: 2px solid var(--border-panel);
+    border-radius: 8px;
+    font-family: 'Courier New', monospace;
+    font-size: 12px;
+    resize: vertical;
+    background: #fff;
+  }
+  .paste-box:focus {
+    outline: none;
+    border-color: var(--accent);
+  }
+  .action-row {
+    display: flex;
+    gap: 10px;
+    margin-top: 12px;
+  }
+  .btn {
+    flex: 1;
+    padding: 12px;
+    border-radius: 8px;
+    border: none;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: opacity 0.2s;
+    font-family: Georgia, serif;
+  }
+  .btn-primary {
+    background: var(--btn-primary);
+    color: var(--btn-primary-text);
+  }
+  .btn-secondary {
+    background: var(--btn-secondary);
+    color: var(--btn-secondary-text);
+    border: 2px solid var(--border-panel);
+  }
+  .btn:hover { opacity: 0.85; }
+
+  /* Parsed result preview */
+  .preview-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin-top: 12px;
+    font-size: 13px;
+  }
+  .preview-table th, .preview-table td {
+    padding: 8px 10px;
+    text-align: left;
+    border-bottom: 1px solid #d4c4a8;
+  }
+  .preview-table th {
+    color: var(--text-secondary);
+    font-weight: 600;
+    width: 45%;
+  }
+  .preview-table td {
+    font-family: 'Courier New', monospace;
+  }
+  .status-badge {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 6px;
+    font-size: 11px;
+    font-weight: bold;
+  }
+  .status-parsed { background: var(--success-bg); color: var(--success); }
+  .status-error { background: var(--danger-bg); color: var(--danger); }
+
+  footer {
+    padding: 20px 16px;
+    text-align: center;
+    color: var(--text-secondary);
+    font-size: 12px;
+  }
+</style>
+</head>
+<body>
+
+<div class="header">
+  <button class="back-btn" onclick="history.back()">&larr;</button>
+  <h1>Attach Certificate</h1>
+</div>
+
+<div class="container">
+
+  <!-- Warning Banner -->
+  <div class="warning-banner" id="privacyWarning">
+    <div class="icon">&#128721;</div>
+    <div>
+      <h3>Privacy Notice</h3>
+      <p>Vaulted Roots never uploads your documents to any server. Your tree data stays on your device only. However, if you choose the Gemini scan option, Google will receive and may retain a copy of your document image. We cannot control Google's data practices.</p>
+    </div>
+  </div>
+
+  <!-- Document Type Selection -->
+  <div class="card">
+    <h2>Document Type</h2>
+    <p style="margin-bottom:12px">What kind of certificate are you attaching?</p>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-primary" onclick="selectType('birth')" id="btn-birth" style="flex:1;min-width:80px">Birth</button>
+      <button class="btn btn-secondary" onclick="selectType('marriage')" id="btn-marriage" style="flex:1;min-width:80px">Marriage</button>
+      <button class="btn btn-secondary" onclick="selectType('death')" id="btn-death" style="flex:1;min-width:80px">Death</button>
+    </div>
+    <input type="hidden" id="certType" value="birth">
+  </div>
+
+  <!-- Scan Options -->
+  <div class="card">
+    <h2>How would you like to extract the data?</h2>
+    <div class="options">
+
+      <!-- Option 1: Gemini Scan -->
+      <a class="option-btn" id="geminiLink" href="#" target="_blank" rel="noopener">
+        <div class="icon-wrap">&#129302;</div>
+        <div class="opt-text">
+          <h3>Scan with Gemini</h3>
+          <p>Google's AI reads your certificate and returns structured data. Fast and accurate.</p>
+          <span class="badge badge-free">Free</span>
+        </div>
+      </a>
+
+      <!-- Option 2: Type Manually -->
+      <div class="option-btn" onclick="showManualForm()">
+        <div class="icon-wrap">&#9997;</div>
+        <div class="opt-text">
+          <h3>Type Details Manually</h3>
+          <p>Enter the information yourself. Total privacy, no external services.</p>
+          <span class="badge badge-private">Private</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Paste Section (shown after Gemini scan) -->
+  <div class="card paste-section" id="pasteSection">
+    <h2>Paste Gemini Result</h2>
+    <p style="margin-bottom:10px">Copy the JSON output from Gemini and paste it here:</p>
+    <textarea class="paste-box" id="pasteBox" placeholder='e.g. {&#10;  "date": "7 October 1929",&#10;  "groom_name": "Joseph Mooney",&#10;  ...&#10;}'></textarea>
+    <div class="action-row">
+      <button class="btn btn-primary" onclick="parsePasted()">Parse & Preview</button>
+      <button class="btn btn-secondary" onclick="document.getElementById("pasteBox").value=""">Clear</button>
+    </div>
+    <div id="parsePreview"></div>
+  </div>
+
+</div>
+
+<footer>
+  Vaulted Roots — Your legacy. Secure.
+</footer>
+
+<script>
+let selectedType = 'birth';
+
+function selectType(type) {
+  selectedType = type;
+  document.getElementById('certType').value = type;
+  ['birth','marriage','death'].forEach(t => {
+    const btn = document.getElementById('btn-' + t);
+    btn.className = t === type ? 'btn btn-primary' : 'btn btn-secondary';
+    btn.style.flex = '1';
+    btn.style.minWidth = '80px';
+  });
+  updateGeminiPrompt();
+}
+
+function getPromptForType(type) {
+  const base = `You are a document transcription assistant. I will upload an image of a Scottish ${type} certificate. Extract the following fields and return ONLY a JSON object with these exact keys. No markdown, no explanation, no extra text.\n\n`;
+  if (type === 'birth') {
+    return base + `Required keys:\n- date (registration date)\n- child_name\n- child_sex\n- father_name\n- father_profession\n- mother_name\n- mother_maiden_name\n- informant_name\n- informant_relationship\n- district\n- county`;
+  } else if (type === 'marriage') {
+    return base + `Required keys:\n- marriage_date\n- groom_name\n- groom_age\n- groom_profession\n- bride_name\n- bride_age\n- bride_profession\n- groom_father_name\n- groom_mother_name\n- bride_father_name\n- bride_mother_name\n- minister_name\n- witnesses\n- district`;
+  } else if (type === 'death') {
+    return base + `Required keys:\n- date_of_death\n- deceased_name\n- deceased_age\n- deceased_profession\n- cause_of_death\n- informant_name\n- informant_relationship\n- district\n- county`;
+  }
+  return base;
+}
+
+function updateGeminiPrompt() {
+  const prompt = getPromptForType(selectedType);
+  // Pre-fill Gemini chat with prompt (gemini.google.com/app)
+  const geminiUrl = 'https://gemini.google.com/app?' + new URLSearchParams({
+    utm_source: 'vaulted-roots',
+    prompt: prompt
+  }).toString();
+  document.getElementById('geminiLink').href = geminiUrl;
+}
+
+function showManualForm() {
+  alert('Manual form would open here (integrates with your existing detail panel)');
+}
+
+function parsePasted() {
+  const raw = document.getElementById('pasteBox').value.trim();
+  const preview = document.getElementById('parsePreview');
+  if (!raw) {
+    preview.innerHTML = '<p style="color:#dc2626;margin-top:10px">Please paste something first.</p>';
+    return;
+  }
+  let data;
+  try {
+    // Try raw JSON first
+    data = JSON.parse(raw);
+  } catch(e) {
+    // Try extracting JSON from markdown blocks or text
+    const match = raw.match(/\{[\s\S]*\}/);
+    if (match) {
+      try {
+        data = JSON.parse(match[0]);
+      } catch(e2) {
+        preview.innerHTML = '<p class="status-badge status-error" style="margin-top:10px">Could not parse JSON. Please check the format.</p>';
+        return;
+      }
+    } else {
+      preview.innerHTML = '<p class="status-badge status-error" style="margin-top:10px">No JSON found in pasted text.</p>';
+      return;
+    }
+  }
+  displayPreview(data);
+}
+
+function displayPreview(data) {
+  const preview = document.getElementById('parsePreview');
+  let html = '<h3 style="margin:14px 0 8px;font-size:14px">Preview (tap Edit to fix before saving)</h3>';
+  html += '<table class="preview-table"><tbody>';
+  for (const [key, val] of Object.entries(data)) {
+    const displayKey = key.replace(/_/g, ' ').replace(/\b\w/g, c => c.toUpperCase());
+    html += `<tr><th>${displayKey}</th><td>${val || '<em style="color:#999">empty</em>'}</td></tr>`;
+  }
+  html += '</tbody></table>';
+  html += '<div class="action-row" style="margin-top:14px">';
+  html += '<button class="btn btn-primary" onclick="saveToTree()">Save to Tree</button>';
+  html += '<button class="btn btn-secondary" onclick="editParsed()">Edit Fields</button>';
+  html += '</div>';
+  preview.innerHTML = html;
+}
+
+function saveToTree() {
+  alert('This would save the parsed data to the selected person in your tree.\n\nIntegration point: call applyCertToPerson() with the parsed fields.');
+}
+
+function editParsed() {
+  alert('This would open an editable form pre-filled with the parsed values, letting the user correct any mistakes before saving.');
+}
+
+// Init
+updateGeminiPrompt();
+
+// Also show paste section if user came back from Gemini
+if (window.location.hash === '#paste') {
+  document.getElementById('pasteSection').classList.add('active');
+}
+</script>
+
+</body>
+</html>

@@ -1,0 +1,359 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=3.0, user-scalable=yes">
+<title>The Mooney Line — Heritage</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel:wght@400;600;700&family=Cormorant+Garamond:ital,wght@0,400;0,600;1,400&family=UnifrakturMaguntia&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html, body { height: 100%; overflow: hidden; background: #1a1208; }
+
+#viewport { width: 100vw; height: 100vh; overflow: auto; position: relative; background: #1a1208; }
+
+#canvas {
+    position: relative;
+    width: 3000px; height: 2200px;
+    background:
+        radial-gradient(ellipse at 25% 15%, rgba(160,130,80,0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 75% 85%, rgba(140,110,60,0.06) 0%, transparent 50%),
+        linear-gradient(180deg, #e8d5b0 0%, #dccca0 35%, #d0ba88 65%, #c4a878 100%);
+    transform-origin: top center;
+    box-shadow: inset 0 0 300px rgba(80,50,20,0.2);
+}
+
+#canvas::before {
+    content: ''; position: absolute; top: 0; left: 0; right: 0; bottom: 0;
+    border: 20px solid transparent;
+    border-image: repeating-linear-gradient(45deg,
+        rgba(100,70,30,0.12) 0px, rgba(130,90,50,0.18) 2px, rgba(100,70,30,0.12) 4px
+    ) 20;
+    pointer-events: none; z-index: 200;
+}
+
+.stain { position: absolute; border-radius: 50%; filter: blur(40px); pointer-events: none; z-index: 1; }
+.stain-1 { width: 300px; height: 200px; background: rgba(120,80,30,0.06); top: 8%; left: 5%; }
+.stain-2 { width: 350px; height: 250px; background: rgba(100,60,20,0.05); top: 30%; right: 5%; }
+.stain-3 { width: 180px; height: 280px; background: rgba(130,80,30,0.04); bottom: 25%; left: 12%; }
+
+#treeSvg { position: absolute; top: 0; left: 0; width: 3000px; height: 2200px; pointer-events: none; z-index: 2; }
+
+.person {
+    position: absolute; width: 200px;
+    background: linear-gradient(145deg, #fdf6e3 0%, #f0e4c8 50%, #e8dcc0 100%);
+    border: 1.5px solid rgba(122,92,42,0.3);
+    border-radius: 8px; padding: 12px 10px 8px;
+    text-align: center;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 4px 12px rgba(60,40,15,0.15);
+    z-index: 10; cursor: pointer;
+    transition: transform 0.3s ease, box-shadow 0.3s ease;
+}
+.person:hover {
+    transform: translateY(-3px) scale(1.02);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.4), 0 8px 24px rgba(60,40,15,0.25);
+}
+
+.person::before, .person::after {
+    content: ''; position: absolute; width: 12px; height: 12px; border: 1.5px solid rgba(122,92,42,0.25);
+}
+.person::before { top: 4px; left: 4px; border-right: none; border-bottom: none; }
+.person::after { bottom: 4px; right: 4px; border-left: none; border-top: none; }
+
+.person .name { font-family: 'Cinzel', serif; font-size: 14px; font-weight: 600; color: #3a2210; line-height: 1.2; margin-bottom: 3px; }
+.person .years { font-family: 'Cormorant Garamond', serif; font-size: 12px; font-style: italic; color: #6b4e20; margin-bottom: 5px; }
+.person .occ { display: inline-flex; align-items: center; gap: 4px; padding: 2px 7px; background: rgba(122,92,42,0.08); border: 1px solid rgba(122,92,42,0.15); border-radius: 10px; font-size: 10px; color: #5a3a10; }
+
+.status-you { border-top: 3px solid #8B6914; }
+.status-confirmed { border-top: 3px solid #4a6b28; }
+.status-probable { border-top: 3px solid #cc8800; }
+.status-brickwall { border-top: 3px solid #8b0000; }
+.status-single { border-top: 3px solid #6a5acd; }
+
+.title-box { position: absolute; top: 30px; left: 1500px; transform: translateX(-50%); text-align: center; z-index: 50; }
+.title-box h1 { font-family: 'UnifrakturMaguntia', cursive; font-size: 52px; color: #4a3010; letter-spacing: 3px; text-shadow: 2px 2px 0 rgba(180,150,100,0.4); }
+.title-box .subtitle { font-family: 'Cormorant Garamond', serif; font-size: 16px; font-style: italic; color: #6b4e20; margin-top: 6px; letter-spacing: 2px; }
+
+.trunk {
+    position: absolute; bottom: 0; left: 1500px; transform: translateX(-50%);
+    z-index: 3;
+}
+.trunk-body { width: 140px; height: 200px; background: linear-gradient(180deg, #5a3a18 0%, #4a2a10 50%, #3a2208 100%); clip-path: polygon(42% 0%,58% 0%,64% 25%,70% 50%,78% 80%,85% 100%,15% 100%,22% 80%,30% 50%,36% 25%); position: relative; }
+.trunk-body::before { content: ''; position: absolute; left: 47%; top: 0; bottom: 0; width: 3px; background: rgba(255,255,255,0.05); }
+
+.leaf { position: absolute; width: 18px; height: 18px; background: #4a6b28; opacity: 0.7; clip-path: polygon(50% 0%,60% 35%,100% 35%,70% 60%,85% 100%,50% 75%,15% 100%,30% 60%,0% 35%,40% 35%); }
+
+.bottom-text { position: absolute; bottom: 20px; left: 1500px; transform: translateX(-50%); text-align: center; z-index: 50; }
+.bottom-text .est { font-family: 'Cinzel', serif; font-size: 10px; color: #7a5c2a; letter-spacing: 3px; opacity: 0.5; }
+
+.zoom-bar { position: fixed; bottom: 20px; right: 20px; display: flex; flex-direction: column; align-items: center; gap: 2px; z-index: 1000; }
+.zoom-bar button { width: 34px; height: 34px; border: 1px solid rgba(122,92,42,0.4); background: rgba(240,220,180,0.95); border-radius: 4px; font-size: 16px; color: #4a3010; cursor: pointer; display: flex; align-items: center; justify-content: center; }
+.zoom-bar button:hover { background: rgba(220,200,160,1); }
+.zoom-bar .zl { font-size: 10px; font-family: 'Cinzel', serif; color: #6b4e20; padding: 1px 0; }
+
+#viewport::-webkit-scrollbar { width: 8px; height: 8px; }
+#viewport::-webkit-scrollbar-track { background: #1a1208; }
+#viewport::-webkit-scrollbar-thumb { background: #7a5c2a; border-radius: 4px; }
+</style>
+</head>
+<body>
+<div id="viewport">
+<div id="canvas">
+
+<div class="stain stain-1"></div>
+<div class="stain stain-2"></div>
+<div class="stain stain-3"></div>
+
+<svg id="treeSvg" xmlns="http://www.w3.org/2000/svg"></svg>
+
+<div class="title-box">
+    <h1>The Mooney Heritage</h1>
+    <div class="subtitle">Eight Generations</div>
+</div>
+
+<div id="peopleLayer"></div>
+
+<div class="trunk">
+    <div class="trunk-body">
+        <div class="leaf" style="top:50px;left:30%;transform:rotate(-20deg);"></div>
+        <div class="leaf" style="top:90px;left:55%;transform:rotate(15deg) scale(0.8);"></div>
+        <div class="leaf" style="top:130px;left:22%;transform:rotate(-35deg) scale(0.7);"></div>
+    </div>
+</div>
+
+<div class="bottom-text">
+    <div class="est">EST. MDCCCLXXX · CAVAN → DUNDEE</div>
+</div>
+
+</div>
+</div>
+
+<div class="zoom-bar">
+    <button onclick="zIn()">+</button>
+    <div class="zl" id="zl">100%</div>
+    <button onclick="zOut()">−</button>
+    <button onclick="zFit()" title="Fit">⌂</button>
+</div>
+
+<script>
+const occIcons = {
+    'Engineer':'⚙️','Draughtsman':'✏️','Stoker':'⚡','Fireman':'🔥',
+    'Jute Spinner':'🌾','Jute Mill Worker':'🧵','Flax Millworker':'🌾',
+    'Mill Worker':'🧵','Spinner':'🧵','Labourer':'💪',"Mason's Labourer":'🧱',
+    'Weaver':'🧶','Tailor':'🪡','Shoemaker':'👞','Carpet Weaver':'🧶',
+    'Crofter':'🌻','Farm Labourer':'🌾','Quarry Worker':'⛏️',
+    'Stone Quarry Worker':'⛏️','Miner':'⛏️','Coal Miner':'⛏️',
+    'Baker':'🥖','Power Loom Tenter':'🧵','Dyer':'🎨',
+    'Motor Engineer':'🔧','Motor Mechanic':'🔧','Jute Selector':'🌿',
+    'Jute Mill Manager':'📋','Baker/Fireman':'🥖','default':'📜'
+};
+function getIcon(occ){ if(!occ)return''; for(let k in occIcons)if(occ.toLowerCase().includes(k.toLowerCase()))return occIcons[k]; return occIcons['default'];}
+
+// Gen=1(you) to Gen=8(oldest ancestors)
+const P = {
+    'g':{name:'Graeme Mooney',y:'b. 1966',s:'you',g:1,oc:'',pa:['a','b']},
+    'a':{name:'Joseph Mooney',y:'1931–2004',s:'confirmed',g:2,oc:'Engineering Draughtsman',pa:['c','d']},
+    'b':{name:'Rose Craigie',y:'b. 1931',s:'confirmed',g:2,oc:'',pa:['e','f']},
+    'c':{name:'Joseph Mooney',y:'1908–?',s:'confirmed',g:3,oc:'Motor Engineer',pa:['g','h']},
+    'd':{name:'Alice Lynch',y:'1907–?',s:'confirmed',g:3,oc:'Jute Spinner',pa:['i','j']},
+    'e':{name:'Andrew H. Craigie',y:'1904–1972',s:'confirmed',g:3,oc:'',pa:['k','l']},
+    'f':{name:'Agnes Crawford',y:'1900–1987',s:'confirmed',g:3,oc:'',pa:['m','n']},
+    'g':{name:'Joseph Mooney',y:'1879–?',s:'confirmed',g:4,oc:'Stoker',pa:['o']},
+    'h':{name:'Catherine Farrell',y:'~1883–?',s:'confirmed',g:4,oc:'Jute Spinner',pa:['p','q']},
+    'i':{name:'Edward Lynch',y:'~1868–?',s:'confirmed',g:4,oc:'Jute Selector',pa:['r']},
+    'j':{name:'Mary J. Graham',y:'~1869–?',s:'probable',g:4,oc:'',pa:['s','t']},
+    'k':{name:'James Craigie',y:'~1872–?',s:'confirmed',g:4,oc:'Coal Miner',pa:['u','v']},
+    'l':{name:'Agnes Henderson',y:'~1875–?',s:'probable',g:4,oc:'',pa:['w','x']},
+    'm':{name:'Francis Crawford',y:'1850–?',s:'probable',g:4,oc:'Power Loom Tenter',pa:null},
+    'n':{name:'Eliza McGinley',y:'1852–?',s:'probable',g:4,oc:'',pa:null},
+    'o':{name:'Hannah Mooney',y:'~1833–1863',s:'confirmed',g:5,oc:'Flax Millworker',pa:['y','z']},
+    'p':{name:'James Farrell',y:'~1855–?',s:'confirmed',g:5,oc:'Stone Quarry Worker',pa:['aa','ab']},
+    'q':{name:'Helen McDonald',y:'~1857–<1904',s:'confirmed',g:5,oc:'',pa:['ac','ad']},
+    'r':{name:'Owen Lynch',y:'~1834–?',s:'probable',g:5,oc:'Jute Selector',pa:['ae','af']},
+    's':{name:'James Graham',y:'~1837–?',s:'probable',g:5,oc:'Shoemaker',pa:null},
+    't':{name:'Ann',y:'~1846–?',s:'probable',g:5,oc:'',pa:null},
+    'u':{name:'William Craigie',y:'~1841–?',s:'probable',g:5,oc:'Coal Miner',pa:['ag','ah']},
+    'v':{name:'Betsy',y:'~1843–?',s:'probable',g:5,oc:'',pa:null},
+    'w':{name:'Andrew Henderson',y:'~1850–?',s:'probable',g:5,oc:'Shoemaker',pa:null},
+    'x':{name:'Eliza',y:'~1850–?',s:'probable',g:5,oc:'',pa:null},
+    'y':{name:'Michael Mooney',y:'~1801–1875',s:'confirmed',g:6,oc:'Jute Mill Worker',pa:['ai','aj']},
+    'z':{name:'Agnes Harrington',y:'~1806–1867',s:'confirmed',g:6,oc:'',pa:['ak','al']},
+    'aa':{name:'John Farrell',y:'?',s:'confirmed',g:6,oc:'Stone Quarry Worker',pa:null},
+    'ab':{name:'Ann Quinn',y:'?',s:'confirmed',g:6,oc:'',pa:null},
+    'ac':{name:'Patrick McDonald',y:'?',s:'confirmed',g:6,oc:'Carpet Weaver',pa:null},
+    'ad':{name:'Barbara Gordon',y:'?',s:'confirmed',g:6,oc:'',pa:null},
+    'ae':{name:'Owen Lynch',y:'~1806–1897',s:'probable',g:6,oc:'Weaver',pa:['am','an']},
+    'af':{name:'Margaret',y:'~1811–?',s:'probable',g:6,oc:'',pa:null},
+    'ag':{name:'William Craigie',y:'~1816–?',s:'probable',g:6,oc:'Labourer',pa:null},
+    'ah':{name:'',y:'',s:'brickwall',g:6,oc:'',pa:null},
+    'ai':{name:'Thomas Mooney',y:'?',s:'probable',g:7,oc:'Farm Labourer',pa:['ao','ap']},
+    'aj':{name:'Bridget Reilly',y:'?',s:'probable',g:7,oc:'',pa:null},
+    'ak':{name:'John Harrington',y:'?',s:'confirmed',g:7,oc:'Tailor',pa:null},
+    'al':{name:'Betsy McKnight',y:'?',s:'confirmed',g:7,oc:'',pa:null},
+    'am':{name:'Edward Lynch',y:'?',s:'probable',g:7,oc:'',pa:null},
+    'an':{name:'Catherine Clark',y:'?',s:'probable',g:7,oc:'',pa:null},
+    'ao':{name:'Thomas Mooney',y:'?',s:'probable',g:8,oc:'Farm Labourer',pa:null},
+    'ap':{name:'Bridget Reilly',y:'?',s:'probable',g:8,oc:'',pa:null},
+};
+
+// Recursively compute subtree width for each node
+const CW = 200, CH = 76, CP = 50, CY = 155; // card width, card height, couple padding, Y gap
+const L = {}; // layout cache
+
+function getDescendants(pid, seen=new Set()) {
+    if (seen.has(pid)) return new Set();
+    seen.add(pid);
+    const d = new Set([pid]);
+    for (let k in P) {
+        if (P[k].pa && P[k].pa.includes(pid)) d.add(...getDescendants(k, seen));
+    }
+    return d;
+}
+
+// Count leaf descendants at bottom of subtree
+function countLeaves(pid) {
+    const desc = Array.from(getDescendants(pid));
+    return desc.filter(d => !P[d].pa || P[d].pa.length === 0).length || 1;
+}
+
+// First: set parents recursively from a child
+function placeParents(childId, childX, childY) {
+    const child = P[childId];
+    if (!child.pa || child.pa.length === 0) return;
+
+    const parentY = childY - CY;
+    const pw = CP + CW; // width of parent couple
+
+    if (child.pa.length === 2) {
+        const px1 = childX - pw / 2 + CW/2;
+        const px2 = childX + pw / 2 - CW/2;
+        L[child.pa[0]] = { x: px1, y: parentY };
+        L[child.pa[1]] = { x: px2, y: parentY };
+        // Recurse
+        placeParents(child.pa[0], px1, parentY);
+        placeParents(child.pa[1], px2, parentY);
+    } else {
+        L[child.pa[0]] = { x: childX, y: parentY };
+        placeParents(child.pa[0], childX, parentY);
+    }
+}
+
+// Start from Graeme at bottom
+L['g'] = { x: 1500, y: 2100 };
+placeParents('g', 1500, 2100);
+
+// Now resolve collisions: people with overlapping x at same generation
+// Group by generation
+const byGen = {};
+for (let k in L) {
+    const g = P[k].g;
+    if (!byGen[g]) byGen[g] = [];
+    byGen[g].push(k);
+}
+
+// Sort each gen by x, shift right if overlapping
+for (let g = 8; g >= 1; g--) {
+    const ids = byGen[g]?.sort((a,b) => L[a].x - L[b].x) || [];
+    for (let i = 1; i < ids.length; i++) {
+        const cur = ids[i], prev = ids[i-1];
+        if (L[cur].x - L[prev].x < CW + 20) {
+            const shift = (CW + 20) - (L[cur].x - L[prev].x);
+            // Shift current and everything to its right (same gen AND all descendants)
+            // Simple: shift all with x >= L[cur].x by shift (same gen only for now)
+            for (let j = i; j < ids.length; j++) {
+                L[ids[j]].x += shift;
+            }
+        }
+    }
+}
+
+// After shifting, children's x might no longer be centered. For now just display.
+
+// ===== RENDER =====
+function render() {
+    const layer = document.getElementById('peopleLayer');
+    const svg = document.getElementById('treeSvg');
+    layer.innerHTML = '';
+    svg.innerHTML = '';
+
+    for (let k in L) {
+        if (!P[k].name) continue;
+        const pos = L[k];
+        const card = document.createElement('div');
+        card.className = 'person status-' + P[k].s;
+        card.style.left = (pos.x - CW/2) + 'px';
+        card.style.top = pos.y + 'px';
+        let h = '<div class="name">' + P[k].name + '</div>';
+        h += '<div class="years">' + P[k].y + '</div>';
+        if (P[k].oc) h += '<div class="occ"><span>' + getIcon(P[k].oc) + '</span> ' + P[k].oc + '</div>';
+        card.innerHTML = h;
+        layer.appendChild(card);
+    }
+
+    // Draw lines
+    for (let k in P) {
+        const p = P[k];
+        if (!p.pa || !L[k]) continue;
+        const cx = L[k].x, cy = L[k].y;
+        // Parent positions
+        const parents = p.pa.filter(pid => L[pid] && P[pid].name);
+        if (parents.length === 0) continue;
+
+        const py = Math.max(...parents.map(pid => L[pid].y + CH));
+        const my = (py + cy) / 2;
+
+        if (parents.length === 2) {
+            const x1 = L[parents[0]].x, x2 = L[parents[1]].x;
+            svgLine(x1, L[parents[0]].y + CH, x1, my);
+            svgLine(x2, L[parents[1]].y + CH, x2, my);
+            svgLine(x1, my, x2, my);
+            svgLine((x1+x2)/2, my, cx, cy);
+        } else {
+            const px = L[parents[0]].x, pyb = L[parents[0]].y + CH;
+            svgPath(px, pyb, cx, cy);
+        }
+    }
+}
+
+function svgLine(x1,y1,x2,y2) {
+    const s = document.getElementById('treeSvg');
+    const ln = document.createElementNS('http://www.w3.org/2000/svg','line');
+    ln.setAttribute('x1',x1); ln.setAttribute('y1',y1);
+    ln.setAttribute('x2',x2); ln.setAttribute('y2',y2);
+    ln.setAttribute('stroke','#6b4226');
+    ln.setAttribute('stroke-width','1.5');
+    ln.setAttribute('opacity','0.45');
+    s.appendChild(ln);
+}
+function svgPath(x1,y1,x2,y2) {
+    const s = document.getElementById('treeSvg');
+    const my = (y1+y2)/2;
+    const d = `M${x1} ${y1} C${x1} ${my},${x2} ${my},${x2} ${y2}`;
+    const p = document.createElementNS('http://www.w3.org/2000/svg','path');
+    p.setAttribute('d',d);
+    p.setAttribute('fill','none');
+    p.setAttribute('stroke','#6b4226');
+    p.setAttribute('stroke-width','1.5');
+    p.setAttribute('opacity','0.45');
+    s.appendChild(p);
+}
+
+// Zoom
+let z = 1;
+const cv = document.getElementById('canvas');
+function zIn(){ z=Math.min(z+0.15,2); apply(); }
+function zOut(){ z=Math.max(z-0.15,0.3); apply(); }
+function zFit(){ z=0.5; apply(); }
+function apply(){ cv.style.transform='scale('+z+')'; document.getElementById('zl').textContent=Math.round(z*100)+'%'; }
+
+// Init
+render();
+setTimeout(()=>{
+    const vp = document.getElementById('viewport');
+    vp.scrollTop = (L['g'].y - vp.clientHeight + 280);
+    vp.scrollLeft = (L['g'].x - vp.clientWidth/2);
+}, 100);
+</script>
+</body>
+</html>

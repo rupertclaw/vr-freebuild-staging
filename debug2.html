@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug — Design5 Specifics</title>
+    <style>
+        body { font-family: sans-serif; padding: 20px; }
+        .card { background: #eee; padding: 15px; margin: 8px 0; border-radius: 8px; font-size: 13px; }
+        .ok { background: #cfc; }
+        .err { background: #fcc; }
+        .log { background: #eef; }
+    </style>
+</head>
+<body>
+    <h1>Design5 Diagnostic</h1>
+    <div id="output"></div>
+    <script>
+        const out = document.getElementById('output');
+        function log(msg, type='log') {
+            out.innerHTML += '<div class="card ' + type + '"\u003e' + msg + '</div\u003e';
+        }
+
+        try {
+            // Test 1: data structure
+            const allPeople = {
+                'g0-0': { name: "Graeme", gen: 0, parents: ['g1-0','g1-1'] },
+                'g1-0': { name: "Joseph", gen: 1, parents: ['g2-0','g2-1'] },
+                'g1-1': { name: "Rose", gen: 1, parents: ['g2-2','g2-3'] },
+                'g2-0': { name: "GF Joseph", gen: 2, parents: ['g3-0','g3-1'] },
+                'g2-1': { name: "GF Alice", gen: 2, parents: ['g3-2','g3-3'] },
+                'g2-2': { name: "GF Andrew", gen: 2, parents: null },
+                'g2-3': { name: "GF Agnes", gen: 2, parents: null },
+                'g3-0': { name: "GGF", gen: 3, parents: null },
+                'g3-1': { name: "GGM", gen: 3, parents: null },
+                'g3-2': { name: "GGF2", gen: 3, parents: null },
+                'g3-3': { name: "GGM2", gen: 3, parents: null },
+            };
+            log('✅ Data loaded: ' + Object.keys(allPeople).length + ' people', 'ok');
+
+            // Test 2: buildTree
+            function buildTree(rootId, maxGen) {
+                const visible = new Set();
+                const queue = [{id: rootId, gen: 0}];
+                while (queue.length > 0) {
+                    const node = queue.shift();
+                    if (node.gen > maxGen) continue;
+                    visible.add(node.id);
+                    const p = allPeople[node.id];
+                    if (p.parents) {
+                        p.parents.forEach(pid => {
+                            if (allPeople[pid]) queue.push({id: pid, gen: node.gen + 1});
+                        });
+                    }
+                }
+                return visible;
+            }
+            const v = buildTree('g0-0', 4);
+            log('✅ buildTree: ' + v.size + ' visible', 'ok');
+            log('IDs: ' + Array.from(v).join(', '));
+
+            // Test 3: groupByGen
+            const gens = [];
+            v.forEach(id => {
+                const p = allPeople[id];
+                if (!gens[p.gen]) gens[p.gen] = [];
+                gens[p.gen].push(id);
+            });
+            log('✅ Gen grouping works');
+            
+            // Test 4: create DOM element (simulating render)
+            const div = document.createElement('div');
+            div.style.cssText = 'position:absolute;left:0;top:0;background:#fff;padding:10px;border-radius:6px;';
+            div.textContent = 'Test Card';
+            document.body.appendChild(div);
+            const h = div.offsetHeight;
+            document.body.removeChild(div);
+            log('✅ Card height measured: ' + h + 'px', 'ok');
+
+            // Test 5: SVG creation
+            const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+            const path = document.createElementNS('http://www.w3.org/2000/svg', 'path');
+            path.setAttribute('d', 'M0,0 L50,50');
+            svg.appendChild(path);
+            log('✅ SVG creation works', 'ok');
+
+            // Test 6: positioning logic (recursive centering)
+            const CARD_W = 200, GAP_X = 100, GAP_Y = 16;
+            const positions = [];
+            const cards = [];
+            const cardHeights = [];
+            const numGens = gens.length;
+
+            // Create placeholder cards
+            for (let g = numGens - 1; g >= 0; g--) {
+                positions[g] = []; cards[g] = []; cardHeights[g] = [];
+                (gens[g] || []).forEach((pid, i) => {
+                    const el = document.createElement('div');
+                    el.style.cssText = 'position:absolute;left:' + (g * (CARD_W + GAP_X)) + 'px;width:' + CARD_W + 'px;padding:10px;background:#eee;';
+                    el.textContent = allPeople[pid].name;
+                    document.body.appendChild(el);
+                    cardHeights[g][i] = el.offsetHeight;
+                    cards[g][i] = el;
+                });
+            }
+
+            // Position rightmost
+            let y = 0;
+            for (let i = 0; i < cards[numGens-1].length; i++) {
+                positions[numGens-1][i] = y;
+                y += cardHeights[numGens-1][i] + GAP_Y;
+            }
+
+            // Work backwards centering
+            for (let g = numGens - 2; g >= 0; g--) {
+                for (let i = 0; i < gens[g].length; i++) {
+                    const pid = gens[g][i];
+                    const person = allPeople[pid];
+                    if (person.parents) {
+                        const idxs = person.parents.map(p => gens[g+1].indexOf(p)).filter(idx => idx >= 0);
+                        if (idxs.length === 2) {
+                            const y1 = positions[g+1][idxs[0]] + cardHeights[g+1][idxs[0]]/2;
+                            const y2 = positions[g+1][idxs[1]] + cardHeights[g+1][idxs[1]]/2;
+                            positions[g][i] = (y1 + y2) / 2 - cardHeights[g][i]/2;
+                        } else {
+                            positions[g][i] = positions[g+1][0] || 0;
+                        }
+                    } else {
+                        positions[g][i] = 0;
+                    }
+                }
+            }
+
+            // Apply positions and report
+            for (let g = 0; g < numGens; g++) {
+                for (let i = 0; i < cards[g].length; i++) {
+                    cards[g][i].style.top = positions[g][i] + 'px';
+                }
+            }
+            log('✅ Recursive positioning computed for ' + numGens + ' gens', 'ok');
+            
+            // Leave cards visible so we can see if anything rendered
+            log('Cards rendered below (should see nested tree):', 'ok');
+
+        } catch(e) {
+            log('❌ ERROR: ' + e.message + '<br><pre>' + e.stack + '</pre>', 'err');
+        }
+    </script>
+</body>
+</html>

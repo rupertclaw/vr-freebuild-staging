@@ -3,49 +3,7 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-<meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
-<meta http-equiv="Pragma" content="no-cache">
-<meta http-equiv="Expires" content="0">
-<meta name="version" content="20250702-ga-seo">
 <title>Vaulted Roots</title>
-<meta name="description" content="Build your family tree. Private, offline, and yours. Research, document, and visualise your ancestry with Vaulted Roots.">
-<meta name="keywords" content="family tree, genealogy, ancestry, family history, build family tree, genealogy app, heritage, roots">
-<meta name="robots" content="index, follow">
-<link rel="canonical" href="https://vaultedroots.com">
-
-<!-- Open Graph for Facebook sharing -->
-<meta property="og:title" content="Vaulted Roots — Build Your Family Tree">
-<meta property="og:description" content="Build your family tree. Private, offline, and yours. Research, document, and visualise your ancestry.">
-<meta property="og:type" content="website">
-<meta property="og:url" content="https://vaultedroots.com">
-<meta property="og:image" content="https://vaultedroots.com/vaulted-roots-shield.png">
-<meta property="og:site_name" content="Vaulted Roots">
-
-<!-- Google Analytics 4 -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-MFQ3DV323Y"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-MFQ3DV323Y');
-</script>
-
-<link rel="manifest" href="./manifest.json">
-<link rel="apple-touch-icon" href="./apple-touch-icon.png">
-<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
-<link rel="icon" type="image/png" sizes="192x192" href="./icon-192.png">
-<meta name="apple-mobile-web-app-capable" content="yes">
-<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<meta name="apple-mobile-web-app-title" content="Vaulted Roots">
-<meta name="mobile-web-app-capable" content="yes">
-<script>
-// Register Service Worker for offline support
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(function(reg) { console.log('[SW] Registered', reg.scope); })
-    .catch(function(err) { console.error('[SW] Failed', err); });
-}
-</script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
 
@@ -144,6 +102,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .header-top {
   display: flex; align-items: center; justify-content: space-between;
   gap: 12px; flex-wrap: wrap;
+  padding-right: 96px;
 }
 .header-brand {
   display: flex; flex-direction: column;
@@ -189,37 +148,19 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   justify-content: flex-end;
 }
 .header-emblem {
-  position: absolute;
-  left: 50%; top: 50%;
-  transform: translate(-50%, -50%);
-  height: 100px; width: 100px;
+  position: absolute; right: 14px; top: 6px;
+  height: 82px; width: 82px;
   border-radius: 50%;
-  object-fit: cover;
-  z-index: 1;
-  opacity: 0.35;
-  pointer-events: none;
+  object-fit: cover; flex-shrink: 0;
 }
-.offline-badge {
-  display: none;
-  position: absolute; right: 14px; top: 130px;
-  background: #991b1b;
-  color: #fee2e2;
-  font-size: 10px;
-  font-weight: 600;
-  padding: 2px 8px;
-  border-radius: 10px;
-  font-family: 'Cormorant Garamond', serif;
-  letter-spacing: 0.5px;
-  z-index: 50;
-}
-.offline-badge.visible { display: block; }
 @media (max-width: 380px) {
-  .header-emblem { height: 120px; width: 120px; opacity: 0.25; }
-  .offline-badge { top: 120px; font-size: 9px; padding: 1px 6px; }
+  .header-emblem { height: 56px; width: 56px; }
   .header-btn { width: 28px; height: 28px; font-size: 14px; }
+  .country-select { padding: 3px 5px; font-size: 10px; min-width: 70px; }
   .header-actions { gap: 2px; }
   .header-left-group { gap: 3px; }
-  .tree-scroll { top: 180px; }
+  .tree-scroll { top: 160px; }
+  .header-top { padding-right: 70px; }
   .header-bottom { flex-direction: column; align-items: stretch; }
   .zoom-controls span { font-size: 11px; min-width: 36px; }
 }
@@ -230,13 +171,20 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 }
 @media (max-width: 600px) and (min-width: 381px) {
   .header-btn { width: 34px; height: 34px; font-size: 17px; }
-  .header-emblem { height: 130px; width: 130px; opacity: 0.25; }
+  .country-select { padding: 5px 7px; font-size: 12px; min-width: 95px; }
 }
 .header-btn {
-  width: 42px; height: 36px; background: var(--bg-btn); color: var(--text-btn);
+  width: 38px; height: 38px; background: var(--bg-btn); color: var(--text-btn);
   border: 1px solid var(--bg-btn-border); border-radius: 6px; font-size: 20px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
 }
+.country-select {
+  background: var(--bg-btn); color: var(--text-btn);
+  border: 1px solid var(--bg-btn-border); border-radius: 6px;
+  padding: 6px 8px; font-family: 'Cormorant Garamond', serif; font-size: 13px;
+  cursor: pointer; min-width: 110px;
+}
+.country-select option { background: #5c4033; color: #e8dcc8; }
 .cert-btn {
   width: 44px; height: 38px;
   background: #6b4c35; border-color: #8a7a5a;
@@ -244,7 +192,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 /* Tree scroll area */
 .tree-scroll {
-  position: fixed; top: 170px; left: 0; right: 0; bottom: 0;
+  position: fixed; top: 124px; left: 0; right: 0; bottom: 0;
   overflow: auto; -webkit-overflow-scrolling: touch;
   touch-action: pan-x pan-y;
   background: radial-gradient(ellipse at center, var(--bg-tree-start) 0%, var(--bg-tree-end) 100%);
@@ -512,65 +460,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .cert-retry { background: #f5eedc; color: #4a3a22; }
 .cert-swap { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
 
-/* ─── Cert method selection ─── */
-.cert-method-select { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
-.cert-method-row { display:flex; gap:10px; }
-.cert-method-btn {
-  flex:1; padding:16px 10px; border:2px solid #8a7a5a; border-radius:8px;
-  background:#faf6ee; cursor:pointer; text-align:center;
-  font-family:'Cormorant Garamond',serif; color:#4a3a22;
-  transition:border-color 0.15s, background 0.15s;
-}
-.cert-method-btn:hover { border-color:#4a3a22; background:#f0e8d8; }
-.cert-method-btn .method-icon { font-size:28px; display:block; margin-bottom:4px; }
-.cert-method-btn .method-label { font-size:13px; font-weight:600; display:block; }
-.cert-method-btn .method-desc { font-size:11px; color:#8a7a5a; display:block; margin-top:2px; }
-
-/* ─── Gemini section ─── */
-.gemini-section { display:none; }
-.gemini-section.active { display:block; }
-
-/* ─── Venice section ─── */
-.venice-section { display:none; }
-.venice-section.active { display:block; }
-
-/* ─── Upload & Scan section ─── */
-.upload-section { display:none; }
-.upload-section.active { display:block; }
-
-.gemini-privacy-banner {
-  background:#fef3c7; border:2px solid #f59e0b; border-radius:8px;
-  padding:12px; margin-bottom:12px;
-}
-.gemini-privacy-banner .warn-title { color:#92400e; font-weight:600; font-size:13px; margin-bottom:4px; }
-.gemini-privacy-banner .warn-text { color:#92400e; font-size:12px; line-height:1.4; }
-.gemini-paste-box {
-  width:100%; min-height:120px; padding:10px;
-  border:2px solid #8a7a5a; border-radius:6px;
-  font-family:'Courier New',monospace; font-size:11px;
-  background:#fff; margin-bottom:10px; resize:vertical;
-}
-.gemini-open-btn {
-  display:block; width:100%; padding:14px;
-  background:#4a3a22; color:#f5eedc; border:none; border-radius:8px;
-  font-family:'Cinzel Decorative',serif; font-size:14px;
-  cursor:pointer; text-align:center; margin-bottom:12px;
-  text-decoration:none;
-}
-.gemini-open-btn:hover { opacity:0.9; }
-.gemini-back-btn {
-  padding:8px 14px; border:2px solid #8a7a5a; border-radius:4px;
-  background:#faf6ee; color:#4a3a22; cursor:pointer;
-  font-family:'Cormorant Garamond',serif; font-size:12px;
-}
-.cert-type-selector { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
-.cert-type-btn {
-  padding:6px 12px; border:2px solid #8a7a5a; border-radius:4px;
-  background:#faf6ee; cursor:pointer; font-family:'Cormorant Garamond',serif;
-  font-size:12px; color:#4a3a22;
-}
-.cert-type-btn.active { background:#4a3a22; color:#f5eedc; border-color:#4a3a22; }
-
 /* Detail panel */
 .detail-panel {
   display: none; position: fixed; top: 124px; right: 0;
@@ -683,9 +572,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .toast,
   #printTreeBtn,
   .header-btn,
-  .cert-btn,
-  #feedbackBtn,
-  #facebookBtn { display: none !important; }
+  .country-select,
+  .cert-btn { display: none !important; }
 
   /* Reset body to normal document flow */
   body {
@@ -743,7 +631,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   <div class="header-top">
     <div class="header-brand">
       <div class="header-logo">Vaulted Roots</div>
-      <div class="header-tagline" id="treeNameBanner">Your legacy. Secure.</div>
+      <div class="header-tagline">Your legacy. Secure.</div>
     </div>
     <div class="header-stats">
       <div class="header-stat">
@@ -761,7 +649,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     </div>
   </div>
   <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
-  <div class="offline-badge" id="offlineBadge">OFFLINE</div>
   <div class="header-bottom">
     <div class="header-left-group">
       <div class="zoom-controls">
@@ -771,32 +658,29 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
         <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
         <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom">⟲</button>
       </div>
+      <select id="countrySelect" class="country-select" title="Research country">
+        <option value="" disabled>Country...</option>
+      </select>
     </div>
     <div class="header-actions">
       <button class="header-btn" id="saveBtn" title="Save session" onclick="saveSession()">💾</button>
       <button class="header-btn" id="loadBtn" title="Load session">📂</button>
-      <button class="header-btn" id="shareBtn" title="Share tree" onclick="checkMemberFeature('share_tree', shareTree)">📤</button>
-      <button class="header-btn" id="treeManagerToggle" title="My trees" onclick="checkMemberFeature('multiple_trees', toggleTreeManager)">🌳</button>
+      <button class="header-btn" id="shareBtn" title="Share tree" onclick="shareTree()">📤</button>
       <button class="header-btn" id="privacyBtn" title="Privacy &amp; data protection" onclick="showPrivacyModal()">🔒</button>
       <button class="header-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖</button>
-      <button class="header-btn" id="feedbackBtn" title="Send feedback" onclick="showFeedbackModal()">💬</button>
-      <a class="header-btn" id="facebookBtn" title="Vaulted Roots on Facebook" href="https://www.facebook.com/profile.php?id=61591673636516" target="_blank" rel="noopener" style="text-decoration:none;background:#1877F2;border-color:#1877F2;border-radius:50%;width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;"><span style="font-family:sans-serif;font-weight:bold;font-size:20px;color:#fff;">f</span></a>
-      <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)" onclick="checkMemberFeature('heritage_poster', openPoster)">🖼️</button>
-      <button class="header-btn cert-btn" id="certToggle" title="Scan certificate" onclick="checkMemberFeature('cert_scanning', toggleCertPanel)">📄</button>
+      <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)" onclick="openPoster()">🌳</button>
+      <button class="header-btn cert-btn" id="certToggle" title="Upload certificate" onclick="toggleCertPanel()">📎</button>
       <button class="header-btn" id="darkModeToggle" title="Toggle dark mode" onclick="toggleDarkMode()">🌙</button>
-      <button class="header-btn" id="printTreeBtn" title="Print tree" onclick="checkMemberFeature('print', openPrintDialog)">🖨️</button>
-      <button class="header-btn" id="resetBtn" title="Reset tree">🔄</button>
+      <button class="header-btn" id="printTreeBtn" title="Print tree" onclick="openPrintDialog()">🖨️</button>
+      <button class="header-btn" id="resetBtn" title="Reset tree" onclick="doResetTree()">🔄</button>
     </div>
   </div>
 </div>
 
-<button id="expandGenBtn" class="expand-gen-btn" title="Reveal next generation" onclick="checkMemberFeature('expand_generation', expandNextGen)">Reveal Next Generation</button>
+<button id="expandGenBtn" class="expand-gen-btn" title="Reveal next generation">Reveal Next Generation</button>
 
-
-<div id="treeTitleContainer" style="position:fixed; top:114px; left:0; right:0; z-index:100; background:rgba(250,244,230,0.95); border-bottom:1px solid #8a7a5a; padding:8px 16px; font-family:'Cinzel Decorative',serif; font-size:16px; color:#2a1f10; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><span id="treeTitle"></span></div>
-<div class="tree-scroll" id="treeScroll" style="top: 154px;">
+<div class="tree-scroll" id="treeScroll">
   <div id="zoomSizer" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0;"></div>
-
   <div class="tree-wrap" id="treeWrap">
     <svg class="lines-svg" id="linesSvg"></svg>
   </div>
@@ -806,7 +690,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 <div class="cert-panel" id="certPanel">
   <div class="cert-header">
     <button class="cert-close" id="certClose">&times;</button>
-    <div style="font-size:14px;">📄 Scan Certificate</div>
+    <div style="font-size:14px;">📎 Upload Certificate</div>
   </div>
   <div class="cert-toolbar">
     <div class="cert-actions" id="certActions">
@@ -816,184 +700,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     </div>
   </div>
   <div class="cert-body" id="certBody">
-    <!-- Method Selection -->
-    <div class="cert-method-select" id="certMethodSelect">
-      <div style="font-size:12px;color:#6b5537;margin-bottom:4px;font-weight:600;text-align:center">Extract data using:</div>
-      <div class="cert-method-row">
-        <button class="cert-method-btn" onclick="selectCertMethod('upload')">
-          <span class="method-icon">📷</span>
-          <span class="method-label">Upload & Scan</span>
-          <span class="method-desc">100% private</span>
-        </button>
-        <button class="cert-method-btn" onclick="checkMemberFeature('ai_venice', function(){selectCertMethod('venice')})">
-          <span class="method-icon">🛡️</span>
-          <span class="method-label">Venice</span>
-          <span class="method-desc">Best for printed text</span>
-        </button>
-        <button class="cert-method-btn" onclick="checkMemberFeature('ai_gemini', function(){selectCertMethod('gemini')})">
-          <span class="method-icon">🤖</span>
-          <span class="method-label">Gemini</span>
-          <span class="method-desc">External scan</span>
-        </button>
-      </div>
+    <div class="cert-upload-btns" id="certUploadBtns">
+      <button class="camera-btn" id="certCameraBtn"><span>📷</span>Camera</button>
+      <button class="file-btn" id="certFileBtn"><span>📁</span>Choose File</button>
     </div>
-
-    <!-- Upload & Scan Section -->
-    <div class="upload-section" id="uploadSection">
-      <div class="gemini-privacy-banner" style="background:#dcfce7;border-color:#166534;">
-        <div class="warn-title" style="color:#166534;">Privacy Notice</div>
-        <div class="warn-text" style="color:#166534;">100% private. Your certificate is processed via Venice AI and is never stored or used to train models.</div>
-      </div>
-
-      <div class="gemini-privacy-banner" style="background:#fef3c7;border-color:#f59e0b;">
-        <div class="warn-title" style="color:#92400e;">⚠️ Handwriting Warning</div>
-        <div class="warn-text" style="color:#92400e;">Venice models read printed or typed text well but struggle with handwritten certificates. For handwriting, use Gemini instead.</div>
-      </div>
-
-      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
-      <div class="cert-type-selector" id="uploadCertType">
-        <button class="cert-type-btn active" data-type="birth" onclick="setUploadCertType('birth', this)">Birth</button>
-        <button class="cert-type-btn" data-type="marriage" onclick="setUploadCertType('marriage', this)">Marriage</button>
-        <button class="cert-type-btn" data-type="death" onclick="setUploadCertType('death', this)">Death</button>
-      </div>
-
-      <div style="display:flex;gap:10px;margin:12px 0;">
-        <button onclick="document.getElementById('certCameraInput').click()" style="flex:1;padding:12px;border:2px solid #8a7a5a;border-radius:8px;background:#faf6ee;font-family:'Cormorant Garamond',serif;color:#4a3a22;cursor:pointer;font-size:13px;">
-          <span style="font-size:24px;display:block;margin-bottom:4px;">📷</span>
-          Camera
-        </button>
-        <button onclick="document.getElementById('certFileInput').click()" style="flex:1;padding:12px;border:2px solid #8a7a5a;border-radius:8px;background:#faf6ee;font-family:'Cormorant Garamond',serif;color:#4a3a22;cursor:pointer;font-size:13px;">
-          <span style="font-size:24px;display:block;margin-bottom:4px;">📁</span>
-          File
-        </button>
-      </div>
-
-      <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
-    </div>
-
-    <!-- Venice Paste Section -->
-    <div class="venice-section" id="veniceSection">
-      <div class="gemini-privacy-banner" style="background:#dcfce7;border-color:#166534;">
-        <div class="warn-title" style="color:#166534;">Privacy Notice</div>
-        <div class="warn-text" style="color:#166534;">Venice AI is 100% private. Your certificate image is processed by Venice and is never stored or used to train models.</div>
-      </div>
-
-      <div class="gemini-privacy-banner" style="background:#fef3c7;border-color:#f59e0b;">
-        <div class="warn-title" style="color:#92400e;">⚠️ Handwriting Warning</div>
-        <div class="warn-text" style="color:#92400e;">Venice models read printed or typed text well but struggle with handwritten certificates. For handwriting, use Gemini instead.</div>
-      </div>
-
-      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
-      <div class="cert-type-selector" id="veniceCertType">
-        <button class="cert-type-btn active" data-type="birth" onclick="setVeniceType('birth')">Birth</button>
-        <button class="cert-type-btn" data-type="marriage" onclick="setVeniceType('marriage')">Marriage</button>
-        <button class="cert-type-btn" data-type="death" onclick="setVeniceType('death')">Death</button>
-      </div>
-
-      <button class="gemini-open-btn" id="veniceCopyBtn" onclick="copyVenicePrompt()">📋 Copy Prompt to Clipboard</button>
-      <button class="gemini-open-btn" style="background:#7c3aed;border-color:#5b21b6;margin-top:8px;" onclick="openVenice()">🛡️ Open Venice</button>
-
-      <div class="gemini-steps" style="background:#f0e8d8;border:1px solid #c4b49a;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:#4a3a22;">
-        <div style="font-weight:600;margin-bottom:6px;font-size:13px;">📱 How this works:</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <div style="display:flex;gap:8px;align-items:flex-start;">
-            <span style="font-weight:600;min-width:16px;">1</span>
-            <span>Tap the button above to copy the extraction prompt</span>
-          </div>
-          <div style="display:flex;gap:8px;align-items:flex-start;">
-            <span style="font-weight:600;min-width:16px;">2</span>
-            <span>Tap <b>Open Venice</b> — or go to <b>venice.ai/chat</b> manually and sign in</span>
-          </div>
-          <div style="display:flex;gap:8px;align-items:flex-start;">
-            <span style="font-weight:600;min-width:16px;">3</span>
-            <span>Paste the prompt, then upload your certificate photo</span>
-          </div>
-          <div style="display:flex;gap:8px;align-items:flex-start;">
-            <span style="font-weight:600;min-width:16px;">4</span>
-            <span>Copy Venice's JSON output and paste it in the box below</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="gemini-status" id="veniceStatus" style="display:none;font-size:12px;color:#166534;background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;line-height:1.5;">
-        <b>Prompt copied!</b><br>
-        Now tap <b>Open Venice</b> above, or manually go to venice.ai/chat
-      </div>
-
-      <div style="margin-bottom:10px;">
-        <button onclick="toggleVenicePrompt()" style="background:none;border:none;color:#4a3a22;font-size:12px;font-family:'Cormorant Garamond',serif;cursor:pointer;text-decoration:underline;">
-          View the prompt
-        </button>
-        <div id="venicePromptBox" style="display:none;background:#2a1f15;color:#e8dcc8;padding:10px;border-radius:6px;font-size:11px;font-family:'Courier New',monospace;white-space:pre-wrap;max-height:200px;overflow:auto;margin-top:6px;border:1px solid #4a3a22;"></div>
-      </div>
-
-      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;">Paste Venice's JSON response:</div>
-      <textarea class="gemini-paste-box" id="venicePasteBox" placeholder="Paste the JSON output from Venice here..."></textarea>
-      <div style="display:flex;gap:8px;">
-        <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
-        <button class="gemini-back-btn" style="background:#4a3a22;color:#f5eedc;border-color:#4a3a22;" onclick="parseVeniceResult()">Parse Result</button>
-      </div>
-    </div>
-
-    <!-- Gemini Section -->
-    <div class="gemini-section" id="geminiSection">
-      <div class="gemini-privacy-banner">
-        <div class="warn-title">Privacy Notice</div>
-        <div class="warn-text">By uploading your document to Gemini, Google will receive and may retain a copy. For total privacy, use the Venice option instead.</div>
-      </div>
-
-      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
-      <div class="cert-type-selector" id="geminiCertType">
-        <button class="cert-type-btn active" data-type="birth" onclick="setGeminiType('birth')">Birth</button>
-        <button class="cert-type-btn" data-type="marriage" onclick="setGeminiType('marriage')">Marriage</button>
-        <button class="cert-type-btn" data-type="death" onclick="setGeminiType('death')">Death</button>
-      </div>
-
-      <button class="gemini-open-btn" id="geminiCopyBtn" onclick="copyGeminiPrompt()">📋 Copy Prompt to Clipboard</button>
-      <button class="gemini-open-btn" style="background:#1a73e8;border-color:#1557b0;margin-top:8px;" onclick="openGemini()">🔷 Open Gemini</button>
-
-      <div class="gemini-steps" style="background:#f0e8d8;border:1px solid #c4b49a;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:#4a3a22;">
-        <div style="font-weight:600;margin-bottom:6px;font-size:13px;">📱 How this works:</div>
-        <div style="display:flex;flex-direction:column;gap:6px;">
-          <div style="display:flex;gap:8px;align-items:flex-start;">
-            <span style="font-weight:600;min-width:16px;">1</span>
-            <span>Tap the button above to copy the extraction prompt</span>
-          </div>
-          <div style="display:flex;gap:8px;align-items:flex-start;">
-            <span style="font-weight:600;min-width:16px;">2</span>
-            <span>Tap <b>Open Gemini</b> — if it doesn't open, manually go to <b>gemini.google.com</b></span>
-          </div>
-          <div style="display:flex;gap:8px;align-items:flex-start;">
-            <span style="font-weight:600;min-width:16px;">3</span>
-            <span>Paste the prompt, then upload your certificate photo</span>
-          </div>
-          <div style="display:flex;gap:8px;align-items:flex-start;">
-            <span style="font-weight:600;min-width:16px;">4</span>
-            <span>Copy Gemini's JSON output and paste it in the box below</span>
-          </div>
-        </div>
-      </div>
-
-      <div class="gemini-status" id="geminiStatus" style="display:none;font-size:12px;color:#166534;background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;line-height:1.5;">
-        <b>Prompt copied!</b><br>
-        Now tap <b>Open Gemini</b> above, or manually go to gemini.google.com
-      </div>
-
-      <div style="margin-bottom:10px;">
-        <button onclick="toggleGeminiPrompt()" style="background:none;border:none;color:#4a3a22;font-size:12px;font-family:'Cormorant Garamond',serif;cursor:pointer;text-decoration:underline;">
-          View the prompt
-        </button>
-        <div id="geminiPromptBox" style="display:none;background:#2a1f15;color:#e8dcc8;padding:10px;border-radius:6px;font-size:11px;font-family:'Courier New',monospace;white-space:pre-wrap;max-height:200px;overflow:auto;margin-top:6px;border:1px solid #4a3a22;"></div>
-      </div>
-
-      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;">Paste Gemini's JSON response:</div>
-      <textarea class="gemini-paste-box" id="geminiPasteBox" placeholder="Paste the JSON output from Gemini here..."></textarea>
-      <div style="display:flex;gap:8px;">
-        <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
-        <button class="gemini-back-btn" style="background:#4a3a22;color:#f5eedc;border-color:#4a3a22;" onclick="parseGeminiResult()">Parse Result</button>
-      </div>
-    </div>
-
     <div class="cert-upload-area" id="certUploadArea" style="display:none">
       <div style="font-size:24px;margin-bottom:8px;">📄</div>
       <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#4a3a22;">Tap to upload cert</div>
@@ -1030,23 +740,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   </div>
 </div>
 
-<!-- Tree Manager Panel -->
-<div class="guidance-panel" id="treeManagerPanel" style="z-index:10003;">
-  <div class="guidance-header">
-    <button class="guidance-close" onclick="closeTreeManager()">&times;</button>
-    <div style="font-size:14px;">🌳 My Trees</div>
-  </div>
-  <div class="guidance-body" id="treeManagerBody">
-    <div id="treeManagerContainer" style="margin-bottom:12px;"></div>
-    <div style="border-top:1px solid #c4b89a;padding-top:12px;margin-top:8px;">
-      <div style="display:flex;gap:8px;align-items:center;">
-        <input type="text" id="newTreeName" placeholder="New tree name..." style="flex:1;padding:8px 10px;border:1px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:13px;color:#2a1f10;">
-        <button onclick="var n=document.getElementById('newTreeName').value;if(n)createTree(n);" style="padding:8px 14px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;white-space:nowrap;">➕ Create</button>
-      </div>
-    </div>
-  </div>
-</div>
-
 <!-- Force cache refresh: toolbar icons moved to header -->
 <!-- Hidden file input for load -->
 <input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
@@ -1054,8 +747,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 <!-- Custom Confirm Dialog -->
 <div id="confirmDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;justify-content:center;align-items:center;">
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:320px;width:90%;text-align:center;">
-    <div id="confirmTitle" style="font-family: 'Cinzel Decorative', serif;font-size:16px;color:#991b1b;margin-bottom:12px;">⚠️ Wipe Tree Clean?</div>
-    <div id="confirmMessage" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;">This will permanently remove ALL people, documents, photos, and certificates from your tree.<br><br><b>This cannot be undone.</b><br><br>To keep your data, tap Cancel and use Save Session first.</div>
+    <div id="confirmTitle" style="font-family: 'Cinzel Decorative', serif;font-size:16px;color:#3e2b1a;margin-bottom:12px;">Reset Tree</div>
+    <div id="confirmMessage" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;">Clear all data and start fresh? This cannot be undone.</div>
     <div style="display:flex;gap:10px;justify-content:center;">
       <button id="confirmCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
       <button id="confirmOk" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#5c2a2a;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Reset</button>
@@ -1063,8 +756,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   </div>
 </div>
 
-<!-- Country Selector Modal (first use) — DISABLED: users pick via toolbar dropdown or card links -->
-<!--
+<!-- Country Selector Modal (first use) -->
 <div id="countryModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10001;justify-content:center;align-items:center;">
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:340px;width:90%;text-align:center;">
     <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:8px;">Welcome to Vaulted Roots</div>
@@ -1075,7 +767,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     <button id="countryModalOk" style="padding:10px 24px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;">Start Researching</button>
   </div>
 </div>
--->
 
 <!-- Privacy Splash Modal (first visit) -->
 <div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
@@ -1096,7 +787,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">🚫</div>
-        <div><strong>No tracking.</strong> No cookies, no ads. We use Google Analytics anonymously to understand site usage — we don't know who you are.</div>
+        <div><strong>No tracking.</strong> No analytics, no cookies, no ads. We don't know who you are or what you're researching.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">📤</div>
@@ -1112,35 +803,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     </div>
     <button id="privacyModalOk" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;margin-bottom:8px;">Dismiss</button>
     <button id="privacyModalDismissForever" style="width:100%;padding:10px;border:none;background:transparent;color:#6b5537;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Dismiss forever — do not show again</button>
-  </div>
-</div>
-
-<!-- Feedback Modal -->
-<div id="feedbackModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
-  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
-    <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:36px;margin-bottom:8px;">💬</div>
-      <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:4px;">Send Feedback</div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b5537;">We'd love to hear your thoughts</div>
-    </div>
-    <form id="feedbackForm" action="https://formspree.io/f/xaqglnpa" method="POST">
-      <input type="hidden" name="_next" value="https://vaultedroots.com">
-      <input type="hidden" name="_subject" value="New Vaulted Roots feedback">
-      <div style="margin-bottom:12px;">
-        <label style="display:block;font-family:'Cinzel Decorative',serif;font-size:12px;color:#4a3a22;margin-bottom:4px;">Name</label>
-        <input type="text" name="name" required style="width:100%;padding:10px;border:2px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;box-sizing:border-box;" placeholder="Your name">
-      </div>
-      <div style="margin-bottom:12px;">
-        <label style="display:block;font-family:'Cinzel Decorative',serif;font-size:12px;color:#4a3a22;margin-bottom:4px;">Email</label>
-        <input type="email" name="email" required style="width:100%;padding:10px;border:2px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;box-sizing:border-box;" placeholder="you@example.com">
-      </div>
-      <div style="margin-bottom:16px;">
-        <label style="display:block;font-family:'Cinzel Decorative',serif;font-size:12px;color:#4a3a22;margin-bottom:4px;">Message</label>
-        <textarea name="message" required rows="4" style="width:100%;padding:10px;border:2px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;box-sizing:border-box;resize:vertical;" placeholder="What's on your mind?"></textarea>
-      </div>
-      <button type="submit" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;margin-bottom:8px;">Send Feedback</button>
-      <button type="button" onclick="document.getElementById('feedbackModal').style.display='none'" style="width:100%;padding:10px;border:none;background:transparent;color:#6b5537;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Cancel</button>
-    </form>
   </div>
 </div>
 
@@ -1235,7 +897,21 @@ function getCountry() { return localStorage.getItem('vaulted_country') || ''; }
 function setCountry(code) {
   if (!code) return;
   localStorage.setItem('vaulted_country', code);
+  const sel = document.getElementById('countrySelect');
+  if (sel) sel.value = code;
   showToast('Research country: ' + (COUNTRY_SOURCES[code]?.name || code));
+}
+function populateCountrySelect() {
+  const sel = document.getElementById('countrySelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="" disabled>Country...</option>';
+  Object.entries(COUNTRY_SOURCES).forEach(([code, info]) => {
+    const opt = document.createElement('option');
+    opt.value = code; opt.textContent = info.name;
+    sel.appendChild(opt);
+  });
+  const saved = getCountry();
+  if (saved && COUNTRY_SOURCES[saved]) sel.value = saved;
 }
 function buildCountryButtons() {
   let html = '';
@@ -1265,7 +941,6 @@ function createPerson(id, gen, name, years, status, opts) {
     occupation: opts.occupation || '',
     birthplace: opts.birthplace || '',
     maidenName: opts.maidenName || '',
-    marriedName: opts.marriedName || '',
     spouseName: opts.spouseName || '',
     spouseId: opts.spouseId || null,
     parents: opts.parents || null,
@@ -1288,14 +963,9 @@ let pendingDirectAttachId = null; // person id for direct-attach from detail pan
 
 // ========== IndexedDB Document Storage ==========
 const DOC_DB_NAME = 'VRTDocs';
-const DOC_DB_VERSION = 3;
+const DOC_DB_VERSION = 1;
 const DOC_STORE_NAME = 'documents';
 let _docDB = null;
-
-const TM_TREES_STORE = 'trees';
-const TM_DATA_STORE = 'treeData';
-let currentTreeId = null;
-let treesList = [];
 
 function openDocDB() {
   return new Promise((resolve, reject) => {
@@ -1304,17 +974,10 @@ function openDocDB() {
     req.onsuccess = () => { _docDB = req.result; resolve(_docDB); };
     req.onupgradeneeded = (e) => {
       const d = e.target.result;
-      const tx = e.target.transaction;
       if (!d.objectStoreNames.contains(DOC_STORE_NAME)) {
         const store = d.createObjectStore(DOC_STORE_NAME, { keyPath: 'id' });
         store.createIndex('personId', 'personId', { unique: false });
-        store.createIndex('treeId', 'treeId', { unique: false });
-      } else {
-        const store = tx.objectStore(DOC_STORE_NAME);
-        if (!store.indexNames.contains('treeId')) store.createIndex('treeId', 'treeId', { unique: false });
       }
-      if (!d.objectStoreNames.contains(TM_TREES_STORE)) d.createObjectStore(TM_TREES_STORE, { keyPath: 'id' });
-      if (!d.objectStoreNames.contains(TM_DATA_STORE)) d.createObjectStore(TM_DATA_STORE, { keyPath: 'treeId' });
     };
   });
 }
@@ -1323,9 +986,8 @@ async function saveDocToDB(personId, type, base64Image, meta) {
   const id = personId + '_' + type + '_' + Date.now();
   const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
   const store = tx.objectStore(DOC_STORE_NAME);
-  const treeId = currentTreeId || 'default';
   await new Promise((resolve, reject) => {
-    const req = store.put({ id, treeId, personId, type, image: base64Image, meta: meta || {}, created: Date.now() });
+    const req = store.put({ id, personId, type, image: base64Image, meta: meta || {}, created: Date.now() });
     req.onsuccess = () => resolve();
     req.onerror = () => reject(req.error);
   });
@@ -1338,10 +1000,7 @@ async function getDocsForPerson(personId) {
   const idx = store.index('personId');
   return new Promise((resolve, reject) => {
     const req = idx.getAll(personId);
-    req.onsuccess = () => {
-      const treeId = currentTreeId || 'default';
-      resolve((req.result || []).filter(d => d.treeId === treeId));
-    };
+    req.onsuccess = () => resolve(req.result || []);
     req.onerror = () => reject(req.error);
   });
 }
@@ -1385,248 +1044,6 @@ function initDefaultData() {
   }
 }
 
-// ═══════════════════════════════════════════════════════════════
-// TREE MANAGER — Multi-tree storage in IndexedDB
-// ═══════════════════════════════════════════════════════════════
-async function saveTreeMeta(tree) {
-  if (!_docDB) await openDocDB();
-  const tx = _docDB.transaction(TM_TREES_STORE, 'readwrite');
-  const store = tx.objectStore(TM_TREES_STORE);
-  await new Promise((resolve, reject) => {
-    const req = store.put(tree);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function deleteTreeMeta(treeId) {
-  if (!_docDB) await openDocDB();
-  const tx = _docDB.transaction(TM_TREES_STORE, 'readwrite');
-  const store = tx.objectStore(TM_TREES_STORE);
-  await new Promise((resolve, reject) => {
-    const req = store.delete(treeId);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function loadTreeMeta(treeId) {
-  if (!_docDB) await openDocDB();
-  const tx = _docDB.transaction(TM_TREES_STORE, 'readonly');
-  const store = tx.objectStore(TM_TREES_STORE);
-  return new Promise((resolve, reject) => {
-    const req = store.get(treeId);
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function loadAllTreeMetas() {
-  if (!_docDB) await openDocDB();
-  const tx = _docDB.transaction(TM_TREES_STORE, 'readonly');
-  const store = tx.objectStore(TM_TREES_STORE);
-  return new Promise((resolve, reject) => {
-    const req = store.getAll();
-    req.onsuccess = () => resolve(req.result || []);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function saveTreeData(treeId, data) {
-  if (!_docDB) await openDocDB();
-  const tx = _docDB.transaction(TM_DATA_STORE, 'readwrite');
-  const store = tx.objectStore(TM_DATA_STORE);
-  await new Promise((resolve, reject) => {
-    const req = store.put({ treeId, ...data, updatedAt: Date.now() });
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function loadTreeData(treeId) {
-  if (!_docDB) await openDocDB();
-  const tx = _docDB.transaction(TM_DATA_STORE, 'readonly');
-  const store = tx.objectStore(TM_DATA_STORE);
-  return new Promise((resolve, reject) => {
-    const req = store.get(treeId);
-    req.onsuccess = () => resolve(req.result || null);
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function deleteTreeData(treeId) {
-  if (!_docDB) await openDocDB();
-  const tx = _docDB.transaction(TM_DATA_STORE, 'readwrite');
-  const store = tx.objectStore(TM_DATA_STORE);
-  await new Promise((resolve, reject) => {
-    const req = store.delete(treeId);
-    req.onsuccess = () => resolve();
-    req.onerror = () => reject(req.error);
-  });
-}
-
-async function createTree(name) {
-  const treeId = 'tree_' + Date.now();
-  initDefaultData(); // resets people, nextId to fresh 511 nodes
-  visibleMaxGen = 4;
-  await saveTreeData(treeId, { people, nextId, visibleMaxGen });
-  const meta = { id: treeId, name: name || 'New Tree', createdAt: Date.now(), updatedAt: Date.now() };
-  await saveTreeMeta(meta);
-  currentTreeId = treeId;
-  treesList = await loadAllTreeMetas();
-  renderTree();
-  updateTreeManagerUI();
-  showToast('Created "' + meta.name + '"');
-  return treeId;
-}
-
-async function switchTree(treeId) {
-  if (treeId === currentTreeId) return;
-  // Save current before switching
-  if (currentTreeId) {
-    await saveTreeData(currentTreeId, { people, nextId, visibleMaxGen });
-  }
-  const data = await loadTreeData(treeId);
-  if (!data) { showToast('Tree not found'); return; }
-  people = data.people || [];
-  nextId = data.nextId || maxGen(people, p => p.id) + 1;
-  visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
-  currentTreeId = treeId;
-  // Migrate bracketed names (v208+)
-  people.forEach(p => {
-    if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
-      const m = p.name.match(/(.+?)\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/);
-      if (m) {
-        const fullBefore = m[1].trim();
-        const maidenSurname = m[2].trim();
-        const parts = fullBefore.split(/\s+/);
-        const surname = parts.pop();
-        const firstName = parts.join(' ');
-        p.marriedName = p.marriedName || fullBefore;
-        p.maidenName = p.maidenName || maidenSurname;
-        p.name = (firstName + ' ' + maidenSurname).trim();
-        if (p.fullName) p.fullName = p.name;
-      }
-    }
-    if (typeof p.name === 'string') {
-      p.name = p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
-      if (p.name !== p.fullName) p.fullName = p.name;
-    }
-  });
-  renderTree();
-  updateExpandGenBtn();
-  updateTreeManagerUI();
-  showToast('Switched to "' + (treesList.find(t => t.id === treeId)?.name || 'Tree') + '"');
-}
-
-async function deleteTree(treeId) {
-  if (treesList.length <= 1) { showToast('Cannot delete your only tree'); return; }
-  if (!confirm('Delete this tree permanently? All people and documents will be removed.')) return;
-  await deleteTreeData(treeId);
-  await deleteTreeMeta(treeId);
-  // Also delete scoped docs
-  if (_docDB) {
-    const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
-    const store = tx.objectStore(DOC_STORE_NAME);
-    const idx = store.index('treeId');
-    const allDocs = await new Promise((resolve, reject) => {
-      const req = idx.getAll(treeId);
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(req.error);
-    });
-    for (const doc of allDocs) {
-      await new Promise((resolve, reject) => {
-        const req = store.delete(doc.id);
-        req.onsuccess = () => resolve();
-        req.onerror = () => reject(req.error);
-      });
-    }
-  }
-  treesList = await loadAllTreeMetas();
-  if (currentTreeId === treeId) {
-    // Switch to first remaining tree
-    if (treesList.length > 0) {
-      await switchTree(treesList[0].id);
-    }
-  }
-  updateTreeManagerUI();
-  showToast('Tree deleted');
-}
-
-async function saveCurrentTreeToDB() {
-  if (!currentTreeId) {
-    // Create a default tree if none exists
-    const treeId = 'tree_' + Date.now();
-    await saveTreeData(treeId, { people, nextId, visibleMaxGen });
-    const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
-    await saveTreeMeta(meta);
-    currentTreeId = treeId;
-    treesList = await loadAllTreeMetas();
-    updateTreeManagerUI();
-    return;
-  }
-  await saveTreeData(currentTreeId, { people, nextId, visibleMaxGen });
-  const meta = await loadTreeMeta(currentTreeId);
-  if (meta) {
-    meta.updatedAt = Date.now();
-    await saveTreeMeta(meta);
-  }
-}
-
-// ─── UI ───
-function updateTreeManagerUI() {
-  const container = document.getElementById('treeManagerContainer');
-  if (!container) return;
-  let html = '';
-  for (const t of treesList) {
-    const active = t.id === currentTreeId;
-    html += '<div style="display:flex;align-items:center;gap:6px;padding:6px 8px;border-radius:4px;cursor:pointer;' + (active ? 'background:rgba(74,107,74,0.2);border:1px solid #4a6b4a;' : 'background:rgba(250,244,230,0.4);border:1px solid transparent;') + 'margin-bottom:4px;" onclick="switchTree(\'' + t.id + '\')"' + (active ? '' : ' onmouseover="this.style.background=\'rgba(250,244,230,0.8)\'" onmouseout="this.style.background=\'rgba(250,244,230,0.4)\'"') + '>';
-    html += '<div style="font-size:18px;">🌳</div>';
-    html += '<div style="flex:1;font-size:12px;font-family:\'Cormorant Garamond\',serif;color:#2a1f10;">' + escapeHtml(t.name) + (active ? ' <span style="color:#4a6b4a;font-size:10px;">(active)</span>' : '') + '</div>';
-    if (!active) {
-      html += '<button onclick="event.stopPropagation();deleteTree(\'' + t.id + '\')" style="background:none;border:none;cursor:pointer;color:#8a3a3a;font-size:14px;padding:2px 4px;" title="Delete">✕</button>';
-    }
-    html += '</div>';
-  }
-  container.innerHTML = html;
-  const btn = document.getElementById('treeManagerToggle');
-  if (btn) {
-    // Preserve MEMBER badge — only update the icon text node, not innerHTML
-    var badge = btn.querySelector('.member-badge');
-    btn.textContent = '🌳';
-    if (badge) btn.appendChild(badge);
-  }
-  const title = document.getElementById('treeTitle');
-  if (title) {
-    const activeTree = treesList.find(t => t.id === currentTreeId);
-    title.textContent = activeTree ? escapeHtml(activeTree.name) : '';
-  }
-}
-
-function escapeHtml(s) {
-  if (!s) return '';
-  return s.replace(/[<>&"]/g, c => ({'<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'}[c]));
-}
-
-function openTreeManager() {
-  const panel = document.getElementById('treeManagerPanel');
-  if (panel) panel.classList.add('active');
-  updateTreeManagerUI();
-}
-function closeTreeManager() {
-  const panel = document.getElementById('treeManagerPanel');
-  if (panel) panel.classList.remove('active');
-}
-function toggleTreeManager() {
-  const panel = document.getElementById('treeManagerPanel');
-  if (panel && panel.classList.contains('active')) closeTreeManager();
-  else openTreeManager();
-}
-
-// ─── Auto-save to IndexedDB every 30s (replacing localStorage) ───
-setInterval(async () => {
-  if (currentTreeId) await saveCurrentTreeToDB();
-}, 30000);
 const CARD_W = 130, GAP_Y = 3;
 const MINI_W = 100, MINI_H = 14;
 let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
@@ -1645,7 +1062,7 @@ function colLeftForGen(g, maxGen) {
   if (g === 1) return CARD_W * 0.75;     // 97.5
   if (g === 2) return CARD_W * 1.5;       // 195 — shifted half a card right
 
-  let pos = CARD_W * 1.5; // gen 2 position (195px)
+  let pos = CARD_W; // gen 2 position
   for (let i = 3; i <= g; i++) {
     const isLast = i === maxGen;
     const isMinicard = isLast && maxGen >= 5;
@@ -1696,16 +1113,7 @@ function renderTree() {
     else if (dYear) cardYears = 'd. ' + dYear[0];
     else cardYears = person.years || '?';
 
-    let h = '<div class="name">' + (function getDisplayName(p) {
-      // If maidenName exists, show birth identity (firstName + maidenName)
-      if (p.maidenName) {
-        const parts = p.name.split(/\s+/);
-        const surname = parts.pop();
-        const firstName = parts.join(' ');
-        return (firstName + ' ' + p.maidenName).trim();
-      }
-      return p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
-    })(person) + '</div>' + (cardYears ? '<div class="years">' + cardYears + '</div>' : '');
+    let h = '<div class="name">' + person.name + '</div>' + (cardYears ? '<div class="years">' + cardYears + '</div>' : '');
     if (!isMini) {
       if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
       if (person.siblings && person.siblings.length) {
@@ -1739,12 +1147,25 @@ function renderTree() {
 
   const topMap = new Map();
 
-  // Determine the rightmost generation to use as layout anchor.
-  // For binary trees (default data), we expect 2^gen cards per generation.
-  // For GEDCOM imports, the tree is irregular so we just use the deepest gen.
+  // Determine the "rightmost full" generation — the last generation with enough
+  // cards to serve as a layout anchor. If the user added parents beyond the
+  // original tree, we anchor on the original rightmost generation so the
+  // backwards cascade works for all lower generations, then cascade forward
+  // for the sparse new generations.
   let rightmostFull = displayMax;
+  while (rightmostFull > 0) {
+    const count = gens[rightmostFull] ? gens[rightmostFull].length : 0;
+    const typicalCount = Math.pow(2, rightmostFull);
+    // If this generation has less than half the typical cards, it's probably
+    // a sparse dynamically-added generation. Step back.
+    if (count < typicalCount * 0.5) {
+      rightmostFull--;
+    } else {
+      break;
+    }
+  }
 
-  // STEP 1: Place the deepest generation as a neat vertical column.
+  // STEP 1: Place the rightmost FULL generation as a neat vertical column.
   // This is the anchor generation — everything else positions relative to it.
   let y = 10;
   if (gens[rightmostFull]) {
@@ -1755,43 +1176,25 @@ function renderTree() {
   }
 
   // STEP 2: Cascade backwards from rightmostFull-1 down to 0.
-  // Each card centers itself between its parents (1 or 2) in the next generation.
+  // Each card centers itself between its two parents in the next generation.
   for (let g = rightmostFull - 1; g >= 0; g--) {
     if (!gens[g]) continue;
-    let fallbackY = 10;
     gens[g].forEach(p => {
-      if (!p.parents || p.parents.length === 0) {
-        // No parents — place below the last card at this gen
-        topMap.set(p.id, fallbackY);
-        fallbackY += hMap.get(p.id) + GAP_Y;
-        return;
-      }
-      // Average the Y center of all available parents
-      let totalCenter = 0;
-      let validParents = 0;
-      p.parents.forEach(pid => {
-        const parent = visiblePeople.find(x => x.id === pid);
-        if (parent) {
-          const py = topMap.get(parent.id);
-          const ph = hMap.get(parent.id);
-          if (py !== undefined) {
-            totalCenter += py + ph / 2;
-            validParents++;
-          }
-        }
-      });
-      if (validParents > 0) {
-        const avgCenter = totalCenter / validParents;
-        topMap.set(p.id, avgCenter - hMap.get(p.id) / 2);
-      } else {
-        topMap.set(p.id, fallbackY);
-        fallbackY += hMap.get(p.id) + GAP_Y;
-      }
+      if (!p.parents || p.parents.length < 2) return;
+      const father = visiblePeople.find(x => x.id === p.parents[0]);
+      const mother = visiblePeople.find(x => x.id === p.parents[1]);
+      if (!father || !mother) return;
+      const fy = topMap.get(father.id), my = topMap.get(mother.id);
+      if (fy === undefined || my === undefined) return;
+      const fh = hMap.get(father.id), mh = hMap.get(mother.id);
+      const midCenter = (fy + fh/2 + my + mh/2) / 2;
+      topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
     });
   }
 
   // STEP 3: Cascade forwards from rightmostFull+1 up to displayMax.
   // Each new ancestor positions itself by averaging its children's centers.
+  // This runs AFTER step 1 so gen 8 (and any already-placed gens) are in topMap.
   if (rightmostFull < displayMax) {
     for (let g = rightmostFull + 1; g <= displayMax; g++) {
       if (!gens[g]) continue;
@@ -1934,21 +1337,6 @@ document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom *
 document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
 document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.25));
 
-// Auto-fit zoom to fill available vertical space on desktop
-function fitZoomToViewport() {
-  const headerH = document.querySelector('.header').offsetHeight;
-  const availH = window.innerHeight - headerH - 20; // small margin
-  // Measure tree at 100% zoom
-  const savedZoom = zoom;
-  zoom = 1;
-  renderTree();
-  const treeH = document.getElementById('treeWrap').offsetHeight;
-  const optimal = (availH / treeH) * 0.95; // 95% fill, slight breathing room
-  zoom = Math.max(0.3, Math.min(1.2, optimal));
-  renderTree();
-  document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
-}
-
 // Pinch-to-zoom on tree scroll area
 (function setupPinchZoom() {
   const scrollArea = document.getElementById('treeScroll');
@@ -2023,7 +1411,7 @@ const detailTitle = document.getElementById('detailTitle');
 function openDetail(person) {
   selectedPersonId = person.id;
   history.pushState({panel: 'detail'}, '');
-  detailTitle.textContent = (person.maidenName ? person.name.replace(person.name.split(/\s+/).pop(), person.maidenName) : person.name);
+  detailTitle.textContent = person.name;
   detailBody.innerHTML = `
     <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${person.fullName || person.name}"></div>
     <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${person.name}"></div>
@@ -2032,7 +1420,6 @@ function openDetail(person) {
     <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${person.ageAtDeath || ''}"></div>
     <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${person.marriageDate || ''}"></div>
     <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${person.maidenName}"></div>
-    <div class="detail-field"><label>Married Name</label><input type="text" id="d_marriedName" value="${person.marriedName || ''}"></div>
     <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${person.spouseName}"></div>
     <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${person.occupation}"></div>
     <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${person.birthplace}"></div>
@@ -2114,9 +1501,8 @@ function openDetail(person) {
   const clearCardBtnEl = document.getElementById('clearCardBtn');
   if (clearCardBtnEl) {
     clearCardBtnEl.addEventListener('click', () => {
-      showConfirm('Clear all data from this card? The person will be reset to blank status. This cannot be undone.', () => {
-        clearCard();
-      });
+      if (!confirm('Clear all data from this card? The person will be reset to blank status. This cannot be undone.')) return;
+      clearCard();
     });
   }
   // Wire up Add Document buttons
@@ -2127,7 +1513,6 @@ function openDetail(person) {
   const daScanBtn = document.getElementById('daScanBtn');
   if (daScanBtn) {
     daScanBtn.addEventListener('click', () => {
-      console.log('[SCAN CERT CLICK] person:', person.name, 'id:', person.id);
       pendingDirectAttachId = person.id;
       closeDetail();
       certPanel.classList.add('active');
@@ -2135,8 +1520,9 @@ function openDetail(person) {
       updateExpandGenBtn();
       const headerTitle = certPanel.querySelector('.cert-header div');
       if (headerTitle) headerTitle.textContent = '📷 Scan Certificate — ' + person.name;
-      showToast('Select Venice (private) or Gemini (accurate) for ' + person.name);
-      showCertMethods();
+      showToast('Select a certificate image for ' + person.name);
+      document.getElementById('certFileInput').value = '';
+      document.getElementById('certFileInput').click();
     });
   }
   const daManualBtn = document.getElementById('daManualBtn');
@@ -2235,8 +1621,7 @@ function updateExpandGenBtn() {
     document.getElementById('guidancePanel')?.classList.contains('active') ||
     document.getElementById('privacyModal')?.style.display !== 'none' ||
     document.getElementById('printChoiceDlg') ||
-    document.getElementById('ambigModal')?.style.display !== 'none' ||
-    document.getElementById('confirmModal')?.style.display !== 'none';
+    document.getElementById('ambigModal')?.style.display !== 'none';
   btn.style.display = anyPanelOpen ? 'none' : 'block';
 }
 function clearCertPanel() {
@@ -2249,12 +1634,7 @@ function clearCertPanel() {
   document.getElementById('certStatus').textContent = '';
   document.getElementById('certStatus').className = 'cert-status';
   document.getElementById('certResults').innerHTML = '';
-  document.getElementById('certMethodSelect').style.display = 'flex';
-  document.getElementById('uploadSection')?.classList.remove('active');
-  document.getElementById('veniceSection')?.classList.remove('active');
-  document.getElementById('venicePasteBox').value = '';
-  document.getElementById('geminiSection').classList.remove('active');
-  document.getElementById('geminiPasteBox').value = '';
+  document.getElementById('certUploadBtns').style.display = 'flex';
   certPanel.classList.remove('has-results');
 }
 // Shorthand called by card badges and detail gallery
@@ -2290,7 +1670,6 @@ function saveDetail() {
   person.ageAtDeath = document.getElementById('d_ageAtDeath').value;
   person.marriageDate = document.getElementById('d_marriageDate').value;
   person.maidenName = document.getElementById('d_maidenName').value;
-  person.marriedName = document.getElementById('d_marriedName').value;
   person.spouseName = document.getElementById('d_spouseName').value;
   person.occupation = document.getElementById('d_occupation').value;
   person.birthplace = document.getElementById('d_birthplace').value;
@@ -2316,16 +1695,15 @@ document.getElementById('certClose').addEventListener('click', () => {
   certPanel.classList.remove('has-results');
   pendingDirectAttachId = null;
   const headerTitle = certPanel.querySelector('.cert-header div');
-  if (headerTitle) headerTitle.textContent = '📄 Scan Certificate';
+  if (headerTitle) headerTitle.textContent = '📎 Upload Certificate';
   history.back();
   updateExpandGenBtn();
 });
-document.getElementById('certFileBtn')?.addEventListener('click', () => document.getElementById('certFileInput').click());
-document.getElementById('certCameraBtn')?.addEventListener('click', () => document.getElementById('certCameraInput').click());
-document.getElementById('certFileInput')?.addEventListener('change', async (e) => {
-  const file = e.target.files[0];
-  console.log('[CERT FILE CHANGE] file selected:', !!file, file ? file.name : 'none', file ? Math.round(file.size/1024)+'KB' : '');
-  if (!file) return;
+document.getElementById('certUploadArea').addEventListener('click', () => document.getElementById('certFileInput').click());
+document.getElementById('certFileBtn').addEventListener('click', () => document.getElementById('certFileInput').click());
+document.getElementById('certCameraBtn').addEventListener('click', () => document.getElementById('certCameraInput').click());
+document.getElementById('certFileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if (!file) return;
   pendingDocFile = file;
   try { await processDocFile(file); } catch (err) {
     console.error('[UPLOAD ERROR]', err);
@@ -2348,42 +1726,44 @@ document.getElementById('certCameraInput').addEventListener('change', async (e) 
 });
 
 async function processDocFile(file) {
-  console.log('[PROCESS DOC] starting for file:', file.name, Math.round(file.size/1024)+'KB');
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    pendingDocImage = ev.target.result;
+    document.getElementById('certPreviewImg').src = pendingDocImage;
+    document.getElementById('certPreviewArea').style.display = 'block';
+    document.getElementById('certUploadBtns').style.display = 'none';
+    document.getElementById('certUploadArea').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+
   const cs = document.getElementById('certStatus');
-  cs.className = 'cert-status loading';
-  cs.textContent = 'Reading image...';
-  cs.style.display = 'block';
+  cs.className = 'cert-status loading'; cs.textContent = 'Preparing image...'; cs.style.display = 'block';
   document.getElementById('certResults').innerHTML = '';
   certPanel.classList.remove('has-results');
 
-  // Read file as base64
-  let base64 = await new Promise((resolve, reject) => {
-    const r = new FileReader();
-    r.onload = (e) => {
-      pendingDocImage = e.target.result;
-      document.getElementById('certPreviewImg').src = e.target.result;
-      document.getElementById('certPreviewArea').style.display = 'block';
-      document.getElementById('certMethodSelect').style.display = 'none';
-      document.getElementById('uploadSection').style.display = 'none';
-      document.getElementById('certUploadArea').style.display = 'none';
-      resolve(e.target.result);
-    };
-    r.onerror = reject;
-    r.readAsDataURL(file);
-  });
-
-  // Compress if large — preserve cert readability
-  const sizeKB = Math.round(base64.length * 0.75 / 1024);
-  if (sizeKB > 800) {
-    cs.textContent = 'Compressing image for upload...';
-    base64 = await resizeAndCompressImage(file, 1600, 0.90);
-    const kb2 = Math.round(base64.length * 0.75 / 1024);
-    if (kb2 > 800) {
-      base64 = await resizeAndCompressImage(file, 1200, 0.85);
+  let base64;
+  try {
+    base64 = await resizeAndCompressImage(file, 1200, 0.85);
+    const sizeKB = Math.round(base64.length * 0.75 / 1024);
+    console.log(`[UPLOAD] Compressed image size: ~${sizeKB}KB`);
+    if (sizeKB > 500) {
+      console.log('[UPLOAD] Image still large, re-compressing smaller...');
+      base64 = await resizeAndCompressImage(file, 800, 0.75);
+      const sizeKB2 = Math.round(base64.length * 0.75 / 1024);
+      console.log(`[UPLOAD] Re-compressed size: ~${sizeKB2}KB`);
     }
-    console.log('[PROCESS DOC] Compressed from', sizeKB, 'KB to', Math.round(base64.length * 0.75 / 1024), 'KB');
+    const finalKB = Math.round(base64.length * 0.75 / 1024);
+    if (finalKB > 800) {
+      throw new Error('Image too large after compression (' + finalKB + 'KB). Try cropping or a clearer photo.');
+    }
   }
-
+  catch (compressErr) {
+    console.error('[COMPRESS ERROR]', compressErr);
+    cs.className = 'cert-status error';
+    cs.innerHTML = 'Image error: ' + compressErr.message + '<br><small>Try a smaller or clearer photo</small>';
+    certPanel.classList.add('has-results');
+    return;
+  }
   pendingDocImage = base64;
   await sendToTranscriptionAPI(base64);
 }
@@ -2452,7 +1832,7 @@ async function sendToTranscriptionAPI(base64) {
   cs.innerHTML = 'Scanning certificate...<br><small>Image: ' + payloadSize + 'KB. Usually 10-25s</small>';
   document.getElementById('certRetry').style.display = '';
 
-  const payload = JSON.stringify({ image: base64, country: getCountry(), type: uploadCertType });
+  const payload = JSON.stringify({ image: base64, country: getCountry() });
   console.log('[UPLOAD] Payload:', Math.round(payload.length / 1024), 'KB | URL:', API_URL);
 
   // AbortController: 90s timeout for the entire upload session (covers all attempts)
@@ -2504,13 +1884,10 @@ async function sendToTranscriptionAPI(base64) {
         certPanel.classList.add('has-results');
         return;
       }
-      // API returns {success, model, type, entries} not {success, data}
-      const responseData = { type: json.type, entries: json.entries };
-      lastTranscription = responseData;
+      lastTranscription = json.data;
       cs.className = 'cert-status success';
-      const modelLabel = json.model ? ' (' + json.model + ')' : '';
-      cs.textContent = '✓ Cert type: ' + (json.type || 'unknown').toUpperCase() + modelLabel;
-      renderTranscriptionResults(responseData);
+      cs.textContent = '✓ Cert type: ' + (json.data.type || 'unknown').toUpperCase();
+      renderTranscriptionResults(json.data);
       certPanel.classList.add('has-results');
       clearTimeout(uploadTimeout);
       return; // Success!
@@ -2540,13 +1917,6 @@ function renderTranscriptionResults(data) {
   const container = document.getElementById('certResults');
   container.innerHTML = '';
   selectedEntryIndex = 0;
-
-  // RED warning banner at top
-  const topWarning = document.createElement('div');
-  topWarning.style.cssText = 'margin-bottom:10px;padding:10px 12px;background:#fee2e2;border:1px solid #ef4444;border-radius:6px;font-size:12px;color:#991b1b;line-height:1.4;font-weight:600;';
-  topWarning.innerHTML = '⚠️ Check every field. AI often misreads names, dates, and places. Compare each value to your certificate before applying.';
-  container.appendChild(topWarning);
-
   const entries = data.entries || [data];
   let type = data.type || 'unknown';
   if (type === 'unknown' && entries.length > 0) {
@@ -2574,11 +1944,6 @@ function renderTranscriptionResults(data) {
     });
     container.appendChild(card);
   });
-  // Disclaimer banner
-  const disclaimer = document.createElement('div');
-  disclaimer.style.cssText = 'margin-top:10px;padding:8px 10px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:11px;color:#92400e;line-height:1.4;';
-  disclaimer.innerHTML = '⚠️ <strong>Verify before applying.</strong> AI transcription may contain errors. Please check all names, dates, and places against your certificate before adding to your tree.';
-  container.appendChild(disclaimer);
 }
 
 // Sync editable field values back into lastTranscription
@@ -2619,7 +1984,6 @@ function extractEntryFields(entry, type) {
   } else if (type === 'birth') {
     if (entry.child?.name) fields.push({ label: 'Child', value: entry.child.name, key: 'child.name' });
     if (entry.child?.birthDate) fields.push({ label: 'Birth Date', value: entry.child.birthDate, key: 'child.birthDate' });
-    if (entry.sex) fields.push({ label: 'Sex', value: entry.sex, key: 'sex' });
     if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, key: 'father.name' });
     if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : entry.mother.maidenSurname ? ' (m.s. ' + entry.mother.maidenSurname + ')' : ''), key: 'mother.name' });
     if (entry.mother?.maidenName || entry.mother?.maidenSurname) fields.push({ label: 'Mother m.s.', value: entry.mother?.maidenName || entry.mother?.maidenSurname || '', key: 'mother.maidenName' });
@@ -2644,349 +2008,6 @@ function entrySummary(entry, type) {
   if (type === 'birth') return name + (date ? ' — b. ' + date : '');
   if (type === 'death') return name + (date ? ' — d. ' + date : '');
   return name;
-}
-
-// ─── GEMINI SCAN FLOW ───
-let geminiCertType = 'birth';
-let uploadCertType = 'birth';
-
-function selectCertMethod(method) {
-  document.getElementById('certMethodSelect').style.display = 'none';
-  if (method === 'upload') {
-    document.getElementById('uploadSection').classList.add('active');
-  } else if (method === 'venice') {
-    document.getElementById('veniceSection').classList.add('active');
-    updateVenicePrompt();
-  } else if (method === 'gemini') {
-    document.getElementById('geminiSection').classList.add('active');
-    updateGeminiPrompt();
-  }
-}
-
-function showCertMethods() {
-  uploadCertType = 'birth';
-  document.getElementById('certMethodSelect').style.display = 'flex';
-  document.getElementById('uploadSection')?.classList.remove('active');
-  document.getElementById('veniceSection')?.classList.remove('active');
-  document.getElementById('geminiSection').classList.remove('active');
-  document.getElementById('certStatus').style.display = 'none';
-  document.getElementById('certResults').innerHTML = '';
-  lastTranscription = null;
-  certPanel.classList.remove('has-results');
-}
-
-function setGeminiType(type) {
-  geminiCertType = type;
-  document.querySelectorAll('#geminiCertType .cert-type-btn').forEach(function(btn) {
-    btn.classList.toggle('active', btn.dataset.type === type);
-  });
-  updateGeminiPrompt();
-}
-
-function setUploadCertType(type, btn) {
-  uploadCertType = type;
-  if (btn) {
-    document.querySelectorAll('#uploadCertType .cert-type-btn').forEach(function(b) {
-      b.classList.toggle('active', b === btn);
-    });
-  } else {
-    document.querySelectorAll('#uploadCertType .cert-type-btn').forEach(function(b) {
-      b.classList.toggle('active', b.dataset.type === type);
-    });
-  }
-}
-
-function getGeminiPrompt(type) {
-  var base = 'You are a document transcription assistant. I will upload an image of a ' + type + ' certificate. Extract the following fields and return ONLY a JSON object with these exact keys. No markdown, no explanation, no extra text before or after the JSON.\n\n';
-  if (type === 'birth') {
-    return base + 'Required keys:\n- birth_date\n- child_name\n- sex\n- father_name\n- father_profession\n- mother_name\n- mother_maiden_name\n- district\n- county\n\nIf any field is not visible or unreadable, use an empty string as the value.';
-  } else if (type === 'marriage') {
-    return base + 'Required keys:\n- marriage_date\n- groom_name\n- groom_age\n- groom_profession\n- bride_name\n- bride_age\n- bride_profession\n- groom_father_name\n- groom_mother_name\n- groom_mother_maiden\n- bride_father_name\n- bride_mother_name\n- bride_mother_maiden\n- minister_name\n- district\n\nIf any field is not visible or unreadable, use an empty string as the value.';
-  } else if (type === 'death') {
-    return base + 'Required keys:\n- death_date\n- deceased_name\n- deceased_age\n- deceased_profession\n- deceased_spouse_name\n- father_name\n- mother_name\n- mother_maiden_name\n- cause_of_death\n- district\n- county\n- informant_name\n- informant_relationship\n\nIf any field is not visible or unreadable, use an empty string as the value.';
-  }
-  return base;
-}
-
-function updateGeminiPrompt() {
-  var prompt = getGeminiPrompt(geminiCertType);
-  // Store prompt for copy function
-  document.getElementById('geminiCopyBtn').dataset.prompt = prompt;
-}
-
-function copyGeminiPrompt() {
-  var btn = document.getElementById('geminiCopyBtn');
-  var prompt = btn.dataset.prompt || getGeminiPrompt(geminiCertType);
-  var status = document.getElementById('geminiStatus');
-
-  // Copy to clipboard
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(prompt).then(function() {
-      showToast('Prompt copied to clipboard!');
-    }).catch(function() {
-      showToast('Could not copy automatically. Tap "View the prompt" below.');
-    });
-  } else {
-    // Fallback: select and copy
-    var box = document.getElementById('geminiPromptBox');
-    box.textContent = prompt;
-    box.style.display = 'block';
-    showToast('Prompt shown below. Select and copy it.');
-  }
-
-  // Show step-by-step instructions
-  status.style.display = 'block';
-
-  // Populate prompt box
-  document.getElementById('geminiPromptBox').textContent = prompt;
-}
-
-function openGemini() {
-  var url = 'https://gemini.google.com';
-  var opened = false;
-  try {
-    var win = window.open(url, '_blank');
-    if (win) opened = true;
-  } catch (e) {}
-  if (!opened) {
-    showToast('Could not open Gemini automatically. Please open gemini.google.com manually.');
-  }
-}
-
-function toggleGeminiPrompt() {
-  var box = document.getElementById('geminiPromptBox');
-  box.style.display = box.style.display === 'none' ? 'block' : 'none';
-}
-
-// ─── VENICE PASTE FLOW ───
-let veniceCertType = 'birth';
-
-function setVeniceType(type) {
-  veniceCertType = type;
-  document.querySelectorAll('#veniceCertType .cert-type-btn').forEach(function(btn) {
-    btn.classList.toggle('active', btn.dataset.type === type);
-  });
-  updateVenicePrompt();
-}
-
-function updateVenicePrompt() {
-  var prompt = getGeminiPrompt(veniceCertType);
-  document.getElementById('veniceCopyBtn').dataset.prompt = prompt;
-}
-
-function copyVenicePrompt() {
-  var btn = document.getElementById('veniceCopyBtn');
-  var prompt = btn.dataset.prompt || getGeminiPrompt(veniceCertType);
-  var status = document.getElementById('veniceStatus');
-
-  if (navigator.clipboard && navigator.clipboard.writeText) {
-    navigator.clipboard.writeText(prompt).then(function() {
-      showToast('Prompt copied to clipboard!');
-    }).catch(function() {
-      showToast('Could not copy automatically. Tap "View the prompt" below.');
-    });
-  } else {
-    var box = document.getElementById('venicePromptBox');
-    box.textContent = prompt;
-    box.style.display = 'block';
-    showToast('Prompt shown below. Select and copy it.');
-  }
-
-  status.style.display = 'block';
-  document.getElementById('venicePromptBox').textContent = prompt;
-}
-
-function openVenice() {
-  var url = 'https://venice.ai/chat';
-  var opened = false;
-  try {
-    var win = window.open(url, '_blank');
-    if (win) opened = true;
-  } catch (e) {}
-  if (!opened) {
-    showToast('Could not open Venice automatically. Please open venice.ai/chat manually.');
-  }
-}
-
-function toggleVenicePrompt() {
-  var box = document.getElementById('venicePromptBox');
-  box.style.display = box.style.display === 'none' ? 'block' : 'none';
-}
-
-function parseVeniceResult() {
-  var raw = document.getElementById('venicePasteBox').value.trim();
-  var cs = document.getElementById('certStatus');
-
-  if (!raw) {
-    cs.className = 'cert-status error';
-    cs.textContent = 'Please paste Venice result first.';
-    cs.style.display = 'block';
-    return;
-  }
-
-  cs.className = 'cert-status loading';
-  cs.textContent = 'Parsing...';
-  cs.style.display = 'block';
-
-  var parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (e) {
-    var clean = raw.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
-    try {
-      parsed = JSON.parse(clean);
-    } catch (e2) {
-      var jsonMatch = clean.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          parsed = JSON.parse(jsonMatch[0]);
-        } catch (e3) {
-          cs.className = 'cert-status error';
-          cs.innerHTML = 'Could not parse JSON. Make sure you copied only the JSON object from Venice.';
-          cs.style.display = 'block';
-          return;
-        }
-      } else {
-        cs.className = 'cert-status error';
-        cs.innerHTML = 'No JSON object found. Please paste the JSON output from Venice.';
-        cs.style.display = 'block';
-        return;
-      }
-    }
-  }
-
-  var entry = transformGeminiToNested(parsed, veniceCertType);
-  lastTranscription = { type: veniceCertType, entries: [entry] };
-
-  cs.className = 'cert-status success';
-  cs.textContent = '\u2713 Parsed ' + veniceCertType + ' certificate';
-  renderTranscriptionResults(lastTranscription);
-  certPanel.classList.add('has-results');
-}
-
-function transformGeminiToNested(flat, type) {
-  if (type === 'marriage') {
-    return {
-      type: 'marriage',
-      date: flat.marriage_date || flat.date || '',
-      groom: {
-        name: flat.groom_name || '',
-        age: flat.groom_age || '',
-        profession: flat.groom_profession || ''
-      },
-      bride: {
-        name: flat.bride_name || '',
-        age: flat.bride_age || '',
-        profession: flat.bride_profession || ''
-      },
-      groomFather: {
-        name: flat.groom_father_name || ''
-      },
-      groomMother: {
-        name: flat.groom_mother_name || '',
-        maidenName: flat.groom_mother_maiden || ''
-      },
-      brideFather: {
-        name: flat.bride_father_name || ''
-      },
-      brideMother: {
-        name: flat.bride_mother_name || '',
-        maidenName: flat.bride_mother_maiden || ''
-      }
-    };
-  } else if (type === 'birth') {
-    return {
-      type: 'birth',
-      child: {
-        name: flat.child_name || '',
-        birthDate: flat.birth_date || flat.child_birthDate || flat.registration_date || flat.date || ''
-      },
-      sex: flat.sex || flat.child_sex || '',
-      father: {
-        name: flat.father_name || '',
-        profession: flat.father_profession || ''
-      },
-      mother: {
-        name: flat.mother_name || '',
-        maidenName: flat.mother_maiden_name || flat.mother_maiden || ''
-      },
-      district: flat.district || ''
-    };
-  } else if (type === 'death') {
-    return {
-      type: 'death',
-      deathDate: flat.death_date || flat.date || '',
-      deceased: {
-        name: flat.deceased_name || '',
-        age: flat.deceased_age || '',
-        profession: flat.deceased_profession || '',
-        spouseName: flat.deceased_spouse_name || flat.spouse_name || ''
-      },
-      father: {
-        name: flat.father_name || ''
-      },
-      mother: {
-        name: flat.mother_name || '',
-        maidenName: flat.mother_maiden_name || flat.mother_maiden || ''
-      },
-      causeOfDeath: flat.cause_of_death || '',
-      district: flat.district || ''
-    };
-  }
-  return flat;
-}
-
-function parseGeminiResult() {
-  var raw = document.getElementById('geminiPasteBox').value.trim();
-  var cs = document.getElementById('certStatus');
-
-  if (!raw) {
-    cs.className = 'cert-status error';
-    cs.textContent = 'Please paste Gemini result first.';
-    cs.style.display = 'block';
-    return;
-  }
-
-  cs.className = 'cert-status loading';
-  cs.textContent = 'Parsing...';
-  cs.style.display = 'block';
-
-  var parsed;
-  try {
-    parsed = JSON.parse(raw);
-  } catch (e) {
-    // Strip markdown code blocks: ```json ... ```
-    var clean = raw.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
-    try {
-      parsed = JSON.parse(clean);
-    } catch (e2) {
-      // Try finding the first { to last }
-      var jsonMatch = clean.match(/\{[\s\S]*\}/);
-      if (jsonMatch) {
-        try {
-          parsed = JSON.parse(jsonMatch[0]);
-        } catch (e3) {
-          cs.className = 'cert-status error';
-          cs.innerHTML = 'Could not parse JSON. Make sure you copied only the JSON object from Gemini.';
-          cs.style.display = 'block';
-          return;
-        }
-      } else {
-        cs.className = 'cert-status error';
-        cs.innerHTML = 'No JSON object found. Please paste the JSON output from Gemini.';
-        cs.style.display = 'block';
-        return;
-      }
-    }
-  }
-
-  var entry = transformGeminiToNested(parsed, geminiCertType);
-  lastTranscription = { type: geminiCertType, entries: [entry] };
-
-  cs.className = 'cert-status success';
-  cs.textContent = '\u2713 Parsed ' + geminiCertType + ' certificate';
-  renderTranscriptionResults(lastTranscription);
-  certPanel.classList.add('has-results');
 }
 
 // Apply scanned cert data to the people array
@@ -3320,23 +2341,19 @@ function findPersonGenAware(name, opts) {
     const pNorm = normalizeName(p.name);
     const pFull = normalizeName(p.fullName || '');
     const pMaiden = normalizeName(p.maidenName || '');
-    const pMarried = normalizeName(p.marriedName || '');
-    const pSpouse = normalizeName(p.spouseName || '');
     const pNameLower = (p.name || '').toLowerCase().trim();
     const pFullLower = (p.fullName || '').toLowerCase().trim();
     const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
-    const pMarriedLower = (p.marriedName || '').toLowerCase().trim();
-    const pSpouseLower = (p.spouseName || '').toLowerCase().trim();
     const searchFull = name.toLowerCase().trim();
 
     let score = 0;
-    if (pNorm === searchNorm || pFull === searchNorm || pMarried === searchNorm || pSpouse === searchNorm) score = 100;
-    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull || pMarriedLower === searchFull || pSpouseLower === searchFull) score = 100;
-    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull) || searchFull.includes(pMarriedLower) || pMarriedLower.includes(searchFull)) score = 80;
-    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull) || searchFull.includes(pSpouseLower) || pSpouseLower.includes(searchFull)) score = 75;
-    else if (pNorm.includes(searchNorm) || searchNorm.includes(pNorm) || pMarried.includes(searchNorm) || searchNorm.includes(pMarried)) score = 50;
+    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
+    else if (pNorm.includes(searchNorm) || searchNorm.includes(pNorm)) score = 50;
 
-    // Maiden / married name check — but reject if first names don't match
+    // Maiden name check — but reject if first names don't match
     if (opts.checkMaiden && pMaidenLower) {
       const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
       const searchFirst = name.split(/\s+/)[0]?.toLowerCase() || '';
@@ -3412,8 +2429,7 @@ function findPersonBySurname(name, opts) {
     const pName = (p.name || '').toLowerCase();
     const pFull = (p.fullName || '').toLowerCase();
     const pMaiden = (p.maidenName || '').toLowerCase();
-    const pMarried = (p.marriedName || '').toLowerCase();
-    if (pName.includes(surname) || pFull.includes(surname) || pMaiden.includes(surname) || pMarried.includes(surname)) {
+    if (pName.includes(surname) || pFull.includes(surname) || pMaiden.includes(surname)) {
       candidates.push(p);
     }
   }
@@ -3450,10 +2466,11 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
   const childName = entry.child?.name; if (!childName) return;
   const childNorm = normalizeName(childName);
 
-  // Validate father: blank or literally says 'illegitimate'
+  // Validate father: if father equals child's own name, treat as illegitimate / OCR error
   const fatherNameRaw = entry.father?.name || '';
   const isIllegitimate = !fatherNameRaw
-    || fatherNameRaw.toLowerCase().includes('illegitimate');
+    || fatherNameRaw.toLowerCase().includes('illegitimate')
+    || normalizeName(fatherNameRaw) === childNorm;
   if (isIllegitimate) {
     entry.father = null;  // Clear the false father so we don't write it later
   }
@@ -3557,9 +2574,10 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
     const father = people.find(p => p.id === child.parents[0]);
     const mother = people.find(p => p.id === child.parents[1]);
 
-    // Father: only update if father slot is blank/unconfirmed
+    // Father: only update if not illegitimate and father slot is blank/unconfirmed
     if (father && entry.father?.name) {
-      if (father.name === 'Name' || father.status !== 'confirmed') {
+      const fatherNorm = normalizeName(entry.father.name);
+      if (fatherNorm !== childNorm && (father.name === 'Name' || father.status !== 'confirmed')) {
         father.name = entry.father.name;
         father.fullName = entry.father.name;
         if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
@@ -3738,32 +2756,21 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
     changed.push(bride);
   }
 
-  // STEP 6: Wire spouse relationship IDs
+  // STEP 6: Wire spouse relationship
   groom.spouseId = bride.id;
   bride.spouseId = groom.id;
-
-  // STEP 7: Maiden/birth name stays primary; married name stored separately
-  const certMaidenName = brideName;
-  const certSurname = certMaidenName.split(/\s+/).pop();
-  const groomSurname = groomName.split(/\s+/).pop();
-
-  // If cert gives a different name than card, migrate card to maiden name
-  if (normalizeName(certMaidenName) !== normalizeName(bride.name)) {
-    bride.name = certMaidenName;
-    bride.fullName = certMaidenName;
-    changed.push(bride);
-  }
-
-  // Store married name for death-cert matching etc.
-  if (groomSurname.toLowerCase() !== certSurname.toLowerCase()) {
-    const brideFirst = certMaidenName.split(/\s+/).slice(0, -1).join(' ') || certMaidenName.split(/\s+/)[0];
-    bride.marriedName = brideFirst + ' ' + groomSurname;
-    changed.push(bride);
-  }
-
-  // Spouse links show maiden name on each other's cards
   groom.spouseName = bride.name;
   bride.spouseName = groom.name;
+
+  // STEP 7: Update bride's display name to married name if matched by maiden
+  const groomSurname = groomName.split(/\s+/).pop();
+  const brideSurname = bride.name.split(/\s+/).pop();
+  if (brideSurname.toLowerCase() !== groomSurname.toLowerCase()) {
+    const brideFirst = bride.name.split(/\s+/).slice(0, -1).join(' ') || bride.name.split(/\s+/)[0];
+    bride.name = brideFirst + ' ' + groomSurname;
+    bride.fullName = bride.name;
+    changed.push(bride);
+  }
 
   groom.status = 'confirmed'; bride.status = 'confirmed';
   groom.docs.push({ type: 'mc', date: extractDocDate(entry, 'marriage'), docId: null });
@@ -4197,7 +3204,7 @@ function renderOnboardingGuide() {
     <ol style="margin:0;padding-left:18px;">
       <li><strong>Start with yourself.</strong> Tap the rightmost card (top of the tree), enter your name and birth date, set status to "You".</li>
       <li><strong>Add your parents.</strong> Tap the two cards to the left of yours (Generation 1). Fill in father and mother. The tree holds 9 generations total.</li>
-      <li><strong>Scan certificates for speed.</strong> Use the 📄 Scan panel (top toolbar). Choose Venice (100% private, best for printed text) or Gemini (more accurate, including handwriting). Copy the prompt, upload your cert on the AI site, then paste the JSON result to autofill cards.</li>
+      <li><strong>Upload certificates for speed.</strong> Use the 📎 Certificate panel (top-left button). Snap a photo of a birth, marriage, or death certificate and tap "Apply to Tree" to autofill cards.</li>
       <li><strong>Or fill manually.</strong> Tap any card to open the detail panel. Add names, dates, maiden names, occupation, and change status (Confirmed, Probable, Brick Wall, Unknown Parent).</li>
       <li><strong>Attach documents.</strong> In a person's detail panel, tap "Attach Document" to link a certificate image directly to that person.</li>
       <li><strong>Track siblings.</strong> In the detail panel, add brothers and sisters under the Siblings section. A 🍃 leaf appears on cards with siblings recorded.</li>
@@ -4221,8 +3228,8 @@ function renderOnboardingGuide() {
     </ol>
     <div style="margin:10px 0;text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <input type="file" id="gedcomFileInput" accept=".ged" style="display:none">
-      <button onclick="checkMemberFeature('gedcom', function(){document.getElementById('gedcomFileInput').click()})" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
-      <button onclick="checkMemberFeature('gedcom', exportGedcom)" style="padding:10px 16px;border:2px solid #4a5a8a;border-radius:4px;background:#4a5a8a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">📤 Export GEDCOM</button>
+      <button onclick="document.getElementById('gedcomFileInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
+      <button onclick="exportGedcom()" style="padding:10px 16px;border:2px solid #4a5a8a;border-radius:4px;background:#4a5a8a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">📤 Export GEDCOM</button>
     </div>
     <p style="margin:8px 0 0;"><em>Export creates a standard <code>.ged</code> file that any genealogy software can read. Your data never leaves your device.</em></p>
   </div>
@@ -4241,35 +3248,6 @@ function renderOnboardingGuide() {
     </ol>
     <p style="margin:8px 0 0;"><em>Your data stays private. You only share what you choose to send. No central server, no passwords.</em></p>
   </div>
-</div>
-<div id="iconGuide" style="background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;margin-bottom:10px;overflow:hidden;">
-  <button onclick="document.getElementById('iconBody').style.display=(document.getElementById('iconBody').style.display==='none'?'block':'none');this.querySelector('span').style.transform=(document.getElementById('iconBody').style.display==='none'?'rotate(0deg)':'rotate(180deg)')" style="width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-family:'Cinzel Decorative',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
-    Toolbar Icons Reference
-    <span style="display:inline-block;transition:transform 0.2s;font-size:12px;">▼</span>
-  </button>
-  <div id="iconBody" style="display:none;padding:0 12px 12px;font-size:12px;color:#3e2b1a;line-height:1.6;">
-    <p style="margin:0 0 8px;"><strong>Top toolbar buttons:</strong></p>
-    <div style="display:grid;grid-template-columns:30px 1fr;gap:6px 10px;align-items:center;margin-bottom:8px;">
-      <div>💾</div><div><strong>Save</strong> — Full backup with images embedded. Use this for your own backups.</div>
-      <div>📂</div><div><strong>Load</strong> — Load a previously saved <code>.familytree</code> file.</div>
-      <div>📤</div><div><strong>Share</strong> — Lightweight export without images. Send to family members.</div>
-      <div>🌳</div><div><strong>My Trees</strong> — Open the tree manager to create or switch between family trees.</div>
-      <div>🔒</div><div><strong>Privacy</strong> — View how your data is protected.</div>
-      <div>📖</div><div><strong>Next Steps</strong> — Open this guidance panel with research suggestions.</div>
-      <div>💬</div><div><strong>Feedback</strong> — Send feedback or report a problem.</div>
-      <div>🖼️</div><div><strong>Heritage Poster</strong> — Opens the printable ancestor poster in a new tab.</div>
-      <div>📄</div><div><strong>Scan Certificate</strong> — Upload and scan a birth, marriage, or death certificate.</div>
-      <div>🌙</div><div><strong>Dark Mode</strong> — Toggle between light and dark theme.</div>
-      <div>🖨️</div><div><strong>Print</strong> — Print the current tree view.</div>
-      <div>🔄</div><div><strong>Reset</strong> — Clear the entire tree and start fresh. Use 💾 first!</div>
-    </div>
-    <p style="margin:0 0 8px;"><strong>Zoom controls (left side):</strong></p>
-    <div style="display:grid;grid-template-columns:30px 1fr;gap:6px 10px;align-items:center;">
-      <div>⬅️</div><div><strong>Back</strong> — Go back to the previous view.</div>
-      <div>− / +</div><div><strong>Zoom Out / In</strong> — Adjust the tree scale.</div>
-      <div>⟲</div><div><strong>Reset Zoom</strong> — Return to 100% zoom and centered position.</div>
-    </div>
-  </div>
 </div>`;
 }
 
@@ -4281,20 +3259,6 @@ function attachGedcomListener() {
       const file = e.target.files[0];
       if (file) convertGedcomFile(file);
       e.target.value = '';
-    });
-  }
-  // Attach suggestion gate listener
-  const overlay = document.getElementById('suggestionOverlay');
-  if (overlay && !overlay._gateListening) {
-    overlay._gateListening = true;
-    overlay.addEventListener('click', function() {
-      checkMemberFeature('guidance_suggestions', function() {
-        const gate = document.getElementById('suggestionGate');
-        if (gate) {
-          const ov = document.getElementById('suggestionOverlay');
-          if (ov) ov.remove();
-        }
-      });
     });
   }
 }
@@ -4323,16 +3287,8 @@ function renderGuidanceResults({ suggestions, stats }) {
     return;
   }
 
-  html += '<div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#2a1f10;margin-bottom:8px;">Top Priority Suggestions <span class="member-badge-guidance">M</span></div>';
+  html += '<div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#2a1f10;margin-bottom:8px;">Top Priority Suggestions</div>';
   const icons = { BC: '📜', MC: '💍', DC: '⚰️' };
-
-  // Check if member popup for suggestions has been shown
-  var suggestionsGated = !localStorage.getItem('vr_member_shown_guidance_suggestions');
-  if (suggestionsGated) {
-    // Show suggestions but wrap in a click handler
-    html += '<div id="suggestionGate" style="position:relative;">';
-    html += '<div id="suggestionOverlay" style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(245,238,220,0.92);z-index:5;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:8px;"><div style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:6px;">🧭</div><div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#3a2a10;">Tap to view suggestions</div><div style="font-size:11px;color:#8a6a3a;margin-top:4px;">Members feature — free during early access</div></div></div>';
-  }
 
   for (const s of suggestions) {
     const cls = s.priority === 'high' ? 'high' : (s.priority === 'med' ? 'med' : 'low');
@@ -4344,9 +3300,6 @@ function renderGuidanceResults({ suggestions, stats }) {
     html += '<a href="' + s.source.url + '" target="_blank" rel="noopener" class="source-link">🔍 Search ' + s.source.name + '</a>';
     html += '<span class="cost-note">🛒 ' + s.type + ' cert: ' + s.cost + '</span>';
     html += '</div></div>';
-  }
-  if (suggestionsGated) {
-    html += '</div>'; // close suggestionGate
   }
   html += '<div style="border-top:2px solid #c4b89a;margin-top:16px;padding-top:12px;">';
   html += '<button onclick="showPrivacyModal()" style="width:100%;text-align:left;background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;padding:10px 12px;font-family:\'Cinzel Decorative\',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">';
@@ -4363,13 +3316,7 @@ async function getDocById(docId) {
   const store = tx.objectStore(DOC_STORE_NAME);
   return new Promise((resolve, reject) => {
     const req = store.get(docId);
-    req.onsuccess = () => {
-      const doc = req.result;
-      if (!doc) { resolve(null); return; }
-      const treeId = currentTreeId || 'default';
-      if (doc.treeId && doc.treeId !== treeId) { resolve(null); return; }
-      resolve(doc);
-    };
+    req.onsuccess = () => resolve(req.result || null);
     req.onerror = () => reject(req.error);
   });
 }
@@ -4397,7 +3344,7 @@ async function onDetailUploadFile(e) {
     const base64 = await resizeAndCompressImage(file, 1200, 0.85);
     const sizeKB = Math.round(base64.length * 0.75 / 1024);
     if (sizeKB > 500) {
-      const base64b = await resizeAndCompressImage(file, 1000, 0.80);
+      const base64b = await resizeAndCompressImage(file, 800, 0.75);
       e.target.dataset.image = base64b;
       const kb2 = Math.round(base64b.length * 0.75 / 1024);
       if (statusEl) statusEl.textContent = Math.round(file.size/1024/1024*10)/10 + ' MB → ' + kb2 + ' KB';
@@ -4538,27 +3485,6 @@ async function loadSession(file) {
     people = data.people;
     nextId = data.nextId || maxGen(people, p => p.id) + 1;
     visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
-    // Migrate stale bracketed names to maidenName/marriedName model (v208+)
-    people.forEach(p => {
-      if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
-        const m = p.name.match(/(.+?)\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/);
-        if (m) {
-          const fullBefore = m[1].trim();
-          const maidenSurname = m[2].trim();
-          const parts = fullBefore.split(/\s+/);
-          const surname = parts.pop();
-          const firstName = parts.join(' ');
-          p.marriedName = p.marriedName || fullBefore;
-          p.maidenName = p.maidenName || maidenSurname;
-          p.name = (firstName + ' ' + maidenSurname).trim();
-          if (p.fullName) p.fullName = p.name;
-        }
-      }
-      if (typeof p.name === 'string') {
-        p.name = p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
-        if (p.name !== p.fullName) p.fullName = p.name;
-      }
-    });
     // Restore inlined document images back into IndexedDB
     let restoredCount = 0;
     for (const person of people) {
@@ -4588,8 +3514,7 @@ async function loadSession(file) {
     showToast('Load failed: ' + (err.message || 'Unknown error'));
   }
 }
-// Removed duplicate listener — saveBtn uses inline onclick="saveSession()" in HTML
-// document.getElementById('saveBtn') binding already exists at top-level button markup
+document.getElementById('saveBtn').addEventListener('click', () => { saveSession(); });
 document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('loadFileInput').click());
 document.getElementById('loadFileInput').addEventListener('change', (e) => {
   const file = e.target.files[0]; if (file) loadSession(file); e.target.value = '';
@@ -4597,37 +3522,9 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
 function doResetTree() {
   const dlg = document.getElementById('confirmDialog');
   dlg.style.display = 'flex';
-  document.getElementById('confirmOk').onclick = async () => {
-    dlg.style.display = 'none';
-    // Delete all tree data from IndexedDB
-    if (_docDB) {
-      // Clear treeData store
-      const tx = _docDB.transaction(TM_DATA_STORE, 'readwrite');
-      await new Promise((resolve, reject) => {
-        const req = tx.objectStore(TM_DATA_STORE).clear();
-        req.onsuccess = () => resolve();
-        req.onerror = () => reject(req.error);
-      });
-      // Clear trees meta store
-      const tx2 = _docDB.transaction(TM_TREES_STORE, 'readwrite');
-      await new Promise((resolve, reject) => {
-        const req = tx2.objectStore(TM_TREES_STORE).clear();
-        req.onsuccess = () => resolve();
-        req.onerror = () => reject(req.error);
-      });
-      // Clear all documents
-      const tx3 = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
-      await new Promise((resolve, reject) => {
-        const req = tx3.objectStore(DOC_STORE_NAME).clear();
-        req.onsuccess = () => resolve();
-        req.onerror = () => reject(req.error);
-      });
-    }
-    currentTreeId = null;
-    treesList = [];
+  document.getElementById('confirmOk').onclick = () => {
     localStorage.removeItem('familytree_data_v5');
-    showToast('All trees cleared');
-    setTimeout(() => location.reload(), 800);
+    location.reload();
   };
   document.getElementById('confirmCancel').onclick = () => {
     dlg.style.display = 'none';
@@ -4659,54 +3556,15 @@ function expandNextGen() {
 }
 document.getElementById('expandGenBtn').addEventListener('click', expandNextGen);
 
-// Removed duplicate listen
+document.getElementById('nextStepsBtn').addEventListener('click', openGuidancePanel);
 document.getElementById('guidanceClose').addEventListener('click', closeGuidancePanel);
 document.getElementById('guidancePanel').addEventListener('click', (e) => {
   if (e.target === document.getElementById('guidancePanel')) closeGuidancePanel();
 });
 
 
-// ─── Auto-save to IndexedDB every 30s (replacing localStorage) ───
-setInterval(async () => {
-  if (currentTreeId) await saveCurrentTreeToDB();
-}, 30000);
-async function autoRestore() {
-  // First try IndexedDB multi-tree store
-  treesList = await loadAllTreeMetas();
-  if (treesList.length > 0) {
-    const latest = treesList.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0))[0];
-    if (latest) {
-      currentTreeId = latest.id;
-      const data = await loadTreeData(currentTreeId);
-      if (data) {
-        people = data.people || [];
-        nextId = data.nextId || maxGen(people, p => p.id) + 1;
-        visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
-        // Migrate bracketed names
-        people.forEach(p => {
-          if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
-            const m = p.name.match(/(.+?)\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/);
-            if (m) {
-              const fullBefore = m[1].trim(); const maidenSurname = m[2].trim();
-              const parts = fullBefore.split(/\s+/); const surname = parts.pop();
-              const firstName = parts.join(' ');
-              p.marriedName = p.marriedName || fullBefore;
-              p.maidenName = p.maidenName || maidenSurname;
-              p.name = (firstName + ' ' + maidenSurname).trim();
-              if (p.fullName) p.fullName = p.name;
-            }
-          }
-          if (typeof p.name === 'string') {
-            p.name = p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
-            if (p.name !== p.fullName) p.fullName = p.name;
-          }
-        });
-        showToast('Restored ' + people.length + ' people from "' + latest.name + '"');
-        return true;
-      }
-    }
-  }
-  // Fallback: legacy localStorage (migrate once)
+setInterval(() => { localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId, visibleMaxGen: visibleMaxGen})); }, 30000);
+function autoRestore() {
   const saved = localStorage.getItem('familytree_data_v5');
   if (saved) {
     try {
@@ -4714,27 +3572,7 @@ async function autoRestore() {
       if (data.people && data.people.length > 0) {
         people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
         if (data.visibleMaxGen !== undefined) visibleMaxGen = data.visibleMaxGen;
-        // Migrate stale bracketed names
-        people.forEach(p => {
-          if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
-            const m = p.name.match(/(.+?)\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/);
-            if (m) { /* same migration */ }
-          }
-          if (typeof p.name === 'string') {
-            p.name = p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
-            if (p.name !== p.fullName) p.fullName = p.name;
-          }
-        });
-        // Migrate to IndexedDB tree store
-        const treeId = 'tree_' + Date.now();
-        await saveTreeData(treeId, { people, nextId, visibleMaxGen });
-        const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
-        await saveTreeMeta(meta);
-        currentTreeId = treeId;
-        treesList = [meta];
-        localStorage.removeItem('familytree_data_v5');
-        showToast('Migrated legacy save to new tree store');
-        return true;
+        showToast('Restored ' + people.length + ' people from auto-save'); return true;
       }
     } catch (e) {}
   }
@@ -4751,35 +3589,6 @@ function showToast(msg, duration) {
   document.body.appendChild(el);
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
   setTimeout(() => el.remove(), duration + 500);
-}
-
-// Custom confirm modal (avoids browser "rupertclaw.github.io says" prefix)
-let _confirmCallback = null;
-function showConfirm(text, onOk) {
-  const modal = document.getElementById('confirmModal');
-  const textEl = document.getElementById('confirmText');
-  const okBtn = document.getElementById('confirmOk');
-  const cancelBtn = document.getElementById('confirmCancel');
-  if (!modal || !textEl) return;
-  textEl.textContent = text;
-  _confirmCallback = onOk;
-  modal.style.display = 'flex';
-  // Wire buttons once
-  if (!okBtn._confirmedWired) {
-    okBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
-      if (_confirmCallback) _confirmCallback();
-      _confirmCallback = null;
-    });
-    okBtn._confirmedWired = true;
-  }
-  if (!cancelBtn._confirmedWired) {
-    cancelBtn.addEventListener('click', () => {
-      modal.style.display = 'none';
-      _confirmCallback = null;
-    });
-    cancelBtn._confirmedWired = true;
-  }
 }
 
 function addParentsForPerson(person) {
@@ -4912,75 +3721,90 @@ function backfillComputedFields() {
     else if (p.years === '?' || !p.years) p.years = '?';
   }
 }
-(async function init() {
-  if (!await autoRestore()) initDefaultData();
-  backfillComputedFields();
-  // On desktop, auto-fit zoom to fill viewport; on mobile/touch, stay conservative
-  if (window.innerWidth > 768 && !('ontouchstart' in window)) {
-    zoom = 1;
-    renderTree();
-    fitZoomToViewport();
+if (!autoRestore()) initDefaultData();
+backfillComputedFields();
+zoom = 0.70; // always start at 70%
+renderTree();
+// Ensure syncHeaderHeight catches flexbox layout after initial render
+setTimeout(syncHeaderHeight, 50);
+setTimeout(syncHeaderHeight, 200);
+document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+
+// Update expand button text after render
+(function updateExpandBtn() {
+  const btn = document.getElementById('expandGenBtn');
+  const actualMax = maxGen(people, p => p.gen);
+  if (visibleMaxGen >= actualMax) {
+    btn.textContent = 'All visible — tap any person to add parents';
+    btn.disabled = true;
   } else {
-    zoom = 0.70; // mobile default
-    renderTree();
+    btn.textContent = 'Reveal Next Generation';
   }
-  document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
-
-  // Update expand button text after render
-  (function updateExpandBtn() {
-    const btn = document.getElementById('expandGenBtn');
-    const actualMax = maxGen(people, p => p.gen);
-    if (visibleMaxGen >= actualMax) {
-      btn.textContent = 'All visible — tap any person to add parents';
-      btn.disabled = true;
-    } else {
-      btn.textContent = 'Reveal Next Generation';
-    }
-  })();
-
-  // Deferred listener: ambiguity modal cancel button (element lives in HTML after script block)
-  function attachAmbigCancelListener() {
-    const btn = document.getElementById('ambigCancel');
-    if (btn && !btn._ambigListening) {
-      btn._ambigListening = true;
-      btn.addEventListener('click', () => {
-        document.getElementById('ambigModal').style.display = 'none';
-        pendingAmbigTarget = null;
-        showToast('Cancelled — cert not applied');
-        updateExpandGenBtn();
-      });
-    }
-  }
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', attachAmbigCancelListener);
-  } else {
-    attachAmbigCancelListener();
-  }
-
-  // Mobile back button closes panels
-  window.addEventListener('popstate', (e) => {
-    if (!e.state || !e.state.panel) return;
-    if (e.state.panel === 'detail' && detailPanel.classList.contains('active')) {
-      detailPanel.classList.remove('active');
-      selectedPersonId = null;
-    }
-    if (e.state.panel === 'cert' && certPanel.classList.contains('active')) {
-      certPanel.classList.remove('active');
-      certPanel.classList.remove('has-results');
-    }
-    if (e.state.panel === 'guidance' && guidancePanel.classList.contains('active')) {
-      guidancePanel.classList.remove('active');
-    }
-  });
-
-  // Init tree manager UI
-  updateTreeManagerUI();
 })();
 
+// Deferred listener: ambiguity modal cancel button (element lives in HTML after script block)
+// Use DOMContentLoaded to ensure the element exists before attaching
+function attachAmbigCancelListener() {
+  const btn = document.getElementById('ambigCancel');
+  if (btn && !btn._ambigListening) {
+    btn._ambigListening = true;
+    btn.addEventListener('click', () => {
+      document.getElementById('ambigModal').style.display = 'none';
+      pendingAmbigTarget = null;
+      showToast('Cancelled — cert not applied');
+      updateExpandGenBtn();
+    });
+  }
+}
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', attachAmbigCancelListener);
+} else {
+  attachAmbigCancelListener();
+}
+
+// Mobile back button closes panels
+window.addEventListener('popstate', (e) => {
+  if (!e.state || !e.state.panel) return;
+  if (e.state.panel === 'detail' && detailPanel.classList.contains('active')) {
+    detailPanel.classList.remove('active');
+    selectedPersonId = null;
+  }
+  if (e.state.panel === 'cert' && certPanel.classList.contains('active')) {
+    certPanel.classList.remove('active');
+    certPanel.classList.remove('has-results');
+  }
+  if (e.state.panel === 'guidance' && guidancePanel.classList.contains('active')) {
+    guidancePanel.classList.remove('active');
+  }
+});
+
 // Country init
-// NOTE: toolbar country dropdown removed — users select source records via detail panel buttons
-// If we ever want to re-enable the first-use modal, restore:
-// if (!getCountry()) { setTimeout(() => showCountryModal(), 800); }
+populateCountrySelect();
+document.getElementById('countrySelect').addEventListener('change', (e) => {
+  setCountry(e.target.value);
+});
+function showCountryModal() {
+  const modal = document.getElementById('countryModal');
+  const modalSel = document.getElementById('countryModalSelect');
+  modalSel.innerHTML = '<option value="" disabled selected>Choose a country...</option>';
+  Object.entries(COUNTRY_SOURCES).forEach(([code, info]) => {
+    const opt = document.createElement('option');
+    opt.value = code; opt.textContent = info.name;
+    modalSel.appendChild(opt);
+  });
+  modal.style.display = 'flex';
+  updateExpandGenBtn();
+}
+document.getElementById('countryModalOk').addEventListener('click', () => {
+  const val = document.getElementById('countryModalSelect').value;
+  if (!val) return;
+  setCountry(val);
+  document.getElementById('countryModal').style.display = 'none';
+  updateExpandGenBtn();
+});
+if (!getCountry()) {
+  setTimeout(() => showCountryModal(), 800);
+}
 
 function centerOnGen0() {
   // Find Graeme (the root person, ID 1, gen 0)
@@ -5012,7 +3836,7 @@ function toggleDarkMode() {
     if (btn) btn.textContent = '☀️';
   }
 }
-// Removed duplicate listen
+document.getElementById('darkModeToggle').addEventListener('click', toggleDarkMode);
 // Sync icon on page load
 (function() {
   const btn = document.getElementById('darkModeToggle');
@@ -5034,7 +3858,7 @@ function openPoster() {
     location.href = 'heritage-poster.html?_t=' + Date.now();
   }
 }
-// Removed duplicate listen
+document.getElementById('viewPosterBtn').addEventListener('click', openPoster);
 
 // Print — ask user which format they want, then route accordingly
 function openPrintDialog() {
@@ -5168,14 +3992,14 @@ function openPrintDialog() {
   dlg.querySelector('#dlgCancel').addEventListener('click', cleanup);
   dlg.addEventListener('click', (e) => { if (e.target === dlg) cleanup(); });
 }
-// Removed duplicate listen
+document.getElementById('printTreeBtn').addEventListener('click', openPrintDialog);
 
 // ═══════════════════════════════════════════════════════════════
 // GEDCOM IMPORT (client-side converter)
 // ═══════════════════════════════════════════════════════════════
 
 function parseGedcom(text) {
-  const lines = text.split(/\r\n|\r|\n/);
+  const lines = text.split(/\r?\n/);
   const records = {};
   let current = null;
   let currentLevel0 = null;
@@ -5236,8 +4060,7 @@ function parseGedcom(text) {
     if (rec.tag === 'INDI') {
       const nameArr = rec.data['NAME'] || [];
       const name = nameArr[0]?.value || '';
-      const surnameMatch = name.match(/\/([^/]*)\//);
-      const surname = surnameMatch ? surnameMatch[1] : '';
+      const surname = name.replace(/.*\//, '').replace(/\/$/, '');
       const given = name.replace(/\s*\/.*\//, '').trim();
       const fullName = given + (surname ? ' ' + surname : '');
       const birth = rec.data['BIRT']?.[0]?.data;
@@ -5395,7 +4218,7 @@ function parseGedcom(text) {
 
 function convertGedcomFile(file) {
   const reader = new FileReader();
-  reader.onload = async (e) => {
+  reader.onload = (e) => {
     try {
       const result = parseGedcom(e.target.result);
       if (!result || result.people.length === 0) {
@@ -5417,29 +4240,7 @@ function convertGedcomFile(file) {
       a.download = 'vaultedroots_import_' + new Date().toISOString().slice(0, 10) + '.familytree';
       a.click();
       URL.revokeObjectURL(url);
-      // Load directly into the page (same logic as loadSession, minus file parsing)
-      try {
-        if (!payload.people) { showToast('No people in GEDCOM'); return; }
-        people = payload.people;
-        nextId = payload.nextId || maxGen(people, p => p.id) + 1;
-        visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
-        renderTree();
-        const btn = document.getElementById('expandGenBtn');
-        const actualMax = maxGen(people, p => p.gen);
-        if (visibleMaxGen >= actualMax) {
-          btn.textContent = 'All visible — tap any person to add parents';
-          btn.disabled = true;
-        } else {
-          btn.disabled = false;
-          btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
-        }
-        // Save tree to IndexedDB
-        if (currentTreeId) await saveCurrentTreeToDB();
-        showToast('Converted ' + result.people.length + ' people. Tree loaded! A .familytree backup was also downloaded.');
-      } catch (loadErr) {
-        console.error('[GEDCOM] load error:', loadErr);
-        showToast('Converted ' + result.people.length + ' people. A .familytree file was downloaded — tap 📂 Load to import it.');
-      }
+      showToast('Converted ' + result.people.length + ' people. Tap Load to open it.');
     } catch (err) {
       console.error('[GEDCOM]', err);
       showToast('GEDCOM parse error: ' + err.message);
@@ -5461,11 +4262,6 @@ function showPrivacyModal() {
   if (!modal) return;
   modal.style.display = 'flex';
   updateExpandGenBtn();
-}
-function showFeedbackModal() {
-  const modal = document.getElementById('feedbackModal');
-  if (!modal) return;
-  modal.style.display = 'flex';
 }
 document.getElementById('privacyModalOk').addEventListener('click', () => {
   document.getElementById('privacyModal').style.display = 'none';
@@ -5689,18 +4485,6 @@ function exportGedcom() {
   URL.revokeObjectURL(url);
   showToast('GEDCOM exported: ' + realPeople.length + ' people, ' + famCount + ' families');
 }
-
-// Offline indicator
-function updateOfflineBadge() {
-  var badge = document.getElementById('offlineBadge');
-  if (badge) {
-    badge.classList.toggle('visible', !navigator.onLine);
-  }
-}
-window.addEventListener('online', updateOfflineBadge);
-window.addEventListener('offline', updateOfflineBadge);
-// Check initial state after a short delay to let DOM settle
-setTimeout(updateOfflineBadge, 100);
 </script>
 <style>
 @media (max-width: 480px) {
@@ -5712,10 +4496,6 @@ setTimeout(updateOfflineBadge, 100);
   .cert-upload-btns button { padding: 12px 6px; font-size: 11px; }
   .cert-upload-btns button span { font-size: 22px !important; }
   .cert-actions button { flex: 1 1 100%; }
-  .cert-method-btn { padding: 12px 8px; }
-  .cert-method-btn .method-icon { font-size: 22px; }
-  .cert-method-btn .method-label { font-size: 12px; }
-  .gemini-paste-box { min-height: 100px; font-size: 10px; }
 }
 </style>
 <!-- Ambiguity Resolution Modal -->
@@ -5729,437 +4509,5 @@ setTimeout(updateOfflineBadge, 100);
     </div>
   </div>
 </div>
-
-<!-- Custom Confirm Modal (replaces browser confirm() to avoid showing domain) -->
-<div id="confirmModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10004;justify-content:center;align-items:center;">
-  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:360px;width:90%;text-align:center;">
-    <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#3e2b1a;margin-bottom:12px;">Confirm Action</div>
-    <div id="confirmText" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;line-height:1.5;"></div>
-    <div style="display:flex;gap:10px;justify-content:center;">
-      <button id="confirmCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
-      <button id="confirmOk" style="padding:8px 16px;border:2px solid #5c2a2a;border-radius:4px;background:#5c2a2a;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">OK</button>
-    </div>
-  </div>
-</div>
-
-<script>
-// Cleanup: remove old floating treeTitle if service worker cached stale HTML
-(function() {
-  var treeScroll = document.getElementById('treeScroll');
-  var oldTitles = treeScroll ? treeScroll.querySelectorAll('#treeTitle') : [];
-  oldTitles.forEach(function(el) {
-    if (el.parentElement.id !== 'treeTitleContainer') {
-      el.remove();
-      console.log('[Vaulted Roots] Removed stale floating treeTitle');
-    }
-  });
-})();
-</script>
-
-<!-- ════════ MEMBER FEATURE GATEWAY ════════ -->
-<style>
-.member-badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #d4af37, #f4d03f);
-  color: #3a2a10;
-  font-size: 10px;
-  font-weight: 800;
-  font-family: sans-serif;
-  width: 16px;
-  height: 16px;
-  border-radius: 50%;
-  position: absolute;
-  top: -4px;
-  right: -4px;
-  line-height: 1;
-  pointer-events: none;
-  z-index: 5;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-.member-badge-guidance {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(135deg, #d4af37, #f4d03f);
-  color: #3a2a10;
-  font-size: 11px;
-  font-weight: 800;
-  font-family: sans-serif;
-  width: 18px;
-  height: 18px;
-  border-radius: 50%;
-  margin-left: 6px;
-  vertical-align: middle;
-  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
-}
-#memberModal {
-  display: none;
-  position: fixed;
-  top: 0; left: 0; right: 0; bottom: 0;
-  background: rgba(0,0,0,0.6);
-  z-index: 10000;
-  align-items: center;
-  justify-content: center;
-}
-#memberModal.active { display: flex; }
-.member-modal-box {
-  background: #f5eedc;
-  border: 2px solid #8a7a5a;
-  border-radius: 12px;
-  padding: 28px 24px;
-  max-width: 360px;
-  width: 90%;
-  text-align: center;
-  font-family: 'Georgia', serif;
-  box-shadow: 0 8px 32px rgba(0,0,0,0.3);
-  animation: memberFadeIn 0.3s ease;
-}
-@keyframes memberFadeIn {
-  from { opacity: 0; transform: scale(0.92); }
-  to { opacity: 1; transform: scale(1); }
-}
-.member-modal-box .member-icon {
-  font-size: 36px;
-  margin-bottom: 8px;
-}
-.member-modal-box .member-title {
-  font-family: 'Cinzel Decorative', serif;
-  font-size: 20px;
-  color: #3a2a10;
-  margin-bottom: 6px;
-  font-weight: 700;
-}
-.member-modal-box .member-price {
-  font-size: 13px;
-  color: #8a6a3a;
-  margin-bottom: 14px;
-  line-height: 1.5;
-}
-.member-modal-box .member-price strong {
-  color: #5c4033;
-}
-.member-modal-box .member-continue-btn {
-  display: block;
-  width: 100%;
-  padding: 12px;
-  border: none;
-  border-radius: 8px;
-  background: #5c4033;
-  color: #e8dcc8;
-  font-family: 'Cinzel Decorative', serif;
-  font-size: 15px;
-  cursor: pointer;
-  margin-bottom: 8px;
-  transition: background 0.2s;
-}
-.member-modal-box .member-continue-btn:hover {
-  background: #7a6a4a;
-}
-.member-modal-box .member-join-btn {
-  display: block;
-  width: 100%;
-  padding: 10px;
-  border: 1px solid #d4af37;
-  border-radius: 8px;
-  background: transparent;
-  color: #8a6a3a;
-  font-family: 'Georgia', serif;
-  font-size: 13px;
-  cursor: pointer;
-  transition: all 0.2s;
-}
-.member-modal-box .member-join-btn:hover {
-  background: #d4af37;
-  color: #3a2a10;
-}
-.member-modal-box .member-early-note {
-  font-size: 11px;
-  color: #9a8a6a;
-  margin-top: 10px;
-}
-</style>
-
-<div id="memberModal">
-  <div class="member-modal-box">
-    <div class="member-icon" id="memberModalIcon">⭐</div>
-    <div class="member-title">Members Feature</div>
-    <div class="member-price" id="memberModalFeature">This feature is available to Vaulted Roots members.<br>It's free during early access while we build the community.</div>
-    <button class="member-continue-btn" onclick="closeMemberModal()">Continue (Free for now)</button>
-    <button class="member-join-btn" onclick="closeMemberModal()">Become a Member</button>
-    <div class="member-early-note">No signup required during early access.</div>
-  </div>
-</div>
-
-<script>
-// ════════ MEMBER FEATURE GATEWAY ════════
-
-const MEMBER_FEATURES = {
-  'cert_scanning':       { label: 'Certificate Scanning', icon: '📄' },
-  'ai_gemini':           { label: 'Gemini AI Processing', icon: '🤖' },
-  'ai_venice':           { label: 'Venice AI Processing', icon: '🛡️' },
-  'heritage_poster':     { label: 'Heritage Poster', icon: '🖼️' },
-  'gedcom':              { label: 'GEDCOM Import/Export', icon: '🔄' },
-  'multiple_trees':      { label: 'Multiple Trees', icon: '🌳' },
-  'share_tree':          { label: 'Share Tree', icon: '📤' },
-  'print':               { label: 'Print Tree', icon: '🖨️' },
-  'guidance_suggestions':{ label: 'Research Suggestions', icon: '🧭' },
-  'expand_generation':   { label: 'Reveal Next Generation', icon: '📊' },
-};
-
-let _memberCallback = null;
-
-function checkMemberFeature(featureKey, callback) {
-  // Log GA4 event on first use
-  const seenKey = 'vr_member_shown_' + featureKey;
-  const hasSeen = localStorage.getItem(seenKey);
-
-  if (!hasSeen) {
-    // First time — show popup
-    const feat = MEMBER_FEATURES[featureKey] || { label: featureKey, icon: '⭐' };
-
-    // GA4 event
-    if (typeof gtag === 'function') {
-      gtag('event', 'member_feature_used', {
-        feature_name: featureKey,
-        feature_label: feat.label,
-        first_use: true
-      });
-    }
-
-    localStorage.setItem(seenKey, '1');
-    _memberCallback = callback;
-
-    document.getElementById('memberModalIcon').textContent = feat.icon;
-    document.getElementById('memberModalFeature').innerHTML =
-      '<strong>' + escapeHtml(feat.label) + '</strong> is available to Vaulted Roots members.<br>It\'s free during early access while we build the community.';
-    document.getElementById('memberModal').classList.add('active');
-  } else {
-    // Already seen — just run the callback
-    if (callback) callback();
-  }
-}
-
-function closeMemberModal() {
-  document.getElementById('memberModal').classList.remove('active');
-  if (_memberCallback) {
-    const cb = _memberCallback;
-    _memberCallback = null;
-    cb();
-  }
-}
-
-// Add MEMBER badges to toolbar buttons
-(function addMemberBadges() {
-  var badgeMap = {
-    'shareBtn': 'share_tree',
-    'treeManagerToggle': 'multiple_trees',
-    'viewPosterBtn': 'heritage_poster',
-    'certToggle': 'cert_scanning',
-    'printTreeBtn': 'print'
-  };
-  Object.keys(badgeMap).forEach(function(btnId) {
-    var btn = document.getElementById(btnId);
-    if (btn) {
-      btn.style.position = 'relative';
-      var badge = document.createElement('span');
-      badge.className = 'member-badge';
-      badge.textContent = 'M';
-      btn.appendChild(badge);
-    }
-  });
-})();
-
-// PWA Install Prompt
-(function() {
-  let deferredPrompt = null;
-
-  window.addEventListener('beforeinstallprompt', function(e) {
-    e.preventDefault();
-    deferredPrompt = e;
-
-    // Show install button if not already installed or dismissed
-    if (localStorage.getItem('vr_install_dismissed')) return;
-
-    // Check if already running as standalone (installed)
-    if (window.matchMedia('(display-mode: standalone)').matches || 
-        window.navigator.standalone === true) {
-      return;
-    }
-
-    // Create install banner
-    var banner = document.createElement('div');
-    banner.id = 'vr-install-banner';
-    banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#3e2b1a,#5a3e28);color:#d4b896;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:100000;box-shadow:0 -4px 20px rgba(0,0,0,0.4);font-family:Georgia,serif;transform:translateY(100%);transition:transform 0.3s ease;';
-
-    var icon = document.createElement('img');
-    icon.src = './icon-192.png';
-    icon.style.cssText = 'width:40px;height:40px;border-radius:50%;flex-shrink:0;';
-    icon.alt = 'Vaulted Roots';
-
-    var text = document.createElement('div');
-    text.style.cssText = 'flex:1;';
-    text.innerHTML = '<div style="font-size:14px;font-weight:bold;color:#c8a972;">Install Vaulted Roots</div><div style="font-size:12px;color:#a08866;">Add to your home screen for quick access</div>';
-
-    var installBtn = document.createElement('button');
-    installBtn.textContent = 'Install';
-    installBtn.style.cssText = 'background:#c8a972;color:#2a1f10;border:none;padding:8px 18px;border-radius:6px;font-family:Georgia,serif;font-size:13px;font-weight:bold;cursor:pointer;flex-shrink:0;';
-
-    var closeBtn = document.createElement('button');
-    closeBtn.textContent = '✕';
-    closeBtn.style.cssText = 'background:none;border:none;color:#a08866;font-size:18px;cursor:pointer;padding:4px;flex-shrink:0;';
-
-    banner.appendChild(icon);
-    banner.appendChild(text);
-    banner.appendChild(installBtn);
-    banner.appendChild(closeBtn);
-    document.body.appendChild(banner);
-
-    // Animate in
-    setTimeout(function() { banner.style.transform = 'translateY(0)'; }, 100);
-
-    installBtn.addEventListener('click', function() {
-      deferredPrompt.prompt();
-      deferredPrompt.userChoice.then(function(choice) {
-        if (choice.outcome === 'accepted') {
-          if (typeof gtag === 'function') {
-            gtag('event', 'pwa_install', { event_label: 'accepted' });
-          }
-        } else {
-          if (typeof gtag === 'function') {
-            gtag('event', 'pwa_install', { event_label: 'dismissed' });
-          }
-        }
-        deferredPrompt = null;
-        banner.style.transform = 'translateY(100%)';
-        setTimeout(function() { banner.remove(); }, 300);
-      });
-    });
-
-    closeBtn.addEventListener('click', function() {
-      localStorage.setItem('vr_install_dismissed', '1');
-      if (typeof gtag === 'function') {
-        gtag('event', 'pwa_install', { event_label: 'banner_closed' });
-      }
-      banner.style.transform = 'translateY(100%)';
-      setTimeout(function() { banner.remove(); }, 300);
-    });
-  });
-
-  window.addEventListener('appinstalled', function() {
-    var banner = document.getElementById('vr-install-banner');
-    if (banner) banner.remove();
-    if (typeof gtag === 'function') {
-      gtag('event', 'pwa_install', { event_label: 'installed' });
-    }
-  });
-})();
-</script>
-<script>
-// GA4 Event Tracking — click delegation for all meaningful user actions
-(function() {
-  var buttonMap = {
-    saveBtn:           { action: 'save_session',    category: 'tree' },
-    shareBtn:          { action: 'share_tree',      category: 'tree' },
-    treeManagerToggle: { action: 'toggle_tree_mgr',  category: 'tree' },
-    privacyBtn:        { action: 'privacy_info',     category: 'ui' },
-    nextStepsBtn:      { action: 'open_guidance',    category: 'ui' },
-    feedbackBtn:       { action: 'feedback_open',    category: 'ui' },
-    viewPosterBtn:     { action: 'open_poster',     category: 'tree' },
-    certToggle:        { action: 'scan_certificate',category: 'docs' },
-    darkModeToggle:    { action: 'toggle_dark_mode',category: 'ui' },
-    printTreeBtn:      { action: 'print_tree',      category: 'tree' },
-    zoomIn:            { action: 'zoom_in',         category: 'ui' },
-    zoomOut:           { action: 'zoom_out',        category: 'ui' },
-    zoomReset:         { action: 'zoom_reset',      category: 'ui' },
-    backBtn:           { action: 'go_back',          category: 'ui' },
-    gedcomFileInput:   { action: 'import_gedcom',   category: 'gedcom' },
-  };
-
-  document.addEventListener('click', function(e) {
-    var el = e.target.closest('button, [onclick]');
-    if (!el) return;
-
-    var id = el.id;
-    if (id && buttonMap[id]) {
-      var m = buttonMap[id];
-      trackEvent(m.action, m.category, id);
-      return;
-    }
-
-    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('exportGedcom') > -1) {
-      trackEvent('export_gedcom', 'gedcom', 'exportGedcomBtn');
-      return;
-    }
-
-    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('gedcomFileInput') > -1) {
-      trackEvent('import_gedcom', 'gedcom', 'importGedcomBtn');
-      return;
-    }
-
-    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('selectCertMethod') > -1) {
-      var method = el.getAttribute('onclick').match(/'([^']+)'/);
-      trackEvent('cert_method', 'docs', method ? method[1] : 'unknown');
-      return;
-    }
-
-    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('createTree') > -1) {
-      trackEvent('create_tree', 'tree', 'createTreeBtn');
-      return;
-    }
-
-    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('openVenice') > -1) {
-      trackEvent('ai_tool_open', 'ai', 'venice');
-      return;
-    }
-    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('openGemini') > -1) {
-      trackEvent('ai_tool_open', 'ai', 'gemini');
-      return;
-    }
-
-    if (el.tagName === 'A' || (el.parentElement && el.parentElement.tagName === 'A')) {
-      var href = (el.getAttribute && el.getAttribute('href')) || (el.parentElement && el.parentElement.getAttribute('href'));
-      if (href && (href.indexOf('facebook') > -1 || href.indexOf('twitter') > -1 || href.indexOf('instagram') > -1)) {
-        trackEvent('social_click', 'social', href);
-      }
-    }
-  });
-
-  var origSwitchTree = window.switchTree;
-  if (typeof origSwitchTree === 'function') {
-    window.switchTree = function(id) {
-      trackEvent('switch_tree', 'tree', id);
-      return origSwitchTree.apply(this, arguments);
-    };
-  }
-
-  var origOpenDetail = window.openDetail;
-  if (typeof origOpenDetail === 'function') {
-    window.openDetail = function(person) {
-      trackEvent('view_person', 'tree', person ? (person.name || person.id) : 'unknown');
-      return origOpenDetail.apply(this, arguments);
-    };
-  }
-
-  var origOpenDoc = window.openDocImage;
-  if (typeof origOpenDoc === 'function') {
-    window.openDocImage = function(docId) {
-      trackEvent('view_document', 'docs', String(docId));
-      return origOpenDoc.apply(this, arguments);
-    };
-  }
-
-  function trackEvent(action, category, label) {
-    if (typeof gtag === 'function') {
-      gtag('event', action, {
-        event_category: category,
-        event_label: label
-      });
-    }
-  }
-})();
-</script>
 </body>
 </html>
-<!-- Build: 1782741103 -->

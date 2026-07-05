@@ -1,0 +1,212 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Roots — Design 2: Classic Pedigree</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body {
+            font-family: "Georgia", "Times New Roman", serif;
+            background: #f0ece6;
+            color: #2c1810;
+            overflow-x: auto;
+            overflow-y: hidden;
+            height: 100vh;
+        }
+
+        .tree-container {
+            display: flex;
+            align-items: center;
+            height: 100vh;
+            padding: 40px 80px;
+            gap: 100px;
+        }
+
+        .generation {
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            gap: 16px;
+            min-width: 220px;
+            position: relative;
+        }
+
+        .gen-header {
+            position: absolute;
+            top: -50px;
+            left: 0;
+            right: 0;
+            text-align: center;
+            font-size: 12px;
+            font-weight: bold;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+            color: #8b7355;
+            border-bottom: 1px solid #d4c4a8;
+            padding-bottom: 8px;
+        }
+
+        .person-card {
+            background: #fffef8;
+            border: 1px solid #d4c4a8;
+            border-radius: 4px;
+            padding: 14px 18px;
+            width: 220px;
+            position: relative;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+
+        .person-card:hover {
+            border-color: #8b7355;
+            box-shadow: 0 2px 8px rgba(139, 115, 85, 0.15);
+        }
+
+        .person-card::before {
+            content: '';
+            position: absolute;
+            left: 0; top: 0; bottom: 0;
+            width: 4px;
+            border-radius: 4px 0 0 4px;
+        }
+
+        .person-card.confirmed::before { background: #4a7c59; }
+        .person-card.probable::before { background: #c9a227; }
+        .person-card.brickwall::before { background: #a04040; border-right: 2px dashed #a04040; }
+        .person-card.you::before { background: #2c5282; width: 6px; }
+
+        .person-name {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 3px;
+            color: #2c1810;
+        }
+
+        .person-years {
+            font-size: 11px;
+            color: #8b7355;
+            font-style: italic;
+        }
+
+        .person-note {
+            font-size: 10px;
+            color: #a09080;
+            margin-top: 4px;
+            font-style: italic;
+        }
+
+        /* Connecting branches - CSS only */
+        .generation::after {
+            content: '';
+            position: absolute;
+            right: -50px;
+            top: 50%;
+            width: 50px;
+            height: 1px;
+            background: #c4b49c;
+        }
+
+        .generation:last-child::after { display: none; }
+
+        /* Status badges */
+        .status-badge {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            border: 2px solid #fffef8;
+        }
+        .status-badge.confirmed { background: #4a7c59; }
+        .status-badge.probable { background: #c9a227; }
+        .status-badge.brickwall { background: #a04040; }
+    </style>
+</head>
+<body>
+    <div class="tree-container">
+        <!-- Same data structure as Design 1, different styling -->
+        <div class="generation">
+            <div class="gen-header">You</div>
+            <div class="person-card you">
+                <div class="status-badge confirmed"></div>
+                <div class="person-name">Graeme Mooney</div>
+                <div class="person-years">b. 1966</div>
+            </div>
+        </div>
+
+        <div class="generation">
+            <div class="gen-header">Parents</div>
+            <div class="person-card confirmed">
+                <div class="status-badge confirmed"></div>
+                <div class="person-name">Joseph Mooney</div>
+                <div class="person-years">1931–2004</div>
+                <div class="person-note">Lochee, Dundee</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="status-badge confirmed"></div>
+                <div class="person-name">Rose Craigie</div>
+                <div class="person-years">b. 1931</div>
+                <div class="person-note">Dundee, Angus</div>
+            </div>
+        </div>
+
+        <div class="generation">
+            <div class="gen-header">Grandparents</div>
+            <div class="person-card confirmed">
+                <div class="person-name">Joseph Mooney</div>
+                <div class="person-years">1905–1974</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="person-name">Alice Lynch</div>
+                <div class="person-years">1907–1978</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="person-name">Andrew Craigie</div>
+                <div class="person-years">1902–1972</div>
+            </div>
+            <div class="person-card confirmed">
+                <div class="person-name">Agnes Crawford</div>
+                <div class="person-years">b. 1902</div>
+            </div>
+        </div>
+
+        <div class="generation">
+            <div class="gen-header">Great-Grandparents</div>
+            <div class="person-card probable">
+                <div class="person-name">Joseph Mooney</div>
+                <div class="person-years">1879–?</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Catherine Farrell</div>
+                <div class="person-years">b. 1883</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Edward Lynch</div>
+                <div class="person-years">1868–?</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Mary Graham</div>
+                <div class="person-years">1865–?</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">James Craigie</div>
+                <div class="person-years">1872–?</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Agnes Henderson</div>
+                <div class="person-years">?–1938</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Patrick Crawford</div>
+                <div class="person-years">1872–?</div>
+            </div>
+            <div class="person-card probable">
+                <div class="person-name">Rose McFarland</div>
+                <div class="person-years">1872–?</div>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

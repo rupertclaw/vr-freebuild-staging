@@ -27,9 +27,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 }
 .poster {
   position: relative;
-  width: 1408px; height: 768px;
+  width: 1800px; height: 981px;
   flex-shrink: 0;
-  background: url('template-bg-v1.png') no-repeat center center;
+  background: url('family-tree-bg-v7.png') no-repeat center center;
   background-size: 100% 100%;
   border: 14px solid #1e140a;
   box-shadow: 0 0 50px rgba(0,0,0,0.8);
@@ -134,7 +134,9 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   font-size: 10px;
   color: #2a1f10;
   letter-spacing: 0.5px;
-  line-height: 1.15;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
   max-width: 140px;
 }
 .nameplate[data-gen="3"] .name {
@@ -146,20 +148,8 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   font-size: 9px;
 }
 .nameplate[data-gen="5"] .name {
-  max-width: 130px;
-  font-size: 8px;
-  line-height: 1.1;
-  white-space: nowrap;
-}
-.nameplate[data-gen="4"] {
-  padding: 4px 8px;
-}
-.nameplate[data-gen="5"] {
-  padding: 3px 8px;
-}
-.nameplate[data-gen="5"] .years {
-  font-size: 7px;
-  margin-top: 0;
+  max-width: 150px;
+  font-size: 9px;
 }
 .nameplate .years {
   font-family: 'Cormorant Garamond', serif;
@@ -543,296 +533,191 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   display: flex; align-items: center; justify-content: center;
 }
 .cert-close:active { transform: scale(0.92); }
-.poster-icon-btn {
-  width: 38px; height: 38px;
-  padding: 0;
-  border: none;
-  border-radius: 6px;
-  font-size: 18px;
-  cursor: pointer;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
-  transition: transform 0.1s;
-}
-.poster-icon-btn:active { transform: scale(0.92); }
-
-/* Heraldic banner above the tree */
-.poster-banner {
-  position: absolute;
-  top: 12px;
-  left: 50%;
-  transform: translateX(-50%);
-  z-index: 10;
-  padding: 10px 36px;
-  background: rgba(30, 20, 10, 0.88);
-  border: 2px solid #b89a5e;
-  border-radius: 4px;
-  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
-  pointer-events: none;
-}
-.poster-banner-text {
-  font-family: 'Cinzel Decorative', serif;
-  font-size: 15px;
-  color: #c9a96e;
-  text-transform: uppercase;
-  letter-spacing: 1px;
-  text-align: center;
-  white-space: nowrap;
-}
-.poster-banner-name {
-  font-size: 20px;
-  color: #f5dca0;
-  font-weight: 700;
-  letter-spacing: 2px;
-}
-
-@media print {
-  @page { size: landscape; margin: 6mm; }
-
-  /* Hide all UI chrome */
-  .zoom-controls,
-  .edit-toggle,
-  .grid-toggle,
-  .coord-readout,
-  .detail-panel,
-  .detail-overlay,
-  .cert-panel,
-  .cert-overlay,
-  .guide-panel,
-  .guide-overlay,
-  [style*="position:fixed"][style*="bottom:16px"],
-  [style*="position:fixed"][style*="bottom: 16px"] { display: none !important; }
-
-  /* Clean page */
-  body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .viewport { background: white !important; overflow: visible !important; width: auto !important; height: auto !important; }
-  .scroll-wrapper { padding: 0 !important; }
-
-  /* Poster: scale to fit landscape page (A4 ≈ 1123×794px at 96dpi) */
-  .poster-wrap { justify-content: center !important; align-items: flex-start !important; }
-  .poster {
-    zoom: 0.75 !important;
-    border: 2px solid #1e140a !important;
-    box-shadow: none !important;
-    margin: 0 !important;
-    page-break-inside: avoid;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-
-  /* Ensure text stays readable */
-  .nameplate { opacity: 1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
-  .grid-overlay { display: none !important; }
-
-  /* Banner prints dark with gold text */
-  .poster-banner {
-    background: rgba(30, 20, 10, 0.9) !important;
-    border-color: #b89a5e !important;
-    -webkit-print-color-adjust: exact;
-    print-color-adjust: exact;
-  }
-  .poster-banner-text {
-    color: #c9a96e !important;
-  }
-  .poster-banner-name {
-    color: #f5dca0 !important;
-  }
-}
 </style>
-<!-- Google Analytics 4 -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-MFQ3DV323Y"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-MFQ3DV323Y');
-</script>
 </head>
 <body>
+
+<button class="grid-toggle" id="gridToggle">Hide Grid</button>
+<div class="coord-readout" id="coordReadout">Hover to see coordinates</div>
 
 <div class="viewport" id="viewport">
 <div class="scroll-wrapper">
 <div class="poster-wrap">
 <div class="poster" id="poster">
 
-<!-- Heraldic banner — shows the subject's family name -->
-<div class="poster-banner" id="posterBanner">
-  <div class="poster-banner-text">
-    The <span class="poster-banner-name" id="bannerName">Family</span> Family Tree
-  </div>
-</div>
+<div class="grid-overlay" id="gridOverlay"></div>
+
+<!-- Grid overlay (generated by JS) -->
 
 <!-- Gen 0: Subject -->
-<div class="nameplate" data-gen="0" data-slot="subject" style="left: 696px; top: 576px;">
+<div class="nameplate" data-gen="0" data-slot="subject" style="left: 890px; top: 736px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
 
 <!-- Gen 1: Parents -->
-<div class="nameplate" data-gen="1" data-slot="father" style="left: 649px; top: 526px;">
+<div class="nameplate" data-gen="1" data-slot="father" style="left: 830px; top: 672px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="1" data-slot="mother" style="left: 747px; top: 526px;">
+<div class="nameplate" data-gen="1" data-slot="mother" style="left: 955px; top: 672px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
 
 <!-- Gen 2: Grandparents -->
-<div class="nameplate" data-gen="2" data-slot="paternal-grandfather" style="left: 228px; top: 476px;">
+<div class="nameplate" data-gen="2" data-slot="paternal-grandfather" style="left: 292px; top: 608px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="2" data-slot="paternal-grandmother" style="left: 541px; top: 476px;">
+<div class="nameplate" data-gen="2" data-slot="paternal-grandmother" style="left: 692px; top: 608px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="2" data-slot="maternal-grandfather" style="left: 854px; top: 476px;">
+<div class="nameplate" data-gen="2" data-slot="maternal-grandfather" style="left: 1092px; top: 608px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="2" data-slot="maternal-grandmother" style="left: 1167px; top: 476px;">
+<div class="nameplate" data-gen="2" data-slot="maternal-grandmother" style="left: 1492px; top: 608px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
 
 <!-- Gen 3: Great-grandparents -->
-<div class="nameplate" data-gen="3" data-slot="pat-pat-grandfather" style="left: 150px; top: 426px;">
+<div class="nameplate" data-gen="3" data-slot="pat-pat-grandfather" style="left: 192px; top: 544px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="3" data-slot="pat-pat-grandmother" style="left: 307px; top: 426px;">
+<div class="nameplate" data-gen="3" data-slot="pat-pat-grandmother" style="left: 392px; top: 544px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="3" data-slot="pat-mat-grandfather" style="left: 463px; top: 426px;">
+<div class="nameplate" data-gen="3" data-slot="pat-mat-grandfather" style="left: 592px; top: 544px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="3" data-slot="pat-mat-grandmother" style="left: 620px; top: 426px;">
+<div class="nameplate" data-gen="3" data-slot="pat-mat-grandmother" style="left: 792px; top: 544px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="3" data-slot="mat-pat-grandfather" style="left: 776px; top: 426px;">
+<div class="nameplate" data-gen="3" data-slot="mat-pat-grandfather" style="left: 992px; top: 544px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="3" data-slot="mat-pat-grandmother" style="left: 932px; top: 426px;">
+<div class="nameplate" data-gen="3" data-slot="mat-pat-grandmother" style="left: 1192px; top: 544px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="3" data-slot="mat-mat-grandfather" style="left: 1089px; top: 426px;">
+<div class="nameplate" data-gen="3" data-slot="mat-mat-grandfather" style="left: 1392px; top: 544px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="3" data-slot="mat-mat-grandmother" style="left: 1245px; top: 426px;">
+<div class="nameplate" data-gen="3" data-slot="mat-mat-grandmother" style="left: 1592px; top: 544px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
 
 <!-- Gen 4: Great-great-grandparents -->
-<div class="nameplate" data-gen="4" data-slot="pat-pat-pat-grandfather" style="left: 111px; top: 376px;">
+<div class="nameplate" data-gen="4" data-slot="pat-pat-pat-grandfather" style="left: 142px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-pat-pat-grandmother" style="left: 189px; top: 361px;">
+<div class="nameplate" data-gen="4" data-slot="pat-pat-pat-grandmother" style="left: 242px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandfather" style="left: 268px; top: 348px;">
+<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandfather" style="left: 342px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandmother" style="left: 346px; top: 338px;">
+<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandmother" style="left: 442px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandfather" style="left: 424px; top: 329px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandfather" style="left: 542px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandmother" style="left: 502px; top: 323px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandmother" style="left: 642px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandfather" style="left: 580px; top: 318px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandfather" style="left: 742px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandmother" style="left: 659px; top: 316px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandmother" style="left: 842px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandfather" style="left: 737px; top: 316px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandfather" style="left: 942px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandmother" style="left: 815px; top: 318px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandmother" style="left: 1042px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandfather" style="left: 893px; top: 323px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandfather" style="left: 1142px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandmother" style="left: 972px; top: 329px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandmother" style="left: 1242px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandfather" style="left: 1050px; top: 338px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandfather" style="left: 1342px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandmother" style="left: 1128px; top: 348px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandmother" style="left: 1442px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandfather" style="left: 1206px; top: 361px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandfather" style="left: 1542px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandmother" style="left: 1284px; top: 391px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandmother" style="left: 1642px; top: 480px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
 
 <!-- Gen 5: Double-stacked great-great-great-grandparents -->
 <!-- Upper row (fathers of gen 4) -->
-<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-pat-grandfather" style="left: 111px; top: 282px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-mat-grandfather" style="left: 189px; top: 251px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-pat-grandfather" style="left: 268px; top: 224px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-mat-grandfather" style="left: 346px; top: 202px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-pat-grandfather" style="left: 424px; top: 184px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-mat-grandfather" style="left: 502px; top: 171px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-pat-grandfather" style="left: 580px; top: 161px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-mat-grandfather" style="left: 659px; top: 157px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-pat-grandfather" style="left: 737px; top: 157px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-mat-grandfather" style="left: 815px; top: 161px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-pat-grandfather" style="left: 893px; top: 171px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-mat-grandfather" style="left: 972px; top: 184px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-pat-grandfather" style="left: 1050px; top: 202px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-mat-grandfather" style="left: 1128px; top: 224px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-pat-grandfather" style="left: 1206px; top: 251px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-mat-grandfather" style="left: 1284px; top: 282px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-pat-grandfather" style="left: 142px; top: 360px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-mat-grandfather" style="left: 242px; top: 320px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-pat-grandfather" style="left: 342px; top: 286px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-mat-grandfather" style="left: 442px; top: 258px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-pat-grandfather" style="left: 542px; top: 235px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-mat-grandfather" style="left: 642px; top: 218px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-pat-grandfather" style="left: 742px; top: 206px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-mat-grandfather" style="left: 842px; top: 201px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-pat-grandfather" style="left: 942px; top: 201px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-mat-grandfather" style="left: 1042px; top: 206px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-pat-grandfather" style="left: 1142px; top: 218px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-mat-grandfather" style="left: 1242px; top: 235px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-pat-grandfather" style="left: 1342px; top: 258px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-mat-grandfather" style="left: 1442px; top: 286px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-pat-grandfather" style="left: 1542px; top: 320px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-mat-grandfather" style="left: 1642px; top: 360px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
 <!-- Lower row (mothers of gen 4) -->
-<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-pat-grandmother" style="left: 111px; top: 335px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-mat-grandmother" style="left: 189px; top: 303px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-pat-grandmother" style="left: 268px; top: 277px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-mat-grandmother" style="left: 346px; top: 255px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-pat-grandmother" style="left: 424px; top: 237px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-mat-grandmother" style="left: 502px; top: 224px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-pat-grandmother" style="left: 580px; top: 214px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-mat-grandmother" style="left: 659px; top: 210px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-pat-grandmother" style="left: 737px; top: 210px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-mat-grandmother" style="left: 815px; top: 214px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-pat-grandmother" style="left: 893px; top: 224px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-mat-grandmother" style="left: 972px; top: 237px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-pat-grandmother" style="left: 1050px; top: 255px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-mat-grandmother" style="left: 1128px; top: 277px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-pat-grandmother" style="left: 1206px; top: 303px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-mat-grandmother" style="left: 1284px; top: 335px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-pat-grandmother" style="left: 142px; top: 402px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-mat-grandmother" style="left: 242px; top: 362px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-pat-grandmother" style="left: 342px; top: 328px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-mat-grandmother" style="left: 442px; top: 300px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-pat-grandmother" style="left: 542px; top: 277px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-mat-grandmother" style="left: 642px; top: 260px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-pat-grandmother" style="left: 742px; top: 248px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-mat-grandmother" style="left: 842px; top: 243px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-pat-grandmother" style="left: 942px; top: 243px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-mat-grandmother" style="left: 1042px; top: 248px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-pat-grandmother" style="left: 1142px; top: 260px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-mat-grandmother" style="left: 1242px; top: 277px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-pat-grandmother" style="left: 1342px; top: 300px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-mat-grandmother" style="left: 1442px; top: 328px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-pat-grandmother" style="left: 1542px; top: 362px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-mat-grandmother" style="left: 1642px; top: 402px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
 
 <!-- NO PRE-PLACED NAMEPLATES — tell me where they go -->
 
@@ -843,12 +728,12 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 
 <div class="detail-overlay" id="detailOverlay"></div>
 <div class="detail-panel" id="detailPanel">
-  <button class="detail-close" id="detailClose" onclick="closeDetail()">×</button>
+  <button class="detail-close" id="detailClose">×</button>
   <div class="detail-header">
     <div class="detail-name" id="detailName">Name</div>
     <div class="detail-years" id="detailYears">YYYY — YYYY</div>
     <div class="detail-maiden" id="detailMaiden" style="display:none;font-family:'Cormorant Garamond',serif;font-size:11px;color:#9a8565;text-align:center;margin-top:2px;font-style:italic;"></div>
-    <div id="detailEditHint" style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;text-align:center;margin-top:4px;font-style:italic;">Tap name or dates to edit</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;text-align:center;margin-top:4px;font-style:italic;">Tap name or dates to edit</div>
   </div>
   <div class="detail-body">
     <div class="detail-section-title">Parents</div>
@@ -879,26 +764,25 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 </div>
 
 <div class="zoom-controls">
-  <button class="zoom-btn" id="backBtn" onclick="hpBackToTree()" title="Back to tree">⬅️</button>
-  <button class="zoom-btn" id="zoomIn" onclick="zoomIn()">+</button>
+  <button class="zoom-btn" id="zoomIn">+</button>
   <div class="zoom-level" id="zoomLevel">100%</div>
-  <button class="zoom-btn" id="zoomOut" onclick="zoomOut()">−</button>
-  <button class="zoom-btn" id="zoomReset" onclick="zoomReset()">↻</button>
+  <button class="zoom-btn" id="zoomOut">−</button>
+  <button class="zoom-btn" id="zoomReset">↻</button>
 </div>
 
-<div style="position:fixed;bottom:16px;right:16px;display:flex;gap:6px;z-index:200;">
-  <button class="poster-icon-btn" id="saveSessionBtn" title="Save session" style="background:#3e3225;color:#f0e6d2;" onclick="hpSaveSession()">💾</button>
-  <button class="poster-icon-btn" id="loadSessionBtn" title="Load session" style="background:#3e3225;color:#f0e6d2;" onclick="hpLoadSession()">📂</button>
-  <button class="poster-icon-btn" id="guideBtn" title="Next steps" style="background:#5a7a3a;color:#f0e6d2;" onclick="openGuide()">📖</button>
-  <button class="poster-icon-btn" id="backToTreeBtn" title="Back to tree" style="background:#3e5a8a;color:#f0e6d2;" onclick="hpBackToTree()">🌳</button>
-  <button class="poster-icon-btn" id="printBtn" title="Print / PDF" style="background:#5a3a2a;color:#f0e6d2;" onclick="hpPrintPDF()">🖨️</button>
+<button class="edit-toggle" id="editToggle">✎ Upload Cert</button>
+
+<div style="position:fixed;bottom:16px;left:16px;display:flex;gap:6px;z-index:200;">
+  <button id="saveSessionBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#3e3225;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">⬇ Save Session</button>
+  <button id="loadSessionBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#3e3225;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">⬆ Load Session</button>
+  <button id="guideBtn" style="font-family:Cormorant Garamond,serif;font-size:11px;padding:6px 12px;border:none;border-radius:4px;background:#5a7a3a;color:#f0e6d2;cursor:pointer;box-shadow:0 2px 6px rgba(0,0,0,0.2);">🔍 Next Steps</button>
   <input type="file" id="sessionFileInput" accept=".familytree,.json,application/json" style="display:none;">
 </div>
 
 <!-- Cert upload panel -->
 <div class="cert-overlay" id="certOverlay"></div>
 <div class="cert-panel" id="certPanel">
-  <button class="cert-close" id="certClose" onclick="closeCertPanel()">×</button>
+  <button class="cert-close" id="certClose">×</button>
   <div class="cert-header">
     <h2>Scan Certificate</h2>
     <p>Snap a photo or upload an image</p>
@@ -940,7 +824,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 <!-- Research Guidance panel -->
 <div class="cert-overlay" id="guideOverlay"></div>
 <div class="cert-panel" id="guidePanel">
-  <button class="cert-close" id="guideClose" onclick="closeGuide()">×</button>
+  <button class="cert-close" id="guideClose">×</button>
   <div class="cert-header">
     <h2>Research Guidance</h2>
     <p>What to get next and where to find it</p>
@@ -952,10 +836,10 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
 
 <script>
 // Grid config
-const cols = 32;
-const rows = 16;
-const w = 1408;
-const h = 768;
+const cols = 40;
+const rows = 25;
+const w = 1800;
+const h = 981;
 const cellW = w / cols;
 const cellH = h / rows;
 
@@ -964,47 +848,42 @@ const gridToggle = document.getElementById('gridToggle');
 const poster = document.getElementById('poster');
 
 // Build grid
-if (gridOverlay && gridToggle) {
-  for (let i = 0; i <= cols; i++) {
-    const x = i * cellW;
-    const line = document.createElement('div');
-    line.className = 'grid-line-v';
-    line.style.left = x + 'px';
-    gridOverlay.appendChild(line);
+for (let i = 0; i <= cols; i++) {
+  const x = i * cellW;
+  const line = document.createElement('div');
+  line.className = 'grid-line-v';
+  line.style.left = x + 'px';
+  gridOverlay.appendChild(line);
 
-    if (i < cols && i % 5 === 0) {
-      const label = document.createElement('div');
-      label.className = 'grid-label-x';
-      label.style.left = (x + cellW/2) + 'px';
-      label.textContent = i;
-      gridOverlay.appendChild(label);
-    }
+  if (i < cols && i % 5 === 0) {
+    const label = document.createElement('div');
+    label.className = 'grid-label-x';
+    label.style.left = (x + cellW/2) + 'px';
+    label.textContent = i;
+    gridOverlay.appendChild(label);
   }
-
-  for (let i = 0; i <= rows; i++) {
-    const y = i * cellH;
-    const line = document.createElement('div');
-    line.className = 'grid-line-h';
-    line.style.top = y + 'px';
-    gridOverlay.appendChild(line);
-
-    if (i < rows && i % 5 === 0) {
-      const label = document.createElement('div');
-      label.className = 'grid-label-y';
-      label.style.top = (y + cellH/2) + 'px';
-      label.textContent = i;
-      gridOverlay.appendChild(label);
-    }
-  }
-
-  gridToggle.addEventListener('click', () => {
-    gridOverlay.classList.toggle('active');
-    gridToggle.textContent = gridOverlay.classList.contains('active') ? 'Hide Grid' : 'Show Grid';
-  });
-} else {
-  // Grid elements missing from DOM: silently skip grid features
-  console.warn('[heritage-poster] gridOverlay or gridToggle not found in DOM; skipping grid features');
 }
+
+for (let i = 0; i <= rows; i++) {
+  const y = i * cellH;
+  const line = document.createElement('div');
+  line.className = 'grid-line-h';
+  line.style.top = y + 'px';
+  gridOverlay.appendChild(line);
+
+  if (i < rows && i % 5 === 0) {
+    const label = document.createElement('div');
+    label.className = 'grid-label-y';
+    label.style.top = (y + cellH/2) + 'px';
+    label.textContent = i;
+    gridOverlay.appendChild(label);
+  }
+}
+
+gridToggle.addEventListener('click', () => {
+  gridOverlay.classList.toggle('active');
+  gridToggle.textContent = gridOverlay.classList.contains('active') ? 'Hide Grid' : 'Show Grid';
+});
 
 // Coordinate readout on hover
 const coordReadout = document.getElementById('coordReadout');
@@ -1031,17 +910,13 @@ function zoomHandler(delta) {
   updateZoom();
 }
 
-function zoomIn() { zoomHandler(0.2); }
-function zoomOut() { zoomHandler(-0.2); }
-function zoomReset() { scale = 1; updateZoom(); }
-
-document.getElementById('zoomIn').addEventListener('click', zoomIn);
-document.getElementById('zoomOut').addEventListener('click', zoomOut);
-document.getElementById('zoomReset').addEventListener('click', zoomReset);
+document.getElementById('zoomIn').addEventListener('click', () => { zoomHandler(0.2); });
+document.getElementById('zoomOut').addEventListener('click', () => { zoomHandler(-0.2); });
+document.getElementById('zoomReset').addEventListener('click', () => { scale = 1; updateZoom(); });
 // Touch support for zoom buttons on mobile
-document.getElementById('zoomIn').addEventListener('touchstart', (e) => { e.preventDefault(); zoomIn(); }, {passive: false});
-document.getElementById('zoomOut').addEventListener('touchstart', (e) => { e.preventDefault(); zoomOut(); }, {passive: false});
-document.getElementById('zoomReset').addEventListener('touchstart', (e) => { e.preventDefault(); zoomReset(); }, {passive: false});
+document.getElementById('zoomIn').addEventListener('touchstart', (e) => { e.preventDefault(); zoomHandler(0.2); }, {passive: false});
+document.getElementById('zoomOut').addEventListener('touchstart', (e) => { e.preventDefault(); zoomHandler(-0.2); }, {passive: false});
+document.getElementById('zoomReset').addEventListener('touchstart', (e) => { e.preventDefault(); scale = 1; updateZoom(); }, {passive: false});
 
 // Pinch-to-zoom on the poster (for browsers where CSS zoom doesn't work)
 let pinchStartDist = 0;
@@ -1161,7 +1036,7 @@ function updateSiblingBadge(slot) {
 Object.keys(slotSiblings).forEach(slot => updateSiblingBadge(slot));
 
 // ========== IndexedDB Document Storage ==========
-const DB_NAME = 'VRTDocs';
+const DB_NAME = 'FamilyTreeDocs';
 const DB_VERSION = 1;
 const STORE_NAME = 'documents';
 let db = null;
@@ -1276,10 +1151,6 @@ function openDetail(name, years, slot) {
     detailMaiden.style.display = 'none';
   }
 
-  // Show "Tap name or dates to edit" hint in editable mode
-  const editHint = document.getElementById('detailEditHint');
-  if (editHint) editHint.style.display = '';
-
   // Show doc badges
   detailDocs.innerHTML = '';
   const docs = (plate?.dataset.docs || '').split(',').filter(Boolean);
@@ -1336,11 +1207,7 @@ function openDetail(name, years, slot) {
     parent2.querySelector('.p-years').textContent = 'YYYY — YYYY';
     parent2.dataset.parentSlot = '';
   }
-  // Show add-sibling UI in editable mode
-  const addSiblingWrap = document.getElementById('addSiblingWrap');
-  if (addSiblingWrap) addSiblingWrap.style.display = '';
 
-  // Show panel
   detailPanel.classList.add('active');
   detailOverlay.classList.add('active');
 
@@ -1364,147 +1231,18 @@ function closeDetail() {
   detailOverlay.classList.remove('active');
 }
 
-// Show read-only detail popup from data-tree person data
-async function openDtDetail(person, slot) {
-  const name = person.name || person.fullName || 'Name';
-  detailName.textContent = name;
-  detailYears.textContent = formatPersonYears(person);
-
-  // Maiden name
-  const maidenName = person.maidenName || '';
-  if (maidenName) {
-    detailMaiden.textContent = 'née ' + maidenName;
-    detailMaiden.style.display = '';
-  } else {
-    detailMaiden.style.display = 'none';
-  }
-
-  // Hide "Tap name or dates to edit" hint in read-only mode
-  const editHint = document.getElementById('detailEditHint');
-  if (editHint) editHint.style.display = 'none';
-
-  // Doc badges from person.docs (data-tree source)
-  detailDocs.innerHTML = '';
-  if (person.docs && person.docs.length) {
-    const codes = [];
-    person.docs.forEach(d => {
-      const type = typeof d === 'string' ? d : d.type;
-      const code = type === 'birth' || type === 'bc' ? 'BC' : type === 'marriage' || type === 'mc' ? 'MC' : type === 'death' || type === 'dc' ? 'DC' : '';
-      if (code && !codes.includes(code)) codes.push(code);
-    });
-    codes.forEach(code => {
-      const badge = document.createElement('span');
-      badge.className = 'doc-badge';
-      badge.textContent = code;
-      detailDocs.appendChild(badge);
-    });
-  } else {
-    detailDocs.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No documents yet</span>';
-  }
-
-  // Doc thumbnails — fetch from IndexedDB by docId from person.docs (read-only view)
-  detailDocThumbs.innerHTML = '';
-  if (person.docs && person.docs.length) {
-    if (!db) await openDocDB();
-    const store = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME);
-    person.docs.forEach(d => {
-      const docId = typeof d === 'string' ? null : (d.docId || null);
-      if (!docId) return;
-      const req = store.get(docId);
-      req.onsuccess = () => {
-        const doc = req.result;
-        if (!doc || !doc.image) return;
-        const thumb = document.createElement('img');
-        thumb.src = doc.image;
-        thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #c9b896;cursor:pointer;';
-        thumb.title = (typeof d === 'string' ? d : d.type) + ' — ' + (typeof d === 'string' ? '' : (d.date || ''));
-        thumb.addEventListener('click', () => {
-          const viewer = document.createElement('div');
-          viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
-          viewer.innerHTML = '<img src="' + doc.image + '" style="max-width:90vw;max-height:90vh;border-radius:4px;">';
-          viewer.addEventListener('click', () => viewer.remove());
-          document.body.appendChild(viewer);
-        });
-        detailDocThumbs.appendChild(thumb);
-      };
-    });
-  }
-
-  // Parents — look up from dtPeopleMap using person.parents
-  if (person.parents && person.parents.length >= 2) {
-    const father = dtPeopleMap.get(person.parents[0]);
-    const mother = dtPeopleMap.get(person.parents[1]);
-    parent1.querySelector('.p-name').textContent = father ? (father.name || father.fullName || 'Name') : 'Name';
-    parent1.querySelector('.p-years').textContent = father ? formatPersonYears(father) : 'YYYY — YYYY';
-    parent1.dataset.parentSlot = father ? (father.slot || '') : '';
-    parent2.querySelector('.p-name').textContent = mother ? (mother.name || mother.fullName || 'Name') : 'Name';
-    parent2.querySelector('.p-years').textContent = mother ? formatPersonYears(mother) : 'YYYY — YYYY';
-    parent2.dataset.parentSlot = mother ? (mother.slot || '') : '';
-  } else {
-    parent1.querySelector('.p-name').textContent = 'Name';
-    parent1.querySelector('.p-years').textContent = 'YYYY — YYYY';
-    parent1.dataset.parentSlot = '';
-    parent2.querySelector('.p-name').textContent = 'Name';
-    parent2.querySelector('.p-years').textContent = 'YYYY — YYYY';
-    parent2.dataset.parentSlot = '';
-  }
-
-  // Siblings — from person.siblings (read-only list)
-  const siblingsContainer = document.getElementById('detailSiblings');
-  siblingsContainer.innerHTML = '';
-  if (person.siblings && person.siblings.length) {
-    person.siblings.forEach(s => {
-      const el = document.createElement('div');
-      el.style.cssText = 'font-family:Cormorant Garamond,serif;font-size:11px;color:#3e3225;';
-      el.textContent = typeof s === 'string' ? s : (s.name || '');
-      siblingsContainer.appendChild(el);
-    });
-  } else {
-    siblingsContainer.innerHTML = '<div style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No siblings recorded</div>';
-  }
-
-  // Hide add-sibling UI in read-only mode
-  const addSiblingWrap = document.getElementById('addSiblingWrap');
-  if (addSiblingWrap) addSiblingWrap.style.display = 'none';
-
-  // Show panel
-  detailPanel.classList.add('active');
-  detailOverlay.classList.add('active');
-  detailPanel.dataset.currentSlot = slot || '';
-}
-
-// Click handler for nameplates — branches on data-tree mode
-let currentSubjectId = null;
-let currentPeopleMap = new Map();
-
+// Gen 5 cards navigate to branch page; others open detail panel
+// Before navigating, auto-save main tree state to localStorage
 document.querySelectorAll('.nameplate').forEach((np) => {
   np.addEventListener('click', (e) => {
     e.stopPropagation();
-    const name = np.dataset.fullname || '';
+    const isGen5 = np.dataset.gen === '5';
+    const name = np.querySelector('.name').textContent;
     const years = np.querySelector('.years').textContent;
     const slot = np.dataset.slot || '';
-    const gen = parseInt(np.dataset.gen || '0', 10);
 
-    // === DATA-TREE MODE: click-to-focus ===
-    if (dtModeActive) {
-      if (e.shiftKey) return; // shift-click falls through to old behavior (detail panel)
-      const path = slotToPath(slot);
-      const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
-      if (!person) return;
-      if (gen === 5) {
-        // Gen 5: re-root poster at this person, show their ancestors above
-        populatePosterFromDataTree(person.id);
-        showToast('Now showing: ' + (person.name || person.fullName || 'Ancestor'));
-      } else {
-        // Gen 0-4: show read-only detail popup from data-tree
-        openDtDetail(person, slot);
-      }
-      return;
-    }
-
-    // === ORIGINAL HERITAGE-POSTER MODE ===
-    if (gen === 5) {
-      // Save main tree state and navigate to branch tree
+    if (isGen5) {
+      // 1. Save full main tree state to localStorage
       const payload = {
         version: 1,
         savedAt: new Date().toISOString(),
@@ -1524,6 +1262,8 @@ document.querySelectorAll('.nameplate').forEach((np) => {
         };
       });
       localStorage.setItem('familytree_main', JSON.stringify(payload));
+
+      // 2. Save this person's data for the branch tree
       const personData = {
         name: name,
         fullname: np.dataset.fullname || name,
@@ -1532,6 +1272,7 @@ document.querySelectorAll('.nameplate').forEach((np) => {
         docs: np.dataset.docs || '',
         slot: slot
       };
+      // Also include parents if we know them from OWN_PARENT_MAP
       const parentMap = OWN_PARENT_MAP[slot];
       if (parentMap) {
         const fPlate = document.querySelector('.nameplate[data-slot="' + parentMap.fatherSlot + '"]');
@@ -1555,6 +1296,8 @@ document.querySelectorAll('.nameplate').forEach((np) => {
         }
       }
       localStorage.setItem('familytree_branch_subject', JSON.stringify(personData));
+
+      // 3. Navigate to branch tree
       window.location.href = 'branch-tree.html';
     } else {
       openDetail(name, years, slot);
@@ -1567,40 +1310,17 @@ detailOverlay.addEventListener('click', closeDetail);
 
 // Parent cards are also clickable — drill into that person's detail
 parent1.addEventListener('click', () => {
-  if (dtModeActive) {
-    // In data-tree mode, lookup parent from dtPeopleMap and show read-only detail
-    const currentSlot = detailPanel.dataset.currentSlot;
-    if (!currentSlot) return;
-    const path = slotToPath(currentSlot);
-    const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
-    if (person && person.parents && person.parents.length >= 1) {
-      const parent = dtPeopleMap.get(person.parents[0]);
-      if (parent) openDtDetail(parent, parent.slot || '');
-    }
-    return;
-  }
   const slot = parent1.dataset.parentSlot;
   if (slot) {
     const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
-    if (plate) openDetail(plate.dataset.fullname || '', plate.querySelector('.years').textContent, slot);
+    if (plate) openDetail(plate.querySelector('.name').textContent, plate.querySelector('.years').textContent, slot);
   }
 });
 parent2.addEventListener('click', () => {
-  if (dtModeActive) {
-    const currentSlot = detailPanel.dataset.currentSlot;
-    if (!currentSlot) return;
-    const path = slotToPath(currentSlot);
-    const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
-    if (person && person.parents && person.parents.length >= 2) {
-      const parent = dtPeopleMap.get(person.parents[1]);
-      if (parent) openDtDetail(parent, parent.slot || '');
-    }
-    return;
-  }
   const slot = parent2.dataset.parentSlot;
   if (slot) {
     const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
-    if (plate) openDetail(plate.dataset.fullname || '', plate.querySelector('.years').textContent, slot);
+    if (plate) openDetail(plate.querySelector('.name').textContent, plate.querySelector('.years').textContent, slot);
   }
 });
 
@@ -1627,13 +1347,7 @@ function makeEditable(el, targetPlate, targetSelector) {
       // Write back to the tree nameplate
       if (targetPlate && targetSelector) {
         const targetEl = targetPlate.querySelector(targetSelector);
-        if (targetEl) {
-          if (targetSelector === '.name') {
-            targetEl.innerHTML = formatNameplateName(el.textContent);
-          } else {
-            targetEl.textContent = el.textContent;
-          }
-        }
+        if (targetEl) targetEl.textContent = el.textContent;
       }
     };
     input.addEventListener('blur', commit);
@@ -1644,7 +1358,7 @@ function makeEditable(el, targetPlate, targetSelector) {
 // Wire up detail panel name + years editing
 detailName.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (dtModeActive) return; // read-only in data-tree mode
+  // Find which nameplate this detail refers to
   const currentSlot = detailPanel.dataset.currentSlot;
   const targetPlate = currentSlot ? document.querySelector(`.nameplate[data-slot="${currentSlot}"]`) : null;
   makeEditableInline(detailName, targetPlate, '.name');
@@ -1652,7 +1366,6 @@ detailName.addEventListener('click', (e) => {
 
 detailYears.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (dtModeActive) return; // read-only in data-tree mode
   const currentSlot = detailPanel.dataset.currentSlot;
   const targetPlate = currentSlot ? document.querySelector(`.nameplate[data-slot="${currentSlot}"]`) : null;
   makeEditableInline(detailYears, targetPlate, '.years');
@@ -1676,18 +1389,10 @@ function makeEditableInline(el, targetPlate, targetSelector) {
     input.remove();
     if (targetPlate && targetSelector) {
       const targetEl = targetPlate.querySelector(targetSelector);
-      if (targetEl && newVal) {
-        if (targetSelector === '.name') {
-          targetEl.innerHTML = formatNameplateName(newVal);
-        } else {
-          targetEl.textContent = newVal;
-        }
-      }
+      if (targetEl && newVal) targetEl.textContent = newVal;
       // Also update data-fullname when editing a name, so cert matching works later
       if (targetSelector === '.name' && newVal) {
         targetPlate.dataset.fullname = newVal;
-        // Update heraldic banner if subject name changed
-        if (targetPlate.dataset.slot === 'subject') updateBanner();
       }
     }
   };
@@ -1706,7 +1411,6 @@ openDetail = function(name, years, slot) {
 function wireParentEdit(cardEl, selector) {
   cardEl.querySelector(selector).addEventListener('click', (e) => {
     e.stopPropagation();
-    if (dtModeActive) return; // read-only in data-tree mode
     const pSlot = cardEl.dataset.parentSlot;
     const targetPlate = pSlot ? document.querySelector(`.nameplate[data-slot="${pSlot}"]`) : null;
     makeEditableInline(cardEl.querySelector(selector), targetPlate, selector === '.p-name' ? '.name' : '.years');
@@ -1737,6 +1441,7 @@ const certConfirm = document.getElementById('certConfirm');
 const certCancel = document.getElementById('certCancel');
 const certRetry = document.getElementById('certRetry');
 const certRetryScan = document.getElementById('certRetryScan');
+const editToggle = document.getElementById('editToggle');
 
 let pendingDocFile = null; // Store the last uploaded file for retries
 
@@ -1761,6 +1466,7 @@ function resetCertPanel() {
   certFileInput.value = '';
 }
 
+editToggle.addEventListener('click', openCertPanel);
 certClose.addEventListener('click', closeCertPanel);
 certOverlay.addEventListener('click', closeCertPanel);
 certCancel.addEventListener('click', closeCertPanel);
@@ -1820,25 +1526,6 @@ async function importSession(file) {
   try {
     const text = await file.text();
     const data = JSON.parse(text);
-
-    // Data-tree export format: {people: [...], nextId, version}
-    if (data.people && Array.isArray(data.people)) {
-      dtPeopleMap = new Map();
-      data.people.forEach(p => dtPeopleMap.set(p.id, p));
-      const subject = data.people.find(p => p.gen === 0) ||
-                      data.people.find(p => p.status === 'you') ||
-                      data.people.find(p => p.status === 'confirmed') ||
-                      data.people[0];
-      if (subject) {
-        populatePosterFromDataTree(subject.id);
-        showToast('Tree loaded from data-tree file!');
-        return;
-      }
-      showToast('Invalid session file — no subject found');
-      return;
-    }
-
-    // Poster-native format: {slots: {...}}
     if (!data.slots) { showToast('Invalid session file — no tree data found'); return; }
 
     // Restore slot data
@@ -1848,7 +1535,7 @@ async function importSession(file) {
       if (!plate) return;
       if (info.fullname) {
         plate.dataset.fullname = info.fullname;
-        plate.querySelector('.name').innerHTML = formatNameplateName(info.name || info.fullname);
+        plate.querySelector('.name').textContent = info.name || info.fullname;
       }
       if (info.years) {
         const yEl = plate.querySelector('.years');
@@ -1888,53 +1575,19 @@ async function importSession(file) {
     }
 
     showToast('Session restored!');
-    updateBanner();
   } catch (err) {
     console.error('Import failed:', err);
     showToast('Import failed: ' + (err.message || 'Unknown error'));
   }
 }
 
-function hpSaveSession() { exportSession(); }
-function hpLoadSession() { sessionFileInput.click(); }
-function hpBackToTree() { window.location.href = 'data-tree.html'; }
-function hpPrintPDF() {
-  const wasGridOn = gridOverlay && gridOverlay.style.display !== 'none';
-  const wasZoom = scale;
-  // Reset to clean state for print
-  scale = 1;
-  updateZoom();
-  if (gridOverlay) gridOverlay.style.display = 'none';
-  if (gridToggle) gridToggle.textContent = 'Show Grid';
-  // Small delay so the browser sees the clean layout
-  setTimeout(() => {
-    try {
-      window.print();
-    } catch (e) {
-      // Mobile Chrome often blocks print — silently ignore
-    }
-    // Restore after print dialog closes
-    setTimeout(() => {
-      scale = wasZoom;
-      updateZoom();
-      if (gridOverlay && wasGridOn) {
-        gridOverlay.style.display = '';
-        if (gridToggle) gridToggle.textContent = 'Hide Grid';
-      }
-    }, 100);
-  }, 50);
-}
-
-saveSessionBtn.addEventListener('click', hpSaveSession);
-loadSessionBtn.addEventListener('click', hpLoadSession);
+saveSessionBtn.addEventListener('click', exportSession);
+loadSessionBtn.addEventListener('click', () => sessionFileInput.click());
 sessionFileInput.addEventListener('change', (e) => {
   const file = e.target.files[0];
   if (file) importSession(file);
   sessionFileInput.value = '';
 });
-
-document.getElementById('backToTreeBtn').addEventListener('click', hpBackToTree);
-document.getElementById('printBtn').addEventListener('click', hpPrintPDF);
 
 certRetry.addEventListener('click', () => {
   if (pendingDocFile) {
@@ -2777,19 +2430,25 @@ const SPOUSE_MAP = {
     return document.querySelector(`.nameplate[data-slot="${slotName}"]`);
   }
 
-// Helper: split a full name into forename + <br> + surname for nameplate display
-  function formatNameplateName(fullName) {
-    if (!fullName || fullName === 'Name') return 'Name';
-    const parts = fullName.trim().split(/\s+/);
-    if (parts.length < 2) return fullName;
-    const surname = parts.pop();
-    const forename = parts.join(' ');
-    return forename + '<br>' + surname;
-  }
-
-  // Helper: shorten a full name for nameplate display (legacy wrapper)
+  // Helper: shorten a full name for nameplate display
+  // "Andrew Henderson Craigie" → "Andrew H. Craigie" (3+ parts)
+  // "Elizabeth Henderson" → "E. Henderson" (2 parts, if gen 3+ and name > 16 chars)
   function shortName(fullName, gen) {
-    return formatNameplateName(fullName);
+    if (!fullName) return fullName;
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length <= 2) {
+      // Two-part name — abbreviate first name for gen 3+ if too long
+      const total = fullName.length;
+      const maxLen = gen >= 4 ? 14 : gen >= 3 ? 16 : 999;
+      if (total > maxLen && parts[0].length > 1) {
+        return parts[0].charAt(0) + '. ' + parts[1];
+      }
+      return fullName; // "Joseph Mooney" stays as is
+    }
+    // First name + initials + surname
+    const surname = parts.pop();
+    const initials = parts.slice(1).map(p => p.charAt(0) + '.').join(' ');
+    return parts[0] + (initials ? ' ' + initials : '') + ' ' + surname;
   }
 
   // Helper: fill a nameplate with name + years; stores full name in data-fullname, displays short
@@ -2812,7 +2471,7 @@ const SPOUSE_MAP = {
     plate.dataset.fullname = name;
     if (maidenName) plate.dataset.maiden = maidenName;
     const gen = parseInt(plate.dataset.gen || '0', 10);
-    nameEl.innerHTML = shortName(name, gen);
+    nameEl.textContent = shortName(name, gen);
     if (years) {
       const yearsEl = plate.querySelector('.years');
       if (yearsEl) yearsEl.textContent = years;
@@ -2935,10 +2594,10 @@ const SPOUSE_MAP = {
             keeper.querySelector('.years').textContent = dupYears;
           }
           // Update display name to the fuller version
-          const keeperFull = keeper.dataset.fullname || '';
-          const dupFull = dup.dataset.fullname || '';
-          if ((!keeperFull || keeperFull.length < dupFull.length) && dupFull) {
-            keeper.dataset.fullname = dupFull;
+          const keeperName = keeper.querySelector('.name')?.textContent || '';
+          const dupName = dup.querySelector('.name')?.textContent || '';
+          if ((keeperName === 'Name' || keeperName.length < dupName.length) && dupName !== 'Name') {
+            keeper.querySelector('.name').textContent = dupName;
           }
           // Clear the duplicate
           console.log('[MERGE] Merging duplicate "' + norm + '": kept', keeper.dataset.slot, ', cleared', dup.dataset.slot);
@@ -2949,9 +2608,10 @@ const SPOUSE_MAP = {
           delete dup.dataset.docs;
           mergeCount++;
         });
-        // Re-display keeper with formatted name from fullname
+        // Re-display keeper with short name from fullname
         if (keeper.dataset.fullname) {
-          keeper.querySelector('.name').innerHTML = formatNameplateName(keeper.dataset.fullname);
+          const gen = parseInt(keeper.dataset.gen || '0', 10);
+          keeper.querySelector('.name').textContent = shortName(keeper.dataset.fullname, gen);
         }
       });
       if (mergeCount > 0) showToast('Merged ' + mergeCount + ' duplicate(s)');
@@ -3518,19 +3178,18 @@ const guideOverlay = document.getElementById('guideOverlay');
 const guideClose = document.getElementById('guideClose');
 const guideResults = document.getElementById('guideResults');
 
-function openGuide() {
+guideBtn.addEventListener('click', () => {
   guidePanel.classList.add('active');
   guideOverlay.classList.add('active');
   runGuidanceAnalysis();
-}
+});
+guideClose.addEventListener('click', closeGuide);
+guideOverlay.addEventListener('click', closeGuide);
+
 function closeGuide() {
   guidePanel.classList.remove('active');
   guideOverlay.classList.remove('active');
 }
-
-guideBtn.addEventListener('click', openGuide);
-guideClose.addEventListener('click', closeGuide);
-guideOverlay.addEventListener('click', closeGuide);
 
 function runGuidanceAnalysis() {
   guideResults.style.display = 'block';
@@ -3849,7 +3508,7 @@ function getSourceForCouple(name1, name2) {
       if (!plate) return;
       if (info.fullname) {
         plate.dataset.fullname = info.fullname;
-        plate.querySelector('.name').innerHTML = formatNameplateName(info.name || info.fullname);
+        plate.querySelector('.name').textContent = info.name || info.fullname;
       }
       if (info.years) {
         const yEl = plate.querySelector('.years');
@@ -3883,229 +3542,6 @@ function getSourceForCouple(name1, name2) {
     localStorage.removeItem('familytree_main');
   } catch (err) {
     console.error('[RESTORE] Failed:', err);
-  }
-})();
-
-// ========== Data-Tree Integration Layer ==========
-// Maps poster slot names to binary tree paths (0=father/paternal, 1=mother/maternal)
-function slotToPath(slot) {
-  if (slot === 'subject') return [];
-  const path = [];
-  const parts = slot.split('-');
-  for (let i = 0; i < parts.length; i++) {
-    const p = parts[i];
-    if (p === 'father' || p === 'paternal' || p === 'pat' || p === 'grandfather') {
-      path.push(0);
-    } else if (p === 'mother' || p === 'maternal' || p === 'mat' || p === 'grandmother') {
-      path.push(1);
-    }
-  }
-  return path;
-}
-
-// Follow parent chain from root person using binary path
-function getPersonByPath(rootId, path, peopleMap) {
-  let currentId = rootId;
-  for (const direction of path) {
-    const person = peopleMap.get(currentId);
-    if (!person || !person.parents || person.parents.length < 2) return null;
-    currentId = person.parents[direction];
-    if (currentId == null) return null;
-  }
-  return peopleMap.get(currentId) || null;
-}
-
-// Format years from person data — always extract 4-digit years, show year-only
-function formatPersonYears(person) {
-  let birthYear = '', deathYear = '';
-
-  if (person.birthDate) {
-    const m = person.birthDate.match(/\d{4}/);
-    if (m) birthYear = m[0];
-  }
-  if (!birthYear && person.years && person.years !== 'YYYY — YYYY') {
-    const years = person.years.match(/\d{4}/g);
-    if (years && years.length >= 1) birthYear = years[0];
-  }
-
-  if (person.deathDate) {
-    const m = person.deathDate.match(/\d{4}/);
-    if (m) deathYear = m[0];
-  }
-  if (!deathYear && person.years && person.years !== 'YYYY — YYYY') {
-    const years = person.years.match(/\d{4}/g);
-    if (years && years.length >= 2) deathYear = years[1];
-  }
-
-  if (birthYear && deathYear) return birthYear + ' — ' + deathYear;
-  if (birthYear) return birthYear + ' —';
-  if (deathYear) return '? — ' + deathYear;
-  return 'YYYY — YYYY';
-}
-
-// Global helper: split a full name into forename + <br> + surname for nameplate display
-// Defined at top level so both poster internals and data-tree integration can use it
-function formatNameplateName(fullName) {
-  if (!fullName || fullName === 'Name') return 'Name';
-  // Strip parenthetical maiden-name suffix from display name
-  const clean = fullName.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
-  const parts = clean.split(/\s+/);
-  if (parts.length < 2) return clean;
-  const surname = parts.pop();
-  const forename = parts.join(' ');
-  return forename + '<br>' + surname;
-}
-
-// Short name for display (mimics heritage-poster shortName)
-function dtShortName(fullName, gen) {
-  if (gen >= 5) return fullName || 'Name';
-  return formatNameplateName(fullName);
-}
-
-// Update heraldic banner from the subject (Gen 0) nameplate
-function updateBanner() {
-  const bannerName = document.getElementById('bannerName');
-  if (!bannerName) return;
-  const subjectPlate = document.querySelector('.nameplate[data-slot="subject"]');
-  const name = subjectPlate?.dataset.fullname || '';
-  if (!name || name === 'Name') {
-    bannerName.textContent = 'Family';
-    return;
-  }
-  bannerName.textContent = name;
-}
-
-let dtPeopleMap = new Map();
-let dtSubjectId = null;
-let dtModeActive = false;
-
-// Populate all poster slots from a given subject person ID
-function populatePosterFromDataTree(subjectId) {
-  if (!dtPeopleMap.has(subjectId)) return;
-  dtSubjectId = subjectId;
-  dtModeActive = true;
-
-  // Clear existing
-  document.querySelectorAll('.nameplate').forEach(plate => {
-    plate.dataset.fullname = '';
-    plate.dataset.maiden = '';
-    plate.dataset.docs = '';
-    plate.querySelector('.name').innerHTML = 'Name';
-    plate.querySelector('.years').textContent = 'YYYY — YYYY';
-    plate.style.opacity = '0';
-  });
-
-  // Fill each slot
-  let filledCount = 0;
-  document.querySelectorAll('.nameplate').forEach(plate => {
-    const slot = plate.dataset.slot;
-    const path = slotToPath(slot);
-    const person = getPersonByPath(subjectId, path, dtPeopleMap);
-    if (!person) return;
-    const name = person.name || person.fullName || '';
-    if (!name || name === 'Name') return;
-
-    const years = formatPersonYears(person);
-    const gen = parseInt(plate.dataset.gen || '0', 10);
-
-    plate.dataset.fullname = name;
-    if (person.maidenName) plate.dataset.maiden = person.maidenName;
-
-    // Doc badges
-    if (person.docs && person.docs.length) {
-      const codes = [];
-      person.docs.forEach(d => {
-        const type = typeof d === 'string' ? d : d.type;
-        const code = type === 'birth' || type === 'bc' ? 'BC' : type === 'marriage' || type === 'mc' ? 'MC' : type === 'death' || type === 'dc' ? 'DC' : '';
-        if (code && !codes.includes(code)) codes.push(code);
-      });
-      if (codes.length) plate.dataset.docs = codes.join(',');
-    }
-
-    plate.querySelector('.name').innerHTML = dtShortName(name, gen);
-    plate.querySelector('.years').textContent = years;
-    plate.style.opacity = '1';
-    filledCount++;
-  });
-  console.log('[DT POPULATE] filled slots:', filledCount);
-
-  // Show back button
-  const backBtn = document.getElementById('backToTreeBtn');
-  if (backBtn) backBtn.style.display = 'inline-block';
-
-  // Update heraldic banner with subject surname
-  updateBanner();
-}
-
-// Load from data-tree localStorage key
-function loadFromDataTree() {
-  const raw = localStorage.getItem('familytree_data_v5');
-  console.log('[DT LOAD] raw exists:', !!raw);
-  if (!raw) return false;
-  let data;
-  try { data = JSON.parse(raw); } catch (e) { console.error('[DT LOAD] parse error', e); return false; }
-  if (!data.people || !Array.isArray(data.people)) { console.log('[DT LOAD] no people array'); return false; }
-
-  console.log('[DT LOAD] people count:', data.people.length);
-  dtPeopleMap = new Map();
-  data.people.forEach(p => dtPeopleMap.set(p.id, p));
-
-  // Find subject: gen 0, or status='you', or first confirmed, or first person
-  const subject = data.people.find(p => p.gen === 0) ||
-                  data.people.find(p => p.status === 'you') ||
-                  data.people.find(p => p.status === 'confirmed') ||
-                  data.people[0];
-  if (!subject) { console.log('[DT LOAD] no subject found'); return false; }
-
-  console.log('[DT LOAD] subject:', subject.name, 'id:', subject.id);
-  populatePosterFromDataTree(subject.id);
-  return true;
-}
-
-// Try loading from data-tree
-loadFromDataTree();
-updateBanner();
-</script>
-
-<script>
-// GA4 Event Tracking — heritage poster clicks
-(function() {
-  var buttonMap = {
-    saveSessionBtn: { action: 'save_session',  category: 'poster' },
-    loadSessionBtn: { action: 'load_session',  category: 'poster' },
-    guideBtn:       { action: 'open_guide',    category: 'poster' },
-    backToTreeBtn:  { action: 'back_to_tree',  category: 'poster' },
-    printBtn:       { action: 'print_poster',   category: 'poster' },
-    zoomIn:         { action: 'zoom_in',        category: 'poster' },
-    zoomOut:        { action: 'zoom_out',       category: 'poster' },
-    zoomReset:      { action: 'zoom_reset',     category: 'poster' },
-    backBtn:        { action: 'go_back',         category: 'poster' },
-    detailClose:    { action: 'close_detail',   category: 'poster' },
-  };
-
-  document.addEventListener('click', function(e) {
-    var el = e.target.closest('button, [onclick]');
-    if (!el) return;
-
-    var id = el.id;
-    if (id && buttonMap[id]) {
-      var m = buttonMap[id];
-      if (typeof gtag === 'function') {
-        gtag('event', m.action, {
-          event_category: m.category,
-          event_label: id
-        });
-      }
-    }
-  });
-
-  var gt = document.getElementById('gridToggle');
-  if (gt) {
-    gt.addEventListener('click', function() {
-      if (typeof gtag === 'function') {
-        gtag('event', 'toggle_grid', { event_category: 'poster', event_label: 'gridToggle' });
-      }
-    });
   }
 })();
 </script>

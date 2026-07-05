@@ -1,0 +1,3395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Vaulted Roots</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-page: #f0e2c5;
+  --bg-header: #3e2b1a;
+  --bg-header-border: #5c4033;
+  --bg-tree-start: #f5e6c8;
+  --bg-tree-end: #e8d5b7;
+  --bg-btn: #5c4033;
+  --bg-btn-border: #7a6a4a;
+  --bg-cert-btn: #6b4c35;
+  --bg-cert-btn-border: #8a7a5a;
+  --text-logo: #38bdf8;
+  --text-tagline: #7dd3fc;
+  --text-zoom: #93c5fd;
+  --text-btn: #e8dcc8;
+  --text-btn-dark: #a8c8e8;
+  --bg-stat: rgba(56, 189, 248, 0.10);
+  --border-stat: rgba(56, 189, 248, 0.20);
+  --text-stat-label: #93c5fd;
+  --text-stat-value: #38bdf8;
+  --bg-card: rgba(255, 250, 240, 0.97);
+  --border-card: #5c4033;
+  --shadow-card: rgba(90, 60, 30, 0.12);
+  --shadow-card-hover: rgba(90, 60, 30, 0.18);
+  --bg-card-inner: #a89878;
+  --bg-card-you: rgba(255, 248, 225, 0.98);
+  --bg-card-blank: rgba(250, 244, 230, 0.6);
+  --text-card-blank: #9a8a6a;
+  --line-stroke: #7a6a4a;
+  --bg-modal-overlay: rgba(0,0,0,0.75);
+  --text-gen-label: #6b5a3a;
+  --bg-zoom: rgba(56, 189, 248, 0.12);
+  --bg-emblem-shadow: rgba(56, 189, 248, 0.35);
+  --bg-detail-actions: #f5eedc;
+  --bg-detail-header: #2a1f15;
+  --text-detail-header: #e8dcc8;
+  --bg-person-unknown: rgba(240, 235, 220, 0.6);
+  --text-person-unknown: #a8a090;
+}
+
+[data-theme="dark"] {
+  --bg-page: #1a1510;
+  --bg-header: #131820;
+  --bg-header-border: #2a3a50;
+  --bg-tree-start: #1a1f2a;
+  --bg-tree-end: #0a0c10;
+  --bg-btn: #1e2a3a;
+  --bg-btn-border: #3a5a7a;
+  --bg-cert-btn: #2a3a50;
+  --bg-cert-btn-border: #4a6a8a;
+  --text-logo: #4db8ff;
+  --text-tagline: #5a8aaa;
+  --text-zoom: #7a9aba;
+  --text-btn: #a8c8e8;
+  --text-btn-dark: #a8c8e8;
+  --bg-stat: rgba(80, 140, 220, 0.08);
+  --border-stat: rgba(80, 140, 220, 0.15);
+  --text-stat-label: #5a8aaa;
+  --text-stat-value: #4db8ff;
+  --bg-card: rgba(250, 244, 230, 0.94);
+  --border-card: #4a3a22;
+  --shadow-card: rgba(0,0,0,0.25);
+  --shadow-card-hover: rgba(0,0,0,0.35);
+  --bg-card-inner: #8a7a5a;
+  --bg-card-you: rgba(255,248,225,0.97);
+  --bg-card-blank: rgba(250, 244, 230, 0.45);
+  --text-card-blank: #b8a88a;
+  --line-stroke: #8a7a5a;
+  --bg-modal-overlay: rgba(0,0,0,0.75);
+  --text-gen-label: #8a7a5a;
+  --bg-zoom: rgba(80, 140, 220, 0.12);
+  --bg-emblem-shadow: rgba(80, 140, 220, 0.3);
+  --bg-detail-actions: #f5eedc;
+  --bg-detail-header: #2a1f15;
+  --text-detail-header: #e8dcc8;
+  --bg-person-unknown: rgba(240,235,220,0.5);
+  --text-person-unknown: #a8a090;
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-family: 'Cormorant Garamond', serif; }
+
+/* Header */
+.header {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: auto;
+  background: var(--bg-header); border-bottom: 2px solid var(--bg-header-border);
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 14px; z-index: 300;
+}
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+  padding-right: 96px;
+}
+.header-brand {
+  display: flex; flex-direction: column;
+}
+.header-logo {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 24px; color: var(--text-logo); font-weight: 700;
+  line-height: 1.1; letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.40), 0 0 20px rgba(56, 189, 248, 0.20);
+}
+.header-tagline {
+  font-size: 14px; color: var(--text-tagline); font-weight: 700;
+  letter-spacing: 2px; margin-top: 3px;
+}
+.header-stats {
+  display: flex; gap: 10px; align-items: center;
+}
+.header-stat {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg-stat);
+  border: 1px solid var(--border-stat);
+  padding: 6px 12px; border-radius: 6px;
+  min-width: 68px;
+}
+.header-stat .stat-label {
+  font-size: 11px; color: var(--text-stat-label);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.header-stat .stat-value {
+  font-size: 18px; color: var(--text-stat-value);
+  font-weight: 600; font-family: 'Cormorant Garamond', serif;
+}
+.header-bottom {
+  display: flex; align-items: center; justify-content: space-between;
+  flex-wrap: wrap;
+  padding-top: 6px; border-top: 1px solid rgba(255,248,225,0.08);
+  margin-top: 4px;
+  gap: 6px;
+  padding-right: 96px;
+}
+.header-actions {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+.header-emblem {
+  position: absolute; right: 14px; top: 6px;
+  height: 82px; width: 82px;
+  border-radius: 50%;
+  object-fit: cover; flex-shrink: 0;
+}
+@media (max-width: 380px) {
+  .header-emblem { height: 56px; width: 56px; }
+  .header-btn { width: 28px; height: 28px; font-size: 14px; }
+  .country-select { padding: 3px 5px; font-size: 10px; min-width: 70px; }
+  .header-actions { gap: 2px; }
+  .header-left-group { gap: 3px; }
+  .tree-scroll { top: 160px; }
+  .header-top, .header-bottom { padding-right: 70px; }
+  .zoom-controls span { font-size: 11px; min-width: 36px; }
+}
+@media (max-width: 600px) {
+  .header-btn { width: 34px; height: 34px; font-size: 17px; }
+  .country-select { padding: 5px 7px; font-size: 12px; min-width: 95px; }
+}
+.header-btn {
+  width: 38px; height: 38px; background: var(--bg-btn); color: var(--text-btn);
+  border: 1px solid var(--bg-btn-border); border-radius: 6px; font-size: 20px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+.country-select {
+  background: var(--bg-btn); color: var(--text-btn);
+  border: 1px solid var(--bg-btn-border); border-radius: 6px;
+  padding: 6px 8px; font-family: 'Cormorant Garamond', serif; font-size: 13px;
+  cursor: pointer; min-width: 110px;
+}
+.country-select option { background: #5c4033; color: #e8dcc8; }
+.cert-btn {
+  width: 44px; height: 38px;
+  background: #6b4c35; border-color: #8a7a5a;
+}
+
+/* Tree scroll area */
+.tree-scroll {
+  position: fixed; top: 124px; left: 0; right: 0; bottom: 0;
+  overflow: auto; -webkit-overflow-scrolling: touch;
+  touch-action: pan-x pan-y;
+  background: radial-gradient(ellipse at center, var(--bg-tree-start) 0%, var(--bg-tree-end) 100%);
+}
+
+.zoom-controls {
+  display: flex; align-items: center; gap: 4px;
+  background: var(--bg-zoom);
+  padding: 2px 8px; border-radius: 6px;
+  flex-shrink: 0;
+}
+.zoom-controls span {
+  font-size: 13px; color: var(--text-zoom); min-width: 42px; text-align: center;
+  font-family: 'Cormorant Garamond', serif;
+}
+.zoom-btn { font-size: 16px; padding: 2px 10px; min-width: 32px; }
+
+.header-actions {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  justify-content: flex-end;
+}
+.header-left-group {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+
+/* Tree wrap */
+.tree-wrap {
+  position: relative; min-width: fit-content; min-height: 100%;
+  padding: 40px 30px;
+  transform: scale(var(--zoom, 1));
+  transform-origin: top left;
+  transition: transform 0.15s ease;
+}
+.tree-wrap.pinch-zooming {
+  transition: none !important;
+}
+
+/* Generation columns */
+.generation {
+  display: flex; flex-direction: column;
+  position: relative; min-width: 180px;
+}
+.gen-label {
+  position: absolute; top: -30px; left: 50%; transform: translateX(-50%);
+  font-family: 'Cinzel Decorative', serif; font-size: 10px;
+  text-transform: uppercase; letter-spacing: 2px; color: var(--text-gen-label);
+  white-space: nowrap;
+}
+
+/* Person cards */
+.person-card {
+  position: absolute; left: 0; width: 170px;
+  background: var(--bg-card);
+  border: 2px solid var(--border-card); border-radius: 3px;
+  padding: 8px 12px; text-align: center;
+  z-index: 2; cursor: pointer;
+  box-shadow: 0 2px 6px var(--shadow-card);
+  transition: transform 0.15s, box-shadow 0.15s;
+}
+.person-card::before {
+  content: ''; position: absolute; top: 2px; left: 2px; right: 2px; bottom: 2px;
+  border: 1px solid var(--bg-card-inner); pointer-events: none; border-radius: 1px;
+}
+.person-card:hover { transform: scale(1.03); box-shadow: 0 4px 14px var(--shadow-card-hover); }
+.person-card:active { transform: scale(0.98); }
+
+.person-card .name {
+  font-family: 'Cinzel Decorative', serif; font-size: 11px;
+  color: #2a1f10; letter-spacing: 0.5px;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.person-card .years {
+  font-family: 'Cormorant Garamond', serif; font-size: 9px;
+  color: #7a6545; margin-top: 2px; font-style: italic;
+}
+.person-card .married {
+  font-family: 'Cormorant Garamond', serif; font-size: 9px;
+  color: #7a9a6a; margin-top: 2px; font-style: italic;
+}
+.person-card .doc-badges {
+  margin-top: 4px; display: flex; justify-content: center; gap: 3px;
+}
+.person-card .doc-badge {
+  font-size: 8px; padding: 1px 5px; border-radius: 3px;
+  font-family: 'Cormorant Garamond', serif; font-weight: 600;
+}
+.doc-badge.bc { background: #dcfce7; color: #166534; }
+.doc-badge.mc { background: #dbeafe; color: #1e40af; }
+.doc-badge.dc { background: #fee2e2; color: #991b1b; }
+
+.person-card.confirmed { border-left: 4px solid #22c55e; }
+.person-card.probable { border-left: 4px solid #f59e0b; }
+.person-card.brickwall { border-left: 4px dashed #ef4444; }
+.person-card.unknown-parent { border-left: 4px dotted #9ca3af; background: var(--bg-person-unknown); opacity: 0.7; cursor: default; }
+.person-card.unknown-parent:hover { transform: none; box-shadow: none; }
+.person-card.unknown-parent .name,
+.person-card.unknown-parent .years { color: var(--text-person-unknown); font-style: italic; }
+.person-card.you { border: 2px solid #c4a875; background: var(--bg-card-you); }
+.person-card.blank {
+  background: var(--bg-card-blank);
+  border: 2px dashed var(--text-card-blank);
+  opacity: 0.6;
+  cursor: default;
+}
+.person-card.blank:hover { transform: none; box-shadow: none; }
+.person-card.blank .name,
+.person-card.blank .years { color: var(--text-card-blank); }
+
+/* SVG connectors */
+.lines-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+
+/* Cert panel */
+.cert-panel {
+  display: none; position: fixed; top: 124px; right: 0; bottom: 0;
+  width: 380px; max-width: 95vw;
+  background: #f5eedc; z-index: 400;
+  border-left: 3px solid #4a3a22;
+  flex-direction: column;
+}
+.cert-panel.active { display: flex; animation: slideIn 0.25s ease; }
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+.cert-header {
+  background: #2a1f15; color: #e8dcc8; padding: 14px 16px;
+  position: relative; font-family: 'Cinzel Decorative', serif;
+  flex-shrink: 0;
+}
+.cert-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
+
+.cert-upload-area {
+  border: 2px dashed #8a7a5a; border-radius: 8px;
+  padding: 20px; text-align: center; cursor: pointer;
+  background: #faf6ee; margin-bottom: 8px;
+}
+.cert-upload-area:hover { border-color: #4a3a22; background: #f0e8d8; }
+.cert-upload-btns { display: flex; gap: 10px; margin-bottom: 12px; }
+.cert-upload-btns button {
+  flex: 1; padding: 14px 10px; border: 2px solid #8a7a5a; border-radius: 8px;
+  background: #faf6ee; cursor: pointer; text-align: center;
+  font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #4a3a22;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cert-upload-btns button:hover { border-color: #4a3a22; background: #f0e8d8; }
+.cert-upload-btns .camera-btn { border-color: #6b5537; }
+.cert-upload-btns .camera-btn span { font-size: 28px; display: block; margin-bottom: 4px; }
+.cert-upload-btns .file-btn span { font-size: 28px; display: block; margin-bottom: 4px; }
+.cert-preview-area { display: none; margin-bottom: 12px; text-align: center; }
+.cert-preview-area img { max-width: 100%; max-height: 200px; border-radius: 4px; border: 2px solid #8a7a5a; }
+
+.cert-status {
+  display: none; padding: 10px; border-radius: 4px;
+  font-family: 'Cormorant Garamond', serif; font-size: 13px;
+  text-align: center; margin-bottom: 10px;
+}
+.cert-status.loading { display: block; background: #fef3c7; color: #92400e; }
+.cert-status.success { display: block; background: #dcfce7; color: #166534; }
+.cert-status.error { display: block; background: #fee2e2; color: #991b1b; }
+
+.cert-result-card {
+  background: #fff; border: 2px solid #8a7a5a; border-radius: 6px;
+  padding: 12px; margin-bottom: 10px; cursor: pointer;
+  font-family: 'Cormorant Garamond', serif; overflow: hidden;
+}
+.cert-result-card.selected { border-color: #4a3a22; background: #f0e8d8; }
+.cert-result-card .field-row {
+  display: flex; justify-content: space-between; padding: 3px 0;
+  border-bottom: 1px solid #e8dcc8; font-size: 12px;
+}
+.cert-result-card .field-row label { color: #6b5537; font-weight: 600; text-transform: uppercase; font-size: 10px; }
+.cert-field-edit {
+  display: flex; align-items: center; gap: 6px;
+  margin: 4px 0; flex-wrap: nowrap;
+}
+.cert-field-edit .cert-field-label {
+  color: #6b5537; font-weight: 600; text-transform: uppercase;
+  font-size: 10px; min-width: 70px; max-width: 80px; flex-shrink: 0;
+}
+.cert-field-edit input {
+  flex: 1; min-width: 0; padding: 4px 6px;
+  border: 1px solid #ccc; border-radius: 3px;
+  font-size: 12px; font-family: 'Cormorant Garamond', serif;
+  background: #fff; color: #2a1f10;
+}
+
+.cert-toolbar { padding: 12px 16px; border-bottom: 2px solid #4a3a22; background: #f5eedc; flex-shrink: 0; }
+
+.cert-body { padding: 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
+
+.cert-actions { display: none; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.cert-panel.has-results .cert-actions { display: flex; }
+.cert-actions button {
+  flex: 1 1 auto; padding: 10px; border: 2px solid #4a3a22; border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif; font-size: 11px; cursor: pointer;
+  min-width: 100px;
+}
+.cert-confirm { background: #4a3a22; color: #f5eedc; }
+.cert-retry { background: #f5eedc; color: #4a3a22; }
+.cert-swap { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
+
+/* Detail panel */
+.detail-panel {
+  display: none; position: fixed; top: 124px; right: 0;
+  width: 360px; max-width: 90vw; height: calc(100vh - 124px);
+  background: #f5eedc; z-index: 400; overflow-y: auto;
+  border-left: 3px solid #4a3a22;
+}
+.detail-panel.active { display: block; animation: slideIn 0.25s ease; }
+.detail-header { background: #2a1f15; color: #e8dcc8; padding: 14px 16px; position: relative; }
+.detail-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
+.detail-body { padding: 16px; }
+.detail-field { margin-bottom: 12px; }
+.detail-field label { display: block; font-size: 10px; color: #6b5537; text-transform: uppercase; margin-bottom: 3px; font-weight: 600; }
+.detail-field input, .detail-field textarea {
+  width: 100%; padding: 8px; border: 1px solid #8a7a5a; border-radius: 4px;
+  background: #fff; font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #2a1f10;
+}
+.detail-field textarea { min-height: 60px; resize: vertical; }
+.detail-actions { display: flex; gap: 10px; margin-top: 16px; padding: 12px 0 16px 0; border-top: 1px solid #c4b89a; position: sticky; bottom: 0; background: #f5eedc; z-index: 10; }
+.detail-body { padding: 16px 16px 60px 16px; }
+.detail-actions .cancel-btn { flex: 1; padding: 10px; border: 1px solid #8a7a5a; border-radius: 4px; background: #e8dcc8; color: #4a3a22; font-family: 'Cormorant Garamond', serif; font-size: 13px; cursor: pointer; }
+.detail-actions .save-btn { flex: 1; padding: 10px; border: none; border-radius: 4px; background: #3e3225; color: #f0e6d2; font-family: 'Cormorant Garamond', serif; font-size: 13px; cursor: pointer; }
+
+/* Guidance panel */
+.guidance-panel {
+  display: none; position: fixed; top: 124px; right: 0; bottom: 0;
+  width: 400px; max-width: 95vw;
+  background: #f5eedc; z-index: 400;
+  border-left: 3px solid #5a7a3a;
+  flex-direction: column;
+}
+.guidance-panel.active { display: flex; animation: slideIn 0.25s ease; }
+.guidance-header {
+  background: #1a3010; color: #e8f0e0; padding: 14px 16px;
+  position: relative; font-family: 'Cinzel Decorative', serif;
+  flex-shrink: 0;
+}
+.guidance-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8f0e0; font-size: 24px; cursor: pointer; }
+.guidance-body { padding: 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
+
+.guidance-stats {
+  display: grid; grid-template-columns: repeat(3, 1fr); gap: 8px;
+  margin-bottom: 16px; padding-bottom: 12px; border-bottom: 2px solid #c4b89a;
+}
+.guidance-stat { text-align: center; }
+.guidance-stat .val { font-family: 'Cinzel Decorative', serif; font-size: 20px; color: #5a7a3a; }
+.guidance-stat .lbl { font-size: 10px; color: #6b5537; text-transform: uppercase; }
+
+.guidance-card {
+  background: #fff; border: 2px solid #8a7a5a; border-radius: 6px;
+  padding: 12px; margin-bottom: 10px;
+  font-family: 'Cormorant Garamond', serif;
+}
+.guidance-card.high { border-color: #5a7a3a; background: #f8fdf5; }
+.guidance-card.med { border-color: #8a7a5a; }
+.guidance-card.low { border-color: #b8a88a; opacity: 0.85; }
+.guidance-card .title { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: #2a1f10; margin-bottom: 4px; }
+.guidance-card .desc { font-size: 13px; color: #4a3a22; margin-bottom: 6px; }
+.guidance-card .fills { font-size: 11px; color: #6b5537; margin-bottom: 8px; padding-left: 12px; }
+.guidance-card .fills li { margin-bottom: 2px; }
+.guidance-card .actions { display: flex; gap: 6px; flex-wrap: wrap; }
+.guidance-card .actions a {
+  display: inline-block; padding: 5px 10px; border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif; font-size: 10px; text-decoration: none;
+}
+.guidance-card .actions .source-link {
+  background: #e8f0e0; color: #3a5a2a; border: 1px solid #6b8e5a;
+}
+.guidance-card .actions .cost-note {
+  background: #fef3c7; color: #92400e; border: 1px solid #f59e0b;
+}
+
+.guidance-empty {
+  text-align: center; padding: 40px 20px;
+  font-family: 'Cormorant Garamond', serif; color: #6b5537;
+}
+.guidance-empty .icon { font-size: 48px; margin-bottom: 12px; }
+
+/* Next Steps button */
+#nextStepsBtn {
+  background: #5a7a3a; color: #f5eedc; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+
+/* Toast */
+#toastMsg {
+  position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+  background: rgba(30,25,20,0.92); color: #f0e6d2; padding: 14px 24px;
+  border-radius: 8px; font-family: 'Cormorant Garamond', serif; font-size: 15px;
+  z-index: 9999; box-shadow: 0 4px 16px rgba(0,0,0,0.4); text-align: center;
+}
+
+/* Dark mode toggle */
+.dark-mode-toggle {
+  width: 38px; height: 38px;
+  background: var(--bg-cert-btn); color: var(--text-btn);
+  border: 1px solid var(--bg-cert-btn-border); border-radius: 6px;
+  font-size: 18px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+}
+@media print {
+  @page { size: landscape; margin: 4mm; }
+
+  /* Hide all UI chrome */
+  .header,
+  .zoom-controls,
+  .cert-panel,
+  .detail-panel,
+  .detail-overlay,
+  .toast,
+  #printTreeBtn,
+  .header-btn,
+  .country-select,
+  .cert-btn { display: none !important; }
+
+  /* Reset body to normal document flow */
+  body {
+    background: white !important;
+    position: static !important;
+    overflow: visible !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Un-fix the scroll container */
+  .tree-scroll {
+    position: static !important;
+    overflow: visible !important;
+    top: auto !important; left: auto !important;
+    right: auto !important; bottom: auto !important;
+    width: auto !important; height: auto !important;
+    background: transparent !important;
+  }
+
+  /* Tree-wrap: fit to one page using zoom (affects layout, not just visual) */
+  .tree-wrap {
+    zoom: var(--print-scale, 1) !important;
+    --zoom: 1 !important;
+    padding: 0 !important;
+    min-width: 0 !important;
+    min-height: 0 !important;
+    width: auto !important;
+    height: auto !important;
+  }
+
+  /* Cards print cleanly */
+  .person-card {
+    background: #faf5ec !important;
+    border: 1px solid #7a6a4a !important;
+    box-shadow: none !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    page-break-inside: avoid;
+  }
+
+  /* SVG connector lines */
+  .lines-svg {
+    display: block !important;
+    overflow: visible !important;
+  }
+
+  #zoomSizer { display: none !important; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="header-brand">
+      <div class="header-logo">Vaulted Roots</div>
+      <div class="header-tagline">Your legacy. Secure.</div>
+    </div>
+    <div class="header-stats">
+      <div class="header-stat">
+        <div class="stat-label">Nodes</div>
+        <div class="stat-value" id="statPeople">0</div>
+      </div>
+      <div class="header-stat">
+        <div class="stat-label">Documented</div>
+        <div class="stat-value" id="statConfirmed">0</div>
+      </div>
+      <div class="header-stat">
+        <div class="stat-label">Brick Walls</div>
+        <div class="stat-value" id="statWalls">0</div>
+      </div>
+    </div>
+  </div>
+  <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
+  <div class="header-bottom">
+    <div class="header-left-group">
+      <div class="zoom-controls">
+        <button class="header-btn zoom-btn" id="zoomOut" title="Zoom out">−</button>
+        <span id="zoomLevel">100%</span>
+        <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
+        <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom">⟲</button>
+      </div>
+      <select id="countrySelect" class="country-select" title="Research country">
+        <option value="" disabled>Country...</option>
+      </select>
+    </div>
+    <div class="header-actions">
+      <button class="header-btn" id="saveBtn" title="Save session">💾</button>
+      <button class="header-btn" id="loadBtn" title="Load session">📂</button>
+      <button class="header-btn" id="nextStepsBtn" title="Next steps">📖</button>
+      <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)">🌳</button>
+      <button class="header-btn cert-btn" id="certToggle" title="Upload certificate">📎</button>
+      <button class="header-btn" id="darkModeToggle" title="Toggle dark mode">🌙</button>
+      <button class="header-btn" id="printTreeBtn" title="Print tree">🖨️</button>
+      <button class="header-btn" id="resetBtn" title="Reset tree">🔄</button>
+    </div>
+  </div>
+</div>
+
+<div class="tree-scroll" id="treeScroll">
+  <div id="zoomSizer" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0;"></div>
+  <div class="tree-wrap" id="treeWrap">
+    <svg class="lines-svg" id="linesSvg"></svg>
+  </div>
+</div>
+
+<!-- Cert Panel -->
+<div class="cert-panel" id="certPanel">
+  <div class="cert-header">
+    <button class="cert-close" id="certClose">&times;</button>
+    <div style="font-size:14px;">📎 Upload Certificate</div>
+  </div>
+  <div class="cert-toolbar">
+    <div class="cert-actions" id="certActions">
+      <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
+      <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
+      <button class="cert-clear" id="certClear" style="background:#e8dcc8;color:#4a3a22;">✕ Clear</button>
+    </div>
+  </div>
+  <div class="cert-body" id="certBody">
+    <div class="cert-upload-btns" id="certUploadBtns">
+      <button class="camera-btn" id="certCameraBtn"><span>📷</span>Camera</button>
+      <button class="file-btn" id="certFileBtn"><span>📁</span>Choose File</button>
+    </div>
+    <div class="cert-upload-area" id="certUploadArea" style="display:none">
+      <div style="font-size:24px;margin-bottom:8px;">📄</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#4a3a22;">Tap to upload cert</div>
+      <div style="font-size:11px;color:#8a7a5a;margin-top:4px;">Birth, marriage, or death record</div>
+    </div>
+    <input type="file" id="certFileInput" accept="image/*" style="display:none">
+    <input type="file" id="certCameraInput" accept="image/*" capture="environment" style="display:none">
+    <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
+    <div class="cert-status" id="certStatus"></div>
+    <div id="certResults"></div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <button class="detail-close" id="detailClose">&times;</button>
+    <div style="font-size:14px;" id="detailTitle">Person</div>
+  </div>
+  <div class="detail-body" id="detailBody"></div>
+</div>
+
+<!-- Guidance Panel -->
+<div class="guidance-panel" id="guidancePanel">
+  <div class="guidance-header">
+    <button class="guidance-close" id="guidanceClose">&times;</button>
+    <div style="font-size:14px;">🧭 Research Guidance</div>
+  </div>
+  <div class="guidance-body" id="guidanceBody">
+    <div id="guidanceLoading" style="text-align:center;padding:40px;color:#6b5537;">
+      <div style="font-size:24px;margin-bottom:8px;">🧭</div>
+      <div>Analysing your tree...</div>
+    </div>
+  </div>
+</div>
+
+<!-- Force cache refresh: toolbar icons moved to header -->
+<!-- Hidden file input for load -->
+<input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
+
+<!-- Custom Confirm Dialog -->
+<div id="confirmDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:320px;width:90%;text-align:center;">
+    <div id="confirmTitle" style="font-family: 'Cinzel Decorative', serif;font-size:16px;color:#3e2b1a;margin-bottom:12px;">Reset Tree</div>
+    <div id="confirmMessage" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;">Clear all data and start fresh? This cannot be undone.</div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="confirmCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
+      <button id="confirmOk" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#5c2a2a;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Reset</button>
+    </div>
+  </div>
+</div>
+
+<!-- Country Selector Modal (first use) -->
+<div id="countryModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10001;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:340px;width:90%;text-align:center;">
+    <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:8px;">Welcome to Vaulted Roots</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:16px;">Which country are you researching in? This helps us point you to the right record offices.</div>
+    <select id="countryModalSelect" style="width:100%;padding:10px;border:2px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:16px;">
+      <option value="" disabled selected>Choose a country...</option>
+    </select>
+    <button id="countryModalOk" style="padding:10px 24px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;">Start Researching</button>
+  </div>
+</div>
+
+<script>
+// Dark mode handling
+(function() {
+  const saved = localStorage.getItem('vaultedRootsTheme');
+  if (saved === 'dark') document.documentElement.setAttribute('data-theme', 'dark');
+  else if (saved === 'light') document.documentElement.setAttribute('data-theme', 'light');
+})();
+
+// ═══════════════════════════════════════════════════════════════
+// DEBUG LOG CAPTURE (for mobile troubleshooting)
+// ═══════════════════════════════════════════════════════════════
+const debugLogs = [];
+const origConsoleError = console.error;
+const origConsoleLog = console.log;
+const origConsoleWarn = console.warn;
+function pushLog(type, args) {
+  const msg = args.map(a => typeof a === 'object' ? JSON.stringify(a).slice(0,200) : String(a)).join(' ');
+  debugLogs.push({t: type, m: msg, time: new Date().toLocaleTimeString()});
+  if (debugLogs.length > 50) debugLogs.shift();
+}
+console.error = function(...args) { pushLog('ERR', args); origConsoleError.apply(console, args); };
+console.log = function(...args) { pushLog('LOG', args); origConsoleLog.apply(console, args); };
+console.warn = function(...args) { pushLog('WRN', args); origConsoleWarn.apply(console, args); };
+window.onerror = function(msg, url, line, col, err) {
+  pushLog('EXC', [msg, 'at', url + ':' + line]);
+};
+function getDebugLogs() {
+  return debugLogs.slice(-20).map(l => l.time + ' [' + l.t + '] ' + l.m).join('\n');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// COUNTRY RESEARCH SOURCES
+// ═══════════════════════════════════════════════════════════════
+const COUNTRY_SOURCES = {
+  scotland: { name: 'Scotland',
+    birth: 'https://www.scotlandspeople.gov.uk/',
+    marriage: 'https://www.scotlandspeople.gov.uk/',
+    death: 'https://www.scotlandspeople.gov.uk/' },
+  england: { name: 'England & Wales',
+    birth: 'https://www.gro.gov.uk/gro/content/certificates/indexes_search.asp',
+    marriage: 'https://www.gro.gov.uk/gro/content/certificates/indexes_search.asp',
+    death: 'https://www.gro.gov.uk/gro/content/certificates/indexes_search.asp' },
+  ireland: { name: 'Ireland',
+    birth: 'https://civilrecords.irishgenealogy.ie/churchrecords/civil-search',
+    marriage: 'https://civilrecords.irishgenealogy.ie/churchrecords/civil-search',
+    death: 'https://civilrecords.irishgenealogy.ie/churchrecords/civil-search' },
+  northern_ireland: { name: 'Northern Ireland',
+    birth: 'https://www.nidirect.gov.uk/information-and-services/order-life-event-certificates',
+    marriage: 'https://www.nidirect.gov.uk/information-and-services/order-life-event-certificates',
+    death: 'https://www.nidirect.gov.uk/information-and-services/order-life-event-certificates' },
+  usa: { name: 'United States',
+    birth: 'https://www.archives.gov/research/genealogy',
+    marriage: 'https://www.archives.gov/research/genealogy',
+    death: 'https://www.archives.gov/research/genealogy' },
+  canada: { name: 'Canada',
+    birth: 'https://www.bac-lac.gc.ca/eng/discover/genealogy/Pages/genealogy.aspx',
+    marriage: 'https://www.bac-lac.gc.ca/eng/discover/genealogy/Pages/genealogy.aspx',
+    death: 'https://www.bac-lac.gc.ca/eng/discover/genealogy/Pages/genealogy.aspx' },
+  australia: { name: 'Australia',
+    birth: 'https://www.naa.gov.au/explore-collection/family-history',
+    marriage: 'https://www.naa.gov.au/explore-collection/family-history',
+    death: 'https://www.naa.gov.au/explore-collection/family-history' },
+  new_zealand: { name: 'New Zealand',
+    birth: 'https://www.bdmhistoricalrecords.dia.govt.nz/',
+    marriage: 'https://www.bdmhistoricalrecords.dia.govt.nz/',
+    death: 'https://www.bdmhistoricalrecords.dia.govt.nz/' },
+  germany: { name: 'Germany',
+    birth: 'https://www.familysearch.org/en/wiki/Germany_Civil_Registration',
+    marriage: 'https://www.familysearch.org/en/wiki/Germany_Civil_Registration',
+    death: 'https://www.familysearch.org/en/wiki/Germany_Civil_Registration' },
+  france: { name: 'France',
+    birth: 'https://www.familysearch.org/en/wiki/France_Civil_Registration',
+    marriage: 'https://www.familysearch.org/en/wiki/France_Civil_Registration',
+    death: 'https://www.familysearch.org/en/wiki/France_Civil_Registration' },
+  italy: { name: 'Italy',
+    birth: 'https://www.familysearch.org/en/wiki/Italy_Civil_Registration',
+    marriage: 'https://www.familysearch.org/en/wiki/Italy_Civil_Registration',
+    death: 'https://www.familysearch.org/en/wiki/Italy_Civil_Registration' },
+  other: { name: 'Other / Not Listed',
+    birth: '', marriage: '', death: '' }
+};
+
+function getCountry() { return localStorage.getItem('vaulted_country') || ''; }
+function setCountry(code) {
+  if (!code) return;
+  localStorage.setItem('vaulted_country', code);
+  const sel = document.getElementById('countrySelect');
+  if (sel) sel.value = code;
+  showToast('Research country: ' + (COUNTRY_SOURCES[code]?.name || code));
+}
+function populateCountrySelect() {
+  const sel = document.getElementById('countrySelect');
+  if (!sel) return;
+  sel.innerHTML = '<option value="" disabled>Country...</option>';
+  Object.entries(COUNTRY_SOURCES).forEach(([code, info]) => {
+    const opt = document.createElement('option');
+    opt.value = code; opt.textContent = info.name;
+    sel.appendChild(opt);
+  });
+  const saved = getCountry();
+  if (saved && COUNTRY_SOURCES[saved]) sel.value = saved;
+}
+function buildCountryButtons() {
+  let html = '';
+  for (const [code, src] of Object.entries(COUNTRY_SOURCES)) {
+    if (code === 'other' || (!src.birth && !src.marriage && !src.death)) continue;
+    html += `<button type="button" class="source-country-btn" data-country="${code}" style="padding:6px 10px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;">${src.name}</button>`;
+  }
+  return html;
+}
+
+// ═══════════════════════════════════════════════════════════════
+// DATA MODEL
+// ═══════════════════════════════════════════════════════════════
+
+// Extended person model: full fields for cert-driven population
+function createPerson(id, gen, name, years, status, opts) {
+  opts = opts || {};
+  return {
+    id: id,
+    gen: gen,
+    name: name,
+    fullName: opts.fullName || name,
+    years: years,
+    birthDate: opts.birthDate || '',
+    deathDate: opts.deathDate || '',
+    status: status,
+    occupation: opts.occupation || '',
+    birthplace: opts.birthplace || '',
+    maidenName: opts.maidenName || '',
+    spouseName: opts.spouseName || '',
+    spouseId: opts.spouseId || null,
+    parents: opts.parents || null,
+    children: opts.children || [],
+    docs: opts.docs || [],
+    siblings: opts.siblings || [],
+    notes: opts.notes || '',
+    source: opts.source || ''
+  };
+}
+
+let people = [];
+let nextId = 1;
+let pendingDocFile = null;
+let pendingDocImage = null;
+let lastTranscription = null;
+let selectedEntryIndex = 0;
+let pendingAmbigTarget = null;  // { entry, type, docImage, resolveName, resolveId }
+let pendingDirectAttachId = null; // person id for direct-attach from detail panel
+
+// ========== IndexedDB Document Storage ==========
+const DOC_DB_NAME = 'VRTDocs';
+const DOC_DB_VERSION = 1;
+const DOC_STORE_NAME = 'documents';
+let _docDB = null;
+
+function openDocDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DOC_DB_NAME, DOC_DB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { _docDB = req.result; resolve(_docDB); };
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(DOC_STORE_NAME)) {
+        const store = d.createObjectStore(DOC_STORE_NAME, { keyPath: 'id' });
+        store.createIndex('personId', 'personId', { unique: false });
+      }
+    };
+  });
+}
+async function saveDocToDB(personId, type, base64Image, meta) {
+  if (!_docDB) await openDocDB();
+  const id = personId + '_' + type + '_' + Date.now();
+  const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
+  const store = tx.objectStore(DOC_STORE_NAME);
+  await new Promise((resolve, reject) => {
+    const req = store.put({ id, personId, type, image: base64Image, meta: meta || {}, created: Date.now() });
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+  return id;
+}
+async function getDocsForPerson(personId) {
+  if (!_docDB) await openDocDB();
+  const tx = _docDB.transaction(DOC_STORE_NAME, 'readonly');
+  const store = tx.objectStore(DOC_STORE_NAME);
+  const idx = store.index('personId');
+  return new Promise((resolve, reject) => {
+    const req = idx.getAll(personId);
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function extractDocDate(entry, type) {
+  if (!entry) return '';
+  const d = entry.date || entry.deathDate || entry.birthDate || entry.marriageDate || '';
+  if (d) return d;
+  if (type === 'birth') return entry.child?.birthDate || entry.child?.date || '';
+  if (type === 'death') return entry.deathDate || entry.deceased?.deathDate || entry.deceased?.date || '';
+  if (type === 'marriage') return entry.date || entry.marriageDate || entry.groom?.marriageDate || entry.bride?.marriageDate || '';
+  return '';
+}
+
+function initDefaultData() {
+  people = [];
+  nextId = 1;
+  // Gen 0: blank placeholder for the user to populate with their birth cert
+  people.push(createPerson(nextId++, 0, 'Name', '?', 'blank', {}));
+  // Gens 1-8: blank placeholder cards (2^gen each)
+  for (let g = 1; g <= 8; g++) {
+    const count = Math.pow(2, g);
+    for (let i = 0; i < count; i++) {
+      people.push(createPerson(nextId++, g, 'Name', '?', 'blank', {}));
+    }
+  }
+  // Wire parent-child relationships AND spouse relationships
+  for (let g = 0; g < 8; g++) {
+    const gen = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+    const nextGen = people.filter(p => p.gen === g + 1).sort((a,b) => a.id - b.id);
+    gen.forEach((p, i) => {
+      const father = nextGen[2 * i];
+      const mother = nextGen[2 * i + 1];
+      if (father && mother) {
+        p.parents = [father.id, mother.id];
+        // Wire spouse relationship between parents
+        father.spouseId = mother.id;
+        mother.spouseId = father.id;
+      }
+    });
+  }
+}
+
+const CARD_W = 160, GAP_X = 50, GAP_Y = 12, JUNCT_DIST = 18;
+const wrap = document.getElementById('treeWrap');
+const svg = document.getElementById('linesSvg');
+const scroll = document.getElementById('treeScroll');
+const svgNS = 'http://www.w3.org/2000/svg';
+let cardEls = new Map();
+
+let treeWidth = 0, treeHeight = 0;
+let zoom = 0.25;
+
+function renderTree() {
+  wrap.querySelectorAll('.person-card').forEach(el => el.remove());
+  cardEls.clear();
+  const maxGen = Math.max(...people.map(p => p.gen));
+  const gens = [];
+  for (let g = 0; g <= maxGen; g++) gens[g] = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+  const colLeft = gens.map((_, g) => g * (CARD_W + GAP_X));
+  people.forEach(person => {
+    const el = document.createElement('div');
+    el.className = 'person-card ' + person.status + (person.id === 1 ? ' you' : '');
+    el.dataset.id = person.id;
+    // Compact card display: birth year — death year, marriage line
+    const bYear = (person.birthDate || person.years || '').match(/\d{4}/);
+    const dYear = (person.deathDate || '').match(/\d{4}/);
+    const mYear = (person.marriageDate || '').match(/\d{4}/);
+    let cardYears = '';
+    if (bYear && dYear) cardYears = bYear[0] + ' — ' + dYear[0];
+    else if (bYear) cardYears = 'b. ' + bYear[0];
+    else if (dYear) cardYears = 'd. ' + dYear[0];
+    else cardYears = person.years || '?';
+    let h = '<div class="name">' + person.name + '</div><div class="years">' + cardYears + '</div>';
+    if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
+    if (person.siblings && person.siblings.length) {
+      h += '<div style="position:absolute;top:2px;right:2px;font-size:11px;">🍃</div>';
+    }
+    if (person.docs && person.docs.length) {
+      h += '<div class="doc-badges">';
+      person.docs.forEach(d => { const t = (d.type || 'bc').toLowerCase(); h += '<span class="doc-badge ' + t + '">' + t.toUpperCase() + '</span>'; });
+      h += '</div>';
+    }
+    el.innerHTML = h;
+    el.style.left = colLeft[person.gen] + 'px';
+    el.style.top = '0px'; el.style.opacity = '0';
+    el.onclick = () => openDetail(person);
+    wrap.appendChild(el); cardEls.set(person.id, el);
+  });
+  document.body.offsetHeight;
+  const hMap = new Map();
+  cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
+
+  // Cascading layout: start from rightmost gen, position equally, then cascade left
+  const topMap = new Map();
+  if (gens[maxGen] && gens[maxGen].length > 0) {
+    // Position rightmost generation with equal spacing from top
+    let y = 80;
+    gens[maxGen].forEach(p => {
+      topMap.set(p.id, y);
+      y += hMap.get(p.id) + GAP_Y;
+    });
+    // Cascade leftward: each card centered between its two parents in the next gen
+    for (let g = maxGen - 1; g >= 0; g--) {
+      if (!gens[g]) continue;
+      gens[g].forEach(p => {
+        if (!p.parents || p.parents.length < 2) return;
+        const father = people.find(x => x.id === p.parents[0]);
+        const mother = people.find(x => x.id === p.parents[1]);
+        if (!father || !mother) return;
+        const fy = topMap.get(father.id);
+        const my = topMap.get(mother.id);
+        if (fy === undefined || my === undefined) return;
+        const fh = hMap.get(father.id);
+        const mh = hMap.get(mother.id);
+        const midCenter = (fy + fh/2 + my + mh/2) / 2;
+        topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
+      });
+      // Position any remaining people in this gen without parents in next gen
+      y = 80;
+      gens[g].forEach(p => {
+        if (topMap.has(p.id)) {
+          y = Math.max(y, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
+        } else {
+          topMap.set(p.id, y);
+          y += hMap.get(p.id) + GAP_Y;
+        }
+      });
+    }
+  }
+
+  cardEls.forEach((el, id) => { el.style.top = (topMap.get(id) || 80) + 'px'; el.style.opacity = '1'; });
+  treeWidth = colLeft[maxGen] + CARD_W + 40;
+  treeHeight = Math.max(scroll.clientHeight, ...people.map(p => (topMap.get(p.id) || 0) + hMap.get(p.id))) + 60;
+  wrap.style.width = treeWidth + 'px';
+  wrap.style.height = treeHeight + 'px';
+  // Update zoom sizer for scroll area
+  const sizer = document.getElementById('zoomSizer');
+  if (sizer) {
+    sizer.style.width = (treeWidth * zoom) + 'px';
+    sizer.style.height = (treeHeight * zoom) + 'px';
+  }
+  wrap.style.setProperty('--zoom', zoom);
+  document.getElementById('statPeople').textContent = people.length;
+  document.getElementById('statConfirmed').textContent = people.filter(p => p.status === 'confirmed' || p.status === 'you').length;
+  document.getElementById('statWalls').textContent = people.filter(p => p.status === 'brickwall').length;
+  drawLines();
+}
+
+function drawLines() {
+  svg.setAttribute('width', treeWidth);
+  svg.setAttribute('height', treeHeight);
+  svg.innerHTML = '';
+  people.forEach(child => {
+    if (!child.parents || child.parents.length < 2) return;
+    const childEl = cardEls.get(child.id), fatherEl = cardEls.get(child.parents[0]), motherEl = cardEls.get(child.parents[1]);
+    if (!childEl || !fatherEl || !motherEl) return;
+    // Use offset coordinates relative to treeWrap (unaffected by zoom transform)
+    const cx = childEl.offsetLeft + childEl.offsetWidth;
+    const cy = childEl.offsetTop + childEl.offsetHeight / 2;
+    const fx = fatherEl.offsetLeft;
+    const fy = fatherEl.offsetTop + fatherEl.offsetHeight / 2;
+    const mx = motherEl.offsetLeft;
+    const my = motherEl.offsetTop + motherEl.offsetHeight / 2;
+    const jx = fx - JUNCT_DIST, midY = (fy + my) / 2;
+    const curve = document.createElementNS(svgNS, 'path');
+    curve.setAttribute('d', 'M' + cx + ',' + cy + ' C' + (cx+16) + ',' + cy + ' ' + (jx-8) + ',' + midY + ' ' + jx + ',' + midY);
+    curve.setAttribute('stroke', '#7a6a4a'); curve.setAttribute('stroke-width', '1.5'); curve.setAttribute('fill', 'none');
+    svg.appendChild(curve);
+    const vLine = document.createElementNS(svgNS, 'line');
+    vLine.setAttribute('x1', jx); vLine.setAttribute('y1', fy); vLine.setAttribute('x2', jx); vLine.setAttribute('y2', my);
+    vLine.setAttribute('stroke', '#7a6a4a'); vLine.setAttribute('stroke-width', '1.5'); svg.appendChild(vLine);
+    const fLine = document.createElementNS(svgNS, 'line');
+    fLine.setAttribute('x1', jx); fLine.setAttribute('y1', fy); fLine.setAttribute('x2', fx); fLine.setAttribute('y2', fy);
+    fLine.setAttribute('stroke', '#7a6a4a'); fLine.setAttribute('stroke-width', '1.5'); svg.appendChild(fLine);
+    const mLine = document.createElementNS(svgNS, 'line');
+    mLine.setAttribute('x1', jx); mLine.setAttribute('y1', my); mLine.setAttribute('x2', mx); mLine.setAttribute('y2', my);
+    mLine.setAttribute('stroke', '#7a6a4a'); mLine.setAttribute('stroke-width', '1.5'); svg.appendChild(mLine);
+  });
+}
+scroll.addEventListener('scroll', drawLines);
+window.addEventListener('resize', () => renderTree());
+
+// Sync tree-scroll top to actual header height (handles mobile text wrapping)
+function syncHeaderHeight() {
+  const header = document.querySelector('.header');
+  const treeScroll = document.getElementById('treeScroll');
+  const certPanel = document.getElementById('certPanel');
+  const detailPanel = document.getElementById('detailPanel');
+  if (!header) return;
+  const h = header.offsetHeight;
+  if (treeScroll) treeScroll.style.top = h + 'px';
+  if (certPanel) { certPanel.style.top = h + 'px'; certPanel.style.bottom = '0px'; certPanel.style.height = 'auto'; }
+  if (detailPanel) { detailPanel.style.top = h + 'px'; detailPanel.style.bottom = '0px'; detailPanel.style.height = 'auto'; }
+}
+window.addEventListener('resize', syncHeaderHeight);
+
+// Call after every renderTree
+const originalRenderTree = renderTree;
+renderTree = function() { originalRenderTree(); syncHeaderHeight(); };
+
+// Zoom controls
+function setZoom(z) {
+  zoom = Math.max(0.05, Math.min(3, z));
+  renderTree();
+  document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+  // Re-center on Gen 0 after zoom change
+  setTimeout(() => centerOnGen0(), 50);
+}
+document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.2));
+document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
+document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.25));
+
+// Pinch-to-zoom on tree scroll area
+(function setupPinchZoom() {
+  const scrollArea = document.getElementById('treeScroll');
+  const treeWrap = document.getElementById('treeWrap');
+  if (!scrollArea || !treeWrap) return;
+
+  let initialDistance = 0;
+  let initialZoom = zoom;
+  let activePinchZoom = zoom;
+  let isPinching = false;
+  let activeTouches = 0;
+
+  function getDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  scrollArea.addEventListener('touchstart', (e) => {
+    activeTouches = e.touches.length;
+    if (activeTouches === 2) {
+      isPinching = true;
+      initialDistance = getDistance(e.touches);
+      initialZoom = zoom;
+      activePinchZoom = zoom;
+      treeWrap.classList.add('pinch-zooming');
+    }
+  }, { passive: true });
+
+  scrollArea.addEventListener('touchmove', (e) => {
+    activeTouches = e.touches.length;
+    if (isPinching && activeTouches === 2) {
+      e.preventDefault();
+      e.stopPropagation();
+      const newDistance = getDistance(e.touches);
+      if (initialDistance > 0) {
+        const scale = newDistance / initialDistance;
+        activePinchZoom = Math.max(0.05, Math.min(3, initialZoom * scale));
+        treeWrap.style.setProperty('--zoom', activePinchZoom);
+        treeWrap.style.transform = 'scale(' + activePinchZoom + ')';
+        document.getElementById('zoomLevel').textContent = Math.round(activePinchZoom * 100) + '%';
+      }
+    }
+  }, { passive: false });
+
+  function endPinch() {
+    if (isPinching) {
+      isPinching = false;
+      treeWrap.classList.remove('pinch-zooming');
+      treeWrap.style.transform = ''; // clear inline so CSS variable takes over
+      setZoom(activePinchZoom);
+    }
+    activeTouches = 0;
+  }
+
+  scrollArea.addEventListener('touchend', endPinch);
+  scrollArea.addEventListener('touchcancel', endPinch);
+})();
+
+// Block browser page-level pinch zoom everywhere except our tree handler
+document.addEventListener('touchmove', function(e) {
+  if (e.touches.length > 1) {
+    e.preventDefault();
+  }
+}, { passive: false });
+
+const detailPanel = document.getElementById('detailPanel');
+const guidancePanel = document.getElementById('guidancePanel');
+const detailBody = document.getElementById('detailBody');
+const detailTitle = document.getElementById('detailTitle');
+
+function openDetail(person) {
+  selectedPersonId = person.id;
+  history.pushState({panel: 'detail'}, '');
+  detailTitle.textContent = person.name;
+  detailBody.innerHTML = `
+    <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${person.fullName || person.name}"></div>
+    <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${person.name}"></div>
+    <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${person.birthDate}"></div>
+    <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${person.deathDate || ''}"></div>
+    <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${person.ageAtDeath || ''}"></div>
+    <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${person.marriageDate || ''}"></div>
+    <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${person.maidenName}"></div>
+    <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${person.spouseName}"></div>
+    <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${person.occupation}"></div>
+    <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${person.birthplace}"></div>
+    <div class="detail-field"><label>Status</label>
+      <select id="d_status" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:13px;">
+        <option value="confirmed" ${person.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+        <option value="probable" ${person.status === 'probable' ? 'selected' : ''}>Probable</option>
+        <option value="brickwall" ${person.status === 'brickwall' ? 'selected' : ''}>Brick Wall</option>
+        <option value="unknown-parent" ${person.status === 'unknown-parent' ? 'selected' : ''}>Parent Unknown</option>
+        <option value="you" ${person.status === 'you' ? 'selected' : ''}>You</option>
+      </select>
+    </div>
+    <div class="detail-field"><label>Notes</label><textarea id="d_notes">${person.notes}</textarea></div>
+    <div class="detail-field"><label>Documents (<span id="docCount">${person.docs.length}</span>)</label>
+      <div id="docThumbs" style="display:flex;flex-wrap:wrap;gap:6px;">${person.docs.length ? '<em style="font-size:12px;color:#6b5537;">Loading...</em>' : '<em style="font-size:12px;color:#6b5537;">No documents</em>'}</div>
+    </div>
+    <div class="detail-field"><label>Find Source Records</label>
+      <div id="sourceCountryGrid" style="display:flex;flex-wrap:wrap;gap:6px;">
+        ${buildCountryButtons()}
+      </div>
+      <div id="sourceRecordLinks" style="display:none;margin-top:6px;flex-wrap:wrap;gap:6px;"></div>
+    </div>
+    <div class="detail-field"><label>Siblings</label>
+      <div style="display:flex;gap:6px;margin-bottom:4px;">
+        <input type="text" id="d_siblingInput" placeholder="Sibling name" style="flex:1;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:14px;">
+        <button id="d_addSibling" style="background:#4a6b4a;color:#fff;border:none;padding:8px 14px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;">+</button>
+      </div>
+      <div id="d_siblingList" style="display:flex;flex-direction:column;gap:4px;"></div>
+    </div>
+    <div class="detail-actions">
+      <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
+      <button class="save-btn" onclick="saveDetail()">Save Changes</button>
+    </div>
+    <div style="margin-top:8px;text-align:center;display:flex;flex-direction:column;gap:8px;">
+      <button id="attachDocBtn" style="background:#faf6ee;border:2px solid #4a6b4a;color:#2a4a2a;padding:8px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">📎 Attach Document to This Person</button>
+      <button id="clearCardBtn" style="background:transparent;border:1px solid #5c2a2a;color:#5c2a2a;padding:6px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">↻ Clear Data from Card</button>
+    </div>
+  `;
+  detailPanel.classList.add('active');
+  // Wire up Clear Card button (exists in detailBody innerHTML)
+  const clearCardBtnEl = document.getElementById('clearCardBtn');
+  if (clearCardBtnEl) {
+    clearCardBtnEl.addEventListener('click', () => {
+      if (!confirm('Clear all data from this card? The person will be reset to blank status. This cannot be undone.')) return;
+      clearCard();
+    });
+  }
+  // Wire up Attach Document button
+  const attachDocBtn = document.getElementById('attachDocBtn');
+  if (attachDocBtn) {
+    attachDocBtn.addEventListener('click', () => {
+      pendingDirectAttachId = person.id;  // Mark this person as the target
+      closeDetail();
+      // Open cert panel and trigger file picker
+      certPanel.classList.add('active');
+      clearCertPanel();
+      showToast('Select a certificate image to attach to ' + person.name);
+      document.getElementById('certFileInput').value = '';
+      document.getElementById('certFileInput').click();
+    });
+  }
+  // Wire up country source buttons
+  document.querySelectorAll('.source-country-btn').forEach(btn => {
+    btn.addEventListener('click', () => {
+      const code = btn.dataset.country;
+      const src = COUNTRY_SOURCES[code];
+      if (!src) return;
+      const container = document.getElementById('sourceRecordLinks');
+      if (!container) return;
+      // Toggle: if same country already showing, hide it
+      if (container.dataset.activeCountry === code && container.style.display !== 'none') {
+        container.style.display = 'none';
+        container.dataset.activeCountry = '';
+        return;
+      }
+      let linksHtml = '';
+      if (src.birth) linksHtml += `<a href="${src.birth}" target="_blank" rel="noopener" style="display:inline-block;padding:6px 10px;border:2px solid #6b8e5a;border-radius:4px;background:#e8f0e0;color:#3a5a2a;font-family:'Cinzel Decorative',serif;font-size:11px;text-decoration:none;">Birth</a>`;
+      if (src.marriage) linksHtml += `<a href="${src.marriage}" target="_blank" rel="noopener" style="display:inline-block;padding:6px 10px;border:2px solid #8a7a5a;border-radius:4px;background:#f0e8d8;color:#5a4a2a;font-family:'Cinzel Decorative',serif;font-size:11px;text-decoration:none;">Marriage</a>`;
+      if (src.death) linksHtml += `<a href="${src.death}" target="_blank" rel="noopener" style="display:inline-block;padding:6px 10px;border:2px solid #8a5a5a;border-radius:4px;background:#f0e0e0;color:#5a2a2a;font-family:'Cinzel Decorative',serif;font-size:11px;text-decoration:none;">Death</a>`;
+      container.innerHTML = linksHtml;
+      container.style.display = 'flex';
+      container.dataset.activeCountry = code;
+    });
+  });
+  // Wire up siblings UI inside openDetail
+  const siblingList = document.getElementById('d_siblingList');
+  const siblingInput = document.getElementById('d_siblingInput');
+  const addSiblingBtn = document.getElementById('d_addSibling');
+  function renderSiblingList() {
+    if (!siblingList) return;
+    siblingList.innerHTML = '';
+    (person.siblings || []).forEach((name, idx) => {
+      const row = document.createElement('div');
+      row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:4px 6px;background:rgba(250,244,230,0.7);border:1px solid rgba(138,122,90,0.3);border-radius:4px;';
+      row.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:13px;color:#3e2b1a;">' + escapeHtml(name) + '</span><button style="background:none;border:none;color:#8a3a3a;cursor:pointer;font-size:16px;line-height:1;" onclick="removeSibling(' + idx + ')">×</button>';
+      siblingList.appendChild(row);
+    });
+  }
+  window.removeSibling = function(idx) {
+    person.siblings.splice(idx, 1);
+    renderSiblingList();
+  };
+  if (addSiblingBtn) {
+    addSiblingBtn.addEventListener('click', () => {
+      const val = (siblingInput?.value || '').trim();
+      if (!val) return;
+      if (!person.siblings) person.siblings = [];
+      person.siblings.push(val);
+      if (siblingInput) siblingInput.value = '';
+      renderSiblingList();
+    });
+  }
+  renderSiblingList();
+
+  // Load document thumbnails from IndexedDB
+  (async function loadDocThumbs() {
+    const container = document.getElementById('docThumbs');
+    const countEl = document.getElementById('docCount');
+    if (!container) return;
+    container.innerHTML = '';
+    if (!person.docs.length) {
+      container.innerHTML = '<em style="font-size:12px;color:#6b5537;">No documents</em>';
+      if (countEl) countEl.textContent = '0';
+      return;
+    }
+    for (let i = 0; i < person.docs.length; i++) {
+      const d = person.docs[i];
+      const wrapper = document.createElement('div');
+      wrapper.style.cssText = 'text-align:center;';
+      const label = document.createElement('div');
+      label.style.cssText = 'font-size:10px;color:#6b5537;margin-top:2px;';
+      label.innerHTML = (d.type || 'doc').toUpperCase() + '<br><span style="color:#8a7a5a;">' + (d.date || 'no date') + '</span>';
+      if (d.docId) {
+        try {
+          const docs = await getDocsForPerson(person.id);
+          const doc = docs.find(rec => rec.id === d.docId);
+          if (doc && doc.image) {
+            const thumb = document.createElement('img');
+            thumb.src = doc.image;
+            thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #8a7a5a;cursor:pointer;';
+            thumb.onclick = () => showDocImageFromDB(d.docId, person.id);
+            wrapper.appendChild(thumb);
+            wrapper.appendChild(label);
+            container.appendChild(wrapper);
+            continue;
+          }
+        } catch(e) {}
+      }
+      // Fallback: text-only label if no image
+      wrapper.appendChild(label);
+      container.appendChild(wrapper);
+    }
+  })();
+}
+function closeDetail() {
+  if (detailPanel.classList.contains('active')) {
+    history.back();
+  }
+  detailPanel.classList.remove('active');
+  selectedPersonId = null;
+}
+function clearCertPanel() {
+  lastTranscription = null;
+  pendingDocFile = null;
+  pendingDocImage = null;
+  document.getElementById('certPreviewImg').src = '';
+  document.getElementById('certPreviewArea').style.display = 'none';
+  document.getElementById('certStatus').style.display = 'none';
+  document.getElementById('certStatus').textContent = '';
+  document.getElementById('certStatus').className = 'cert-status';
+  document.getElementById('certResults').innerHTML = '';
+  document.getElementById('certUploadBtns').style.display = 'flex';
+  certPanel.classList.remove('has-results');
+}
+async function showDocImageFromDB(docId, personId, fallbackSrc) {
+  let imgSrc = fallbackSrc || '';
+  if (docId && personId) {
+    try {
+      const docs = await getDocsForPerson(personId);
+      const doc = docs.find(d => d.id === docId);
+      if (doc && doc.image) imgSrc = doc.image;
+    } catch(e) {}
+  }
+  if (!imgSrc) { showToast('Document image not found'); return; }
+  const viewer = document.createElement('div');
+  viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;padding:16px;';
+  viewer.innerHTML = '<img src="' + imgSrc + '" style="max-width:90vw;max-height:90vh;border-radius:4px;">';
+  viewer.addEventListener('click', () => viewer.remove());
+  document.body.appendChild(viewer);
+}
+
+function saveDetail() {
+  if (!selectedPersonId) return;
+  const person = people.find(p => p.id === selectedPersonId);
+  if (!person) return;
+  person.fullName = document.getElementById('d_fullName').value;
+  person.name = document.getElementById('d_name').value;
+  person.birthDate = document.getElementById('d_birthDate').value;
+  person.deathDate = document.getElementById('d_deathDate').value;
+  person.ageAtDeath = document.getElementById('d_ageAtDeath').value;
+  person.marriageDate = document.getElementById('d_marriageDate').value;
+  person.maidenName = document.getElementById('d_maidenName').value;
+  person.spouseName = document.getElementById('d_spouseName').value;
+  person.occupation = document.getElementById('d_occupation').value;
+  person.birthplace = document.getElementById('d_birthplace').value;
+  person.status = document.getElementById('d_status').value;
+  person.notes = document.getElementById('d_notes').value;
+  // Siblings are already updated live in the UI, just read the array from the person object
+  renderTree(); closeDetail(); showToast('Saved: ' + person.name);
+}
+document.getElementById('detailClose').addEventListener('click', closeDetail);
+
+const certPanel = document.getElementById('certPanel');
+document.getElementById('certToggle').addEventListener('click', () => {
+  const isOpening = !certPanel.classList.contains('active');
+  certPanel.classList.toggle('active');
+  if (isOpening) {
+    clearCertPanel();
+    history.pushState({panel: 'cert'}, '');
+  } else {
+    if (certPanel.classList.contains('active')) {
+      /* just closed via toggle, no history action needed */
+    }
+  }
+});
+document.getElementById('certClose').addEventListener('click', () => {
+  certPanel.classList.remove('active');
+  certPanel.classList.remove('has-results');
+  history.back();
+});
+document.getElementById('certUploadArea').addEventListener('click', () => document.getElementById('certFileInput').click());
+document.getElementById('certFileBtn').addEventListener('click', () => document.getElementById('certFileInput').click());
+document.getElementById('certCameraBtn').addEventListener('click', () => document.getElementById('certCameraInput').click());
+document.getElementById('certFileInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  pendingDocFile = file;
+  try { await processDocFile(file); } catch (err) {
+    console.error('[UPLOAD ERROR]', err);
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status error'; cs.style.display = 'block';
+    cs.innerHTML = 'Error: ' + (err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    document.getElementById('certRetry').style.display = 'block';
+  }
+});
+document.getElementById('certCameraInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  pendingDocFile = file;
+  try { await processDocFile(file); } catch (err) {
+    console.error('[CAMERA ERROR]', err);
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status error'; cs.style.display = 'block';
+    cs.innerHTML = 'Error: ' + (err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    document.getElementById('certRetry').style.display = 'block';
+  }
+});
+
+async function processDocFile(file) {
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    pendingDocImage = ev.target.result;
+    document.getElementById('certPreviewImg').src = pendingDocImage;
+    document.getElementById('certPreviewArea').style.display = 'block';
+    document.getElementById('certUploadBtns').style.display = 'none';
+    document.getElementById('certUploadArea').style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+
+  const cs = document.getElementById('certStatus');
+  cs.className = 'cert-status loading'; cs.textContent = 'Preparing image...'; cs.style.display = 'block';
+  document.getElementById('certResults').innerHTML = '';
+  certPanel.classList.remove('has-results');
+
+  let base64;
+  try {
+    base64 = await resizeAndCompressImage(file, 1200, 0.85);
+    const sizeKB = Math.round(base64.length * 0.75 / 1024);
+    console.log(`[UPLOAD] Compressed image size: ~${sizeKB}KB`);
+    if (sizeKB > 500) {
+      console.log('[UPLOAD] Image still large, re-compressing smaller...');
+      base64 = await resizeAndCompressImage(file, 800, 0.75);
+      const sizeKB2 = Math.round(base64.length * 0.75 / 1024);
+      console.log(`[UPLOAD] Re-compressed size: ~${sizeKB2}KB`);
+    }
+    const finalKB = Math.round(base64.length * 0.75 / 1024);
+    if (finalKB > 800) {
+      throw new Error('Image too large after compression (' + finalKB + 'KB). Try cropping or a clearer photo.');
+    }
+  }
+  catch (compressErr) {
+    console.error('[COMPRESS ERROR]', compressErr);
+    cs.className = 'cert-status error';
+    cs.innerHTML = 'Image error: ' + compressErr.message + '<br><small>Try a smaller or clearer photo</small>';
+    certPanel.classList.add('has-results');
+    return;
+  }
+  pendingDocImage = base64;
+
+  // DIRECT ATTACH MODE: skip OCR, show simple attach form
+  if (pendingDirectAttachId) {
+    renderDirectAttachForm();
+    return;
+  }
+
+  await sendToTranscriptionAPI(base64);
+}
+
+function renderDirectAttachForm() {
+  const container = document.getElementById('certResults');
+  const cs = document.getElementById('certStatus');
+  const person = people.find(p => p.id === pendingDirectAttachId);
+  const personName = person ? person.name : 'this person';
+
+  cs.className = 'cert-status success';
+  cs.textContent = 'Ready to attach';
+  cs.style.display = 'block';
+
+  container.innerHTML = `
+    <div style="background:#fff;border:2px solid #8a7a5a;border-radius:8px;padding:16px;margin-top:10px;font-family:'Cormorant Garamond',serif;">
+      <div style="font-size:14px;font-weight:600;color:#4a3a22;margin-bottom:12px;">Attach document to ${personName}</div>
+      <div style="margin-bottom:10px;">
+        <label style="display:block;font-size:11px;color:#6b5537;text-transform:uppercase;margin-bottom:4px;">Document Type</label>
+        <select id="daType" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:inherit;font-size:13px;background:#faf6ee;color:#2a1f10;">
+          <option value="bc">Birth Certificate</option>
+          <option value="mc">Marriage Certificate</option>
+          <option value="dc">Death Certificate</option>
+          <option value="other">Other</option>
+        </select>
+      </div>
+      <div style="margin-bottom:12px;">
+        <label style="display:block;font-size:11px;color:#6b5537;text-transform:uppercase;margin-bottom:4px;">Date (optional)</label>
+        <input type="text" id="daDate" placeholder="e.g. 14 Dec 1911" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:inherit;font-size:13px;background:#faf6ee;color:#2a1f10;box-sizing:border-box;">
+      </div>
+      <div style="display:flex;gap:8px;">
+        <button id="daAttachBtn" style="flex:1;padding:10px;background:#4a6b4a;color:#fff;border:none;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Attach</button>
+        <button id="daCancelBtn" style="flex:1;padding:10px;background:#e8dcc8;color:#4a3a22;border:2px solid #8a7a5a;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
+      </div>
+    </div>
+  `;
+  certPanel.classList.add('has-results');
+
+  document.getElementById('daAttachBtn').addEventListener('click', async () => {
+    const type = document.getElementById('daType').value;
+    const date = document.getElementById('daDate').value.trim();
+    if (!pendingDirectAttachId || !pendingDocImage) return;
+
+    const p = people.find(pe => pe.id === pendingDirectAttachId);
+    if (!p) return;
+
+    const docId = await saveDocToDB(p.id, type, pendingDocImage, { personName: p.name, date: date || '', manual: true });
+    p.docs.push({ type: type, date: date || '', docId: docId });
+
+    showToast('Document attached to ' + p.name);
+    renderTree();
+
+    // Close panel and reset
+    pendingDirectAttachId = null;
+    certPanel.classList.remove('active');
+    certPanel.classList.remove('has-results');
+    clearCertPanel();
+  });
+
+  document.getElementById('daCancelBtn').addEventListener('click', () => {
+    pendingDirectAttachId = null;
+    certPanel.classList.remove('active');
+    certPanel.classList.remove('has-results');
+    clearCertPanel();
+  });
+}
+
+async function resizeAndCompressImage(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+      else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    const r = new FileReader();
+    r.onload = (e) => { img.src = e.target.result; };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+const API_URL = 'https://genealogy-api.vercel.app/api/transcribe';
+
+async function sendToTranscriptionAPI(base64) {
+  const cs = document.getElementById('certStatus');
+  
+  // Phase 1: GET connectivity check
+  cs.className = 'cert-status loading'; 
+  cs.textContent = 'Checking connection (1/3)...';
+  try {
+    const ping = await fetch('https://genealogy-api.vercel.app/api/test', { method: 'GET', cache: 'no-store' });
+    if (!ping.ok) throw new Error('API ping failed: ' + ping.status);
+  } catch (err) {
+    cs.className = 'cert-status error';
+    cs.innerHTML = 'Network error: Cannot reach API server (GET blocked).<br><small>Try: 1) WiFi instead of mobile data, 2) Disable ad blocker/VPN, 3) Retry</small>';
+    certPanel.classList.add('has-results');
+    console.error('[PING GET FAILED]', err.message);
+    return;
+  }
+  
+  // Phase 2: POST connectivity check (no image, tiny body)
+  cs.textContent = 'Checking connection (2/3)...';
+  try {
+    const postTest = await fetch('https://genealogy-api.vercel.app/api/test-post', { 
+      method: 'POST', 
+      headers: { 'Content-Type': 'application/json' }, 
+      body: JSON.stringify({ test: true })
+    });
+    if (!postTest.ok) throw new Error('API POST test failed: ' + postTest.status);
+    const postJson = await postTest.json();
+    console.log('[POST TEST OK]', postJson);
+  } catch (err) {
+    cs.className = 'cert-status error';
+    cs.innerHTML = 'Network error: POST requests blocked.<br><small>Your network or browser may block uploads. Try: 1) Different WiFi, 2) Chrome/Safari, 3) Disable privacy extensions</small>';
+    certPanel.classList.add('has-results');
+    console.error('[PING POST FAILED]', err.message);
+    return;
+  }
+  
+  // Phase 3: Send actual image with retries
+  const payloadSize = Math.round(base64.length * 0.75 / 1024);
+  cs.innerHTML = 'Scanning certificate...<br><small>Image: ' + payloadSize + 'KB. Usually 10-25s</small>';
+  document.getElementById('certRetry').style.display = '';
+
+  const payload = JSON.stringify({ image: base64, country: getCountry() });
+  console.log('[UPLOAD] Payload:', Math.round(payload.length / 1024), 'KB | URL:', API_URL);
+
+  // AbortController: 90s timeout for the entire upload session (covers all attempts)
+  const uploadController = new AbortController();
+  const uploadTimeout = setTimeout(() => uploadController.abort(), 90000);
+
+  let lastErr = null;
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    console.log('[UPLOAD] Attempt', attempt, '/6');
+    cs.innerHTML = 'Scanning certificate (attempt ' + attempt + '/6)...<br><small>Please wait</small>';
+
+    try {
+      let resp;
+      if (attempt === 1) {
+        resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, signal: uploadController.signal });
+      } else if (attempt === 2) {
+        resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, credentials: 'omit', signal: uploadController.signal });
+      } else {
+        resp = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', API_URL);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.onload = () => resolve({ status: xhr.status, json: () => Promise.resolve(JSON.parse(xhr.responseText)) });
+          xhr.onerror = () => reject(new Error('XHR network error'));
+          xhr.ontimeout = () => reject(new DOMException('XHR timed out', 'AbortError'));
+          xhr.timeout = 90000;
+          // Tie XHR to the same AbortController
+          uploadController.signal.addEventListener('abort', () => { xhr.abort(); });
+          xhr.send(payload);
+        });
+      }
+
+      console.log('[UPLOAD] Attempt', attempt, 'response status:', resp.status);
+      const json = await resp.json();
+      console.log('[UPLOAD] Attempt', attempt, 'response:', JSON.stringify(json).slice(0, 200));
+
+      // Primary model overloaded — wait and retry instead of falling through
+      if (json.error === 'PRIMARY_OVERLOADED' && json.retryable) {
+        const waitSec = attempt <= 3 ? 12 : 8;
+        console.log('[UPLOAD] Primary model overloaded, waiting', waitSec, 's before retry');
+        cs.innerHTML = 'Server is busy (attempt ' + attempt + '/6).<br><small>Waiting ' + waitSec + 's before retry</small>';
+        await new Promise(r => setTimeout(r, waitSec * 1000));
+        continue; // retry same attempt number (don't increment)
+      }
+
+      if (!json.success) {
+        cs.className = 'cert-status error';
+        cs.innerHTML = 'Scan failed: ' + (json.error || json.message || 'Unknown error') + '<br><small>Tap Retry to try again</small>';
+        certPanel.classList.add('has-results');
+        return;
+      }
+      lastTranscription = json.data;
+      cs.className = 'cert-status success';
+      cs.textContent = '✓ Cert type: ' + (json.data.type || 'unknown').toUpperCase();
+      renderTranscriptionResults(json.data);
+      certPanel.classList.add('has-results');
+      clearTimeout(uploadTimeout);
+      return; // Success!
+    } catch (err) {
+      console.error('[UPLOAD] Attempt', attempt, 'failed:', err.name, err.message);
+      lastErr = err;
+      if (err.name === 'AbortError') { clearTimeout(uploadTimeout); break; } // timeout — stop retrying
+      if (attempt < 6) {
+        cs.innerHTML = 'Retrying in 3s (attempt ' + (attempt + 1) + '/6)...';
+        await new Promise(r => setTimeout(r, 3000));
+      }
+    }
+  }
+
+  clearTimeout(uploadTimeout);
+
+  // All 6 attempts failed
+  cs.className = 'cert-status error';
+  let msg = lastErr?.name === 'AbortError' ? 'Scan timed out after 90 seconds.' : (lastErr?.message || 'Could not reach server');
+  if (msg.includes('Failed to fetch')) msg = 'Connection failed on image upload. Your network may block large uploads.';
+  const debugId = 'debug_' + Date.now();
+  cs.innerHTML = 'Network error: ' + msg + '<br><small>Try: 1) Different WiFi, 2) Camera not gallery, 3) Clear and retry</small><br><button onclick="document.getElementById(\'' + debugId + '\').style.display=\'block\'" style="margin-top:6px;padding:4px 8px;font-size:11px;background:#8a7a5a;color:#fff;border:none;border-radius:4px;">Show Debug Logs</button><pre id="' + debugId + '" style="display:none;margin-top:6px;padding:6px;background:#3e2b1a;color:#e8dcc8;font-size:10px;max-height:150px;overflow:auto;border-radius:4px;white-space:pre-wrap;">' + getDebugLogs().replace(/</g,'&lt;') + '</pre>';
+  certPanel.classList.add('has-results');
+}
+
+function renderTranscriptionResults(data) {
+  const container = document.getElementById('certResults');
+  container.innerHTML = '';
+  selectedEntryIndex = 0;
+  const entries = data.entries || [data];
+  let type = data.type || 'unknown';
+  if (type === 'unknown' && entries.length > 0) {
+    const first = entries[0];
+    if (first.groom?.name || first.bride?.name) type = 'marriage';
+    else if (first.child?.name || first.father?.name || first.mother?.name) type = 'birth';
+    else if (first.deceased?.name) type = 'death';
+  }
+  entries.forEach((entry, idx) => {
+    const card = document.createElement('div');
+    card.className = 'cert-result-card' + (idx === 0 ? ' selected' : '');
+    card.dataset.index = idx;
+    const fields = extractEntryFields(entry, type);
+    let html = '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">' + entrySummary(entry, type) + '</div>';
+    fields.forEach((f, fi) => {
+      const fieldId = 'cf_' + idx + '_' + fi;
+      html += '<div class="cert-field-edit"><span class="cert-field-label">' + f.label + ':</span><input id="' + fieldId + '" type="text" value="' + f.value.replace(/"/g, '&quot;') + '" data-entry="' + idx + '" data-field="' + f.key + '" onfocus="event.stopPropagation()" onclick="event.stopPropagation()"></div>';
+    });
+    card.innerHTML = html;
+    card.addEventListener('click', () => {
+      // Save current edits before switching
+      syncCertEdits();
+      document.querySelectorAll('.cert-result-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected'); selectedEntryIndex = idx;
+    });
+    container.appendChild(card);
+  });
+}
+
+// Sync editable field values back into lastTranscription
+function syncCertEdits() {
+  if (!lastTranscription) return;
+  const entries = lastTranscription.entries || [lastTranscription];
+  document.querySelectorAll('#certResults input[data-field]').forEach(input => {
+    const eIdx = parseInt(input.dataset.entry);
+    const field = input.dataset.field;
+    const entry = entries[eIdx];
+    if (!entry) return;
+    const val = input.value;
+    // Set value on the nested object using dot notation (e.g. "child.name", "father.name")
+    const parts = field.split('.');
+    let obj = entry;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!obj[parts[i]]) obj[parts[i]] = {};
+      obj = obj[parts[i]];
+    }
+    obj[parts[parts.length - 1]] = val;
+  });
+}
+
+function extractEntryFields(entry, type) {
+  const fields = [];
+  if (type === 'marriage') {
+    if (entry.groom?.name) fields.push({ label: 'Groom', value: entry.groom.name, key: 'groom.name' });
+    if (entry.groom?.age) fields.push({ label: 'Groom Age', value: entry.groom.age, key: 'groom.age' });
+    if (entry.bride?.name) fields.push({ label: 'Bride', value: entry.bride.name, key: 'bride.name' });
+    if (entry.bride?.age) fields.push({ label: 'Bride Age', value: entry.bride.age, key: 'bride.age' });
+    if (entry.groomFather?.name) fields.push({ label: "Groom's Father", value: entry.groomFather.name, key: 'groomFather.name' });
+    if (entry.groomMother?.name) fields.push({ label: "Groom's Mother", value: entry.groomMother.name + (entry.groomMother.maidenName ? ' (m.s. ' + entry.groomMother.maidenName + ')' : ''), key: 'groomMother.name' });
+    if (entry.groomMother?.maidenName) fields.push({ label: "Groom's Mother m.s.", value: entry.groomMother.maidenName, key: 'groomMother.maidenName' });
+    if (entry.brideFather?.name) fields.push({ label: "Bride's Father", value: entry.brideFather.name, key: 'brideFather.name' });
+    if (entry.brideMother?.name) fields.push({ label: "Bride's Mother", value: entry.brideMother.name + (entry.brideMother.maidenName ? ' (m.s. ' + entry.brideMother.maidenName + ')' : ''), key: 'brideMother.name' });
+    if (entry.brideMother?.maidenName) fields.push({ label: "Bride's Mother m.s.", value: entry.brideMother.maidenName, key: 'brideMother.maidenName' });
+    if (entry.date) fields.push({ label: 'Date', value: entry.date, key: 'date' });
+  } else if (type === 'birth') {
+    if (entry.child?.name) fields.push({ label: 'Child', value: entry.child.name, key: 'child.name' });
+    if (entry.child?.birthDate) fields.push({ label: 'Birth Date', value: entry.child.birthDate, key: 'child.birthDate' });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, key: 'father.name' });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : entry.mother.maidenSurname ? ' (m.s. ' + entry.mother.maidenSurname + ')' : ''), key: 'mother.name' });
+    if (entry.mother?.maidenName || entry.mother?.maidenSurname) fields.push({ label: 'Mother m.s.', value: entry.mother?.maidenName || entry.mother?.maidenSurname || '', key: 'mother.maidenName' });
+    if (entry.district) fields.push({ label: 'District', value: entry.district, key: 'district' });
+  } else if (type === 'death') {
+    if (entry.deceased?.name) fields.push({ label: 'Deceased', value: entry.deceased.name, key: 'deceased.name' });
+    if (entry.deceased?.age) fields.push({ label: 'Age', value: entry.deceased.age, key: 'deceased.age' });
+    if (entry.deceased?.spouseName) fields.push({ label: 'Spouse', value: entry.deceased.spouseName, key: 'deceased.spouseName' });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, key: 'father.name' });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : ''), key: 'mother.name' });
+    if (entry.mother?.maidenName) fields.push({ label: 'Mother m.s.', value: entry.mother.maidenName, key: 'mother.maidenName' });
+    if (entry.deathDate) fields.push({ label: 'Date', value: entry.deathDate, key: 'deathDate' });
+    if (entry.causeOfDeath) fields.push({ label: 'Cause', value: entry.causeOfDeath, key: 'causeOfDeath' });
+  }
+  return fields;
+}
+
+function entrySummary(entry, type) {
+  const name = entry.child?.name || entry.groom?.name || entry.bride?.name || entry.deceased?.name || 'Unknown';
+  const date = entry.child?.birthDate || entry.date || entry.deathDate || '';
+  if (type === 'marriage') return (entry.groom?.name || 'Unknown') + ' & ' + (entry.bride?.name || 'Unknown') + (date ? ' — ' + date : '');
+  if (type === 'birth') return name + (date ? ' — b. ' + date : '');
+  if (type === 'death') return name + (date ? ' — d. ' + date : '');
+  return name;
+}
+
+// Apply scanned cert data to the people array
+function applyCertToPerson(entry, type, docImage) {
+  if (!entry) return;
+
+  // Build a list of primary person names this cert targets
+  let primaryNames = [];
+  if (type === 'birth' && entry.child?.name) primaryNames.push({ name: entry.child.name, certKey: 'child.name' });
+  if (type === 'marriage') {
+    if (entry.groom?.name) primaryNames.push({ name: entry.groom.name, certKey: 'groom.name' });
+    if (entry.bride?.name) primaryNames.push({ name: entry.bride.name, certKey: 'bride.name' });
+  }
+  if (type === 'death' && entry.deceased?.name) primaryNames.push({ name: entry.deceased.name, certKey: 'deceased.name' });
+
+  // Detect ambiguity for any primary name
+  for (const pn of primaryNames) {
+    const refYear = type === 'marriage' ? (extractYear(entry.date) ? extractYear(entry.date) - parseInt(entry.groom?.age || entry.bride?.age || 0) : null)
+      : type === 'birth' ? (extractYear(entry.child?.birthDate) || null)
+      : type === 'death' ? (extractYear(entry.deathDate) ? extractYear(entry.deathDate) - parseInt(entry.deceased?.age || 0) : null)
+      : null;
+    const certYear = extractYear(entry.date || entry.deathDate || entry.child?.birthDate);
+    const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
+    if (matches.length >= 2) {
+      // Ambiguous: show dialog and pause
+      const top2ScoreDiff = matches[0].score - matches[1].score;
+      if (top2ScoreDiff < 30 || matches[0].person.status === 'confirmed') {
+        openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
+        return;
+      }
+    }
+  }
+
+  // No ambiguity — proceed normally
+  _applyCertToPersonResolved(entry, type, docImage, null, null);
+}
+
+// After user picks (or when unambiguous), do the actual apply
+function _applyCertToPersonResolved(entry, type, docImage, resolveName, resolveId) {
+  const changed = [];
+  if (type === 'birth') applyBirthEntry(entry, changed, docImage, resolveId);
+  else if (type === 'marriage') applyMarriageEntry(entry, changed, docImage, resolveName, resolveId);
+  else if (type === 'death') applyDeathEntry(entry, changed, docImage, resolveId);
+  if (changed.length) { renderTree(); showToast('Applied to ' + changed.length + ' people'); }
+  else { showToast('No matching people found'); }
+  if (changed.length > 0) {
+    const target = changed[0];
+    setTimeout(() => {
+      const el = cardEls.get(target.id);
+      if (el) {
+        const cx = (el.offsetLeft + el.offsetWidth / 2) * zoom;
+        const cy = (el.offsetTop + el.offsetHeight / 2) * zoom;
+        scroll.scrollTo({ left: Math.max(0, cx - scroll.clientWidth / 2), top: Math.max(0, cy - scroll.clientHeight / 2), behavior: 'smooth' });
+      }
+    }, 200);
+  }
+}
+
+// Ambiguity modal logic
+function openAmbigDialog(entry, type, docImage, targetName, matches, certKey) {
+  pendingAmbigTarget = { entry, type, docImage, resolveName: targetName, resolveId: null };
+  const modal = document.getElementById('ambigModal');
+  const question = document.getElementById('ambigQuestion');
+  const options = document.getElementById('ambigOptions');
+  question.textContent = 'Multiple "' + targetName + '" people found. Which one receives this certificate?';
+  options.innerHTML = '';
+  matches.forEach((m, i) => {
+    const p = m.person;
+    const info = [];
+    info.push('Gen ' + p.gen);
+    if (p.years) info.push(p.years);
+    if (p.birthDate) info.push('b. ' + p.birthDate);
+    if (p.spouseName) info.push('spouse: ' + p.spouseName);
+    if (p.status) info.push('status: ' + p.status);
+    const btn = document.createElement('button');
+    btn.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:8px;border:2px solid #8a7a5a;border-radius:6px;background:#faf6ee;cursor:pointer;font-family:"Cormorant Garamond",serif;font-size:13px;color:#2a1f10;';
+    btn.innerHTML = '<b>' + p.name + '</b> <span style="color:#6b5537;font-size:11px;">' + info.join(' | ') + '</span>';
+    btn.addEventListener('click', () => {
+      pendingAmbigTarget.resolveId = p.id;
+      modal.style.display = 'none';
+      _applyCertToPersonResolved(pendingAmbigTarget.entry, pendingAmbigTarget.type, pendingAmbigTarget.docImage, pendingAmbigTarget.resolveName, pendingAmbigTarget.resolveId);
+      pendingAmbigTarget = null;
+    });
+    options.appendChild(btn);
+  });
+  modal.style.display = 'flex';
+}
+
+function normalizeName(name) {
+  if (!name) return '';
+  let stripped = name.replace(/\s*\([^)]*\)/g, '');
+  stripped = stripped.replace(/\s*[nN][ée]e\s+.*$/, '');
+  const parts = stripped.toLowerCase().trim().split(/\s+/);
+  if (parts.length < 2) return parts[0] || '';
+  return parts[0] + ' ' + parts[parts.length - 1];
+}
+
+function isEffectivelyBlank(name) {
+  if (!name) return true;
+  const n = name.toLowerCase().trim();
+  if (!n || n === 'name' || n === 'unknown' || n === '?' || n === '??' || n === '...') return true;
+  if (n === 'father unknown' || n === 'mother unknown' || n === 'unknown parent' || n === 'parent unknown' || n === 'father' || n === 'mother') return true;
+  if (/^\?+$/.test(n)) return true;
+  return false;
+}
+
+function findPerson(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return null;
+  const searchNorm = normalizeName(name);
+  const searchFull = name.toLowerCase().trim();
+  const searchFirst = name.split(/\s+/)[0]?.toLowerCase() || '';
+  const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
+
+  // Extract reference year from options
+  const refYear = opts.refYear || null;
+  const certType = opts.certType || null;
+  const certYear = opts.certYear || null;
+
+  function getBirthYear(p) {
+    const m = (p.years || p.birthDate || '').match(/\d{4}/);
+    return m ? parseInt(m[0]) : null;
+  }
+
+  function getDeathYear(p) {
+    const m = (p.years || p.deathDate || '').match(/\d{4}(?!.*\d{4})/);
+    return m ? parseInt(m[0]) : null;
+  }
+
+  function scorePerson(p) {
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    const pMaiden = normalizeName(p.maidenName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+    const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
+
+    let score = 0;
+
+    // Same person check: normalized first+last match (ignores middle names/initials)
+    if (pNorm === searchNorm || pFull === searchNorm) {
+      score = 100;
+    }
+    // Exact string match
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) {
+      score = 100;
+    }
+    // Full containment
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) {
+      score = 80;
+    }
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) {
+      score = 75;
+    }
+    // Partial normalized match
+    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) {
+      score = 50;
+    }
+
+    // Maiden name matching for marriage certs
+    if (opts.checkMaiden && pMaiden) {
+      const searchFirst = searchFull.split(/\s+/)[0] || '';
+      const pFirst = pNameLower.split(/\s+/)[0] || '';
+      const maidenHit = (pMaiden === searchSurname || pMaiden === searchNorm) ? 95
+        : (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden)) ? 75 : 0;
+      if (maidenHit > 0) {
+        if (searchFirst && pFirst && searchFirst !== pFirst) {
+          maidenHit > 90 ? score = Math.max(score, 40) : score = Math.max(score, 30);
+        } else {
+          score = Math.max(score, maidenHit);
+        }
+      }
+    }
+
+    return score;
+  }
+
+  // For death certs: also match by spouse link when woman uses married name
+  function getSpouseMatch(name) {
+    const firstName = name.split(/\s+/)[0]?.toLowerCase() || '';
+    const surname = name.split(/\s+/).pop()?.toLowerCase() || '';
+    for (const p of people) {
+      if (!p.spouseId || !p.spouseName) continue;
+      const pFirst = (p.spouseName || '').split(/\s+/)[0]?.toLowerCase() || '';
+      const pLast = (p.name || '').split(/\s+/).pop()?.toLowerCase() || '';
+      // If deceased's surname matches person's surname, and first name matches spouse link
+      if (pLast === surname && pFirst !== firstName && (pFirst.includes(firstName) || firstName.includes(pFirst))) {
+        return p;
+      }
+      // Also: deceased name matches person's name (with maiden annotation stripped)
+      const pBase = normalizeName(p.name);
+      const searchBase = normalizeName(name);
+      if (pBase === searchBase && pBase) return p;
+    }
+    return null;
+  }
+
+  // Build candidate list
+  let candidates = [];
+  for (const p of people) {
+    const score = scorePerson(p);
+    if (score > 0) candidates.push({ person: p, score });
+  }
+
+  if (!candidates.length) return null;
+
+  // Filter by impossible year constraints
+  if (certType && certYear && !isNaN(certYear)) {
+    candidates = candidates.filter(({person: p}) => {
+      const by = getBirthYear(p);
+      if (!by) return true; // unfilled passes through
+      if (certType === 'marriage') return by <= certYear - 16; // can't marry before ~16
+      if (certType === 'death') return by < certYear; // can't die before born
+      if (certType === 'birth' && refYear) return Math.abs(by - refYear) < 50;
+      return true;
+    });
+  }
+
+  if (!candidates.length) return null;
+  if (candidates.length === 1) return candidates[0].person;
+
+  // Sort: score desc, then year proximity, then gen proximity, then less data
+  candidates.sort((a, b) => {
+    if (b.score !== a.score) return b.score - a.score;
+    // Year proximity
+    if (refYear) {
+      const aY = getBirthYear(a.person);
+      const bY = getBirthYear(b.person);
+      const aDiff = aY ? Math.abs(aY - refYear) : 9999;
+      const bDiff = bY ? Math.abs(bY - refYear) : 9999;
+      if (aDiff !== bDiff) return aDiff - bDiff;
+    }
+    // Generation proximity
+    if (opts.expectedGen !== undefined) {
+      const aGenDiff = Math.abs(a.person.gen - opts.expectedGen);
+      const bGenDiff = Math.abs(b.person.gen - opts.expectedGen);
+      if (aGenDiff !== bGenDiff) return aGenDiff - bGenDiff;
+    }
+    // Prefer less-filled cards for birth certs
+    if (certType === 'birth') {
+      const aData = (a.person.fullName && a.person.fullName !== a.person.name ? 1 : 0) + (a.person.docs?.length || 0);
+      const bData = (b.person.fullName && b.person.fullName !== b.person.name ? 1 : 0) + (b.person.docs?.length || 0);
+      return aData - bData;
+    }
+    return 0;
+  });
+
+  return candidates[0].person;
+}
+
+// Return ALL matching candidates so ambiguity can be detected
+function findAllMatches(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return [];
+  const searchNorm = normalizeName(name);
+  const searchFull = name.toLowerCase().trim();
+  const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
+  const refYear = opts.refYear || null;
+  const certType = opts.certType || null;
+  const certYear = opts.certYear || null;
+
+  function getBirthYear(p) {
+    const m = (p.years || p.birthDate || '').match(/\d{4}/);
+    return m ? parseInt(m[0]) : null;
+  }
+
+  let matches = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    const pMaiden = normalizeName(p.maidenName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+    const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
+
+    let score = 0;
+    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
+    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) score = 50;
+
+    if (opts.checkMaiden && pMaiden) {
+      const searchFirst = searchFull.split(/\s+/)[0] || '';
+      const pFirst = pNameLower.split(/\s+/)[0] || '';
+      const maidenHit = (pMaiden === searchSurname || pMaiden === searchNorm) ? 95
+        : (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden)) ? 75 : 0;
+      if (maidenHit > 0) {
+        if (searchFirst && pFirst && searchFirst !== pFirst) {
+          maidenHit > 90 ? score = Math.max(score, 40) : score = Math.max(score, 30);
+        } else {
+          score = Math.max(score, maidenHit);
+        }
+      }
+    }
+
+    if (score > 0) matches.push({ person: p, score });
+  }
+
+  // Filter out weak matches (score < 50 = only maiden surname with different first name)
+  matches = matches.filter(m => m.score >= 50);
+
+  if (certType && certYear && !isNaN(certYear)) {
+    matches = matches.filter(({person: p}) => {
+      const by = getBirthYear(p);
+      if (!by) return true;
+      if (certType === 'marriage') return by <= certYear - 16;
+      if (certType === 'death') return by < certYear;
+      if (certType === 'birth' && refYear) return Math.abs(by - refYear) < 50;
+      return true;
+    });
+  }
+
+  matches.sort((a, b) => b.score - a.score);
+  return matches;
+}
+
+// Generation-aware person finder: handles same-name people across generations
+// Returns a single best-match person, preferring parent-blank slots when multiple matches exist
+function findPersonGenAware(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return null;
+  const searchNorm = normalizeName(name);
+
+  // Search all non-blank people by name
+  const allMatches = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    const pMaiden = normalizeName(p.maidenName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+    const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
+    const searchFull = name.toLowerCase().trim();
+
+    let score = 0;
+    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
+    else if (pNorm.includes(searchNorm) || searchNorm.includes(pNorm)) score = 50;
+
+    // Maiden name check — but reject if first names don't match
+    if (opts.checkMaiden && pMaidenLower) {
+      const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
+      const searchFirst = name.split(/\s+/)[0]?.toLowerCase() || '';
+      const pFirst = pNameLower.split(/\s+/)[0] || '';
+      const maidenHit = (pMaidenLower === searchSurname || pMaidenLower === searchNorm) ? 95
+        : (pMaidenLower.includes(searchSurname) || searchSurname.includes(pMaidenLower)) ? 75 : 0;
+      if (maidenHit > 0) {
+        // First name must match for a high-confidence maiden hit
+        if (searchFirst && pFirst && searchFirst !== pFirst) {
+          // Different first name with shared maiden surname = likely a different person
+          maidenHit > 90 ? score = Math.max(score, 40) : score = Math.max(score, 30);
+        } else {
+          score = Math.max(score, maidenHit);
+        }
+      }
+    }
+
+    if (score > 0) allMatches.push({ person: p, score });
+  }
+
+  if (allMatches.length === 0) return null;
+  // Require minimum score of 50 — lower means only a weak maiden surname overlap with different first name
+  const bestScore = Math.max(...allMatches.map(m => m.score));
+  if (bestScore < 50) return null;
+  if (allMatches.length === 1) return allMatches[0].person;
+
+  // Multiple matches: sort by score desc, then apply generation-aware logic
+  allMatches.sort((a, b) => b.score - a.score);
+  const topScore = allMatches[0].score;
+  const topMatches = allMatches.filter(m => m.score >= topScore - 15);
+
+  // Among top-scoring matches, prefer the one whose parent slots are still blank
+  // (cert data for this person's parents needs somewhere to go)
+  for (const m of topMatches.sort((a, b) => a.person.gen - b.person.gen)) {
+    const dad = people.find(p => p.id === m.person.parents?.[0]);
+    const mum = people.find(p => p.id === m.person.parents?.[1]);
+    if (dad && mum && (dad.name === 'Name' || dad.status === 'blank') && (mum.name === 'Name' || mum.status === 'blank')) {
+      return m.person;
+    }
+  }
+
+  // If expected generation was specified, prefer that
+  if (opts.expectedGen !== undefined) {
+    const genMatch = topMatches.find(m => m.person.gen === opts.expectedGen);
+    if (genMatch) return genMatch.person;
+  }
+
+  // Fall back: lowest-gen top-scoring match
+  return topMatches.sort((a, b) => a.person.gen - b.person.gen)[0].person;
+}
+
+function escapeHtml(text) {
+  if (!text) return '';
+  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
+}
+
+function extractYear(str) {
+  if (!str) return null;
+  const m = String(str).match(/(\d{4})/);
+  return m ? parseInt(m[1]) : null;
+}
+
+function findPersonBySurname(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return null;
+  const surname = name.split(/\s+/).pop().toLowerCase();
+  if (!surname) return null;
+
+  let candidates = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank' || isEffectivelyBlank(p.name)) continue;
+    const pName = (p.name || '').toLowerCase();
+    const pFull = (p.fullName || '').toLowerCase();
+    const pMaiden = (p.maidenName || '').toLowerCase();
+    if (pName.includes(surname) || pFull.includes(surname) || pMaiden.includes(surname)) {
+      candidates.push(p);
+    }
+  }
+
+  // Filter by year constraints
+  if (opts.certType && opts.certYear && !isNaN(opts.certYear)) {
+    candidates = candidates.filter(p => {
+      const by = (p.years || p.birthDate || '').match(/\d{4}/);
+      if (!by) return true;
+      if (opts.certType === 'marriage') return parseInt(by[0]) <= opts.certYear - 16;
+      if (opts.certType === 'death') return parseInt(by[0]) < opts.certYear;
+      if (opts.certType === 'birth' && opts.refYear) return Math.abs(parseInt(by[0]) - opts.refYear) < 50;
+      return true;
+    });
+  }
+
+  if (!candidates.length) return null;
+  if (candidates.length === 1) return candidates[0];
+
+  // Prefer closest to refYear
+  if (opts.refYear) {
+    candidates.sort((a, b) => {
+      const aY = (a.years || a.birthDate || '').match(/\d{4}/);
+      const bY = (b.years || b.birthDate || '').match(/\d{4}/);
+      const aDiff = aY ? Math.abs(parseInt(aY[0]) - opts.refYear) : 9999;
+      const bDiff = bY ? Math.abs(parseInt(bY[0]) - opts.refYear) : 9999;
+      return aDiff - bDiff;
+    });
+  }
+  return candidates[0];
+}
+
+function applyBirthEntry(entry, changed, docImage, forceChildId) {
+  const childName = entry.child?.name; if (!childName) return;
+  const childNorm = normalizeName(childName);
+
+  // Validate father: if father equals child's own name, treat as illegitimate / OCR error
+  const fatherNameRaw = entry.father?.name || '';
+  const isIllegitimate = !fatherNameRaw
+    || fatherNameRaw.toLowerCase().includes('illegitimate')
+    || normalizeName(fatherNameRaw) === childNorm;
+  if (isIllegitimate) {
+    entry.father = null;  // Clear the false father so we don't write it later
+  }
+
+  // Find or create the child
+  let child = null;
+  if (forceChildId) {
+    child = people.find(p => p.id === forceChildId);
+  }
+
+  // Priority 1: exact name match (confirmed or probable), lowest gen first
+  if (!child) {
+    const allMatches = [];
+    for (const p of people) {
+      if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
+      if (normalizeName(p.name) === childNorm || normalizeName(p.fullName || '') === childNorm) {
+        allMatches.push(p);
+      }
+    }
+    if (allMatches.length === 1) {
+      child = allMatches[0];
+    } else if (allMatches.length >= 2) {
+      // Multiple same-name people: prefer the one with blank parent slots
+      for (const m of allMatches.sort((a, b) => a.gen - b.gen)) {
+        const dad = people.find(p => p.id === m.parents?.[0]);
+        const mum = people.find(p => p.id === m.parents?.[1]);
+        if (dad && mum && (dad.name === 'Name' || dad.status === 'blank') && (mum.name === 'Name' || mum.status === 'blank')) {
+          child = m; break;
+        }
+      }
+      if (!child) child = allMatches.sort((a, b) => a.gen - b.gen)[0];
+    }
+  }
+
+  // Priority 2: blank Gen 0 for root person
+  if (!child) {
+    const gen0 = people.find(p => p.gen === 0);
+    if (gen0 && (gen0.name === 'Name' || gen0.status === 'blank')) {
+      child = gen0;
+    }
+  }
+
+  // Priority 3: generation-aware fuzzy match
+  if (!child) {
+    child = findPersonGenAware(childName);
+  }
+
+  // Priority 4: create new person at Gen 0 (never recycle existing blanks)
+  if (!child) {
+    child = createPerson(nextId++, 0, childName, '?', 'probable', {});
+    people.push(child);
+  }
+
+  // Update child with cert data, but NEVER overwrite a confirmed person's name
+  if (child.name === 'Name' || child.status === 'blank') {
+    child.name = childName;
+  }
+  child.fullName = childName;
+  if (entry.child?.birthDate) {
+    child.birthDate = entry.child.birthDate;
+    const bYear = extractYear(entry.child.birthDate);
+    const dYear = extractYear(child.deathDate);
+    child.years = dYear ? `${bYear} — ${dYear}` : `b. ${entry.child.birthDate}`;
+  }
+  child.status = 'confirmed';
+  child.docs.push({ type: 'bc', date: extractDocDate(entry, 'birth'), docId: null });
+  if (docImage) {
+    saveDocToDB(child.id, 'bc', docImage, { personName: child.name }).then(id => {
+      const lastDoc = child.docs[child.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
+  changed.push(child);
+
+  // Wire parents using tree structure (gen G person i gets parents at gen G+1 positions [2*i, 2*i+1])
+  if (!child.parents || child.parents.length < 2) {
+    const genPeers = people.filter(p => p.gen === child.gen).sort((a,b) => a.id - b.id);
+    const childIdx = genPeers.indexOf(child);
+    const nextGen = people.filter(p => p.gen === child.gen + 1).sort((a,b) => a.id - b.id);
+    if (nextGen.length >= 2 && childIdx > -1) {
+      const father = nextGen[2 * childIdx];
+      const mother = nextGen[2 * childIdx + 1];
+      if (father && mother) child.parents = [father.id, mother.id];
+    }
+  }
+
+  if (child.parents && child.parents.length >= 2) {
+    const father = people.find(p => p.id === child.parents[0]);
+    const mother = people.find(p => p.id === child.parents[1]);
+
+    // Father: only update if not illegitimate and father slot is blank/unconfirmed
+    if (father && entry.father?.name) {
+      const fatherNorm = normalizeName(entry.father.name);
+      if (fatherNorm !== childNorm && (father.name === 'Name' || father.status !== 'confirmed')) {
+        father.name = entry.father.name;
+        father.fullName = entry.father.name;
+        if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
+        changed.push(father);
+      }
+    }
+
+    // Mother: only update if blank/unconfirmed; prefer maiden identity for display name
+    if (mother && entry.mother?.name) {
+      if (mother.status !== 'confirmed') {
+        const rawMotherName = entry.mother.name.replace(/\s*\(m\.s\.\s+[^)]+\)/gi, '').trim();
+        const rawParts = rawMotherName.split(' ');
+        const firstName = rawParts[0] || '';
+        const rawSurname = rawParts.slice(1).join(' ');
+        const maiden = entry.mother?.maidenName || entry.mother?.maidenSurname || mother.maidenName || '';
+        if (maiden && firstName) {
+          mother.name = firstName + ' ' + maiden;
+          mother.fullName = firstName + ' ' + maiden;
+        } else {
+          mother.name = rawMotherName;
+          mother.fullName = rawMotherName;
+        }
+        if (maiden) mother.maidenName = maiden;
+        if (rawSurname && rawSurname !== maiden) mother.marriedName = rawSurname;
+        if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
+        changed.push(mother);
+      }
+    }
+
+    // Wire spouse relationship between parents (skip if illegitimate — no father)
+    if (father && mother && !isIllegitimate) {
+      father.spouseId = mother.id;
+      mother.spouseId = father.id;
+      father.spouseName = mother.name;
+      mother.spouseName = father.name;
+    }
+  }
+}
+
+function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceResolveId) {
+  const groomName = entry.groom?.name, brideName = entry.bride?.name;
+  if (!groomName || !brideName) return;
+
+  // Extract marriage year for age filtering
+  const marriageYear = extractYear(entry.date);
+  const groomBirthYear = marriageYear ? (marriageYear - parseInt(entry.groom?.age || 0)) : null;
+  const brideBirthYear = marriageYear ? (marriageYear - parseInt(entry.bride?.age || 0)) : null;
+
+  // Helper: check if candidate is an ancestor of person
+  function isAncestor(candidate, person) {
+    if (!candidate || !person || !person.parents) return false;
+    for (const parentId of person.parents) {
+      if (parentId === candidate.id) return true;
+      const parent = people.find(p => p.id === parentId);
+      if (parent && isAncestor(candidate, parent)) return true;
+    }
+    return false;
+  }
+
+  // Helper: check if candidate is a descendant of person
+  function isDescendant(candidate, person) {
+    if (!candidate || !person) return false;
+    for (const p of people) {
+      if (p.parents && p.parents.includes(person.id)) {
+        if (p.id === candidate.id) return true;
+        if (isDescendant(candidate, p)) return true;
+      }
+    }
+    return false;
+  }
+
+  // STEP 1: Match groom using generation-aware scoring
+  let groom = null;
+  if (forceResolveId && forceResolveName === groomName) {
+    groom = people.find(p => p.id === forceResolveId);
+    if (groom) console.log('[MC] Forced groom match to', groom.name, '(gen', groom.gen + ')');
+  }
+  if (!groom) {
+    groom = findPersonGenAware(groomName, {
+      refYear: groomBirthYear,
+      certType: 'marriage',
+      certYear: marriageYear
+    });
+    // Fallback: find by surname if full name didn't match
+    if (!groom) {
+      groom = findPersonBySurname(groomName, {
+        refYear: groomBirthYear,
+        certType: 'marriage',
+        certYear: marriageYear
+      });
+    }
+  }
+
+  // STEP 2: Match bride — SPOUSE LINK FIRST (definitive)
+  let bride = null;
+  if (forceResolveId && forceResolveName === brideName) {
+    bride = people.find(p => p.id === forceResolveId);
+    if (bride) console.log('[MC] Forced bride match to', bride.name, '(gen', bride.gen + ')');
+  }
+  if (!bride && groom && groom.spouseId) {
+    const spouse = people.find(p => p.id === groom.spouseId);
+    if (spouse) {
+      const brideFirst = brideName.split(/\s+/)[0]?.toLowerCase();
+      const spouseFirst = spouse.name.split(/\s+/)[0]?.toLowerCase();
+      if (spouseFirst === brideFirst && !isAncestor(spouse, groom) && !isDescendant(spouse, groom)) {
+        bride = spouse;
+      }
+    }
+  }
+
+  // STEP 3: If no spouse link, fall back to generation-aware name matching
+  // BUT: never match bride to groom's ancestor or descendant
+  if (!bride) {
+    bride = findPersonGenAware(brideName, {
+      refYear: brideBirthYear,
+      certType: 'marriage',
+      certYear: marriageYear
+    });
+    if (!bride) {
+      bride = findPersonGenAware(brideName, {
+        checkMaiden: true,
+        refYear: brideBirthYear,
+        certType: 'marriage',
+        certYear: marriageYear
+      });
+    }
+    // Reject ancestor/descendant matches
+    if (bride && groom && (isAncestor(bride, groom) || isDescendant(bride, groom))) {
+      console.log('[MC] Rejected bride candidate', bride.name, '- is ancestor/descendant of groom');
+      bride = null;
+    }
+  }
+
+  // STEP 4: If still no bride match, try first name only
+  if (!bride && brideName) {
+    const brideFirst = brideName.split(/\s+/)[0];
+    for (const p of people) {
+      if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
+      if (p.name.split(/\s+/)[0]?.toLowerCase() === brideFirst.toLowerCase()) {
+        if (groom && (isAncestor(p, groom) || isDescendant(p, groom))) continue;
+        // Check year constraint
+        const by = (p.years || p.birthDate || '').match(/\d{4}/);
+        if (by && marriageYear && parseInt(by[0]) > marriageYear - 16) continue;
+        bride = p;
+        break;
+      }
+    }
+  }
+
+  // Sanity check: groom/bride birth year cannot be after marriage year
+  function checkBirthBeforeMarriage(person, age) {
+    if (!person || !marriageYear) return;
+    const by = (person.years || person.birthDate || '').match(/\d{4}/);
+    if (by && parseInt(by[0]) > marriageYear) {
+      // Wrong person — birth after marriage
+      console.log('[MC] Rejecting match: birth year', by[0], 'after marriage year', marriageYear);
+      return false;
+    }
+    return true;
+  }
+  if (groom && !checkBirthBeforeMarriage(groom, entry.groom?.age)) groom = null;
+  if (bride && !checkBirthBeforeMarriage(bride, entry.bride?.age)) bride = null;
+
+  // STEP 5: Create new people only if not found
+  const targetGen = groom ? groom.gen : 0;
+  if (!groom) {
+    groom = createPerson(nextId++, targetGen, groomName, '?', 'probable', {});
+    people.push(groom); changed.push(groom);
+  }
+  if (!bride) {
+    bride = createPerson(nextId++, targetGen, brideName, '?', 'probable', {});
+    people.push(bride); changed.push(bride);
+  }
+  if (bride.gen !== targetGen) {
+    bride.gen = targetGen;
+    changed.push(bride);
+  }
+
+  // STEP 6: Wire spouse relationship
+  groom.spouseId = bride.id;
+  bride.spouseId = groom.id;
+  groom.spouseName = bride.name;
+  bride.spouseName = groom.name;
+
+  // STEP 7: Update bride's display name to married name if matched by maiden
+  const groomSurname = groomName.split(/\s+/).pop();
+  const brideSurname = bride.name.split(/\s+/).pop();
+  if (brideSurname.toLowerCase() !== groomSurname.toLowerCase()) {
+    const brideFirst = bride.name.split(/\s+/).slice(0, -1).join(' ') || bride.name.split(/\s+/)[0];
+    bride.name = brideFirst + ' ' + groomSurname;
+    bride.fullName = bride.name;
+    changed.push(bride);
+  }
+
+  groom.status = 'confirmed'; bride.status = 'confirmed';
+  groom.docs.push({ type: 'mc', date: extractDocDate(entry, 'marriage'), docId: null });
+  bride.docs.push({ type: 'mc', date: extractDocDate(entry, 'marriage'), docId: null });
+  if (docImage) {
+    saveDocToDB(groom.id, 'mc', docImage, { personName: groom.name }).then(id => {
+      const lastDoc = groom.docs[groom.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+    saveDocToDB(bride.id, 'mc', docImage, { personName: bride.name }).then(id => {
+      const lastDoc = bride.docs[bride.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
+  if (entry.date) { groom.marriageDate = entry.date; bride.marriageDate = entry.date; }
+  changed.push(groom); changed.push(bride);
+
+  // STEP 8: Update parents using tree structure ONLY
+  function updateParents(person, fatherName, motherName, motherMaiden) {
+    if (!person) return;
+    if (!person.parents || person.parents.length < 2) {
+      console.warn('[updateParents] No parents array for', person.name, '(id', person.id, ') — tree structure may be corrupted. Skipping parent update.');
+      return;
+    }
+    const father = people.find(p => p.id === person.parents[0]);
+    const mother = people.find(p => p.id === person.parents[1]);
+
+    // Validation: father name must not equal mother's existing spouse (different families)
+    if (father && fatherName) {
+      const fatherNorm = normalizeName(fatherName);
+      const mothersExistingSpouse = mother && mother.spouseName ? normalizeName(mother.spouseName) : '';
+      if (mothersExistingSpouse && mothersExistingSpouse !== fatherNorm && mother.status === 'confirmed') {
+        console.warn('[updateParents] Father', fatherName, 'does not match mother\'s existing spouse', mother.spouseName, '— skipping father update to avoid family merge.');
+        return;  // Bail entirely for this cert's parent update — data is ambiguous
+      }
+    }
+
+    // Only update father if slot is blank or probable (never overwrite confirmed)
+    if (father && fatherName && (father.status === 'blank' || father.status === 'probable' || father.status === 'unknown-parent')) {
+      father.name = fatherName;
+      father.fullName = fatherName;
+      if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
+      changed.push(father);
+    }
+    // Only update mother if slot is blank or probable (never overwrite confirmed)
+    if (mother && motherName && (mother.status === 'blank' || mother.status === 'probable' || mother.status === 'unknown-parent')) {
+      const rawMName = motherName.replace(/\s*\(m\.s\.\s+[^)]+\)/gi, '').trim();
+      const mParts = rawMName.split(' ');
+      const mFirst = mParts[0] || '';
+      const mRawSurname = mParts.slice(1).join(' ');
+      const mMaiden = motherMaiden || mother.maidenName || '';
+      if (mMaiden && mFirst) {
+        mother.name = mFirst + ' ' + mMaiden;
+        mother.fullName = mFirst + ' ' + mMaiden;
+      } else {
+        mother.name = rawMName;
+        mother.fullName = rawMName;
+      }
+      if (mMaiden) mother.maidenName = mMaiden;
+      if (mRawSurname && mRawSurname !== mMaiden) mother.marriedName = mRawSurname;
+      if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
+      changed.push(mother);
+    }
+    // Wire spouse link only if both are unlinked or already linked to each other
+    if (father && mother) {
+      const alreadyLinked = father.spouseId === mother.id || mother.spouseId === father.id;
+      const fatherFree = !father.spouseId || father.spouseId === mother.id;
+      const motherFree = !mother.spouseId || mother.spouseId === father.id;
+      if (alreadyLinked || (fatherFree && motherFree)) {
+        father.spouseId = mother.id;
+        mother.spouseId = father.id;
+        father.spouseName = mother.name;
+        mother.spouseName = father.name;
+      }
+    }
+  }
+
+  updateParents(groom, entry.groomFather?.name, entry.groomMother?.name, entry.groomMother?.maidenName);
+  updateParents(bride, entry.brideFather?.name, entry.brideMother?.name, entry.brideMother?.maidenName);
+
+  // Warn if groom's existing confirmed parents don't match MC parents
+  if (groom.parents && groom.parents.length >= 2 && entry.groomFather?.name) {
+    const existingFather = people.find(p => p.id === groom.parents[0]);
+    const existingMother = people.find(p => p.id === groom.parents[1]);
+    const fatherMismatch = existingFather && existingFather.status === 'confirmed' && normalizeName(existingFather.name) !== normalizeName(entry.groomFather.name);
+    const motherMismatch = existingMother && existingMother.status === 'confirmed' && normalizeName(existingMother.name) !== normalizeName(entry.groomMother?.name || '');
+    if (fatherMismatch || motherMismatch) {
+      setTimeout(() => showToast('Note: MC parents differ from existing tree parents. Check for duplicate names.'), 500);
+    }
+  }
+}
+
+function applyDeathEntry(entry, changed, docImage, forceDecId) {
+  const decName = entry.deceased?.name; if (!decName) return;
+  let dec = null;
+  if (forceDecId) {
+    dec = people.find(p => p.id === forceDecId);
+  }
+  if (!dec) {
+    dec = findPersonGenAware(decName);
+  }
+  if (!dec) {
+    // Try spouse-link match for married women where DC uses married name
+    for (const p of people) {
+      if (!p.spouseId || !p.name) continue;
+      const pDisplay = p.name.replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+      const pFirst = pDisplay.split(/\s+/)[0] || '';
+      const pLast = pDisplay.split(/\s+/).pop() || '';
+      const searchFirst = decName.split(/\s+/)[0]?.toLowerCase() || '';
+      const searchLast = decName.split(/\s+/).pop()?.toLowerCase() || '';
+      if (pFirst === searchFirst && pLast === searchLast) { dec = p; break; }
+    }
+  }
+  if (!dec) { dec = createPerson(nextId++, 0, decName, '?', 'probable', {}); people.push(dec); changed.push(dec); }
+  if (entry.deathDate) { dec.deathDate = entry.deathDate; }
+  if (entry.deceased?.age) dec.ageAtDeath = entry.deceased.age;
+  if (entry.deceased?.occupation) dec.occupation = entry.deceased.occupation;
+  if (entry.deceased?.spouseName) dec.spouseName = entry.deceased.spouseName;
+  dec.docs.push({ type: 'dc', date: extractDocDate(entry, 'death'), docId: null });
+  if (docImage) {
+    saveDocToDB(dec.id, 'dc', docImage, { personName: dec.name }).then(id => {
+      const lastDoc = dec.docs[dec.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
+  dec.status = 'confirmed';
+  changed.push(dec);
+
+  // Use existing parent placeholders if wired — only fill blanks
+  if (dec.parents && dec.parents.length >= 2) {
+    const father = people.find(p => p.id === dec.parents[0]);
+    const mother = people.find(p => p.id === dec.parents[1]);
+    if (father && entry.father?.name && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable' || father.status === 'unknown-parent')) {
+      father.name = entry.father.name; father.fullName = entry.father.name;
+      if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
+      changed.push(father);
+    }
+    if (mother && entry.mother?.name && (mother.name === 'Name' || mother.status === 'blank' || mother.status === 'probable' || mother.status === 'unknown-parent')) {
+      mother.name = entry.mother.name; mother.fullName = entry.mother.name;
+      if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
+      if (entry.mother?.maidenName) mother.maidenName = entry.mother?.maidenName;
+      changed.push(mother);
+    }
+    // Wire spouse relationship between parents
+    if (father && mother) {
+      father.spouseId = mother.id;
+      mother.spouseId = father.id;
+      father.spouseName = mother.name;
+      mother.spouseName = father.name;
+    }
+  }
+}
+
+document.getElementById('certConfirm').addEventListener('click', () => {
+  if (!lastTranscription) return;
+  syncCertEdits();
+  const entries = lastTranscription.entries || [lastTranscription];
+  const entry = entries[selectedEntryIndex || 0];
+  if (!entry) return;
+
+  // DIRECT ATTACH MODE: bypass matcher, force apply to selected person
+  if (pendingDirectAttachId) {
+    let type = lastTranscription.type || 'unknown';
+    if (type === 'unknown') {
+      if (entry.groom?.name || entry.bride?.name) type = 'marriage';
+      else if (entry.child?.name || entry.father?.name || entry.mother?.name) type = 'birth';
+      else if (entry.deceased?.name) type = 'death';
+    }
+    const changed = [];
+    if (type === 'birth') applyBirthEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
+    else if (type === 'marriage') applyMarriageEntry(entry, changed, pendingDocImage, null, pendingDirectAttachId);
+    else if (type === 'death') applyDeathEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
+    if (changed.length) { renderTree(); showToast('Document attached to ' + changed[0].name); }
+    pendingDirectAttachId = null;
+    certPanel.classList.remove('active');
+    certPanel.classList.remove('has-results');
+    return;
+  }
+
+  // Normal auto-match path
+  let type = lastTranscription.type || 'unknown';
+  if (type === 'unknown') {
+    if (entry.groom?.name || entry.bride?.name) type = 'marriage';
+    else if (entry.child?.name || entry.father?.name || entry.mother?.name) type = 'birth';
+    else if (entry.deceased?.name) type = 'death';
+  }
+  applyCertToPerson(entry, type, pendingDocImage);
+  certPanel.classList.remove('active');
+  certPanel.classList.remove('has-results');
+});
+
+document.getElementById('certClear').addEventListener('click', () => {
+  pendingDirectAttachId = null;  // Cancel any pending direct-attach
+  clearCertPanel();
+});
+
+document.getElementById('certRetry').addEventListener('click', () => {
+  if (pendingDocFile || pendingDocImage) {
+    // Re-scan the same image without picking again
+    document.getElementById('certResults').innerHTML = '';
+    certPanel.classList.remove('has-results');
+    lastTranscription = null;
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status loading';
+    cs.innerHTML = 'Scanning certificate...<br><small>Please wait</small>';
+    cs.style.display = 'block';
+    if (pendingDocImage) {
+      sendToTranscriptionAPI(pendingDocImage);
+    } else if (pendingDocFile) {
+      processDocFile(pendingDocFile);
+    }
+  } else {
+    // No image stored, trigger file picker
+    clearCertPanel();
+    document.getElementById('certFileInput').value = '';
+    document.getElementById('certFileInput').click();
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// RESEARCH GUIDANCE / NEXT STEPS
+// ═══════════════════════════════════════════════════════════════
+
+function openGuidancePanel() {
+  const panel = document.getElementById('guidancePanel');
+  panel.classList.add('active');
+  history.pushState({panel: 'guidance'}, '');
+  runGuidanceAnalysis();
+}
+
+function closeGuidancePanel() {
+  document.getElementById('guidancePanel').classList.remove('active');
+}
+
+function runGuidanceAnalysis() {
+  const body = document.getElementById('guidanceBody');
+  body.innerHTML = '<div style="text-align:center;padding:40px;color:#6b5537;"><div style="font-size:24px;margin-bottom:8px;">🧭</div><div>Analysing your tree...</div></div>';
+  setTimeout(() => {
+    try { const data = buildGuidanceSuggestions(); renderGuidanceResults(data); }
+    catch (err) { console.error('[GUIDANCE]', err); body.innerHTML = '<div style="text-align:center;padding:40px;color:#991b1b;"><div style="font-size:24px;margin-bottom:8px;">⚠️</div><div>Could not analyse tree. Try refreshing.</div></div>'; }
+  }, 50);
+}
+
+function countEmptyParentSlots(p) {
+  if (!p.parents || p.parents.length < 2) return 2;
+  let count = 0;
+  for (const pid of p.parents) {
+    const parent = people.find(pp => pp.id === pid);
+    if (!parent || parent.status === 'blank' || parent.name === 'Name') count++;
+  }
+  return count;
+}
+
+function extractYear(dateStr) {
+  if (!dateStr) return null;
+  const m = String(dateStr).match(/\b(17|18|19|20)\d{2}\b/);
+  return m ? parseInt(m[0]) : null;
+}
+
+function buildFillsList(type, p, spouse) {
+  const fills = [];
+  if (type === 'MC') {
+    fills.push('Marriage date & place');
+    const pMissing = countEmptyParentSlots(p);
+    const sMissing = spouse ? countEmptyParentSlots(spouse) : 0;
+    if (pMissing > 0) fills.push("Groom's parents (" + pMissing + " unknown)");
+    if (sMissing > 0) fills.push("Bride's parents (" + sMissing + " unknown)");
+  } else if (type === 'DC') {
+    const missing = countEmptyParentSlots(p);
+    if (missing > 0) fills.push("Parents' names (" + missing + " unknown)");
+    if (!p.deathDate) fills.push('Death date');
+  } else if (type === 'BC') {
+    const missing = countEmptyParentSlots(p);
+    if (missing > 0) fills.push("Parents' names (" + missing + " unknown)");
+    fills.push('Birth date & place');
+  }
+  return fills;
+}
+
+function getDocCost(type, country) {
+  const costs = {
+    scotland: { BC: '~£1.50', MC: '~£1.50', DC: '~£1.50' },
+    england: { BC: '~£11', MC: '~£11', DC: '~£11' },
+    ireland: { BC: 'Free', MC: 'Free', DC: 'Free' },
+    northern_ireland: { BC: '~£15', MC: '~£15', DC: '~£15' },
+    usa: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    canada: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    australia: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    new_zealand: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    germany: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    france: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+    italy: { BC: 'Varies', MC: 'Varies', DC: 'Varies' },
+  };
+  const c = costs[country] || costs.scotland;
+  return c[type] || c.BC;
+}
+
+function getSourceForType(type, country) {
+  const src = COUNTRY_SOURCES[country] || COUNTRY_SOURCES.scotland;
+  if (!src) return { url: '#', name: 'Unknown' };
+  const url = src[type] || src.birth || '';
+  return { url, name: src.name };
+}
+
+function buildGuidanceSuggestions() {
+  const suggestions = [];
+  const countryCode = getCountry() || 'scotland';
+
+  // Stats
+  let total = 0, filled = 0, documented = 0, brickWalls = 0, docsCount = 0;
+  let bcDocs = 0, mcDocs = 0, dcDocs = 0;
+  for (const p of people) {
+    total++;
+    if (p.status === 'confirmed') filled++;
+    if (p.docs && p.docs.length > 0) { documented++; docsCount += p.docs.length; }
+    if (p.status === 'brickwall') brickWalls++;
+    if (p.docs) {
+      for (const d of p.docs) {
+        if (d.type === 'birth') bcDocs++;
+        else if (d.type === 'marriage') mcDocs++;
+        else if (d.type === 'death') dcDocs++;
+      }
+    }
+  }
+
+  // 1. Marriage certs for known couples (highest impact)
+  const processedCouples = new Set();
+  for (const p of people) {
+    if (!p.spouseId || processedCouples.has(p.id)) continue;
+    const spouse = people.find(s => s.id === p.spouseId);
+    if (!spouse) continue;
+    processedCouples.add(p.id);
+    processedCouples.add(spouse.id);
+
+    // Skip suggestions for blank/unfilled couples
+    if (isEffectivelyBlank(p.name) || isEffectivelyBlank(spouse.name)) continue;
+
+    const pHasMC = p.docs && p.docs.some(d => d.type === 'marriage');
+    const sHasMC = spouse.docs && spouse.docs.some(d => d.type === 'marriage');
+    const pMissing = countEmptyParentSlots(p);
+    const sMissing = countEmptyParentSlots(spouse);
+    const totalMissing = pMissing + sMissing;
+
+    if (!pHasMC && !sHasMC && totalMissing > 0) {
+      const marriageYear = extractYear(p.marriageDate) || extractYear(spouse.marriageDate);
+      suggestions.push({
+        type: 'MC', priority: 'high', impact: totalMissing + (marriageYear ? 1 : 0),
+        title: 'Marriage cert: ' + p.name + ' & ' + spouse.name,
+        desc: marriageYear ? 'Married c. ' + marriageYear : 'Marriage date unknown',
+        fills: buildFillsList('MC', p, spouse),
+        people: [p, spouse],
+        cost: getDocCost('MC', countryCode),
+        source: getSourceForType('marriage', countryCode)
+      });
+    }
+  }
+
+  // 2. Death certs for gen > 2 with missing parents
+  for (const p of people) {
+    if (p.status === 'blank' || p.status === 'you') continue;
+    if (isEffectivelyBlank(p.name)) continue;
+    const missing = countEmptyParentSlots(p);
+    if (missing === 0) continue;
+    const hasDC = p.docs && p.docs.some(d => d.type === 'death');
+    if (p.gen > 2 && !hasDC) {
+      const deathYear = extractYear(p.deathDate);
+      suggestions.push({
+        type: 'DC', priority: 'med', impact: missing,
+        title: 'Death cert for ' + p.name,
+        desc: deathYear ? 'Died c. ' + deathYear : 'Death date unknown',
+        fills: buildFillsList('DC', p),
+        people: [p],
+        cost: getDocCost('DC', countryCode),
+        source: getSourceForType('death', countryCode)
+      });
+    }
+  }
+
+  // 3. Birth certs
+  for (const p of people) {
+    if (p.status === 'blank' || p.status === 'you') continue;
+    if (isEffectivelyBlank(p.name)) continue;
+    const hasBC = p.docs && p.docs.some(d => d.type === 'birth');
+    if (hasBC) continue;
+    const missing = countEmptyParentSlots(p);
+    const birthYear = extractYear(p.birthDate);
+
+    if (missing > 0) {
+      suggestions.push({
+        type: 'BC', priority: 'high', impact: missing + 1,
+        title: 'Birth cert for ' + p.name,
+        desc: birthYear ? 'Born c. ' + birthYear : 'Birth date unknown',
+        fills: buildFillsList('BC', p),
+        people: [p],
+        cost: getDocCost('BC', countryCode),
+        source: getSourceForType('birth', countryCode)
+      });
+    } else {
+      suggestions.push({
+        type: 'BC', priority: 'low', impact: 1,
+        title: 'Birth cert for ' + p.name,
+        desc: birthYear ? 'Born c. ' + birthYear : 'Birth date unknown',
+        fills: ['Birth date & place (parents already recorded — would only confirm details)'],
+        people: [p],
+        cost: getDocCost('BC', countryCode),
+        source: getSourceForType('birth', countryCode)
+      });
+    }
+  }
+
+  // Sort by impact desc, then priority
+  suggestions.sort((a, b) => {
+    if (b.impact !== a.impact) return b.impact - a.impact;
+    const pri = { high: 3, med: 2, low: 1 };
+    return pri[b.priority] - pri[a.priority];
+  });
+
+  return { suggestions: suggestions.slice(0, 8), stats: { total, filled, documented, brickWalls, docsCount, bcDocs, mcDocs, dcDocs } };
+}
+
+function renderOnboardingGuide() {
+  return `
+<div id="onboardingGuide" style="background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;margin-bottom:10px;overflow:hidden;">
+  <button onclick="document.getElementById('onboardingBody').style.display=(document.getElementById('onboardingBody').style.display==='none'?'block':'none');this.querySelector('span').style.transform=(document.getElementById('onboardingBody').style.display==='none'?'rotate(0deg)':'rotate(180deg)')" style="width:100%;text-align:left;background:none;border:none;padding:10px 12px;font-family:'Cinzel Decorative',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">
+    How to Build Your Tree
+    <span style="display:inline-block;transition:transform 0.2s;font-size:12px;">▼</span>
+  </button>
+  <div id="onboardingBody" style="display:none;padding:0 12px 12px;font-size:12px;color:#3e2b1a;line-height:1.6;">
+    <ol style="margin:0;padding-left:18px;">
+      <li><strong>Start with yourself.</strong> Tap the rightmost card (top of the tree), enter your name and birth date, set status to "You".</li>
+      <li><strong>Add your parents.</strong> Tap the two cards to the left of yours (Generation 1). Fill in father and mother. The tree holds 9 generations total.</li>
+      <li><strong>Upload certificates for speed.</strong> Use the 📜 Certificate panel (top-left button). Snap a photo of a birth, marriage, or death certificate and tap "Apply to Tree" to autofill cards.</li>
+      <li><strong>Or fill manually.</strong> Tap any card to open the detail panel. Add names, dates, maiden names, occupation, and change status (Confirmed, Probable, Brick Wall, Unknown Parent).</li>
+      <li><strong>Attach documents.</strong> In a person's detail panel, tap "Attach Document" to link a certificate image directly to that person.</li>
+      <li><strong>Track siblings.</strong> In the detail panel, add brothers and sisters under the Siblings section. A 🍃 leaf appears on cards with siblings recorded.</li>
+      <li><strong>Save your work.</strong> Tap 💾 to export a <code>.familytree</code> backup. Load it later with 📂, or send it to someone else.</li>
+      <li><strong>Get suggestions.</strong> This panel shows which certificates to find next, with direct links to source records and cost estimates.</li>
+      <li><strong>Zoom and pan.</strong> Pinch to zoom in/out on the tree. Drag to scroll. Use the zoom controls (top right) for precise adjustment.</li>
+    </ol>
+  </div>
+</div>`;
+}
+
+function renderGuidanceResults({ suggestions, stats }) {
+  const body = document.getElementById('guidanceBody');
+  let html = renderOnboardingGuide();
+  html += '<div class="guidance-stats">';
+  html += '<div class="guidance-stat"><div class="val">' + stats.filled + '/' + stats.total + '</div><div class="lbl">Confirmed</div></div>';
+  html += '<div class="guidance-stat"><div class="val">' + stats.documented + '</div><div class="lbl">Documented</div></div>';
+  html += '<div class="guidance-stat"><div class="val">' + stats.brickWalls + '</div><div class="lbl">Brick Walls</div></div>';
+  html += '</div>';
+
+  if (suggestions.length === 0) {
+    if (stats.filled === 0) {
+      html += '<div class="guidance-empty"><div class="icon">🌱</div><div style="font-family: Cinzel Decorative,serif;font-size:16px;color:#5a7a3a;margin-bottom:8px;">Start Building Your Tree</div><div>Confirm your own name, then add your parents and grandparents. The guide will show which certificates to find next.</div></div>';
+    } else {
+      html += '<div class="guidance-empty"><div class="icon">🎉</div><div style="font-family: Cinzel Decorative,serif;font-size:16px;color:#5a7a3a;margin-bottom:8px;">Tree Complete!</div><div>All known ancestors have documents attached. Great work!</div></div>';
+    }
+    body.innerHTML = html;
+    return;
+  }
+
+  html += '<div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#2a1f10;margin-bottom:8px;">Top Priority Suggestions</div>';
+  const icons = { BC: '📜', MC: '💍', DC: '⚰️' };
+
+  for (const s of suggestions) {
+    const cls = s.priority === 'high' ? 'high' : (s.priority === 'med' ? 'med' : 'low');
+    html += '<div class="guidance-card ' + cls + '">';
+    html += '<div class="title">' + (icons[s.type] || '📄') + ' ' + s.title + '</div>';
+    html += '<div class="desc">' + s.desc + '</div>';
+    html += '<ul class="fills">' + s.fills.map(f => '<li>• ' + f + '</li>').join('') + '</ul>';
+    html += '<div class="actions">';
+    html += '<a href="' + s.source.url + '" target="_blank" rel="noopener" class="source-link">🔍 Search ' + s.source.name + '</a>';
+    html += '<span class="cost-note">🛒 ' + s.type + ' cert: ' + s.cost + '</span>';
+    html += '</div></div>';
+  }
+  body.innerHTML = html;
+}
+
+async function getDocById(docId) {
+  if (!docId) return null;
+  if (!_docDB) await openDocDB();
+  const tx = _docDB.transaction(DOC_STORE_NAME, 'readonly');
+  const store = tx.objectStore(DOC_STORE_NAME);
+  return new Promise((resolve, reject) => {
+    const req = store.get(docId);
+    req.onsuccess = () => resolve(req.result || null);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function saveSession() {
+  // Deep clone people and inline document images so the file is self-contained
+  const payloadPeople = JSON.parse(JSON.stringify(people));
+  let inlinedCount = 0;
+  for (const person of payloadPeople) {
+    if (!person.docs || !person.docs.length) continue;
+    for (const doc of person.docs) {
+      if (!doc.docId) continue;
+      const record = await getDocById(doc.docId);
+      if (record && record.image) {
+        doc.image = record.image;
+        inlinedCount++;
+      }
+    }
+  }
+  const payload = { version: 5, exportedAt: new Date().toISOString(), people: payloadPeople, nextId: nextId };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Session saved' + (inlinedCount > 0 ? ' (' + inlinedCount + ' images)' : ''));
+}
+async function loadSession(file) {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+    if (!data.people) { showToast('Invalid session file'); return; }
+    people = data.people;
+    nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+    // Restore inlined document images back into IndexedDB
+    let restoredCount = 0;
+    for (const person of people) {
+      if (!person.docs || !person.docs.length) continue;
+      for (const doc of person.docs) {
+        if (doc.image) {
+          const newDocId = await saveDocToDB(person.id, doc.type, doc.image, { personName: person.name, date: doc.date || '', restored: true });
+          doc.docId = newDocId;
+          delete doc.image;
+          restoredCount++;
+        }
+      }
+    }
+    renderTree();
+    showToast('Loaded: ' + people.length + ' people' + (restoredCount > 0 ? ' (' + restoredCount + ' images)' : ''));
+  } catch (err) {
+    console.error('[LOAD]', err);
+    showToast('Load failed: ' + (err.message || 'Unknown error'));
+  }
+}
+document.getElementById('saveBtn').addEventListener('click', () => { saveSession(); });
+document.getElementById('loadBtn').addEventListener('click', () => document.getElementById('loadFileInput').click());
+document.getElementById('loadFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0]; if (file) loadSession(file); e.target.value = '';
+});
+document.getElementById('resetBtn').addEventListener('click', () => {
+  const dlg = document.getElementById('confirmDialog');
+  dlg.style.display = 'flex';
+  document.getElementById('confirmOk').onclick = () => {
+    localStorage.removeItem('familytree_data_v5');
+    location.reload();
+  };
+  document.getElementById('confirmCancel').onclick = () => {
+    dlg.style.display = 'none';
+  };
+});
+
+document.getElementById('nextStepsBtn').addEventListener('click', openGuidancePanel);
+document.getElementById('guidanceClose').addEventListener('click', closeGuidancePanel);
+document.getElementById('guidancePanel').addEventListener('click', (e) => {
+  if (e.target === document.getElementById('guidancePanel')) closeGuidancePanel();
+});
+
+
+setInterval(() => { localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId})); }, 30000);
+function autoRestore() {
+  const saved = localStorage.getItem('familytree_data_v5');
+  if (saved) {
+    try {
+      const data = JSON.parse(saved);
+      if (data.people && data.people.length > 0) {
+        people = data.people; nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+        showToast('Restored ' + people.length + ' people from auto-save'); return true;
+      }
+    } catch (e) {}
+  }
+  return false;
+}
+function clearStorage() {
+  localStorage.removeItem('familytree_data_v5');
+  showToast('Storage cleared — reload to start fresh');
+}
+function showToast(msg, duration) {
+  duration = duration || 2500;
+  const existing = document.getElementById('toastMsg'); if (existing) existing.remove();
+  const el = document.createElement('div'); el.id = 'toastMsg'; el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
+  setTimeout(() => el.remove(), duration + 500);
+}
+
+function clearCard() {
+  if (!selectedPersonId) return;
+  const person = people.find(p => p.id === selectedPersonId);
+  if (!person) return;
+  // Save old name/gen for toast
+  const oldName = person.name || 'Person';
+  // Reset to blank card state
+  person.name = 'Name';
+  person.fullName = null;
+  person.spouseName = null;
+  person.birthDate = null;
+  person.deathDate = null;
+  person.years = '?';
+  person.occupation = null;
+  person.birthplace = null;
+  person.maidenName = null;
+  person.notes = '';
+  person.docs = [];
+  person.siblings = [];
+  person.status = 'blank';
+  renderTree();
+  closeDetail();
+  showToast('Cleared all data from ' + oldName);
+}
+function clearPersonDocs() {
+  const btn = document.getElementById('clearDocBtn');
+  if (!btn) return;
+  btn.addEventListener('click', () => {
+    const dlg = document.getElementById('confirmDialog');
+    document.getElementById('confirmTitle').textContent = 'Clear Documents?';
+    document.getElementById('confirmMessage').textContent = `Remove all documents from this person's record? This cannot be undone.`;
+    dlg.style.display = 'flex';
+    document.getElementById('confirmOk').onclick = () => {
+      dlg.style.display = 'none';
+      if (!selectedPersonId) return;
+      const person = people.find(p => p.id === selectedPersonId);
+      if (!person) return;
+      person.docs = [];
+      // Also clear IndexedDB
+      if (_docDB) {
+        getDocsForPerson(selectedPersonId).then(docs => {
+          const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
+          const store = tx.objectStore(DOC_STORE_NAME);
+          docs.forEach(d => store.delete(d.id));
+        }).catch(() => {});
+      }
+      renderTree(); showToast('Documents cleared');
+    };
+    document.getElementById('confirmCancel').onclick = () => {
+      dlg.style.display = 'none';
+    };
+  });
+}
+// Backfill computed fields from existing doc data (migration for pre-v204 data)
+function backfillComputedFields() {
+  for (const p of people) {
+    // Marriage date from mc docs
+    if (!p.marriageDate && p.docs) {
+      const mc = p.docs.find(d => d.type === 'mc');
+      if (mc && mc.date) p.marriageDate = mc.date;
+    }
+    // Age at death from birth + death dates
+    if (!p.ageAtDeath && p.birthDate && p.deathDate) {
+      const bYear = (p.birthDate.match(/\d{4}/) || [])[0];
+      const dYear = (p.deathDate.match(/\d{4}/) || [])[0];
+      if (bYear && dYear) p.ageAtDeath = String(parseInt(dYear) - parseInt(bYear));
+    }
+    // Compact years display
+    const bY = (p.birthDate || '').match(/\d{4}/);
+    const dY = (p.deathDate || '').match(/\d{4}/);
+    if (bY && dY) p.years = bY[0] + ' \u2014 ' + dY[0];
+    else if (bY) p.years = 'b. ' + bY[0];
+    else if (p.years === '?' || !p.years) p.years = '?';
+  }
+}
+if (!autoRestore()) initDefaultData();
+backfillComputedFields();
+renderTree();
+document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+
+// Deferred listener: ambiguity modal cancel button (guarded: button lives in HTML after script block)
+const ambigCancelBtn = document.getElementById('ambigCancel');
+if (ambigCancelBtn) {
+  ambigCancelBtn.addEventListener('click', () => {
+    document.getElementById('ambigModal').style.display = 'none';
+    pendingAmbigTarget = null;
+    showToast('Cancelled — cert not applied');
+  });
+}
+
+// Mobile back button closes panels
+window.addEventListener('popstate', (e) => {
+  if (!e.state || !e.state.panel) return;
+  if (e.state.panel === 'detail' && detailPanel.classList.contains('active')) {
+    detailPanel.classList.remove('active');
+    selectedPersonId = null;
+  }
+  if (e.state.panel === 'cert' && certPanel.classList.contains('active')) {
+    certPanel.classList.remove('active');
+    certPanel.classList.remove('has-results');
+  }
+  if (e.state.panel === 'guidance' && guidancePanel.classList.contains('active')) {
+    guidancePanel.classList.remove('active');
+  }
+});
+
+// Country init
+populateCountrySelect();
+document.getElementById('countrySelect').addEventListener('change', (e) => {
+  setCountry(e.target.value);
+});
+function showCountryModal() {
+  const modal = document.getElementById('countryModal');
+  const modalSel = document.getElementById('countryModalSelect');
+  modalSel.innerHTML = '<option value="" disabled selected>Choose a country...</option>';
+  Object.entries(COUNTRY_SOURCES).forEach(([code, info]) => {
+    const opt = document.createElement('option');
+    opt.value = code; opt.textContent = info.name;
+    modalSel.appendChild(opt);
+  });
+  modal.style.display = 'flex';
+}
+document.getElementById('countryModalOk').addEventListener('click', () => {
+  const val = document.getElementById('countryModalSelect').value;
+  if (!val) return;
+  setCountry(val);
+  document.getElementById('countryModal').style.display = 'none';
+});
+if (!getCountry()) {
+  setTimeout(() => showCountryModal(), 800);
+}
+
+function centerOnGen0() {
+  // Find Graeme (the root person, ID 1, gen 0)
+  const root = people.find(p => p.gen === 0);
+  if (!root) return;
+  const rootEl = cardEls.get(root.id);
+  if (!rootEl) return;
+  // At 25% zoom, center Gen 0 vertically in viewport, visible on left
+  const cardCenterX = rootEl.offsetLeft + rootEl.offsetWidth / 2;
+  const cardCenterY = rootEl.offsetTop + rootEl.offsetHeight / 2;
+  // Position so Gen 0 is ~1/3 from left edge, vertically centered
+  scroll.scrollLeft = Math.max(0, (cardCenterX * zoom) - scroll.clientWidth * 0.25);
+  scroll.scrollTop = Math.max(0, (cardCenterY * zoom) - scroll.clientHeight / 2);
+}
+setTimeout(() => centerOnGen0(), 150);
+
+// Dark mode toggle
+document.getElementById('darkModeToggle').addEventListener('click', function() {
+  const html = document.documentElement;
+  const isDark = html.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    html.removeAttribute('data-theme');
+    localStorage.setItem('vaultedRootsTheme', 'light');
+  } else {
+    html.setAttribute('data-theme', 'dark');
+    localStorage.setItem('vaultedRootsTheme', 'dark');
+  }
+});
+
+// View as Poster button — opens heritage poster with current tree data
+// Explicitly save to localStorage before opening to avoid sync lag
+document.getElementById('viewPosterBtn').addEventListener('click', () => {
+  localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
+  window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
+});
+
+// Print — ask user which format they want, then route accordingly
+document.getElementById('printTreeBtn').addEventListener('click', () => {
+  closeDetail();
+  const certPanel = document.getElementById('certPanel');
+  if (certPanel) certPanel.classList.remove('open');
+
+  const personCount = people.length;
+  const genCount = Math.max(...people.map(p => p.gen)) + 1;
+
+  // Build a small inline dialog
+  const dlg = document.createElement('div');
+  dlg.id = 'printChoiceDlg';
+  dlg.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:20000;display:flex;justify-content:center;align-items:center;';
+  dlg.innerHTML = `
+    <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:10px;padding:22px;max-width:340px;width:90%;text-align:center;">
+      <div style="font-family:\"Cinzel Decorative\",serif;font-size:15px;color:#3e2b1a;margin-bottom:14px;">Print Your Tree</div>
+      <div style="font-family:\"Cormorant Garamond\",serif;font-size:12px;color:#6a5a3a;margin-bottom:18px;">
+        ${personCount} people · ${genCount} generations
+      </div>
+      <button id="dlgPoster" style="display:block;width:100%;padding:10px;margin-bottom:10px;border:none;border-radius:6px;background:#3e3225;color:#f0e6d2;font-family:\"Cormorant Garamond\",serif;font-size:13px;cursor:pointer;">
+        🖼️ Heritage Poster — 1 page (printable)
+      </button>
+      <button id="dlgMulti" style="display:block;width:100%;padding:10px;margin-bottom:14px;border:none;border-radius:6px;background:#5a4a3a;color:#f0e6d2;font-family:\"Cormorant Garamond\",serif;font-size:13px;cursor:pointer;">
+        🌳 Full Tree — multi-page PDF
+      </button>
+      <button id="dlgCancel" style="padding:6px 16px;border:none;border-radius:4px;background:transparent;color:#7a6a4a;font-family:\"Cormorant Garamond\",serif;font-size:12px;cursor:pointer;text-decoration:underline;">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(dlg);
+
+  const cleanup = () => { dlg.remove(); };
+
+  dlg.querySelector('#dlgPoster').addEventListener('click', () => {
+    cleanup();
+    localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
+    window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
+  });
+
+  dlg.querySelector('#dlgMulti').addEventListener('click', () => {
+    cleanup();
+    // Multi-page print — fit tree to page width, hide UI, trigger browser print
+    const originalZoom = zoom;
+    const treeWrap = document.getElementById('treeWrap');
+
+    // Step 1: set zoom to 1 and re-render so treeWidth/treeHeight reflect natural size
+    zoom = 1;
+    renderTree();
+
+    // Step 2: compute scale to fit landscape page
+    const pageW = 1040;
+    const pageH = 720;
+    const scale = Math.max(0.05, Math.min(1, pageW / treeWidth, pageH / treeHeight));
+
+    // Step 3: apply scale via CSS custom property (used by @media print)
+    treeWrap.style.setProperty('--print-scale', scale);
+
+    // Step 4: print
+    let restored = false;
+    const restore = () => {
+      if (restored) return;
+      restored = true;
+      zoom = originalZoom;
+      renderTree();
+      treeWrap.style.removeProperty('--print-scale');
+      window.removeEventListener('afterprint', restore);
+    };
+    window.addEventListener('afterprint', restore);
+    setTimeout(restore, 10000); // fallback safety
+    setTimeout(() => window.print(), 150);
+  });
+
+  dlg.querySelector('#dlgCancel').addEventListener('click', cleanup);
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) cleanup(); });
+});
+</script>
+<style>
+@media (max-width: 480px) {
+  .cert-panel { width: 100vw; max-width: 100vw; }
+  .cert-body { overflow-y: auto; -webkit-overflow-scrolling: touch; }
+  .cert-field-edit { flex-wrap: wrap; }
+  .cert-field-edit .cert-field-label { min-width: 100%; font-size: 9px; margin-bottom: 2px; }
+  .cert-field-edit input { width: 100%; }
+  .cert-upload-btns button { padding: 12px 6px; font-size: 11px; }
+  .cert-upload-btns button span { font-size: 22px !important; }
+  .cert-actions button { flex: 1 1 100%; }
+}
+</style>
+<!-- Ambiguity Resolution Modal -->
+<div id="ambigModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10002;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;">
+    <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#3e2b1a;margin-bottom:8px;">Multiple Matches Found</div>
+    <div id="ambigQuestion" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:12px;">Which person should receive this certificate?</div>
+    <div id="ambigOptions" style="max-height:260px;overflow-y:auto;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="ambigCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+</body>
+</html>
