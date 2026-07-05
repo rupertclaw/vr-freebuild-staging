@@ -5412,7 +5412,28 @@ function convertGedcomFile(file) {
       a.download = 'vaultedroots_import_' + new Date().toISOString().slice(0, 10) + '.familytree';
       a.click();
       URL.revokeObjectURL(url);
-      showToast('Converted ' + result.people.length + ' people. Tap Load to open it.');
+      // Load directly into the page (same logic as loadSession, minus file parsing)
+      try {
+        if (!payload.people) { showToast('No people in GEDCOM'); return; }
+        people = payload.people;
+        nextId = payload.nextId || maxGen(people, p => p.id) + 1;
+        visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
+        renderTree();
+        const btn = document.getElementById('expandGenBtn');
+        const actualMax = maxGen(people, p => p.gen);
+        if (visibleMaxGen >= actualMax) {
+          btn.textContent = 'All visible — tap any person to add parents';
+          btn.disabled = true;
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
+        }
+        if (currentTreeId) await saveCurrentTreeToDB();
+        showToast('Converted ' + result.people.length + ' people. Tree loaded! A .familytree backup was also downloaded.');
+      } catch (loadErr) {
+        console.error('[GEDCOM] load error:', loadErr);
+        showToast('Converted ' + result.people.length + ' people. A .familytree file was downloaded — tap 📂 Load to import it.');
+      }
     } catch (err) {
       console.error('[GEDCOM]', err);
       showToast('GEDCOM parse error: ' + err.message);
