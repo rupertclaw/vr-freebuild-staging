@@ -1739,64 +1739,136 @@ function renderTree() {
 
   const topMap = new Map();
 
-  // Determine the rightmost generation to use as layout anchor.
-  // For binary trees (default data), we expect 2^gen cards per generation.
-  // For GEDCOM imports, the tree is irregular so we just use the deepest gen.
+  // === New layout: family-grouped positioning ===
+  // Key idea: spouses sit side by side (X offset), children centered under parents.
+  // Each "family unit" (couple + their children) forms a vertical cluster.
+  // This prevents spouses from being spread across the full width.
+  //
+  // Strategy: bottom-up. Start at the deepest gen, place cards vertically.
+  // Then work upwards: each person centers between their children.
+  // Spouses get a small X offset so they're visually paired.
+  //
+  // For GEDCOM trees with 135 roots: we group spouses and place families
+  // in compact clusters rather than spreading everyone across one line.
   let rightmostFull = displayMax;
 
-  // STEP 1: Place the deepest generation as a neat vertical column.
-  // This is the anchor generation — everything else positions relative to it.
+  const SPOUSE_OFFSET = CARD_W * 0.35; // X offset for married-in spouse
+  const FAMILY_GAP = 30; // extra gap between family clusters
+
+  // STEP 1: Place the deepest generation as a vertical column.
+  // Group spouses together so they appear side by side.
   let y = 10;
+  const placedAtDeepest = new Set();
   if (gens[rightmostFull]) {
     gens[rightmostFull].forEach(p => {
+      if (placedAtDeepest.has(p.id)) return;
       topMap.set(p.id, y);
+      placedAtDeepest.add(p.id);
       y += hMap.get(p.id) + GAP_Y;
+      // Place spouse right next to this person if in same gen
+      if (p.spouseId) {
+        const spouse = visiblePeople.find(x => x.id === p.spouseId);
+        if (spouse && spouse.gen === p.gen && !placedAtDeepest.has(spouse.id)) {
+          topMap.set(spouse.id, y);
+          placedAtDeepest.add(spouse.id);
+          y += hMap.get(spouse.id) + GAP_Y;
+        }
+      }
     });
   }
 
   // STEP 2: Cascade backwards from rightmostFull-1 down to 0.
-  // Each card centers itself between its parents (1 or 2) in the next generation.
+  // Each person centers between their parents OR next to their spouse.
   for (let g = rightmostFull - 1; g >= 0; g--) {
     if (!gens[g]) continue;
     let fallbackY = 10;
+    const placed = new Set();
     gens[g].forEach(p => {
-      if (!p.parents || p.parents.length === 0) {
-        // No parents — place below the last card at this gen
-        topMap.set(p.id, fallbackY);
-        fallbackY += hMap.get(p.id) + GAP_Y;
-        return;
-      }
-      // Average the Y center of all available parents
-      let totalCenter = 0;
-      let validParents = 0;
-      p.parents.forEach(pid => {
-        const parent = visiblePeople.find(x => x.id === pid);
-        if (parent) {
-          const py = topMap.get(parent.id);
-          const ph = hMap.get(parent.id);
-          if (py !== undefined) {
-            totalCenter += py + ph / 2;
-            validParents++;
+      if (placed.has(p.id)) return;
+
+      if (p.parents && p.parents.length > 0) {
+        // Average the Y center of all available parents
+        let totalCenter = 0;
+        let validParents = 0;
+        p.parents.forEach(pid => {
+          const parent = visiblePeople.find(x => x.id === pid);
+          if (parent) {
+            const py = topMap.get(parent.id);
+            const ph = hMap.get(parent.id);
+            if (py !== undefined) {
+              totalCenter += py + ph / 2;
+              validParents++;
+            }
           }
+        });
+        if (validParents > 0) {
+          const avgCenter = totalCenter / validParents;
+          topMap.set(p.id, avgCenter - hMap.get(p.id) / 2);
+          placed.add(p.id);
+          // Place spouse next to this person
+          if (p.spouseId) {
+            const spouse = visiblePeople.find(x => x.id === p.spouseId);
+            if (spouse && spouse.gen === p.gen && !placed.has(spouse.id)) {
+              topMap.set(spouse.id, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
+              placed.add(spouse.id);
+            }
+          }
+          return;
         }
-      });
-      if (validParents > 0) {
-        const avgCenter = totalCenter / validParents;
-        topMap.set(p.id, avgCenter - hMap.get(p.id) / 2);
-      } else {
-        topMap.set(p.id, fallbackY);
-        fallbackY += hMap.get(p.id) + GAP_Y;
+      }
+
+      // No parents or parents not yet positioned — try positioning via children
+      const children = visiblePeople.filter(c => c.parents && c.parents.includes(p.id));
+      if (children.length > 0) {
+        let totalCenter = 0;
+        let validChildren = 0;
+        children.forEach(c => {
+          const cy = topMap.get(c.id);
+          const ch = hMap.get(c.id);
+          if (cy !== undefined) {
+            totalCenter += cy + ch / 2;
+            validChildren++;
+          }
+        });
+        if (validChildren > 0) {
+          const avgCenter = totalCenter / validChildren;
+          topMap.set(p.id, avgCenter - hMap.get(p.id) / 2);
+          placed.add(p.id);
+          if (p.spouseId) {
+            const spouse = visiblePeople.find(x => x.id === p.spouseId);
+            if (spouse && spouse.gen === p.gen && !placed.has(spouse.id)) {
+              topMap.set(spouse.id, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
+              placed.add(spouse.id);
+            }
+          }
+          return;
+        }
+      }
+
+      // Fallback: place below the last card at this gen
+      topMap.set(p.id, fallbackY);
+      fallbackY += hMap.get(p.id) + GAP_Y;
+      placed.add(p.id);
+      if (p.spouseId) {
+        const spouse = visiblePeople.find(x => x.id === p.spouseId);
+        if (spouse && spouse.gen === p.gen && !placed.has(spouse.id)) {
+          topMap.set(spouse.id, fallbackY);
+          fallbackY += hMap.get(spouse.id) + GAP_Y;
+          placed.add(spouse.id);
+        }
       }
     });
   }
 
   // STEP 3: Cascade forwards from rightmostFull+1 up to displayMax.
-  // Each new ancestor positions itself by averaging its children's centers.
+  // Each ancestor positions itself by averaging its children's centers.
   if (rightmostFull < displayMax) {
     for (let g = rightmostFull + 1; g <= displayMax; g++) {
       if (!gens[g]) continue;
       let nextY = 10;
+      const placed = new Set();
       gens[g].forEach(p => {
+        if (placed.has(p.id)) return;
         const children = visiblePeople.filter(child =>
           child.parents && child.parents.includes(p.id)
         );
@@ -1814,13 +1886,23 @@ function renderTree() {
           if (validChildren > 0) {
             const avgCenter = totalCenter / validChildren;
             topMap.set(p.id, avgCenter - hMap.get(p.id) / 2);
+            placed.add(p.id);
+            if (p.spouseId) {
+              const spouse = visiblePeople.find(x => x.id === p.spouseId);
+              if (spouse && spouse.gen === p.gen && !placed.has(spouse.id)) {
+                topMap.set(spouse.id, topMap.get(p.id) + hMap.get(p.id) + GAP_Y);
+                placed.add(spouse.id);
+              }
+            }
           } else {
             topMap.set(p.id, nextY);
             nextY += hMap.get(p.id) + GAP_Y;
+            placed.add(p.id);
           }
         } else {
           topMap.set(p.id, nextY);
           nextY += hMap.get(p.id) + GAP_Y;
+          placed.add(p.id);
         }
       });
     }
@@ -5272,38 +5354,36 @@ function parseGedcom(text) {
     }
   }
 
-  // Build tree: assign generations
-  // Find root: person with no FAMC (no parents)
-  const roots = Object.values(indis).filter(p => !p.famc);
-  // If multiple roots, pick the first one with children
-  const root = roots.find(p => p.fams.length > 0) || roots[0] || Object.values(indis)[0];
-  if (!root) return null;
-
+  // === New generation assignment: BFS from true roots ===
+  // True roots = people with no FAMC whose spouse has FAMC, or who have descendants.
+  // Married-in spouses inherit their partner's gen.
+  
+  const gedXrefToId = {};
   const people = [];
   let nextId = 1;
-  const xrefMap = {}; // gedcom xref -> our id
 
-  function addPerson(gedIndi, gen) {
-    if (xrefMap[gedIndi.id]) return xrefMap[gedIndi.id];
+  // First, create person objects for ALL individuals
+  for (const [xref, ged] of Object.entries(indis)) {
     const id = nextId++;
-    xrefMap[gedIndi.id] = id;
+    gedXrefToId[xref] = id;
     let years = '?';
-    const bYear = (gedIndi.birthDate || '').match(/\d{4}/);
-    const dYear = (gedIndi.deathDate || '').match(/\d{4}/);
+    const bYear = (ged.birthDate || '').match(/\d{4}/);
+    const dYear = (ged.deathDate || '').match(/\d{4}/);
     if (bYear && dYear) years = bYear[0] + ' \u2014 ' + dYear[0];
     else if (bYear) years = 'b. ' + bYear[0];
-    const p = {
+    people.push({
       id: id,
-      name: gedIndi.name || 'Unknown',
-      fullName: gedIndi.name || '',
-      birthDate: gedIndi.birthDate || '',
-      deathDate: gedIndi.deathDate || '',
-      birthplace: gedIndi.birthPlace || '',
+      xref: xref,
+      name: ged.name || 'Unknown',
+      fullName: ged.name || '',
+      birthDate: ged.birthDate || '',
+      deathDate: ged.deathDate || '',
+      birthplace: ged.birthPlace || '',
       marriageDate: '',
-      maidenName: gedIndi.sex === 'F' ? gedIndi.surname : '',
+      maidenName: ged.sex === 'F' ? ged.surname : '',
       spouseName: '',
       occupation: '',
-      gen: gen,
+      gen: null,  // unassigned
       years: years,
       status: 'probable',
       docs: [],
@@ -5311,84 +5391,218 @@ function parseGedcom(text) {
       siblings: [],
       children: [],
       spouseId: null,
+      famc: ged.famc,
+      fams: ged.fams,
+      sex: ged.sex,
       notes: ''
-    };
-    people.push(p);
+    });
+  }
 
-    // Add parents
-    if (gedIndi.famc && fams[gedIndi.famc]) {
-      const fam = fams[gedIndi.famc];
-      const father = fam.husb ? indis[fam.husb] : null;
-      const mother = fam.wife ? indis[fam.wife] : null;
-      if (father) {
-        const fid = addPerson(father, gen + 1);
-        p.parents.push(fid);
-      }
-      if (mother) {
-        const mid = addPerson(mother, gen + 1);
-        p.parents.push(mid);
-      }
-      // Add siblings from same family
-      for (const sibXref of fam.children) {
-        if (sibXref === gedIndi.id) continue;
-        const sib = indis[sibXref];
-        if (sib) {
-          // Add sibling name to this person
-          const sibName = sib.name || 'Unknown';
-          if (!p.siblings.includes(sibName)) p.siblings.push(sibName);
-        }
+  // Helper: get person by xref
+  function personByXref(xref) {
+    const id = gedXrefToId[xref];
+    return id ? people.find(p => p.id === id) : null;
+  }
+
+  // Helper: get spouse xref from a family
+  function getSpouseXref(fam, xref) {
+    if (!fam) return null;
+    return fam.husb === xref ? fam.wife : fam.husb;
+  }
+
+  // Step 1: Find true roots (no FAMC) and assign gen 0
+  // Then BFS to assign generations to everyone connected.
+  const VISITED = new Set();
+  const queue = [];
+
+  // Find the root with the deepest descendant tree
+  function descendantDepth(xref, visited) {
+    if (visited.has(xref)) return 0;
+    visited.add(xref);
+    let maxD = 0;
+    const person = indis[xref];
+    if (!person) return 0;
+    for (const famId of person.fams) {
+      const fam = fams[famId];
+      if (!fam) continue;
+      for (const childXref of fam.children) {
+        const d = descendantDepth(childXref, new Set(visited));
+        if (d > maxD) maxD = d;
       }
     }
+    return maxD + 1;
+  }
 
-    // Add spouse and children
-    for (const famXref of gedIndi.fams) {
-      const fam = fams[famXref];
-      if (!fam) continue;
-      const spouseXref = (fam.husb === gedIndi.id) ? fam.wife : fam.husb;
-      if (spouseXref && indis[spouseXref]) {
-        const spouse = indis[spouseXref];
-        const spouseId = xrefMap[spouseXref] || addPerson(spouse, gen);
-        p.spouseId = spouseId;
-        p.spouseName = spouse.name || '';
-        if (fam.marriageDate) p.marriageDate = fam.marriageDate;
-        const spousePerson = people.find(pp => pp.id === spouseId);
-        if (spousePerson) {
-          spousePerson.spouseId = id;
-          spousePerson.spouseName = p.name;
+  const noParents = Object.values(indis).filter(p => !p.famc);
+  let bestRoot = null;
+  let bestDepth = 0;
+  for (const p of noParents) {
+    const d = descendantDepth(p.id, new Set());
+    if (d > bestDepth) { bestDepth = d; bestRoot = p; }
+  }
+  if (!bestRoot && noParents.length > 0) bestRoot = noParents[0];
+  if (!bestRoot) bestRoot = Object.values(indis)[0];
+  if (!bestRoot) return null;
+
+  // BFS: assign generations. Children = gen-1, parents = gen+1, spouses = same gen.
+  function assignGens() {
+    const startPerson = personByXref(bestRoot.id);
+    if (!startPerson) return;
+    startPerson.gen = 0;
+    queue.push(bestRoot.id);
+    VISITED.add(bestRoot.id);
+
+    while (queue.length > 0) {
+      const xref = queue.shift();
+      const person = indis[xref];
+      const ourPerson = personByXref(xref);
+      if (!person || !ourPerson) continue;
+      const gen = ourPerson.gen;
+
+      // Process spouse families
+      for (const famId of person.fams) {
+        const fam = fams[famId];
+        if (!fam) continue;
+
+        // Spouse: same generation
+        const spouseXref = getSpouseXref(fam, xref);
+        if (spouseXref && !VISITED.has(spouseXref)) {
+          VISITED.add(spouseXref);
+          const spousePerson = personByXref(spouseXref);
+          if (spousePerson && spousePerson.gen === null) {
+            spousePerson.gen = gen;
+          }
+          queue.push(spouseXref);
         }
-        // Add children
+
+        // Link spouses
+        if (spouseXref) {
+          const spousePerson = personByXref(spouseXref);
+          if (spousePerson) {
+            ourPerson.spouseId = spousePerson.id;
+            ourPerson.spouseName = spousePerson.name;
+            if (!ourPerson.marriageDate && fam.marriageDate) ourPerson.marriageDate = fam.marriageDate;
+            spousePerson.spouseId = ourPerson.id;
+            spousePerson.spouseName = ourPerson.name;
+            if (!spousePerson.marriageDate && fam.marriageDate) spousePerson.marriageDate = fam.marriageDate;
+          }
+        }
+
+        // Children: gen - 1
         for (const childXref of fam.children) {
-          const child = indis[childXref];
-          if (child) {
-            const childId = xrefMap[childXref] || addPerson(child, gen - 1);
-            if (!p.children.includes(childId)) p.children.push(childId);
-            const childPerson = people.find(pp => pp.id === childId);
-            if (childPerson) {
-              childPerson.parents = childPerson.parents.filter(pid => pid !== id);
-              childPerson.parents.push(id);
+          if (!VISITED.has(childXref)) {
+            VISITED.add(childXref);
+            const childPerson = personByXref(childXref);
+            if (childPerson && childPerson.gen === null) {
+              childPerson.gen = gen - 1;
+            }
+            queue.push(childXref);
+          }
+          // Link parent-child
+          const childPerson = personByXref(childXref);
+          if (childPerson) {
+            if (!childPerson.parents.includes(ourPerson.id)) {
+              childPerson.parents.push(ourPerson.id);
+            }
+            if (!ourPerson.children.includes(childPerson.id)) {
+              ourPerson.children.push(childPerson.id);
+            }
+            // Also link spouse as parent
+            if (spouseXref) {
+              const spousePerson = personByXref(spouseXref);
+              if (spousePerson && !childPerson.parents.includes(spousePerson.id)) {
+                childPerson.parents.push(spousePerson.id);
+              }
+              if (spousePerson && !spousePerson.children.includes(childPerson.id)) {
+                spousePerson.children.push(childPerson.id);
+              }
             }
           }
         }
       }
-    }
 
-    return id;
+      // Process parent family (FAMC): parents = gen + 1
+      if (person.famc && fams[person.famc]) {
+        const fam = fams[person.famc];
+        for (const parentXref of [fam.husb, fam.wife]) {
+          if (!parentXref) continue;
+          if (!VISITED.has(parentXref)) {
+            VISITED.add(parentXref);
+            const parentPerson = personByXref(parentXref);
+            if (parentPerson && parentPerson.gen === null) {
+              parentPerson.gen = gen + 1;
+            }
+            queue.push(parentXref);
+          }
+          // Link parent-child
+          const parentPerson = personByXref(parentXref);
+          if (parentPerson) {
+            if (!ourPerson.parents.includes(parentPerson.id)) {
+              ourPerson.parents.push(parentPerson.id);
+            }
+            if (!parentPerson.children.includes(ourPerson.id)) {
+              parentPerson.children.push(ourPerson.id);
+            }
+          }
+        }
+        // Link siblings
+        for (const sibXref of fam.children) {
+          if (sibXref === xref) continue;
+          const sibPerson = personByXref(sibXref);
+          if (sibPerson) {
+            const sibName = sibPerson.name || 'Unknown';
+            if (!ourPerson.siblings.includes(sibName)) ourPerson.siblings.push(sibName);
+          }
+        }
+      }
+    }
   }
 
-  addPerson(root, 0);
+  assignGens();
+
+  // Step 2: Handle disconnected sub-trees (people not visited in BFS)
+  for (const p of people) {
+    if (p.gen === null) {
+      // Find if any of their FAMS spouse has been visited
+      let assigned = false;
+      for (const famId of p.fams) {
+        const fam = fams[famId];
+        if (!fam) continue;
+        const spouseXref = fam.husb === p.xref ? fam.wife : fam.husb;
+        if (spouseXref) {
+          const spousePerson = personByXref(spouseXref);
+          if (spousePerson && spousePerson.gen !== null) {
+            p.gen = spousePerson.gen;
+            assigned = true;
+            break;
+          }
+        }
+      }
+      if (!assigned) {
+        // Isolated person — try via FAMC parents
+        if (p.famc && fams[p.famc]) {
+          const fam = fams[p.famc];
+          for (const parentXref of [fam.husb, fam.wife]) {
+            if (!parentXref) continue;
+            const parentPerson = personByXref(parentXref);
+            if (parentPerson && parentPerson.gen !== null) {
+              p.gen = parentPerson.gen - 1;
+              assigned = true;
+              break;
+            }
+          }
+        }
+      }
+      if (!assigned) {
+        // Truly isolated — put at gen 0
+        p.gen = 0;
+      }
+    }
+  }
 
   // Mark root as "you"
-  const rootPerson = people.find(p => p.id === xrefMap[root.id]);
+  const rootPerson = personByXref(bestRoot.id);
   if (rootPerson) rootPerson.status = 'you';
-
-  // Second pass: fix parent links for children discovered via FAMC
-  for (const p of people) {
-    if (p.parents.length === 0 && p.famc && fams[p.famc]) {
-      const fam = fams[p.famc];
-      if (fam.husb && xrefMap[fam.husb]) p.parents.push(xrefMap[fam.husb]);
-      if (fam.wife && xrefMap[fam.wife]) p.parents.push(xrefMap[fam.wife]);
-    }
-  }
 
   return { people: people, nextId: nextId };
 }
@@ -5423,6 +5637,11 @@ function convertGedcomFile(file) {
         people = payload.people;
         nextId = payload.nextId || maxGen(people, p => p.id) + 1;
         visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
+        // For large GEDCOM imports, auto-zoom out so the whole tree fits
+        const totalPeople = people.length;
+        if (totalPeople > 200) zoom = 0.12;
+        else if (totalPeople > 50) zoom = 0.18;
+        else zoom = 0.25;
         renderTree();
         const btn = document.getElementById('expandGenBtn');
         const actualMax = maxGen(people, p => p.gen);
