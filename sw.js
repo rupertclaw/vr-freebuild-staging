@@ -1,8 +1,14 @@
-const CACHE_NAME = 'vaulted-roots-v5';
+const CACHE_NAME = 'vaulted-roots-staging-v5';
 
 // Do NOT cache HTML files — always fetch fresh (prevents stale content bugs)
 const ASSETS = [
-  './vaulted-roots-shield.png'
+  './vaulted-roots-shield.png',
+  './icon-192.png',
+  './icon-512.png',
+  './icon-maskable-192.png',
+  './icon-maskable-512.png',
+  './apple-touch-icon.png',
+  './favicon-32.png'
 ];
 
 self.addEventListener('install', (event) => {
