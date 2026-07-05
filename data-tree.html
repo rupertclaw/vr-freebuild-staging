@@ -786,6 +786,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn" id="darkModeToggle" title="Toggle dark mode" onclick="toggleDarkMode()">🌙</button>
       <button class="header-btn" id="printTreeBtn" title="Print tree" onclick="checkMemberFeature('print', openPrintDialog)">🖨️</button>
       <button class="header-btn" id="resetBtn" title="Reset tree">🔄</button>
+      <button class="header-btn" id="familySheetBtn" title="Family Group Sheet view" onclick="toggleFamilySheetView()">📋</button>
     </div>
   </div>
 </div>
@@ -799,6 +800,22 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
   <div class="tree-wrap" id="treeWrap">
     <svg class="lines-svg" id="linesSvg"></svg>
+  </div>
+</div>
+
+<!-- Family Group Sheet View -->
+<div id="familySheetView" style="display:none; position:fixed; top:154px; left:0; right:0; bottom:0; overflow-y:auto; background:#faf4e6; z-index:50;">
+  <div style="max-width:800px; margin:0 auto; padding:20px;">
+    <!-- Family selector dropdown -->
+    <div style="display:flex; gap:8px; margin-bottom:20px; align-items:center;">
+      <select id="familySheetSelect" onchange="loadFamilySheet(this.value)" style="flex:1; padding:10px; border:2px solid #8a7a5a; border-radius:4px; background:#fff; font-family:'Cormorant Garamond',serif; font-size:15px; cursor:pointer;">
+        <option value="">— Select a family —</option>
+      </select>
+      <button class="header-btn" title="Previous family" onclick="navigateFamily(-1)" style="border-color:#8a7a5a;">◀</button>
+      <button class="header-btn" title="Next family" onclick="navigateFamily(1)" style="border-color:#8a7a5a;">▶</button>
+      <button class="header-btn" title="Back to tree view" onclick="toggleFamilySheetView()" style="border-color:#8a7a5a;">🌳</button>
+    </div>
+    <div id="familySheetContent"></div>
   </div>
 </div>
 
@@ -1621,6 +1638,259 @@ function toggleTreeManager() {
   const panel = document.getElementById('treeManagerPanel');
   if (panel && panel.classList.contains('active')) closeTreeManager();
   else openTreeManager();
+}
+
+// ─── Family Group Sheet View ───
+let familySheetActive = false;
+let familySheetList = []; // array of family objects
+let familySheetIndex = 0;
+
+function toggleFamilySheetView() {
+  const view = document.getElementById('familySheetView');
+  const treeScroll = document.getElementById('treeScroll');
+  const expandBtn = document.getElementById('expandGenBtn');
+  const sheetBtn = document.getElementById('familySheetBtn');
+
+  if (!view) return;
+
+  if (view.style.display === 'none') {
+    // Show family sheet view
+    familySheetActive = true;
+    view.style.display = 'block';
+    treeScroll.style.display = 'none';
+    if (expandBtn) expandBtn.style.display = 'none';
+    if (sheetBtn) sheetBtn.style.background = '#8a7a5a';
+    buildFamilySheetList();
+    if (familySheetList.length > 0) {
+      loadFamilySheet(familySheetList[0].id);
+    }
+  } else {
+    // Back to tree view
+    familySheetActive = false;
+    view.style.display = 'none';
+    treeScroll.style.display = '';
+    if (expandBtn) expandBtn.style.display = '';
+    if (sheetBtn) sheetBtn.style.background = '';
+  }
+}
+
+function buildFamilySheetList() {
+  familySheetList = [];
+  const select = document.getElementById('familySheetSelect');
+  if (select) select.innerHTML = '<option value="">— Select a family —</option>';
+
+  // Build families from people data
+  // A "family" = a couple (spouseId link) or a single parent, plus their children
+  const seen = new Set();
+  let famId = 1;
+
+  people.forEach(p => {
+    if (seen.has(p.id)) return;
+
+    // If this person has a spouse, create a family for them
+    if (p.spouseId && !seen.has(p.spouseId)) {
+      const spouse = people.find(x => x.id === p.spouseId);
+      if (spouse) {
+        seen.add(p.id);
+        seen.add(spouse.id);
+        // Find children: people who have both p and spouse in their parents array
+        // OR people who have p in parents and p.spouseId is set
+        const children = people.filter(c =>
+          c.parents && c.parents.includes(p.id) &&
+          (c.parents.includes(spouse.id) || !spouse.id)
+        );
+        familySheetList.push({
+          id: famId++,
+          husband: p.sex !== 'F' ? p : spouse,
+          wife: p.sex !== 'F' ? spouse : p,
+          children: children
+        });
+      }
+    } else if (!p.spouseId) {
+      // Single person with children (single parent)
+      seen.add(p.id);
+      const children = people.filter(c =>
+        c.parents && c.parents.includes(p.id)
+      );
+      if (children.length > 0 || p.parents.length === 0) {
+        familySheetList.push({
+          id: famId++,
+          husband: p.sex !== 'F' ? p : null,
+          wife: p.sex === 'F' ? p : null,
+          children: children
+        });
+      }
+    }
+  });
+
+  // Sort families by husband's or wife's surname
+  familySheetList.sort((a, b) => {
+    const aName = (a.husband || a.wife || {}).name || '';
+    const bName = (b.husband || b.wife || {}).name || '';
+    return aName.localeCompare(bName);
+  });
+
+  // Populate dropdown
+  if (select) {
+    familySheetList.forEach(f => {
+      const h = f.husband ? f.husband.name : '';
+      const w = f.wife ? f.wife.name : '';
+      const label = [h, w].filter(Boolean).join(' & ') || 'Unknown';
+      const option = document.createElement('option');
+      option.value = f.id;
+      option.textContent = label + (f.children.length > 0 ? ' (' + f.children.length + ' children)' : '');
+      select.appendChild(option);
+    });
+  }
+}
+
+function loadFamilySheet(famId) {
+  const content = document.getElementById('familySheetContent');
+  if (!content) return;
+
+  const fam = familySheetList.find(f => f.id === parseInt(famId));
+  if (!fam) {
+    content.innerHTML = '<p style="text-align:center;color:#6b5537;padding:40px;">Select a family from the dropdown above.</p>';
+    return;
+  }
+
+  familySheetIndex = familySheetList.indexOf(fam);
+  const select = document.getElementById('familySheetSelect');
+  if (select) select.value = famId;
+
+  const h = fam.husband;
+  const w = fam.wife;
+  const kids = fam.children;
+
+  // Build the family group sheet HTML
+  let html = '';
+
+  // Header
+  html += '<div style="background:#3e3225; color:#f0e6d2; padding:16px 20px; border-radius:8px 8px 0 0; text-align:center;">';
+  html += '<div style="font-family:\'Cinzel Decorative\',serif; font-size:18px;">';
+  html += [h ? h.name : '', w ? w.name : ''].filter(Boolean).join(' & ') || 'Unknown Family';
+  html += '</div>';
+  if (h || w) {
+    const years = [];
+    if (h && h.years) years.push(h.years);
+    if (w && w.years) years.push(w.years);
+    if (years.length) html += '<div style="font-size:13px; margin-top:4px; opacity:0.8;">' + years.join(' | ') + '</div>';
+  }
+  html += '</div>';
+
+  // Parents section
+  html += '<div style="background:#fff; border:2px solid #8a7a5a; border-top:none; border-radius:0 0 8px 8px; padding:20px; margin-bottom:20px;">';
+
+  if (h || w) {
+    html += '<div style="display:flex; gap:16px; flex-wrap:wrap;">';
+
+    // Husband/Father
+    if (h) {
+      html += '<div style="flex:1; min-width:280px;">';
+      html += '<div style="font-size:12px; color:#8a7a5a; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; border-bottom:1px solid #e0d5c0; padding-bottom:4px;">' + (h.sex === 'F' ? 'Wife/Mother' : 'Husband/Father') + '</div>';
+      html += buildPersonCard(h);
+      html += '</div>';
+    }
+
+    // Wife/Mother
+    if (w) {
+      html += '<div style="flex:1; min-width:280px;">';
+      html += '<div style="font-size:12px; color:#8a7a5a; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; border-bottom:1px solid #e0d5c0; padding-bottom:4px;">' + (w.sex === 'F' ? 'Wife/Mother' : 'Husband/Father') + '</div>';
+      html += buildPersonCard(w);
+      html += '</div>';
+    }
+
+    html += '</div>';
+
+    // Marriage info
+    if ((h && h.marriageDate) || (w && w.marriageDate)) {
+      const mDate = (h && h.marriageDate) || (w && w.marriageDate) || '';
+      html += '<div style="margin-top:12px; padding:8px 12px; background:#f5eedc; border-radius:4px; font-size:13px;">';
+      html += '<strong>Married:</strong> ' + escapeHtml(mDate);
+      html += '</div>';
+    }
+  }
+
+  html += '</div>';
+
+  // Children section
+  html += '<div style="background:#fff; border:2px solid #8a7a5a; border-radius:8px; padding:20px;">';
+  html += '<div style="font-size:12px; color:#8a7a5a; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; border-bottom:1px solid #e0d5c0; padding-bottom:4px;">Children (' + kids.length + ')</div>';
+
+  if (kids.length === 0) {
+    html += '<p style="color:#6b5537; font-style:italic; text-align:center; padding:20px;">No children recorded in this family.</p>';
+  } else {
+    // Sort children by birth year
+    const sortedKids = [...kids].sort((a, b) => {
+      const aY = parseInt((a.birthDate || '').match(/\d{4}/)?.[0] || '9999');
+      const bY = parseInt((b.birthDate || '').match(/\d{4}/)?.[0] || '9999');
+      return aY - bY;
+    });
+
+    sortedKids.forEach((kid, i) => {
+      html += '<div style="display:flex; gap:12px; padding:12px 0; border-bottom:' + (i < sortedKids.length - 1 ? '1px solid #e0d5c0' : 'none') + ';">';
+      html += '<div style="flex:0 0 30px; font-size:20px; color:#8a7a5a; text-align:center;">' + (i + 1) + '</div>';
+      html += '<div style="flex:1;">' + buildPersonCard(kid, true) + '</div>';
+      html += '</div>';
+    });
+  }
+
+  html += '</div>';
+
+  // Navigation footer
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding:12px; background:#f5eedc; border-radius:8px;">';
+  html += '<button class="header-btn" onclick="navigateFamily(-1)" style="border-color:#8a7a5a;">◀ Previous Family</button>';
+  html += '<span style="font-size:13px; color:#6b5537;">Family ' + (familySheetIndex + 1) + ' of ' + familySheetList.length + '</span>';
+  html += '<button class="header-btn" onclick="navigateFamily(1)" style="border-color:#8a7a5a;">Next Family ▶</button>';
+  html += '</div>';
+
+  content.innerHTML = html;
+}
+
+function buildPersonCard(p, isChild) {
+  if (!p) return '';
+  let html = '';
+  const displayName = p.maidenName
+    ? p.name.replace(/\s+\S+$/, ' ' + p.maidenName)
+    : p.name;
+
+  html += '<div style="cursor:pointer;" onclick="showPersonDetail(' + p.id + ')">';
+  html += '<div style="font-family:\'Cormorant Garamond\',serif; font-size:16px; font-weight:600; color:#2a1f10;">' + escapeHtml(displayName) + '</div>';
+
+  const details = [];
+  if (p.birthDate) details.push('b. ' + escapeHtml(p.birthDate));
+  if (p.birthplace) details.push(escapeHtml(p.birthplace));
+  if (p.deathDate) details.push('d. ' + escapeHtml(p.deathDate));
+  if (details.length) html += '<div style="font-size:13px; color:#6b5537; margin-top:4px;">' + details.join(' · ') + '</div>';
+
+  if (isChild && p.spouseName) {
+    html += '<div style="font-size:13px; color:#8a7a5a; margin-top:2px;">m. ' + escapeHtml(p.spouseName) + '</div>';
+  }
+
+  if (p.occupation) {
+    html += '<div style="font-size:13px; color:#6b5537; margin-top:2px;">' + escapeHtml(p.occupation) + '</div>';
+  }
+
+  // Show siblings count
+  if (p.siblings && p.siblings.length > 0) {
+    html += '<div style="font-size:12px; color:#8a7a5a; margin-top:4px;">🍃 ' + p.siblings.length + ' sibling' + (p.siblings.length > 1 ? 's' : '') + '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function showPersonDetail(id) {
+  const person = people.find(p => p.id === id);
+  if (person) openDetail(person);
+}
+
+function navigateFamily(direction) {
+  if (familySheetList.length === 0) return;
+  familySheetIndex += direction;
+  if (familySheetIndex < 0) familySheetIndex = familySheetList.length - 1;
+  if (familySheetIndex >= familySheetList.length) familySheetIndex = 0;
+  loadFamilySheet(familySheetList[familySheetIndex].id);
 }
 
 // ─── Auto-save to IndexedDB every 30s (replacing localStorage) ───
