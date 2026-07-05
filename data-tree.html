@@ -5646,11 +5646,85 @@ function parseGedcom(text) {
 
   addPerson(root, 0);
 
+  // Pass 2: load ALL remaining people not visited by addPerson.
+  // The tree layout only follows one root's lineage. But the family sheet view
+  // needs everyone. Add unvisited people with gen 0 so they exist in the people array.
+  for (const [xref, ged] of Object.entries(indis)) {
+    if (xrefMap[xref]) continue;
+    const id = nextId++;
+    xrefMap[xref] = id;
+    let years = '?';
+    const bYear = (ged.birthDate || '').match(/\d{4}/);
+    const dYear = (ged.deathDate || '').match(/\d{4}/);
+    if (bYear && dYear) years = bYear[0] + ' \u2014 ' + dYear[0];
+    else if (bYear) years = 'b. ' + bYear[0];
+    const p = {
+      id: id,
+      name: ged.name || 'Unknown',
+      fullName: ged.name || '',
+      birthDate: ged.birthDate || '',
+      deathDate: ged.deathDate || '',
+      birthplace: ged.birthPlace || '',
+      marriageDate: '',
+      maidenName: ged.sex === 'F' ? ged.surname : '',
+      spouseName: '',
+      occupation: '',
+      gen: 0,
+      years: years,
+      status: 'probable',
+      docs: [],
+      parents: [],
+      siblings: [],
+      children: [],
+      spouseId: null,
+      famc: ged.famc,
+      fams: ged.fams,
+      sex: ged.sex,
+      notes: ''
+    };
+    people.push(p);
+  }
+
+  // Pass 3: link spouses and children for ALL people (including pass 2 additions)
+  for (const [xref, ged] of Object.entries(indis)) {
+    const person = people.find(p => p.id === xrefMap[xref]);
+    if (!person) continue;
+    for (const famId of (ged.fams || [])) {
+      const fam = fams[famId];
+      if (!fam) continue;
+      const spouseXref = (fam.husb === xref) ? fam.wife : fam.husb;
+      if (spouseXref && xrefMap[spouseXref]) {
+        const spouseId = xrefMap[spouseXref];
+        if (!person.spouseId) {
+          person.spouseId = spouseId;
+          person.spouseName = (people.find(p => p.id === spouseId) || {}).name || '';
+          if (fam.marriageDate && !person.marriageDate) person.marriageDate = fam.marriageDate;
+        }
+        const spousePerson = people.find(p => p.id === spouseId);
+        if (spousePerson && !spousePerson.spouseId) {
+          spousePerson.spouseId = person.id;
+          spousePerson.spouseName = person.name;
+          if (fam.marriageDate && !spousePerson.marriageDate) spousePerson.marriageDate = fam.marriageDate;
+        }
+      }
+      for (const childXref of fam.children) {
+        if (xrefMap[childXref]) {
+          const childId = xrefMap[childXref];
+          if (!person.children.includes(childId)) person.children.push(childId);
+          const childPerson = people.find(p => p.id === childId);
+          if (childPerson && !childPerson.parents.includes(person.id)) {
+            childPerson.parents.push(person.id);
+          }
+        }
+      }
+    }
+  }
+
   // Mark root as "you"
   const rootPerson = people.find(p => p.id === xrefMap[root.id]);
   if (rootPerson) rootPerson.status = 'you';
 
-  // Second pass: fix parent links for children discovered via FAMC
+  // Pass 4: fix parent links for children discovered via FAMC
   for (const p of people) {
     if (p.parents.length === 0 && p.famc && fams[p.famc]) {
       const fam = fams[p.famc];
@@ -5676,7 +5750,7 @@ function convertGedcomFile(file) {
         exportedAt: new Date().toISOString(),
         people: result.people,
         nextId: result.nextId,
-        visibleMaxGen: Math.max(...result.people.map(p => p.gen))
+        visibleMaxGen: 4 // show first 5 gens in tree view; use 📋 for full family sheets
       };
       const json = JSON.stringify(payload, null, 2);
       const blob = new Blob([json], { type: 'application/json' });
@@ -5704,7 +5778,7 @@ function convertGedcomFile(file) {
         }
         // Save tree to IndexedDB
         if (currentTreeId) await saveCurrentTreeToDB();
-        showToast('Converted ' + result.people.length + ' people. Tree loaded! A .familytree backup was also downloaded.');
+        showToast('Loaded ' + result.people.length + ' people. Tree shows first 5 generations. Tap 📋 for Family Group Sheets to browse all families.');
       } catch (loadErr) {
         console.error('[GEDCOM] load error:', loadErr);
         showToast('Converted ' + result.people.length + ' people. A .familytree file was downloaded — tap 📂 Load to import it.');
