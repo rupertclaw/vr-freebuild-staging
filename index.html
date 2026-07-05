@@ -195,7 +195,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   height: 100px; width: 100px;
   border-radius: 50%;
   object-fit: cover;
-  z-index: 301;
+  z-index: 1;
+  opacity: 0.35;
+  pointer-events: none;
 }
 .offline-badge {
   display: none;
@@ -212,9 +214,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 }
 .offline-badge.visible { display: block; }
 @media (max-width: 380px) {
-  .header-emblem { height: 140px; width: 140px; opacity: 0.50; }
+  .header-emblem { height: 120px; width: 120px; opacity: 0.25; }
   .offline-badge { top: 120px; font-size: 9px; padding: 1px 6px; }
-  .header-btn { width: 44px; height: 44px; font-size: 20px; }
+  .header-btn { width: 28px; height: 28px; font-size: 14px; }
   .header-actions { gap: 2px; }
   .header-left-group { gap: 3px; }
   .tree-scroll { top: 180px; }
@@ -222,20 +224,18 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .zoom-controls span { font-size: 11px; min-width: 36px; }
 }
 @media (max-width: 340px) {
-  .header-btn { width: 40px; height: 40px; font-size: 18px; }
+  .header-btn { width: 26px; height: 26px; font-size: 13px; }
   .header-actions { gap: 1px; }
   .header-left-group { gap: 2px; }
 }
 @media (max-width: 600px) and (min-width: 381px) {
-  .header-btn { width: 44px; height: 44px; font-size: 20px; }
-  .header-emblem { height: 160px; width: 160px; opacity: 0.50; }
+  .header-btn { width: 34px; height: 34px; font-size: 17px; }
+  .header-emblem { height: 130px; width: 130px; opacity: 0.25; }
 }
 .header-btn {
-  width: 44px; height: 44px; background: var(--bg-btn); color: var(--text-btn);
+  width: 42px; height: 36px; background: var(--bg-btn); color: var(--text-btn);
   border: 1px solid var(--bg-btn-border); border-radius: 6px; font-size: 20px; cursor: pointer;
   display: flex; align-items: center; justify-content: center;
-  -webkit-tap-highlight-color: rgba(74,58,34,0.3);
-  touch-action: manipulation;
 }
 .cert-btn {
   width: 44px; height: 38px;
@@ -793,7 +793,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 <button id="expandGenBtn" class="expand-gen-btn" title="Reveal next generation" onclick="checkMemberFeature('expand_generation', expandNextGen)">Reveal Next Generation</button>
 
 
-<div id="treeTitleContainer" style="position:fixed; top:120px; left:12px; z-index:100; background:rgba(250,244,230,0.95); border:1px solid #8a7a5a; border-radius:6px; padding:4px 12px; font-family:'Cinzel Decorative',serif; font-size:14px; color:#2a1f10; box-shadow:0 1px 3px rgba(0,0,0,0.1); max-width:200px; overflow:hidden; text-overflow:ellipsis; white-space:nowrap;"><span id="treeTitle"></span></div>
+<div id="treeTitleContainer" style="position:fixed; top:114px; left:0; right:0; z-index:100; background:rgba(250,244,230,0.95); border-bottom:1px solid #8a7a5a; padding:8px 16px; font-family:'Cinzel Decorative',serif; font-size:16px; color:#2a1f10; text-align:center; box-shadow:0 1px 3px rgba(0,0,0,0.1);"><span id="treeTitle"></span></div>
 <div class="tree-scroll" id="treeScroll" style="top: 154px;">
   <div id="zoomSizer" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0;"></div>
 
@@ -1078,9 +1078,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 -->
 
 <!-- Privacy Splash Modal (first visit) -->
-<div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;overflow-y:auto;padding:16px;" onclick="if(event.target===this){document.getElementById('privacyModal').style.display='none';updateExpandGenBtn();}">
-  <div style="position:relative;background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:80vh;overflow-y:auto;">
-    <button onclick="document.getElementById('privacyModal').style.display='none';updateExpandGenBtn();" style="position:sticky;top:0;float:right;background:none;border:none;font-size:22px;color:#6b5537;cursor:pointer;padding:0 0 8px 8px;line-height:1;z-index:1;" title="Close">×</button>
+<div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
     <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:48px;margin-bottom:8px;">🔒</div>
       <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:4px;">Your Data. Your Device.</div>
@@ -1740,25 +1739,12 @@ function renderTree() {
 
   const topMap = new Map();
 
-  // Determine the "rightmost full" generation — the last generation with enough
-  // cards to serve as a layout anchor. If the user added parents beyond the
-  // original tree, we anchor on the original rightmost generation so the
-  // backwards cascade works for all lower generations, then cascade forward
-  // for the sparse new generations.
+  // Determine the rightmost generation to use as layout anchor.
+  // For binary trees (default data), we expect 2^gen cards per generation.
+  // For GEDCOM imports, the tree is irregular so we just use the deepest gen.
   let rightmostFull = displayMax;
-  while (rightmostFull > 0) {
-    const count = gens[rightmostFull] ? gens[rightmostFull].length : 0;
-    const typicalCount = Math.pow(2, rightmostFull);
-    // If this generation has less than half the typical cards, it's probably
-    // a sparse dynamically-added generation. Step back.
-    if (count < typicalCount * 0.5) {
-      rightmostFull--;
-    } else {
-      break;
-    }
-  }
 
-  // STEP 1: Place the rightmost FULL generation as a neat vertical column.
+  // STEP 1: Place the deepest generation as a neat vertical column.
   // This is the anchor generation — everything else positions relative to it.
   let y = 10;
   if (gens[rightmostFull]) {
@@ -1769,25 +1755,43 @@ function renderTree() {
   }
 
   // STEP 2: Cascade backwards from rightmostFull-1 down to 0.
-  // Each card centers itself between its two parents in the next generation.
+  // Each card centers itself between its parents (1 or 2) in the next generation.
   for (let g = rightmostFull - 1; g >= 0; g--) {
     if (!gens[g]) continue;
+    let fallbackY = 10;
     gens[g].forEach(p => {
-      if (!p.parents || p.parents.length < 2) return;
-      const father = visiblePeople.find(x => x.id === p.parents[0]);
-      const mother = visiblePeople.find(x => x.id === p.parents[1]);
-      if (!father || !mother) return;
-      const fy = topMap.get(father.id), my = topMap.get(mother.id);
-      if (fy === undefined || my === undefined) return;
-      const fh = hMap.get(father.id), mh = hMap.get(mother.id);
-      const midCenter = (fy + fh/2 + my + mh/2) / 2;
-      topMap.set(p.id, midCenter - hMap.get(p.id) / 2);
+      if (!p.parents || p.parents.length === 0) {
+        // No parents — place below the last card at this gen
+        topMap.set(p.id, fallbackY);
+        fallbackY += hMap.get(p.id) + GAP_Y;
+        return;
+      }
+      // Average the Y center of all available parents
+      let totalCenter = 0;
+      let validParents = 0;
+      p.parents.forEach(pid => {
+        const parent = visiblePeople.find(x => x.id === pid);
+        if (parent) {
+          const py = topMap.get(parent.id);
+          const ph = hMap.get(parent.id);
+          if (py !== undefined) {
+            totalCenter += py + ph / 2;
+            validParents++;
+          }
+        }
+      });
+      if (validParents > 0) {
+        const avgCenter = totalCenter / validParents;
+        topMap.set(p.id, avgCenter - hMap.get(p.id) / 2);
+      } else {
+        topMap.set(p.id, fallbackY);
+        fallbackY += hMap.get(p.id) + GAP_Y;
+      }
     });
   }
 
   // STEP 3: Cascade forwards from rightmostFull+1 up to displayMax.
   // Each new ancestor positions itself by averaging its children's centers.
-  // This runs AFTER step 1 so gen 8 (and any already-placed gens) are in topMap.
   if (rightmostFull < displayMax) {
     for (let g = rightmostFull + 1; g <= displayMax; g++) {
       if (!gens[g]) continue;
@@ -5171,7 +5175,7 @@ function openPrintDialog() {
 // ═══════════════════════════════════════════════════════════════
 
 function parseGedcom(text) {
-  const lines = text.split(/\r?\n/);
+  const lines = text.split(/\r\n|\r|\n/);
   const records = {};
   let current = null;
   let currentLevel0 = null;
@@ -5232,7 +5236,8 @@ function parseGedcom(text) {
     if (rec.tag === 'INDI') {
       const nameArr = rec.data['NAME'] || [];
       const name = nameArr[0]?.value || '';
-      const surname = name.replace(/.*\//, '').replace(/\/$/, '');
+      const surnameMatch = name.match(/\/([^/]*)\//);
+      const surname = surnameMatch ? surnameMatch[1] : '';
       const given = name.replace(/\s*\/.*\//, '').trim();
       const fullName = given + (surname ? ' ' + surname : '');
       const birth = rec.data['BIRT']?.[0]?.data;
@@ -5390,7 +5395,7 @@ function parseGedcom(text) {
 
 function convertGedcomFile(file) {
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     try {
       const result = parseGedcom(e.target.result);
       if (!result || result.people.length === 0) {
@@ -5412,7 +5417,28 @@ function convertGedcomFile(file) {
       a.download = 'vaultedroots_import_' + new Date().toISOString().slice(0, 10) + '.familytree';
       a.click();
       URL.revokeObjectURL(url);
-      showToast('Converted ' + result.people.length + ' people. Tap Load to open it.');
+      // Load directly into the page (same logic as loadSession, minus file parsing)
+      try {
+        if (!payload.people) { showToast('No people in GEDCOM'); return; }
+        people = payload.people;
+        nextId = payload.nextId || maxGen(people, p => p.id) + 1;
+        visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
+        renderTree();
+        const btn = document.getElementById('expandGenBtn');
+        const actualMax = maxGen(people, p => p.gen);
+        if (visibleMaxGen >= actualMax) {
+          btn.textContent = 'All visible — tap any person to add parents';
+          btn.disabled = true;
+        } else {
+          btn.disabled = false;
+          btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
+        }
+        if (currentTreeId) await saveCurrentTreeToDB();
+        showToast('Converted ' + result.people.length + ' people. Tree loaded! A .familytree backup was also downloaded.');
+      } catch (loadErr) {
+        console.error('[GEDCOM] load error:', loadErr);
+        showToast('Converted ' + result.people.length + ' people. A .familytree file was downloaded — tap 📂 Load to import it.');
+      }
     } catch (err) {
       console.error('[GEDCOM]', err);
       showToast('GEDCOM parse error: ' + err.message);
@@ -5737,19 +5763,19 @@ setTimeout(updateOfflineBadge, 100);
   justify-content: center;
   background: linear-gradient(135deg, #d4af37, #f4d03f);
   color: #3a2a10;
-  font-size: 8px;
-  font-weight: 700;
+  font-size: 10px;
+  font-weight: 800;
   font-family: sans-serif;
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 50%;
   position: absolute;
-  top: -3px;
-  right: -3px;
+  top: -4px;
+  right: -4px;
   line-height: 1;
   pointer-events: none;
   z-index: 5;
-  text-transform: uppercase;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 .member-badge-guidance {
   display: inline-flex;
@@ -5757,15 +5783,15 @@ setTimeout(updateOfflineBadge, 100);
   justify-content: center;
   background: linear-gradient(135deg, #d4af37, #f4d03f);
   color: #3a2a10;
-  font-size: 9px;
-  font-weight: 700;
+  font-size: 11px;
+  font-weight: 800;
   font-family: sans-serif;
-  width: 16px;
-  height: 16px;
+  width: 18px;
+  height: 18px;
   border-radius: 50%;
   margin-left: 6px;
   vertical-align: middle;
-  text-transform: uppercase;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.3);
 }
 #memberModal {
   display: none;
@@ -5775,8 +5801,6 @@ setTimeout(updateOfflineBadge, 100);
   z-index: 10000;
   align-items: center;
   justify-content: center;
-  overflow-y: auto;
-  padding: 16px;
 }
 #memberModal.active { display: flex; }
 .member-modal-box {
@@ -5856,7 +5880,7 @@ setTimeout(updateOfflineBadge, 100);
 }
 </style>
 
-<div id="memberModal" style="display:none;">
+<div id="memberModal">
   <div class="member-modal-box">
     <div class="member-icon" id="memberModalIcon">⭐</div>
     <div class="member-title">Members Feature</div>
@@ -5909,7 +5933,7 @@ function checkMemberFeature(featureKey, callback) {
     document.getElementById('memberModalIcon').textContent = feat.icon;
     document.getElementById('memberModalFeature').innerHTML =
       '<strong>' + escapeHtml(feat.label) + '</strong> is available to Vaulted Roots members.<br>It\'s free during early access while we build the community.';
-    document.getElementById('memberModal').style.display = 'flex';
+    document.getElementById('memberModal').classList.add('active');
   } else {
     // Already seen — just run the callback
     if (callback) callback();
@@ -5917,7 +5941,7 @@ function checkMemberFeature(featureKey, callback) {
 }
 
 function closeMemberModal() {
-  document.getElementById('memberModal').style.display = 'none';
+  document.getElementById('memberModal').classList.remove('active');
   if (_memberCallback) {
     const cb = _memberCallback;
     _memberCallback = null;
@@ -6029,6 +6053,110 @@ function closeMemberModal() {
       gtag('event', 'pwa_install', { event_label: 'installed' });
     }
   });
+})();
+</script>
+<script>
+// GA4 Event Tracking — click delegation for all meaningful user actions
+(function() {
+  var buttonMap = {
+    saveBtn:           { action: 'save_session',    category: 'tree' },
+    shareBtn:          { action: 'share_tree',      category: 'tree' },
+    treeManagerToggle: { action: 'toggle_tree_mgr',  category: 'tree' },
+    privacyBtn:        { action: 'privacy_info',     category: 'ui' },
+    nextStepsBtn:      { action: 'open_guidance',    category: 'ui' },
+    feedbackBtn:       { action: 'feedback_open',    category: 'ui' },
+    viewPosterBtn:     { action: 'open_poster',     category: 'tree' },
+    certToggle:        { action: 'scan_certificate',category: 'docs' },
+    darkModeToggle:    { action: 'toggle_dark_mode',category: 'ui' },
+    printTreeBtn:      { action: 'print_tree',      category: 'tree' },
+    zoomIn:            { action: 'zoom_in',         category: 'ui' },
+    zoomOut:           { action: 'zoom_out',        category: 'ui' },
+    zoomReset:         { action: 'zoom_reset',      category: 'ui' },
+    backBtn:           { action: 'go_back',          category: 'ui' },
+    gedcomFileInput:   { action: 'import_gedcom',   category: 'gedcom' },
+  };
+
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('button, [onclick]');
+    if (!el) return;
+
+    var id = el.id;
+    if (id && buttonMap[id]) {
+      var m = buttonMap[id];
+      trackEvent(m.action, m.category, id);
+      return;
+    }
+
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('exportGedcom') > -1) {
+      trackEvent('export_gedcom', 'gedcom', 'exportGedcomBtn');
+      return;
+    }
+
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('gedcomFileInput') > -1) {
+      trackEvent('import_gedcom', 'gedcom', 'importGedcomBtn');
+      return;
+    }
+
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('selectCertMethod') > -1) {
+      var method = el.getAttribute('onclick').match(/'([^']+)'/);
+      trackEvent('cert_method', 'docs', method ? method[1] : 'unknown');
+      return;
+    }
+
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('createTree') > -1) {
+      trackEvent('create_tree', 'tree', 'createTreeBtn');
+      return;
+    }
+
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('openVenice') > -1) {
+      trackEvent('ai_tool_open', 'ai', 'venice');
+      return;
+    }
+    if (el.getAttribute('onclick') && el.getAttribute('onclick').indexOf('openGemini') > -1) {
+      trackEvent('ai_tool_open', 'ai', 'gemini');
+      return;
+    }
+
+    if (el.tagName === 'A' || (el.parentElement && el.parentElement.tagName === 'A')) {
+      var href = (el.getAttribute && el.getAttribute('href')) || (el.parentElement && el.parentElement.getAttribute('href'));
+      if (href && (href.indexOf('facebook') > -1 || href.indexOf('twitter') > -1 || href.indexOf('instagram') > -1)) {
+        trackEvent('social_click', 'social', href);
+      }
+    }
+  });
+
+  var origSwitchTree = window.switchTree;
+  if (typeof origSwitchTree === 'function') {
+    window.switchTree = function(id) {
+      trackEvent('switch_tree', 'tree', id);
+      return origSwitchTree.apply(this, arguments);
+    };
+  }
+
+  var origOpenDetail = window.openDetail;
+  if (typeof origOpenDetail === 'function') {
+    window.openDetail = function(person) {
+      trackEvent('view_person', 'tree', person ? (person.name || person.id) : 'unknown');
+      return origOpenDetail.apply(this, arguments);
+    };
+  }
+
+  var origOpenDoc = window.openDocImage;
+  if (typeof origOpenDoc === 'function') {
+    window.openDocImage = function(docId) {
+      trackEvent('view_document', 'docs', String(docId));
+      return origOpenDoc.apply(this, arguments);
+    };
+  }
+
+  function trackEvent(action, category, label) {
+    if (typeof gtag === 'function') {
+      gtag('event', action, {
+        event_category: category,
+        event_label: label
+      });
+    }
+  }
 })();
 </script>
 </body>
