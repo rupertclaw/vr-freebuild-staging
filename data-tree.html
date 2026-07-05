@@ -5390,7 +5390,7 @@ function parseGedcom(text) {
 
 function convertGedcomFile(file) {
   const reader = new FileReader();
-  reader.onload = (e) => {
+  reader.onload = async (e) => {
     try {
       const result = parseGedcom(e.target.result);
       if (!result || result.people.length === 0) {
