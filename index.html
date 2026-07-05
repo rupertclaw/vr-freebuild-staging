@@ -5170,7 +5170,7 @@ function openPrintDialog() {
 // ═══════════════════════════════════════════════════════════════
 
 function parseGedcom(text) {
-  const lines = text.split(/\r?\n/);
+  const lines = text.split(/\r\n|\r|\n/);
   const records = {};
   let current = null;
   let currentLevel0 = null;
@@ -5231,7 +5231,8 @@ function parseGedcom(text) {
     if (rec.tag === 'INDI') {
       const nameArr = rec.data['NAME'] || [];
       const name = nameArr[0]?.value || '';
-      const surname = name.replace(/.*\//, '').replace(/\/$/, '');
+      const surnameMatch = name.match(/\/([^/]*)\//);
+      const surname = surnameMatch ? surnameMatch[1] : '';
       const given = name.replace(/\s*\/.*\//, '').trim();
       const fullName = given + (surname ? ' ' + surname : '');
       const birth = rec.data['BIRT']?.[0]?.data;
