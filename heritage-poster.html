@@ -641,6 +641,14 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   }
 }
 </style>
+<!-- Google Analytics 4 -->
+<script async src="https://www.googletagmanager.com/gtag/js?id=G-MFQ3DV323Y"></script>
+<script>
+  window.dataLayer = window.dataLayer || [];
+  function gtag(){dataLayer.push(arguments);}
+  gtag('js', new Date());
+  gtag('config', 'G-MFQ3DV323Y');
+</script>
 </head>
 <body>
 
@@ -4057,6 +4065,49 @@ function loadFromDataTree() {
 // Try loading from data-tree
 loadFromDataTree();
 updateBanner();
+</script>
+
+<script>
+// GA4 Event Tracking — heritage poster clicks
+(function() {
+  var buttonMap = {
+    saveSessionBtn: { action: 'save_session',  category: 'poster' },
+    loadSessionBtn: { action: 'load_session',  category: 'poster' },
+    guideBtn:       { action: 'open_guide',    category: 'poster' },
+    backToTreeBtn:  { action: 'back_to_tree',  category: 'poster' },
+    printBtn:       { action: 'print_poster',   category: 'poster' },
+    zoomIn:         { action: 'zoom_in',        category: 'poster' },
+    zoomOut:        { action: 'zoom_out',       category: 'poster' },
+    zoomReset:      { action: 'zoom_reset',     category: 'poster' },
+    backBtn:        { action: 'go_back',         category: 'poster' },
+    detailClose:    { action: 'close_detail',   category: 'poster' },
+  };
+
+  document.addEventListener('click', function(e) {
+    var el = e.target.closest('button, [onclick]');
+    if (!el) return;
+
+    var id = el.id;
+    if (id && buttonMap[id]) {
+      var m = buttonMap[id];
+      if (typeof gtag === 'function') {
+        gtag('event', m.action, {
+          event_category: m.category,
+          event_label: id
+        });
+      }
+    }
+  });
+
+  var gt = document.getElementById('gridToggle');
+  if (gt) {
+    gt.addEventListener('click', function() {
+      if (typeof gtag === 'function') {
+        gtag('event', 'toggle_grid', { event_category: 'poster', event_label: 'gridToggle' });
+      }
+    });
+  }
+})();
 </script>
 
 </body>
