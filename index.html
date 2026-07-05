@@ -786,6 +786,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn" id="darkModeToggle" title="Toggle dark mode" onclick="toggleDarkMode()">🌙</button>
       <button class="header-btn" id="printTreeBtn" title="Print tree" onclick="checkMemberFeature('print', openPrintDialog)">🖨️</button>
       <button class="header-btn" id="resetBtn" title="Reset tree">🔄</button>
+      <button class="header-btn" id="familySheetBtn" title="Family Group Sheet view" onclick="toggleFamilySheetView()">📋</button>
     </div>
   </div>
 </div>
@@ -799,6 +800,21 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
   <div class="tree-wrap" id="treeWrap">
     <svg class="lines-svg" id="linesSvg"></svg>
+  </div>
+</div>
+
+<!-- Family Group Sheet View -->
+<div id="familySheetView" style="display:none; position:fixed; top:154px; left:0; right:0; bottom:0; overflow-y:auto; background:#faf4e6; z-index:50;">
+  <div style="max-width:800px; margin:0 auto; padding:20px;">
+    <div style="display:flex; gap:8px; margin-bottom:20px; align-items:center;">
+      <select id="familySheetSelect" onchange="loadFamilySheet(this.value)" style="flex:1; padding:10px; border:2px solid #8a7a5a; border-radius:4px; background:#fff; font-family:'Cormorant Garamond',serif; font-size:15px; cursor:pointer;">
+        <option value="">— Select a family —</option>
+      </select>
+      <button class="header-btn" title="Previous family" onclick="navigateFamily(-1)" style="border-color:#8a7a5a;">◀</button>
+      <button class="header-btn" title="Next family" onclick="navigateFamily(1)" style="border-color:#8a7a5a;">▶</button>
+      <button class="header-btn" title="Back to tree view" onclick="toggleFamilySheetView()" style="border-color:#8a7a5a;">🌳</button>
+    </div>
+    <div id="familySheetContent"></div>
   </div>
 </div>
 
@@ -1279,6 +1295,7 @@ function createPerson(id, gen, name, years, status, opts) {
 
 let people = [];
 let nextId = 1;
+let gedcomFamilies = null; // FAM records from GEDCOM import (for family sheet view)
 let pendingDocFile = null;
 let pendingDocImage = null;
 let lastTranscription = null;
@@ -1359,6 +1376,7 @@ function extractDocDate(entry, type) {
 function initDefaultData() {
   people = [];
   nextId = 1;
+  gedcomFamilies = null;
   // Gen 0: blank placeholder for the user to populate with their birth cert
   people.push(createPerson(nextId++, 0, 'Name', '?', 'blank', {}));
   // Gens 1-8: blank placeholder cards (2^gen each)
@@ -1622,6 +1640,273 @@ function toggleTreeManager() {
   if (panel && panel.classList.contains('active')) closeTreeManager();
   else openTreeManager();
 }
+
+}
+
+// ─── Family Group Sheet View ───
+let familySheetActive = false;
+let familySheetList = []; // array of family objects
+let familySheetIndex = 0;
+
+function toggleFamilySheetView() {
+  const view = document.getElementById('familySheetView');
+  const treeScroll = document.getElementById('treeScroll');
+  const expandBtn = document.getElementById('expandGenBtn');
+  const sheetBtn = document.getElementById('familySheetBtn');
+
+  if (!view) return;
+
+  if (view.style.display === 'none') {
+    // Show family sheet view
+    familySheetActive = true;
+    view.style.display = 'block';
+    treeScroll.style.display = 'none';
+    if (expandBtn) expandBtn.style.display = 'none';
+    if (sheetBtn) sheetBtn.style.background = '#8a7a5a';
+    buildFamilySheetList();
+    if (familySheetList.length > 0) {
+      loadFamilySheet(familySheetList[0].id);
+    }
+  } else {
+    // Back to tree view
+    familySheetActive = false;
+    view.style.display = 'none';
+    treeScroll.style.display = '';
+    if (expandBtn) expandBtn.style.display = '';
+    if (sheetBtn) sheetBtn.style.background = '';
+  }
+}
+
+function buildFamilySheetList() {
+  familySheetList = [];
+  const select = document.getElementById('familySheetSelect');
+  if (select) select.innerHTML = '<option value="">— Select a family —</option>';
+
+  // Build families from people's relationship data.
+  // For GEDCOM imports, relationships were built from FAM records (authoritative).
+  // For manual trees, relationships were set by the user.
+  // Each unique parent set = one family; childless couples are also included.
+  const familyMap = new Map(); // key = "pid1-pid2" sorted, value = {parents: [], children: []}
+  let famId = 1;
+
+  // First pass: group children by parents
+  people.forEach(p => {
+    if (!p.parents || p.parents.length === 0) return;
+    // Sort parent IDs to create a stable key
+    const parentKey = [...p.parents].sort((a,b) => a-b).join('-');
+    if (!familyMap.has(parentKey)) {
+      const parents = p.parents.map(pid => people.find(x => x.id === pid)).filter(Boolean);
+      familyMap.set(parentKey, {
+        id: famId++,
+        parents: parents,
+        children: []
+      });
+    }
+    familyMap.get(parentKey).children.push(p);
+  });
+
+  // Second pass: also create families for couples without children
+  // (childless couples should still appear in the family sheet view)
+  const seenPairs = new Set();
+  people.forEach(p => {
+    if (!p.spouseId) return;
+    const pairKey = [p.id, p.spouseId].sort((a,b) => a-b).join('-');
+    if (seenPairs.has(pairKey)) return;
+    seenPairs.add(pairKey);
+    if (!familyMap.has(pairKey)) {
+      const spouse = people.find(x => x.id === p.spouseId);
+      if (spouse) {
+        familyMap.set(pairKey, {
+          id: famId++,
+          parents: [p, spouse],
+          children: []
+        });
+      }
+    }
+  });
+
+  // Convert map to list
+  familySheetList = Array.from(familyMap.values()).map(f => {
+    const husband = f.parents.find(p => p.sex !== 'F') || f.parents[0] || null;
+    const wife = f.parents.find(p => p.sex === 'F') || f.parents.find(p => p !== husband) || null;
+    return {
+      id: f.id,
+      husband: husband,
+      wife: wife,
+      children: f.children
+    };
+  });
+
+  // Sort families by surname
+  familySheetList.sort((a, b) => {
+    const aName = (a.husband || a.wife || {}).name || '';
+    const bName = (b.husband || b.wife || {}).name || '';
+    return aName.localeCompare(bName);
+  });
+
+  // Populate dropdown
+  if (select) {
+    familySheetList.forEach(f => {
+      const h = f.husband ? f.husband.name : '';
+      const w = f.wife ? f.wife.name : '';
+      const label = [h, w].filter(Boolean).join(' & ') || 'Unknown';
+      const option = document.createElement('option');
+      option.value = f.id;
+      option.textContent = label + (f.children.length > 0 ? ' (' + f.children.length + ' children)' : '');
+      select.appendChild(option);
+    });
+  }
+}
+
+function loadFamilySheet(famId) {
+  const content = document.getElementById('familySheetContent');
+  if (!content) return;
+
+  const fam = familySheetList.find(f => f.id === parseInt(famId));
+  if (!fam) {
+    content.innerHTML = '<p style="text-align:center;color:#6b5537;padding:40px;">Select a family from the dropdown above.</p>';
+    return;
+  }
+
+  familySheetIndex = familySheetList.indexOf(fam);
+  const select = document.getElementById('familySheetSelect');
+  if (select) select.value = famId;
+
+  const h = fam.husband;
+  const w = fam.wife;
+  const kids = fam.children;
+
+  // Build the family group sheet HTML
+  let html = '';
+
+  // Header
+  html += '<div style="background:#3e3225; color:#f0e6d2; padding:16px 20px; border-radius:8px 8px 0 0; text-align:center;">';
+  html += '<div style="font-family:\'Cinzel Decorative\',serif; font-size:18px;">';
+  html += [h ? h.name : '', w ? w.name : ''].filter(Boolean).join(' & ') || 'Unknown Family';
+  html += '</div>';
+  if (h || w) {
+    const years = [];
+    if (h && h.years) years.push(h.years);
+    if (w && w.years) years.push(w.years);
+    if (years.length) html += '<div style="font-size:13px; margin-top:4px; opacity:0.8;">' + years.join(' | ') + '</div>';
+  }
+  html += '</div>';
+
+  // Parents section
+  html += '<div style="background:#fff; border:2px solid #8a7a5a; border-top:none; border-radius:0 0 8px 8px; padding:20px; margin-bottom:20px;">';
+
+  if (h || w) {
+    html += '<div style="display:flex; gap:16px; flex-wrap:wrap;">';
+
+    // Husband/Father
+    if (h) {
+      html += '<div style="flex:1; min-width:280px;">';
+      html += '<div style="font-size:12px; color:#8a7a5a; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; border-bottom:1px solid #e0d5c0; padding-bottom:4px;">' + (h.sex === 'F' ? 'Wife/Mother' : 'Husband/Father') + '</div>';
+      html += buildPersonCard(h);
+      html += '</div>';
+    }
+
+    // Wife/Mother
+    if (w) {
+      html += '<div style="flex:1; min-width:280px;">';
+      html += '<div style="font-size:12px; color:#8a7a5a; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; border-bottom:1px solid #e0d5c0; padding-bottom:4px;">' + (w.sex === 'F' ? 'Wife/Mother' : 'Husband/Father') + '</div>';
+      html += buildPersonCard(w);
+      html += '</div>';
+    }
+
+    html += '</div>';
+
+    // Marriage info
+    if ((h && h.marriageDate) || (w && w.marriageDate)) {
+      const mDate = (h && h.marriageDate) || (w && w.marriageDate) || '';
+      html += '<div style="margin-top:12px; padding:8px 12px; background:#f5eedc; border-radius:4px; font-size:13px;">';
+      html += '<strong>Married:</strong> ' + escapeHtml(mDate);
+      html += '</div>';
+    }
+  }
+
+  html += '</div>';
+
+  // Children section
+  html += '<div style="background:#fff; border:2px solid #8a7a5a; border-radius:8px; padding:20px;">';
+  html += '<div style="font-size:12px; color:#8a7a5a; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; border-bottom:1px solid #e0d5c0; padding-bottom:4px;">Children (' + kids.length + ')</div>';
+
+  if (kids.length === 0) {
+    html += '<p style="color:#6b5537; font-style:italic; text-align:center; padding:20px;">No children recorded in this family.</p>';
+  } else {
+    // Sort children by birth year
+    const sortedKids = [...kids].sort((a, b) => {
+      const aY = parseInt((a.birthDate || '').match(/\d{4}/)?.[0] || '9999');
+      const bY = parseInt((b.birthDate || '').match(/\d{4}/)?.[0] || '9999');
+      return aY - bY;
+    });
+
+    sortedKids.forEach((kid, i) => {
+      html += '<div style="display:flex; gap:12px; padding:12px 0; border-bottom:' + (i < sortedKids.length - 1 ? '1px solid #e0d5c0' : 'none') + ';">';
+      html += '<div style="flex:0 0 30px; font-size:20px; color:#8a7a5a; text-align:center;">' + (i + 1) + '</div>';
+      html += '<div style="flex:1;">' + buildPersonCard(kid, true) + '</div>';
+      html += '</div>';
+    });
+  }
+
+  html += '</div>';
+
+  // Navigation footer
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding:12px; background:#f5eedc; border-radius:8px;">';
+  html += '<button class="header-btn" onclick="navigateFamily(-1)" style="border-color:#8a7a5a;">◀ Previous Family</button>';
+  html += '<span style="font-size:13px; color:#6b5537;">Family ' + (familySheetIndex + 1) + ' of ' + familySheetList.length + '</span>';
+  html += '<button class="header-btn" onclick="navigateFamily(1)" style="border-color:#8a7a5a;">Next Family ▶</button>';
+  html += '</div>';
+
+  content.innerHTML = html;
+}
+
+function buildPersonCard(p, isChild) {
+  if (!p) return '';
+  let html = '';
+  const displayName = p.maidenName
+    ? p.name.replace(/\s+\S+$/, ' ' + p.maidenName)
+    : p.name;
+
+  html += '<div style="cursor:pointer;" onclick="showPersonDetail(' + p.id + ')">';
+  html += '<div style="font-family:\'Cormorant Garamond\',serif; font-size:16px; font-weight:600; color:#2a1f10;">' + escapeHtml(displayName) + '</div>';
+
+  const details = [];
+  if (p.birthDate) details.push('b. ' + escapeHtml(p.birthDate));
+  if (p.birthplace) details.push(escapeHtml(p.birthplace));
+  if (p.deathDate) details.push('d. ' + escapeHtml(p.deathDate));
+  if (details.length) html += '<div style="font-size:13px; color:#6b5537; margin-top:4px;">' + details.join(' · ') + '</div>';
+
+  if (isChild && p.spouseName) {
+    html += '<div style="font-size:13px; color:#8a7a5a; margin-top:2px;">m. ' + escapeHtml(p.spouseName) + '</div>';
+  }
+
+  if (p.occupation) {
+    html += '<div style="font-size:13px; color:#6b5537; margin-top:2px;">' + escapeHtml(p.occupation) + '</div>';
+  }
+
+  // Show siblings count
+  if (p.siblings && p.siblings.length > 0) {
+    html += '<div style="font-size:12px; color:#8a7a5a; margin-top:4px;">🍃 ' + p.siblings.length + ' sibling' + (p.siblings.length > 1 ? 's' : '') + '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function showPersonDetail(id) {
+  const person = people.find(p => p.id === id);
+  if (person) openDetail(person);
+}
+
+function navigateFamily(direction) {
+  if (familySheetList.length === 0) return;
+  familySheetIndex += direction;
+  if (familySheetIndex < 0) familySheetIndex = familySheetList.length - 1;
+  if (familySheetIndex >= familySheetList.length) familySheetIndex = 0;
+  loadFamilySheet(familySheetList[familySheetIndex].id);
+}
+
 
 // ─── Auto-save to IndexedDB every 30s (replacing localStorage) ───
 setInterval(async () => {
@@ -4537,6 +4822,7 @@ async function loadSession(file) {
     if (!data.people) { showToast('Invalid session file'); return; }
     people = data.people;
     nextId = data.nextId || maxGen(people, p => p.id) + 1;
+    gedcomFamilies = null; // loading a .familytree file clears GEDCOM FAM records
     visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
     // Migrate stale bracketed names to maidenName/marriedName model (v208+)
     people.forEach(p => {
@@ -5272,27 +5558,23 @@ function parseGedcom(text) {
     }
   }
 
-  // Build tree: assign generations
-  // Find root: person with no FAMC (no parents)
-  const roots = Object.values(indis).filter(p => !p.famc);
-  // If multiple roots, pick the first one with children
-  const root = roots.find(p => p.fams.length > 0) || roots[0] || Object.values(indis)[0];
-  if (!root) return null;
-
+  // --- Build ALL people from ALL INDI records (no recursive traversal) ---
+  // Every individual gets a person object regardless of connectivity to the
+  // chosen root. Relationships are built from FAM records, not by walking
+  // the graph from a single starting person.
   const people = [];
   let nextId = 1;
   const xrefMap = {}; // gedcom xref -> our id
 
-  function addPerson(gedIndi, gen) {
-    if (xrefMap[gedIndi.id]) return xrefMap[gedIndi.id];
+  for (const [xref, gedIndi] of Object.entries(indis)) {
     const id = nextId++;
-    xrefMap[gedIndi.id] = id;
+    xrefMap[xref] = id;
     let years = '?';
     const bYear = (gedIndi.birthDate || '').match(/\d{4}/);
     const dYear = (gedIndi.deathDate || '').match(/\d{4}/);
     if (bYear && dYear) years = bYear[0] + ' \u2014 ' + dYear[0];
     else if (bYear) years = 'b. ' + bYear[0];
-    const p = {
+    people.push({
       id: id,
       name: gedIndi.name || 'Unknown',
       fullName: gedIndi.name || '',
@@ -5303,7 +5585,8 @@ function parseGedcom(text) {
       maidenName: gedIndi.sex === 'F' ? gedIndi.surname : '',
       spouseName: '',
       occupation: '',
-      gen: gen,
+      sex: gedIndi.sex || '',
+      gen: 0,
       years: years,
       status: 'probable',
       docs: [],
@@ -5312,85 +5595,128 @@ function parseGedcom(text) {
       children: [],
       spouseId: null,
       notes: ''
-    };
-    people.push(p);
-
-    // Add parents
-    if (gedIndi.famc && fams[gedIndi.famc]) {
-      const fam = fams[gedIndi.famc];
-      const father = fam.husb ? indis[fam.husb] : null;
-      const mother = fam.wife ? indis[fam.wife] : null;
-      if (father) {
-        const fid = addPerson(father, gen + 1);
-        p.parents.push(fid);
-      }
-      if (mother) {
-        const mid = addPerson(mother, gen + 1);
-        p.parents.push(mid);
-      }
-      // Add siblings from same family
-      for (const sibXref of fam.children) {
-        if (sibXref === gedIndi.id) continue;
-        const sib = indis[sibXref];
-        if (sib) {
-          // Add sibling name to this person
-          const sibName = sib.name || 'Unknown';
-          if (!p.siblings.includes(sibName)) p.siblings.push(sibName);
-        }
-      }
-    }
-
-    // Add spouse and children
-    for (const famXref of gedIndi.fams) {
-      const fam = fams[famXref];
-      if (!fam) continue;
-      const spouseXref = (fam.husb === gedIndi.id) ? fam.wife : fam.husb;
-      if (spouseXref && indis[spouseXref]) {
-        const spouse = indis[spouseXref];
-        const spouseId = xrefMap[spouseXref] || addPerson(spouse, gen);
-        p.spouseId = spouseId;
-        p.spouseName = spouse.name || '';
-        if (fam.marriageDate) p.marriageDate = fam.marriageDate;
-        const spousePerson = people.find(pp => pp.id === spouseId);
-        if (spousePerson) {
-          spousePerson.spouseId = id;
-          spousePerson.spouseName = p.name;
-        }
-        // Add children
-        for (const childXref of fam.children) {
-          const child = indis[childXref];
-          if (child) {
-            const childId = xrefMap[childXref] || addPerson(child, gen - 1);
-            if (!p.children.includes(childId)) p.children.push(childId);
-            const childPerson = people.find(pp => pp.id === childId);
-            if (childPerson) {
-              childPerson.parents = childPerson.parents.filter(pid => pid !== id);
-              childPerson.parents.push(id);
-            }
-          }
-        }
-      }
-    }
-
-    return id;
+    });
   }
 
-  addPerson(root, 0);
+  // Helper: look up person by gedcom xref
+  function personByXref(xref) {
+    const id = xrefMap[xref];
+    return id ? people.find(p => p.id === id) : undefined;
+  }
 
-  // Mark root as "you"
-  const rootPerson = people.find(p => p.id === xrefMap[root.id]);
+  // --- Build relationships from FAM records ---
+  // This is authoritative: HUSB, WIFE, CHIL tags define the family graph.
+  for (const [famXref, fam] of Object.entries(fams)) {
+    const husband = fam.husb ? personByXref(fam.husb) : null;
+    const wife = fam.wife ? personByXref(fam.wife) : null;
+
+    // Spouse links (bidirectional)
+    if (husband && wife) {
+      husband.spouseId = wife.id;
+      husband.spouseName = wife.name;
+      wife.spouseId = husband.id;
+      wife.spouseName = husband.name;
+      // Marriage date (first one wins; multi-marriage people keep the first)
+      if (fam.marriageDate) {
+        if (!husband.marriageDate) husband.marriageDate = fam.marriageDate;
+        if (!wife.marriageDate) wife.marriageDate = fam.marriageDate;
+      }
+    }
+
+    // Parent-child links
+    const parentIds = [];
+    if (husband) parentIds.push(husband.id);
+    if (wife) parentIds.push(wife.id);
+
+    // Children
+    for (const childXref of fam.children) {
+      const child = personByXref(childXref);
+      if (!child) continue;
+      // Assign parents from FAM record (authoritative)
+      child.parents = parentIds.slice();
+      // Add child to each parent's children array
+      for (const pid of parentIds) {
+        const parent = people.find(p => p.id === pid);
+        if (parent && !parent.children.includes(child.id)) {
+          parent.children.push(child.id);
+        }
+      }
+      // Siblings: other children in this family
+      for (const sibXref of fam.children) {
+        if (sibXref === childXref) continue;
+        const sib = personByXref(sibXref);
+        if (sib) {
+          const sibName = sib.name || 'Unknown';
+          if (!child.siblings.includes(sibName)) child.siblings.push(sibName);
+        }
+      }
+    }
+  }
+
+  // --- Assign generations via BFS from roots ---
+  // Roots = people with no parents. Multiple disconnected sub-trees are fine.
+  const visited = new Set();
+  const queue = [];
+  for (const p of people) {
+    if (p.parents.length === 0) {
+      p.gen = 0;
+      visited.add(p.id);
+      queue.push(p);
+    }
+  }
+  // For roots that have a spouse with parents, align them so the tree
+  // doesn't look lopsided. But if neither has parents, both stay at gen 0.
+  // Multi-BFS: process level by level
+  while (queue.length > 0) {
+    const p = queue.shift();
+    // Spouse gets same gen (if not already assigned a deeper gen)
+    if (p.spouseId && !visited.has(p.spouseId)) {
+      const sp = people.find(pp => pp.id === p.spouseId);
+      if (sp && sp.parents.length === 0) {
+        sp.gen = p.gen;
+        visited.add(sp.id);
+        queue.push(sp);
+      }
+    }
+    // Children are one generation below
+    for (const cid of p.children) {
+      if (!visited.has(cid)) {
+        const child = people.find(pp => pp.id === cid);
+        if (child) {
+          child.gen = p.gen - 1;
+          visited.add(cid);
+          queue.push(child);
+        }
+      }
+    }
+    // Parents are one generation above (catches people whose famc wasn't
+    // in a FAM record but who are referenced as HUSB/WIFE)
+  }
+
+  // Any unvisited people (shouldn't happen with "all INDI" approach, but
+  // guards against orphaned records): assign gen 0
+  for (const p of people) {
+    if (!visited.has(p.id)) {
+      p.gen = 0;
+    }
+  }
+
+  // Mark the primary root as "you" — prefer a root with spouse + children
+  const roots = people.filter(p => p.parents.length === 0);
+  const rootPerson = roots.find(p => p.spouseId && p.children.length > 0)
+                  || roots.find(p => p.children.length > 0)
+                  || roots[0]
+                  || people[0];
   if (rootPerson) rootPerson.status = 'you';
 
-  // Second pass: fix parent links for children discovered via FAMC
+  // Set maidenName from surname for females that don't have it set yet
   for (const p of people) {
-    if (p.parents.length === 0 && p.famc && fams[p.famc]) {
-      const fam = fams[p.famc];
-      if (fam.husb && xrefMap[fam.husb]) p.parents.push(xrefMap[fam.husb]);
-      if (fam.wife && xrefMap[fam.wife]) p.parents.push(xrefMap[fam.wife]);
+    if (!p.maidenName && p.sex === 'F' && p.surname) {
+      p.maidenName = p.surname;
     }
   }
 
-  return { people: people, nextId: nextId };
+  return { people: people, nextId: nextId, families: fams };
 }
 
 function convertGedcomFile(file) {
@@ -5422,6 +5748,7 @@ function convertGedcomFile(file) {
         if (!payload.people) { showToast('No people in GEDCOM'); return; }
         people = payload.people;
         nextId = payload.nextId || maxGen(people, p => p.id) + 1;
+        gedcomFamilies = result.families || null;
         visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
         renderTree();
         const btn = document.getElementById('expandGenBtn');
