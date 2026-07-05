@@ -4203,9 +4203,10 @@ function renderOnboardingGuide() {
     </ol>
     <div style="margin:10px 0;text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <input type="file" id="gedcomFileInput" accept=".ged" style="display:none">
-      <button onclick="document.getElementById('gedcomFileInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
-      <button onclick="exportGedcom()" style="padding:10px 16px;border:2px solid #4a5a8a;border-radius:4px;background:#4a5a8a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">📤 Export GEDCOM</button>
+      <button style="padding:10px 16px;border:2px solid #999;border-radius:4px;background:#ccc;color:#666;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:not-allowed;" disabled title="Under Construction">🚧 Import GEDCOM</button>
+      <button style="padding:10px 16px;border:2px solid #999;border-radius:4px;background:#ccc;color:#666;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:not-allowed;" disabled title="Under Construction">🚧 Export GEDCOM</button>
     </div>
+    <p style="margin:8px 0 0;color:#c0392b;font-weight:bold;text-align:center;font-family:'Cinzel Decorative',serif;">🔧 Under Construction — coming soon</p>
     <p style="margin:8px 0 0;"><em>Export creates a standard <code>.ged</code> file that any genealogy software can read. Your data never leaves your device.</em></p>
   </div>
 </div>
