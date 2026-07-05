@@ -1678,51 +1678,61 @@ function buildFamilySheetList() {
   const select = document.getElementById('familySheetSelect');
   if (select) select.innerHTML = '<option value="">— Select a family —</option>';
 
-  // Build families from people data
-  // A "family" = a couple (spouseId link) or a single parent, plus their children
-  const seen = new Set();
+  // Build families from children's parent links.
+  // Group children by their set of parents. Each unique parent pair = one family.
+  // This catches every family regardless of spouseId reliability.
+  const familyMap = new Map(); // key = "pid1-pid2" sorted, value = {parents: [], children: []}
   let famId = 1;
 
+  // First pass: group children by parents
   people.forEach(p => {
-    if (seen.has(p.id)) return;
+    if (!p.parents || p.parents.length === 0) return;
+    // Sort parent IDs to create a stable key
+    const parentKey = [...p.parents].sort((a,b) => a-b).join('-');
+    if (!familyMap.has(parentKey)) {
+      const parents = p.parents.map(pid => people.find(x => x.id === pid)).filter(Boolean);
+      familyMap.set(parentKey, {
+        id: famId++,
+        parents: parents,
+        children: []
+      });
+    }
+    familyMap.get(parentKey).children.push(p);
+  });
 
-    // If this person has a spouse, create a family for them
-    if (p.spouseId && !seen.has(p.spouseId)) {
+  // Second pass: also create families for couples without children
+  // (childless couples should still appear in the family sheet view)
+  const seenPairs = new Set();
+  people.forEach(p => {
+    if (!p.spouseId) return;
+    const pairKey = [p.id, p.spouseId].sort((a,b) => a-b).join('-');
+    if (seenPairs.has(pairKey)) return;
+    seenPairs.add(pairKey);
+    if (!familyMap.has(pairKey)) {
       const spouse = people.find(x => x.id === p.spouseId);
       if (spouse) {
-        seen.add(p.id);
-        seen.add(spouse.id);
-        // Find children: people who have both p and spouse in their parents array
-        // OR people who have p in parents and p.spouseId is set
-        const children = people.filter(c =>
-          c.parents && c.parents.includes(p.id) &&
-          (c.parents.includes(spouse.id) || !spouse.id)
-        );
-        familySheetList.push({
+        familyMap.set(pairKey, {
           id: famId++,
-          husband: p.sex !== 'F' ? p : spouse,
-          wife: p.sex !== 'F' ? spouse : p,
-          children: children
-        });
-      }
-    } else if (!p.spouseId) {
-      // Single person with children (single parent)
-      seen.add(p.id);
-      const children = people.filter(c =>
-        c.parents && c.parents.includes(p.id)
-      );
-      if (children.length > 0 || p.parents.length === 0) {
-        familySheetList.push({
-          id: famId++,
-          husband: p.sex !== 'F' ? p : null,
-          wife: p.sex === 'F' ? p : null,
-          children: children
+          parents: [p, spouse],
+          children: []
         });
       }
     }
   });
 
-  // Sort families by husband's or wife's surname
+  // Convert map to list
+  familySheetList = Array.from(familyMap.values()).map(f => {
+    const husband = f.parents.find(p => p.sex !== 'F') || f.parents[0] || null;
+    const wife = f.parents.find(p => p.sex === 'F') || f.parents.find(p => p !== husband) || null;
+    return {
+      id: f.id,
+      husband: husband,
+      wife: wife,
+      children: f.children
+    };
+  });
+
+  // Sort families by surname
   familySheetList.sort((a, b) => {
     const aName = (a.husband || a.wife || {}).name || '';
     const bName = (b.husband || b.wife || {}).name || '';
