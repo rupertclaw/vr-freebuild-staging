@@ -1950,8 +1950,31 @@ function renderTree() {
   const displayMax = Math.min(visibleMaxGen, maxGen(people, p => p.gen));
   const visiblePeople = people.filter(p => !p.focusHidden && p.gen >= 0 && p.gen <= displayMax);
   const gens = [];
+
+  // Sort a generation's people so spouses are vertically adjacent.
+  // Groups people into couple-pairs (or singles), then orders pairs by min ID.
+  function sortByCouples(genPeople) {
+    const visited = new Set();
+    const result = [];
+    // First pass: group spouses together
+    for (const p of genPeople) {
+      if (visited.has(p.id)) continue;
+      visited.add(p.id);
+      result.push(p);
+      // If this person has a spouse in the same generation, place them next
+      if (p.spouseId) {
+        const spouse = genPeople.find(x => x.id === p.spouseId && !visited.has(x.id));
+        if (spouse) {
+          visited.add(spouse.id);
+          result.push(spouse);
+        }
+      }
+    }
+    return result;
+  }
+
   for (let g = 0; g <= displayMax; g++) {
-    gens[g] = visiblePeople.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+    gens[g] = sortByCouples(visiblePeople.filter(p => p.gen === g));
   }
 
   const colLeft = [];
@@ -5754,16 +5777,17 @@ function parseGedcom(text) {
     return set;
   };
   const componentSummaries = components.map((comp, idx) => {
-    // Find best focus: maximize ancestors+descendants, prefer recent people
+    // Find best focus: prefer people with the most ancestors (deeper pedigree).
+    // Tiebreak by youngest (highest birth year) — a younger person's ancestors
+    // encompass older relatives' ancestors, giving the richest tree view.
     let best = null;
     for (const per of comp) {
       const y = yearFrom(per.birthDate || per.deathDate || per.years);
       const a = ancestors(per.id).size - 1;
       const d = descendants(per.id).size - 1;
       const total = a + d + 1;
-      // Prefer people with at least 4 ancestors (grandparent-level) and some descendants
-      const hasGrandparents = a >= 4;
-      const score = (hasGrandparents ? 1000 : 0) + total - (y / 1000);
+      const hasParents = a >= 1;
+      const score = (hasParents ? 10000 : 0) + a * 100 + (y / 100);
       if (best === null || score > best.score) {
         best = { id: per.id, score, name: per.name, birth: per.birthDate || per.years || '', total, ancestors: a, descendants: d };
       }
