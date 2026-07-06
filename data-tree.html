@@ -1173,6 +1173,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 // ═══════════════════════════════════════════════════════════════
 function maxGen(arr, key) { return arr.length ? Math.max(...arr.map(key)) : 0; }
 
+function rootsCount(arr) {
+  return arr.filter(p => !p.parents || p.parents.length === 0).length;
+}
+
 // ═══════════════════════════════════════════════════════════════
 // DEBUG LOG CAPTURE (for mobile troubleshooting)
 // ═══════════════════════════════════════════════════════════════
@@ -1510,6 +1514,11 @@ async function switchTree(treeId) {
   nextId = data.nextId || maxGen(people, p => p.id) + 1;
   visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
   currentTreeId = treeId;
+  // Apply saved focus if any
+  const savedFocus = localStorage.getItem('vr_focusPerson_' + treeId);
+  if (savedFocus) {
+    setFocusTreeByPerson(parseInt(savedFocus));
+  }
   // Migrate bracketed names (v208+)
   people.forEach(p => {
     if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
@@ -1910,7 +1919,6 @@ setInterval(async () => {
   if (currentTreeId) await saveCurrentTreeToDB();
 }, 30000);
 const CARD_W = 130, GAP_Y = 3;
-const GEN_X_GAP = 55;  // horizontal gap between generation columns
 const MINI_W = 100, MINI_H = 14;
 let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
 
@@ -1923,11 +1931,32 @@ let cardEls = new Map();
 let treeWidth = 0, treeHeight = 0;
 let zoom = 0.25;
 
-function colLeftForGen(g, maxGen) {
-  let pos = 40; // left padding
+function colLeftForGen(g, maxGen, bigTree) {
+  // For small/demo trees, keep the original compact layout
+  if (!bigTree) {
+    if (g === 0) return CARD_W * 0.5;
+    if (g === 1) return CARD_W * 0.75;
+    if (g === 2) return CARD_W * 1.5;
+    let pos = CARD_W * 1.5;
+    for (let i = 3; i <= g; i++) {
+      const isLast = i === maxGen;
+      const isMinicard = isLast && maxGen >= 5;
+      if (isMinicard) {
+        pos += CARD_W + 4;
+      } else if (isLast) {
+        pos += CARD_W;
+      } else {
+        pos += ((i - 3) % 2 === 0) ? CARD_W + 4 : CARD_W;
+      }
+    }
+    return pos;
+  }
+  // For big/GEDCOM trees, use generous fixed gaps so cards don't overlap
+  let pos = 40;
+  const GAP_X = 55;
   for (let i = 0; i < g; i++) {
     const isMini = (i === maxGen && maxGen >= 5);
-    pos += (isMini ? MINI_W : CARD_W) + GEN_X_GAP;
+    pos += (isMini ? MINI_W : CARD_W) + GAP_X;
   }
   return pos;
 }
@@ -1937,14 +1966,15 @@ function renderTree() {
   cardEls.clear();
 
   const displayMax = Math.min(visibleMaxGen, maxGen(people, p => p.gen));
-  const visiblePeople = people.filter(p => p.gen <= displayMax);
+  const visiblePeople = people.filter(p => !p.focusHidden && p.gen >= 0 && p.gen <= displayMax);
   const gens = [];
   for (let g = 0; g <= displayMax; g++) {
     gens[g] = visiblePeople.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
   }
 
   const colLeft = [];
-  for (let g = 0; g <= displayMax; g++) colLeft[g] = colLeftForGen(g, displayMax);
+  const bigTree = visiblePeople.length > 80 || rootsCount(people) > 6;
+  for (let g = 0; g <= displayMax; g++) colLeft[g] = colLeftForGen(g, displayMax, bigTree);
 
   const hMap = new Map();
 
@@ -2131,7 +2161,7 @@ function drawLines() {
   svg.setAttribute('height', treeHeight);
   svg.innerHTML = '';
   const displayMax = Math.min(visibleMaxGen, maxGen(people, p => p.gen));
-  const visiblePeople = people.filter(p => p.gen <= displayMax);
+  const visiblePeople = people.filter(p => p.gen >= 0 && p.gen <= displayMax);
   const hMap = new Map();
   cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
   visiblePeople.forEach(p => {
@@ -2503,7 +2533,8 @@ function updateExpandGenBtn() {
     document.getElementById('privacyModal')?.style.display !== 'none' ||
     document.getElementById('printChoiceDlg') ||
     document.getElementById('ambigModal')?.style.display !== 'none' ||
-    document.getElementById('confirmModal')?.style.display !== 'none';
+    document.getElementById('confirmModal')?.style.display !== 'none' ||
+    document.getElementById('focusPickerOverlay')?.style.display !== 'none';
   btn.style.display = anyPanelOpen ? 'none' : 'block';
 }
 function clearCertPanel() {
@@ -4846,6 +4877,13 @@ async function loadSession(file) {
         }
       }
     }
+
+    // Apply saved focus if present for current tree
+    if (currentTreeId) {
+      const savedFocus = localStorage.getItem('vr_focusPerson_' + currentTreeId);
+      if (savedFocus) setFocusTreeByPerson(parseInt(savedFocus));
+    }
+
     renderTree();
     const btn = document.getElementById('expandGenBtn');
     const actualMax = maxGen(people, p => p.gen);
@@ -5257,8 +5295,8 @@ function backfillComputedFields() {
 // if (!getCountry()) { setTimeout(() => showCountryModal(), 800); }
 
 function centerOnGen0() {
-  // Find Graeme (the root person, ID 1, gen 0)
-  const root = people.find(p => p.gen === 0);
+  // Find the visible root person (gen 0 and not hidden)
+  const root = people.find(p => p.gen === 0 && p.status !== 'blank');
   if (!root) return;
   const rootEl = cardEls.get(root.id);
   if (!rootEl) return;
@@ -5652,12 +5690,8 @@ function parseGedcom(text) {
       queue.push(p);
     }
   }
-  // For roots that have a spouse with parents, align them so the tree
-  // doesn't look lopsided. But if neither has parents, both stay at gen 0.
-  // Multi-BFS: process level by level
   while (queue.length > 0) {
     const p = queue.shift();
-    // Spouse gets same gen (if not already assigned a deeper gen)
     if (p.spouseId && !visited.has(p.spouseId)) {
       const sp = people.find(pp => pp.id === p.spouseId);
       if (sp && sp.parents.length === 0) {
@@ -5666,7 +5700,6 @@ function parseGedcom(text) {
         queue.push(sp);
       }
     }
-    // Children are one generation below
     for (const cid of p.children) {
       if (!visited.has(cid)) {
         const child = people.find(pp => pp.id === cid);
@@ -5677,34 +5710,185 @@ function parseGedcom(text) {
         }
       }
     }
-    // Parents are one generation above (catches people whose famc wasn't
-    // in a FAM record but who are referenced as HUSB/WIFE)
   }
-
-  // Any unvisited people (shouldn't happen with "all INDI" approach, but
-  // guards against orphaned records): assign gen 0
   for (const p of people) {
     if (!visited.has(p.id)) {
       p.gen = 0;
     }
   }
 
-  // Mark the primary root as "you" — prefer a root with spouse + children
-  const roots = people.filter(p => p.parents.length === 0);
-  const rootPerson = roots.find(p => p.spouseId && p.children.length > 0)
-                  || roots.find(p => p.children.length > 0)
-                  || roots[0]
-                  || people[0];
-  if (rootPerson) rootPerson.status = 'you';
-
-  // Set maidenName from surname for females that don't have it set yet
+  // Build connected components and focus-candidate info (stored for UI)
+  const components = [];
+  const compVisited = new Set();
+  const getComponent = (startId) => {
+    const comp = [];
+    const stack = [startId];
+    while (stack.length) {
+      const id = stack.pop();
+      if (compVisited.has(id)) continue;
+      compVisited.add(id);
+      const per = people.find(pp => pp.id === id);
+      if (!per) continue;
+      comp.push(per);
+      const rels = [...(per.parents || []), ...(per.children || []), (per.spouseId || null)];
+      for (const rid of rels) if (rid) stack.push(rid);
+    }
+    return comp;
+  };
   for (const p of people) {
-    if (!p.maidenName && p.sex === 'F' && p.surname) {
-      p.maidenName = p.surname;
+    if (!compVisited.has(p.id)) {
+      const comp = getComponent(p.id);
+      if (comp.length) components.push(comp);
     }
   }
+  const yearFrom = (s) => {
+    const m = String(s || '').match(/\b(\d{4})\b/);
+    return m ? parseInt(m[1]) : 9999;
+  };
+  const ancestors = (id, memo = {}) => {
+    if (memo[id]) return memo[id];
+    const per = people.find(pp => pp.id === id);
+    const set = new Set([id]);
+    if (per) {
+      for (const pid of per.parents || []) {
+        ancestors(pid, memo).forEach(x => set.add(x));
+      }
+    }
+    memo[id] = set;
+    return set;
+  };
+  const descendants = (id, memo = {}) => {
+    if (memo[id]) return memo[id];
+    const per = people.find(pp => pp.id === id);
+    const set = new Set([id]);
+    if (per) {
+      for (const cid of per.children || []) {
+        descendants(cid, memo).forEach(x => set.add(x));
+      }
+    }
+    memo[id] = set;
+    return set;
+  };
+  const componentSummaries = components.map((comp, idx) => {
+    // Find best focus: maximize ancestors+descendants, prefer recent people
+    let best = null;
+    for (const per of comp) {
+      const y = yearFrom(per.birthDate || per.deathDate || per.years);
+      const a = ancestors(per.id).size - 1;
+      const d = descendants(per.id).size - 1;
+      const total = a + d + 1;
+      // Prefer people with at least 4 ancestors (grandparent-level) and some descendants
+      const hasGrandparents = a >= 4;
+      const score = (hasGrandparents ? 1000 : 0) + total - (y / 1000);
+      if (best === null || score > best.score) {
+        best = { id: per.id, score, name: per.name, birth: per.birthDate || per.years || '', total, ancestors: a, descendants: d };
+      }
+    }
+    return { index: idx, size: comp.length, focus: best };
+  }).sort((a, b) => b.size - a.size);
 
-  return { people: people, nextId: nextId, families: fams };
+  // Store focus candidates on the global result object so the UI can use them
+  const focusCandidates = componentSummaries.map(c => c.focus).filter(Boolean);
+
+  return { people: people, nextId: nextId, families: fams, components: componentSummaries, focusCandidates: focusCandidates };
+}
+
+function setFocusTreeByPerson(focusId) {
+  if (!focusId) return;
+  const focusPerson = people.find(p => p.id === focusId);
+  if (!focusPerson) return;
+
+  // Build ancestor-only view: focus person, their parents, grandparents, etc.
+  // Their spouse and descendants are NOT included in the tree cards (they appear in family sheets)
+  const included = new Set();
+  included.add(focusId);
+  const maxDepth = 8;
+  let current = [focusId];
+  for (let d = 0; d < maxDepth && current.length; d++) {
+    const next = [];
+    for (const id of current) {
+      const p = people.find(pp => pp.id === id);
+      if (!p) continue;
+      for (const pid of p.parents || []) {
+        included.add(pid);
+        next.push(pid);
+      }
+    }
+    current = next;
+  }
+
+  // Renumber generations: focus = 0, parents = 1, grandparents = 2...
+  const genMap = new Map();
+  genMap.set(focusId, 0);
+  current = [focusId];
+  for (let d = 0; d < maxDepth && current.length; d++) {
+    const next = [];
+    for (const id of current) {
+      const p = people.find(pp => pp.id === id);
+      if (!p) continue;
+      for (const pid of p.parents || []) {
+        genMap.set(pid, d + 1);
+        next.push(pid);
+      }
+    }
+    current = next;
+  }
+
+  for (const p of people) {
+    if (included.has(p.id)) {
+      p.gen = genMap.get(p.id) || 0;
+      p.status = (p.id === focusId) ? 'you' : 'probable';
+      p.focusHidden = false;
+    } else {
+      p.focusHidden = true;
+      p.status = 'probable';
+    }
+  }
+}
+
+function showFocusPicker(candidates, components, onSelect) {
+  // Build modal
+  let overlay = document.getElementById('focusPickerOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'focusPickerOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:12000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow:auto;';
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = '';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#f5eedc;border:3px solid #8a7a5a;border-radius:10px;max-width:500px;width:100%;padding:20px;margin-top:40px;font-family:Cormorant Garamond,serif;color:#2a1f10;';
+
+  box.innerHTML = '\
+    <div style="font-family:Cinzel Decorative,serif;font-size:20px;color:#3e2b1a;margin-bottom:8px;">Choose a focus person</div>\
+    <div style="font-size:13px;color:#6b5537;margin-bottom:16px;line-height:1.5;">This tree has ' + people.length + ' people across ' + components.length + ' family groups. Pick the person whose ancestors you want to explore. Family sheets still list everyone.</div>\
+    <div id="focusList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;"></div>\
+    <button id="focusShowAll" style="width:100%;padding:10px;background:#5c4033;color:#e8dcc8;border:none;border-radius:6px;font-family:Cinzel Decorative,serif;font-size:14px;cursor:pointer;">Show everyone</button>\
+  ';
+  overlay.appendChild(box);
+  overlay.style.display = 'flex';
+
+  const list = box.querySelector('#focusList');
+  candidates.forEach((c, idx) => {
+    const row = document.createElement('button');
+    row.style.cssText = 'text-align:left;background:#fff;border:2px solid #c9b896;border-radius:6px;padding:12px;cursor:pointer;font-family:Cormorant Garamond,serif;color:#2a1f10;';
+    row.innerHTML = '\
+      <div style="font-weight:600;font-size:15px;">' + escapeHtml(c.name) + '</div>\
+      <div style="font-size:12px;color:#6b5537;">' + (c.birth ? escapeHtml(c.birth) : '') + '</div>\
+      <div style="font-size:11px;color:#8a7a5a;margin-top:4px;">' + c.ancestors + ' ancestors · ' + c.descendants + ' descendants · covers ' + c.total + ' people</div>\
+    ';
+    row.addEventListener('click', () => {
+      overlay.style.display = 'none';
+      onSelect(c.id);
+    });
+    list.appendChild(row);
+  });
+
+  box.querySelector('#focusShowAll').addEventListener('click', () => {
+    overlay.style.display = 'none';
+    onSelect(null);
+  });
 }
 
 function convertGedcomFile(file) {
@@ -5721,7 +5905,9 @@ function convertGedcomFile(file) {
         exportedAt: new Date().toISOString(),
         people: result.people,
         nextId: result.nextId,
-        visibleMaxGen: Math.max(...result.people.map(p => p.gen))
+        visibleMaxGen: Math.max(...result.people.map(p => p.gen)),
+        focusCandidates: result.focusCandidates || [],
+        components: result.components || []
       };
       const json = JSON.stringify(payload, null, 2);
       const blob = new Blob([json], { type: 'application/json' });
@@ -5738,7 +5924,25 @@ function convertGedcomFile(file) {
         nextId = payload.nextId || maxGen(people, p => p.id) + 1;
         gedcomFamilies = result.families || null;
         visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
-        renderTree();
+
+        // Focus-tree picker for big/complex imports
+        if (result.focusCandidates && result.focusCandidates.length > 0 && (people.length > 80 || result.components.length > 1)) {
+          showFocusPicker(result.focusCandidates, result.components, (focusId) => {
+            if (focusId) {
+              setFocusTreeByPerson(focusId);
+              localStorage.setItem('vr_focusPerson_' + currentTreeId, focusId);
+            } else {
+              // show all: parsed generations already set, but clear any saved focus
+              localStorage.removeItem('vr_focusPerson_' + currentTreeId);
+              people.forEach(p => { p.focusHidden = false; });
+            }
+            renderTree();
+            updateExpandGenBtn();
+            centerOnGen0();
+          });
+        } else {
+          renderTree();
+        }
         const btn = document.getElementById('expandGenBtn');
         const actualMax = maxGen(people, p => p.gen);
         if (visibleMaxGen >= actualMax) {
