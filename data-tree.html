@@ -1919,6 +1919,7 @@ setInterval(async () => {
   if (currentTreeId) await saveCurrentTreeToDB();
 }, 30000);
 const CARD_W = 130, GAP_Y = 3;
+const GEN_X_GAP = 55;
 const MINI_W = 100, MINI_H = 14;
 let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
 
@@ -1932,31 +1933,12 @@ let treeWidth = 0, treeHeight = 0;
 let zoom = 0.25;
 
 function colLeftForGen(g, maxGen, bigTree) {
-  // For small/demo trees, keep the original compact layout
-  if (!bigTree) {
-    if (g === 0) return CARD_W * 0.5;
-    if (g === 1) return CARD_W * 0.75;
-    if (g === 2) return CARD_W * 1.5;
-    let pos = CARD_W * 1.5;
-    for (let i = 3; i <= g; i++) {
-      const isLast = i === maxGen;
-      const isMinicard = isLast && maxGen >= 5;
-      if (isMinicard) {
-        pos += CARD_W + 4;
-      } else if (isLast) {
-        pos += CARD_W;
-      } else {
-        pos += ((i - 3) % 2 === 0) ? CARD_W + 4 : CARD_W;
-      }
-    }
-    return pos;
-  }
-  // For big/GEDCOM trees, use generous fixed gaps so cards don't overlap
   let pos = 40;
-  const GAP_X = 55;
+  // For very wide trees (many roots or many people), add extra breathing room
+  const extraGap = bigTree ? 20 : 0;
   for (let i = 0; i < g; i++) {
     const isMini = (i === maxGen && maxGen >= 5);
-    pos += (isMini ? MINI_W : CARD_W) + GAP_X;
+    pos += (isMini ? MINI_W : CARD_W) + GEN_X_GAP + extraGap;
   }
   return pos;
 }
@@ -2037,9 +2019,11 @@ function renderTree() {
   const topMap = new Map();
 
   // Determine the rightmost generation to use as layout anchor.
-  // For binary trees (default data), we expect 2^gen cards per generation.
-  // For GEDCOM imports, the tree is irregular so we just use the deepest gen.
+  // Use only visible (non-hidden) people for the anchor gen.
   let rightmostFull = displayMax;
+  while (rightmostFull > 0 && (!gens[rightmostFull] || gens[rightmostFull].length === 0)) {
+    rightmostFull--;
+  }
 
   // STEP 1: Place the deepest generation as a neat vertical column.
   // This is the anchor generation — everything else positions relative to it.
@@ -5953,7 +5937,7 @@ function convertGedcomFile(file) {
           btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
         }
         // Save tree to IndexedDB
-        if (currentTreeId) await saveCurrentTreeToDB();
+        await saveCurrentTreeToDB();
         showToast('Loaded ' + result.people.length + ' people. Tree shows first 5 generations. Tap 📋 for Family Group Sheets to browse all families.');
       } catch (loadErr) {
         console.error('[GEDCOM] load error:', loadErr);
