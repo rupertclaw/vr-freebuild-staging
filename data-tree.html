@@ -5828,6 +5828,10 @@ function setFocusTreeByPerson(focusId) {
       p.status = 'probable';
     }
   }
+
+  // Update visibleMaxGen to cover the focus tree's depth
+  const focusMaxGen = Math.max(...people.filter(p => !p.focusHidden).map(p => p.gen));
+  visibleMaxGen = Math.min(focusMaxGen, 8);
 }
 
 function showFocusPicker(candidates, components, onSelect) {
@@ -5919,6 +5923,8 @@ function convertGedcomFile(file) {
               // show all: parsed generations already set, but clear any saved focus
               localStorage.removeItem('vr_focusPerson_' + currentTreeId);
               people.forEach(p => { p.focusHidden = false; });
+              // Restore original visibleMaxGen from the GEDCOM payload
+              visibleMaxGen = Math.min(4, maxGen(people, p => p.gen));
             }
             renderTree();
             updateExpandGenBtn();
