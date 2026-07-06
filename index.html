@@ -786,7 +786,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn" id="darkModeToggle" title="Toggle dark mode" onclick="toggleDarkMode()">🌙</button>
       <button class="header-btn" id="printTreeBtn" title="Print tree" onclick="checkMemberFeature('print', openPrintDialog)">🖨️</button>
       <button class="header-btn" id="resetBtn" title="Reset tree">🔄</button>
-      <button class="header-btn" id="familySheetBtn" title="Family Group Sheet view" onclick="toggleFamilySheetView()">📋</button>
+      <a class="header-btn" id="familySheetBtn" href="families.html" target="_blank" title="Family sheets (new tab)" style="text-decoration:none;">&#128203;</a>
     </div>
   </div>
 </div>
@@ -1108,7 +1108,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">🔐</div>
-        <div><strong>Encrypted storage.</strong> Your tree is encrypted in your device's own storage. We cannot read it, even if we wanted to.</div>
+        <div><strong>Private local storage.</strong> Your tree stays in your browser's own IndexedDB storage. We cannot read it, even if we wanted to.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">🚫</div>
@@ -1641,8 +1641,6 @@ function toggleTreeManager() {
   else openTreeManager();
 }
 
-}
-
 // ─── Family Group Sheet View ───
 let familySheetActive = false;
 let familySheetList = []; // array of family objects
@@ -1853,9 +1851,9 @@ function loadFamilySheet(famId) {
 
   // Navigation footer
   html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding:12px; background:#f5eedc; border-radius:8px;">';
-  html += '<button class="header-btn" onclick="navigateFamily(-1)" style="border-color:#8a7a5a;">◀ Previous Family</button>';
+  html += '<button class="header-btn" onclick="navigateFamily(-1)" style="border-color:#8a7a5a; min-width:44px; font-size:18px;" title="Previous Family">&#9664;</button>';
   html += '<span style="font-size:13px; color:#6b5537;">Family ' + (familySheetIndex + 1) + ' of ' + familySheetList.length + '</span>';
-  html += '<button class="header-btn" onclick="navigateFamily(1)" style="border-color:#8a7a5a;">Next Family ▶</button>';
+  html += '<button class="header-btn" onclick="navigateFamily(1)" style="border-color:#8a7a5a; min-width:44px; font-size:18px;" title="Next Family">&#9654;</button>';
   html += '</div>';
 
   content.innerHTML = html;
@@ -1907,12 +1905,12 @@ function navigateFamily(direction) {
   loadFamilySheet(familySheetList[familySheetIndex].id);
 }
 
-
 // ─── Auto-save to IndexedDB every 30s (replacing localStorage) ───
 setInterval(async () => {
   if (currentTreeId) await saveCurrentTreeToDB();
 }, 30000);
 const CARD_W = 130, GAP_Y = 3;
+const GEN_X_GAP = 55;  // horizontal gap between generation columns
 const MINI_W = 100, MINI_H = 14;
 let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
 
@@ -1926,26 +1924,10 @@ let treeWidth = 0, treeHeight = 0;
 let zoom = 0.25;
 
 function colLeftForGen(g, maxGen) {
-  if (g === 0) return CARD_W * 0.5;      // 65
-  if (g === 1) return CARD_W * 0.75;     // 97.5
-  if (g === 2) return CARD_W * 1.5;       // 195 — shifted half a card right
-
-  let pos = CARD_W * 1.5; // gen 2 position (195px)
-  for (let i = 3; i <= g; i++) {
-    const isLast = i === maxGen;
-    const isMinicard = isLast && maxGen >= 5;
-    if (isMinicard) {
-      pos += CARD_W + 4; // gap before minicard
-    } else if (isLast) {
-      pos += CARD_W; // full card rightmost, touching
-    } else {
-      // Alternate: gap (odd i-3), touch (even i-3)
-      if ((i - 3) % 2 === 0) {
-        pos += CARD_W + 4;
-      } else {
-        pos += CARD_W;
-      }
-    }
+  let pos = 40; // left padding
+  for (let i = 0; i < g; i++) {
+    const isMini = (i === maxGen && maxGen >= 5);
+    pos += (isMini ? MINI_W : CARD_W) + GEN_X_GAP;
   }
   return pos;
 }
@@ -2616,7 +2598,7 @@ document.getElementById('certFileInput')?.addEventListener('change', async (e) =
     console.error('[UPLOAD ERROR]', err);
     const cs = document.getElementById('certStatus');
     cs.className = 'cert-status error'; cs.style.display = 'block';
-    cs.innerHTML = 'Error: ' + (err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    cs.innerHTML = 'Error: ' + escapeHtml(err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
     document.getElementById('certRetry').style.display = 'block';
   }
 });
@@ -2627,7 +2609,7 @@ document.getElementById('certCameraInput').addEventListener('change', async (e) 
     console.error('[CAMERA ERROR]', err);
     const cs = document.getElementById('certStatus');
     cs.className = 'cert-status error'; cs.style.display = 'block';
-    cs.innerHTML = 'Error: ' + (err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    cs.innerHTML = 'Error: ' + escapeHtml(err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
     document.getElementById('certRetry').style.display = 'block';
   }
 });
@@ -2785,7 +2767,7 @@ async function sendToTranscriptionAPI(base64) {
 
       if (!json.success) {
         cs.className = 'cert-status error';
-        cs.innerHTML = 'Scan failed: ' + (json.error || json.message || 'Unknown error') + '<br><small>Tap Retry to try again</small>';
+        cs.innerHTML = 'Scan failed: ' + escapeHtml(json.error || json.message || 'Unknown error') + '<br><small>Tap Retry to try again</small>';
         certPanel.classList.add('has-results');
         return;
       }
@@ -2817,7 +2799,7 @@ async function sendToTranscriptionAPI(base64) {
   let msg = lastErr?.name === 'AbortError' ? 'Scan timed out after 90 seconds.' : (lastErr?.message || 'Could not reach server');
   if (msg.includes('Failed to fetch')) msg = 'Connection failed on image upload. Your network may block large uploads.';
   const debugId = 'debug_' + Date.now();
-  cs.innerHTML = 'Network error: ' + msg + '<br><small>Try: 1) Different WiFi, 2) Camera not gallery, 3) Clear and retry</small><br><button onclick="document.getElementById(\'' + debugId + '\').style.display=\'block\'" style="margin-top:6px;padding:4px 8px;font-size:11px;background:#8a7a5a;color:#fff;border:none;border-radius:4px;">Show Debug Logs</button><pre id="' + debugId + '" style="display:none;margin-top:6px;padding:6px;background:#3e2b1a;color:#e8dcc8;font-size:10px;max-height:150px;overflow:auto;border-radius:4px;white-space:pre-wrap;">' + getDebugLogs().replace(/</g,'&lt;') + '</pre>';
+  cs.innerHTML = 'Network error: ' + escapeHtml(msg) + '<br><small>Try: 1) Different WiFi, 2) Camera not gallery, 3) Clear and retry</small><br><button onclick="document.getElementById(\'' + debugId + '\').style.display=\'block\'" style="margin-top:6px;padding:4px 8px;font-size:11px;background:#8a7a5a;color:#fff;border:none;border-radius:4px;">Show Debug Logs</button><pre id="' + debugId + '" style="display:none;margin-top:6px;padding:6px;background:#3e2b1a;color:#e8dcc8;font-size:10px;max-height:150px;overflow:auto;border-radius:4px;white-space:pre-wrap;">' + escapeHtml(getDebugLogs()) + '</pre>';
   certPanel.classList.add('has-results');
 }
 
@@ -2845,10 +2827,10 @@ function renderTranscriptionResults(data) {
     card.className = 'cert-result-card' + (idx === 0 ? ' selected' : '');
     card.dataset.index = idx;
     const fields = extractEntryFields(entry, type);
-    let html = '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">' + entrySummary(entry, type) + '</div>';
+    let html = '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">' + escapeHtml(entrySummary(entry, type)) + '</div>';
     fields.forEach((f, fi) => {
       const fieldId = 'cf_' + idx + '_' + fi;
-      html += '<div class="cert-field-edit"><span class="cert-field-label">' + f.label + ':</span><input id="' + fieldId + '" type="text" value="' + f.value.replace(/"/g, '&quot;') + '" data-entry="' + idx + '" data-field="' + f.key + '" onfocus="event.stopPropagation()" onclick="event.stopPropagation()"></div>';
+      html += '<div class="cert-field-edit"><span class="cert-field-label">' + escapeHtml(f.label) + ':</span><input id="' + fieldId + '" type="text" value="' + (f.value || '').toString().replace(/"/g, '&quot;') + '" data-entry="' + idx + '" data-field="' + escapeHtml(f.key) + '" onfocus="event.stopPropagation()" onclick="event.stopPropagation()"></div>';
     });
     card.innerHTML = html;
     card.addEventListener('click', () => {
@@ -2923,9 +2905,9 @@ function extractEntryFields(entry, type) {
 }
 
 function entrySummary(entry, type) {
-  const name = entry.child?.name || entry.groom?.name || entry.bride?.name || entry.deceased?.name || 'Unknown';
-  const date = entry.child?.birthDate || entry.date || entry.deathDate || '';
-  if (type === 'marriage') return (entry.groom?.name || 'Unknown') + ' & ' + (entry.bride?.name || 'Unknown') + (date ? ' — ' + date : '');
+  const name = escapeHtml(entry.child?.name || entry.groom?.name || entry.bride?.name || entry.deceased?.name || 'Unknown');
+  const date = escapeHtml(entry.child?.birthDate || entry.date || entry.deathDate || '');
+  if (type === 'marriage') return escapeHtml(entry.groom?.name || 'Unknown') + ' & ' + escapeHtml(entry.bride?.name || 'Unknown') + (date ? ' — ' + date : '');
   if (type === 'birth') return name + (date ? ' — b. ' + date : '');
   if (type === 'death') return name + (date ? ' — d. ' + date : '');
   return name;
@@ -4621,13 +4603,19 @@ function renderGuidanceResults({ suggestions, stats }) {
 
   for (const s of suggestions) {
     const cls = s.priority === 'high' ? 'high' : (s.priority === 'med' ? 'med' : 'low');
+    const safeTitle = escapeHtml(s.title);
+    const safeDesc = escapeHtml(s.desc);
+    const safeFills = (s.fills || []).map(f => escapeHtml(String(f)));
+    const safeSourceUrl = encodeURI(s.source.url).replace(/'/g, '%27');
+    const safeSourceName = s.source.name ? escapeHtml(s.source.name) : '';
+    const safeCost = escapeHtml(s.cost);
     html += '<div class="guidance-card ' + cls + '">';
-    html += '<div class="title">' + (icons[s.type] || '📄') + ' ' + s.title + '</div>';
-    html += '<div class="desc">' + s.desc + '</div>';
-    html += '<ul class="fills">' + s.fills.map(f => '<li>• ' + f + '</li>').join('') + '</ul>';
+    html += '<div class="title">' + (icons[s.type] || '📄') + ' ' + safeTitle + '</div>';
+    html += '<div class="desc">' + safeDesc + '</div>';
+    html += '<ul class="fills">' + safeFills.map(f => '<li>• ' + f + '</li>').join('') + '</ul>';
     html += '<div class="actions">';
-    html += '<a href="' + s.source.url + '" target="_blank" rel="noopener" class="source-link">🔍 Search ' + s.source.name + '</a>';
-    html += '<span class="cost-note">🛒 ' + s.type + ' cert: ' + s.cost + '</span>';
+    html += '<a href="' + safeSourceUrl + '" target="_blank" rel="noopener" class="source-link">🔍 Search ' + safeSourceName + '</a>';
+    html += '<span class="cost-note">🛒 ' + s.type + ' cert: ' + safeCost + '</span>';
     html += '</div></div>';
   }
   if (suggestionsGated) {
@@ -5760,6 +5748,7 @@ function convertGedcomFile(file) {
           btn.disabled = false;
           btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
         }
+        // Save tree to IndexedDB
         if (currentTreeId) await saveCurrentTreeToDB();
         showToast('Converted ' + result.people.length + ' people. Tree loaded! A .familytree backup was also downloaded.');
       } catch (loadErr) {
