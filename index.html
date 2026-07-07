@@ -2399,7 +2399,6 @@ function drawLines() {
     svg.appendChild(path);
   });
 }
-scroll.addEventListener('scroll', drawLines);
 window.addEventListener('resize', () => renderTree());
 
 // Sync tree-scroll top to actual header height (handles mobile text wrapping)

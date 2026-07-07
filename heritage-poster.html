@@ -1791,6 +1791,12 @@ function showToast(msg, duration) {
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
   setTimeout(() => el.remove(), duration + 500);
 }
+// UX-14: Debug toasts only show when ?debug is in the URL
+const _debugMode = new URLSearchParams(window.location.search).has('debug');
+function debugToast(msg, duration) {
+  if (!_debugMode) return;
+  showToast(msg, duration);
+}
 
 const saveSessionBtn = document.getElementById('saveSessionBtn');
 const loadSessionBtn = document.getElementById('loadSessionBtn');
@@ -2496,7 +2502,7 @@ const SPOUSE_MAP = {
 
   certConfirm.addEventListener('click', () => {
   try {
-  showToast('Apply clicked — type will show next');
+  debugToast('Apply clicked — type will show next');
   } catch(e) { console.error('toast err', e); }
   if (!lastTranscription) {
     showToast('No entry selected. Tap a card first.');
@@ -2511,7 +2517,7 @@ const SPOUSE_MAP = {
   showToast('Applying...');
   // DEBUG: show what data we're working with
   const preview = lastTranscription.child?.name || lastTranscription.groom?.name || lastTranscription.deceased?.name || 'no name';
-  showToast('Data: ' + preview.substring(0, 30));
+  debugToast('Data: ' + preview.substring(0, 30));
   const data = lastTranscription;
   const type = data._type || 'unknown';
 
@@ -2996,7 +3002,7 @@ const SPOUSE_MAP = {
 
     // Try to find the child in the tree
     childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
-    showToast('BC: searching for "' + childName + '" (year=' + (birthYear||'?') + ')');
+    debugToast('BC: searching for "' + childName + '" (year=' + (birthYear||'?') + ')');
     // Surname fallback only if generation makes sense
     if (!childPlate && birthYear) {
       childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
@@ -3025,9 +3031,9 @@ const SPOUSE_MAP = {
       const slot = childPlate.dataset.slot || 'unnamed';
       const gen = childPlate.dataset.gen || '?';
       const existing = childPlate.querySelector('.name')?.textContent || 'empty';
-      showToast('Matched "' + childName + '" to slot ' + slot + ' (gen ' + gen + ', was: ' + existing + ')');
+      debugToast('Matched "' + childName + '" to slot ' + slot + ' (gen ' + gen + ', was: ' + existing + ')');
     } else {
-      showToast('No match for "' + childName + '" — will try generation placement');
+      debugToast('No match for "' + childName + '" — will try generation placement');
     }
     // Also show all candidates in a delayed toast for mobile debugging
     const allCands = window.__lastFindCandidates || [];
@@ -3036,7 +3042,7 @@ const SPOUSE_MAP = {
         const top3 = allCands.slice(0, 3).map(c => {
           return c.slot + '=' + c.name.substring(0, 12) + '(sc' + c.score + ')';
         }).join(', ');
-        showToast('Top matches: ' + top3);
+        debugToast('Top matches: ' + top3);
       }, 1500);
     }
 
@@ -3061,18 +3067,18 @@ const SPOUSE_MAP = {
               addDocBadge(fPlate, 'birth');
               filled++;
               messages.push("BC father → " + pMap.fatherSlot);
-              showToast('Father: ' + bcFather + ' → ' + pMap.fatherSlot);
+              debugToast('Father: ' + bcFather + ' → ' + pMap.fatherSlot);
             } else {
-              showToast('Father slot ' + pMap.fatherSlot + ' blocked by fillPlate');
+              debugToast('Father slot ' + pMap.fatherSlot + ' blocked by fillPlate');
             }
           } else {
-            showToast('Father slot ' + pMap.fatherSlot + ' already has: ' + existing);
+            debugToast('Father slot ' + pMap.fatherSlot + ' already has: ' + existing);
           }
         } else {
-          showToast('Father slot ' + pMap.fatherSlot + ' not found in DOM');
+          debugToast('Father slot ' + pMap.fatherSlot + ' not found in DOM');
         }
       } else {
-        showToast('No pMap or no father data. pMap=' + JSON.stringify(pMap) + ' father=' + (data.father?.name || 'missing'));
+        debugToast('No pMap or no father data. pMap=' + JSON.stringify(pMap) + ' father=' + (data.father?.name || 'missing'));
       }
       if (pMap && pMap.motherSlot && data.mother?.name) {
         const mPlate = findSlot(pMap.motherSlot);
@@ -3085,18 +3091,18 @@ const SPOUSE_MAP = {
               addDocBadge(mPlate, 'birth');
               filled++;
               messages.push("BC mother → " + pMap.motherSlot);
-              showToast('Mother: ' + bcMother + ' → ' + pMap.motherSlot);
+              debugToast('Mother: ' + bcMother + ' → ' + pMap.motherSlot);
             } else {
-              showToast('Mother slot ' + pMap.motherSlot + ' blocked by fillPlate');
+              debugToast('Mother slot ' + pMap.motherSlot + ' blocked by fillPlate');
             }
           } else {
-            showToast('Mother slot ' + pMap.motherSlot + ' already has: ' + existing);
+            debugToast('Mother slot ' + pMap.motherSlot + ' already has: ' + existing);
           }
         } else {
-          showToast('Mother slot ' + pMap.motherSlot + ' not found in DOM');
+          debugToast('Mother slot ' + pMap.motherSlot + ' not found in DOM');
         }
       } else {
-        showToast('No mother data or pMap. mother=' + (data.mother?.name || 'missing'));
+        debugToast('No mother data or pMap. mother=' + (data.mother?.name || 'missing'));
       }
     } else if (childPlate) {
       // Found the child but on a generic nameplate (no slot) — just update
@@ -3370,7 +3376,7 @@ const SPOUSE_MAP = {
         const deathSlot = deathPlate.dataset.slot;
         console.log('[DC DEBUG] deceasedName:', deceasedName, 'deathSlot:', deathSlot);
         console.log('[DC DEBUG] OWN_PARENT_MAP[' + deathSlot + ']:', deathSlot ? OWN_PARENT_MAP[deathSlot] : 'NO SLOT');
-        showToast('DC: ' + deceasedName + ' → slot ' + deathSlot, 4000);
+        debugToast('DC: ' + deceasedName + ' → slot ' + deathSlot, 4000);
         if (deathSlot && OWN_PARENT_MAP[deathSlot]) {
           const pMap = OWN_PARENT_MAP[deathSlot];
           console.log('[DC DEBUG] fatherSlot:', pMap.fatherSlot, 'motherSlot:', pMap.motherSlot);
@@ -3386,7 +3392,7 @@ const SPOUSE_MAP = {
                 addDocBadge(fPlate, 'death');
                 filled++;
                 messages.push('DC father → ' + pMap.fatherSlot);
-                showToast('Father: ' + dcFather + ' → ' + pMap.fatherSlot);
+                debugToast('Father: ' + dcFather + ' → ' + pMap.fatherSlot);
               } else if (existing.toLowerCase().trim() !== dcFather.toLowerCase().trim()) {
                 // Name already there but different — check if it's the same person (partial match)
                 if (normalizeName(existing) === normalizeName(dcFather) || existing.toLowerCase().includes(dcFather.split(' ')[0].toLowerCase())) {
@@ -3403,7 +3409,7 @@ const SPOUSE_MAP = {
                   addDocBadge(fPlate, 'death');
                   filled++;
                   messages.push('DC father corrected ' + pMap.fatherSlot + ': ' + existing + ' → ' + dcFather);
-                  showToast('Corrected: ' + existing + ' → ' + dcFather + ' @ ' + pMap.fatherSlot);
+                  debugToast('Corrected: ' + existing + ' → ' + dcFather + ' @ ' + pMap.fatherSlot);
                 }
               }
             }
@@ -3420,7 +3426,7 @@ const SPOUSE_MAP = {
                 addDocBadge(mPlate, 'death');
                 filled++;
                 messages.push('DC mother → ' + pMap.motherSlot);
-                showToast('Mother: ' + dcMother + (dcMaiden ? ' née ' + dcMaiden : '') + ' → ' + pMap.motherSlot);
+                debugToast('Mother: ' + dcMother + (dcMaiden ? ' née ' + dcMaiden : '') + ' → ' + pMap.motherSlot);
               } else if (existing.toLowerCase().trim() !== dcMother.toLowerCase().trim()) {
                 if (normalizeName(existing) === normalizeName(dcMother) || existing.toLowerCase().includes(dcMother.split(' ')[0].toLowerCase())) {
                   if (dcMother.length > existing.length) {
@@ -3435,7 +3441,7 @@ const SPOUSE_MAP = {
                   addDocBadge(mPlate, 'death');
                   filled++;
                   messages.push('DC mother corrected ' + pMap.motherSlot + ': ' + existing + ' → ' + dcMother);
-                  showToast('Corrected: ' + existing + ' → ' + dcMother + ' @ ' + pMap.motherSlot);
+                  debugToast('Corrected: ' + existing + ' → ' + dcMother + ' @ ' + pMap.motherSlot);
                 }
               }
             }
@@ -3469,16 +3475,16 @@ const SPOUSE_MAP = {
                     addDocBadge(sPlate, 'death');
                     filled++;
                     messages.push('DC spouse corrected ' + spouseSlot + ': ' + existingSpouse + ' → ' + dcSpouseName);
-                    showToast('Corrected spouse: ' + existingSpouse + ' → ' + dcSpouseName);
+                    debugToast('Corrected spouse: ' + existingSpouse + ' → ' + dcSpouseName);
                   }
                 }
               }
             }
           }
         } else if (deathSlot) {
-          showToast('DC matched ' + deceasedName + ' but no OWN_PARENT_MAP entry for slot "' + deathSlot + '"');
+          debugToast('DC matched ' + deceasedName + ' but no OWN_PARENT_MAP entry for slot "' + deathSlot + '"');
         } else {
-          showToast('DC matched ' + deceasedName + ' but no slot assigned');
+          debugToast('DC matched ' + deceasedName + ' but no slot assigned');
         }
       }
     }
@@ -3496,7 +3502,7 @@ const SPOUSE_MAP = {
     const pMap = dSlot ? OWN_PARENT_MAP[dSlot] : null;
     const debugMsg = 'DC: slot=' + dSlot + ' parents=' + (pMap ? pMap.fatherSlot + '/' + pMap.motherSlot : 'NONE') + ' filled=' + filled;
     console.log('[CERT APPLY]', debugMsg);
-    showToast('✓ ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' — ' + debugMsg, 5000);
+    debugToast('✓ ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' — ' + debugMsg, 5000);
   } else {
     showToast('✓ Applied ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' to tree', 4000);
   }
