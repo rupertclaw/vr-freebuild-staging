@@ -21,13 +21,18 @@
 <meta property="og:image" content="https://vaultedroots.com/vaulted-roots-shield.png">
 <meta property="og:site_name" content="Vaulted Roots">
 
-<!-- Google Analytics 4 -->
+<!-- Google Analytics 4 — cookieless mode -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MFQ3DV323Y"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-MFQ3DV323Y');
+  gtag('config', 'G-MFQ3DV323Y', {
+    client_storage: 'none',
+    anonymize_ip: true,
+    allow_google_signals: false,
+    allow_ad_personalization_signals: false
+  });
 </script>
 
 <link rel="manifest" href="./manifest.json">
@@ -786,6 +791,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn" id="darkModeToggle" title="Toggle dark mode" onclick="toggleDarkMode()">🌙</button>
       <button class="header-btn" id="printTreeBtn" title="Print tree" onclick="checkMemberFeature('print', openPrintDialog)">🖨️</button>
       <button class="header-btn" id="resetBtn" title="Reset tree">🔄</button>
+      <a class="header-btn" id="familySheetBtn" href="families.html" target="_blank" title="Family sheets (new tab)" style="text-decoration:none;">&#128203;</a>
     </div>
   </div>
 </div>
@@ -799,6 +805,21 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
   <div class="tree-wrap" id="treeWrap">
     <svg class="lines-svg" id="linesSvg"></svg>
+  </div>
+</div>
+
+<!-- Family Group Sheet View -->
+<div id="familySheetView" style="display:none; position:fixed; top:154px; left:0; right:0; bottom:0; overflow-y:auto; background:#faf4e6; z-index:50;">
+  <div style="max-width:800px; margin:0 auto; padding:20px;">
+    <div style="display:flex; gap:8px; margin-bottom:20px; align-items:center;">
+      <select id="familySheetSelect" onchange="loadFamilySheet(this.value)" style="flex:1; padding:10px; border:2px solid #8a7a5a; border-radius:4px; background:#fff; font-family:'Cormorant Garamond',serif; font-size:15px; cursor:pointer;">
+        <option value="">— Select a family —</option>
+      </select>
+      <button class="header-btn" title="Previous family" onclick="navigateFamily(-1)" style="border-color:#8a7a5a;">◀</button>
+      <button class="header-btn" title="Next family" onclick="navigateFamily(1)" style="border-color:#8a7a5a;">▶</button>
+      <button class="header-btn" title="Back to tree view" onclick="toggleFamilySheetView()" style="border-color:#8a7a5a;">🌳</button>
+    </div>
+    <div id="familySheetContent"></div>
   </div>
 </div>
 
@@ -1092,11 +1113,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">🔐</div>
-        <div><strong>Encrypted storage.</strong> Your tree is encrypted in your device's own storage. We cannot read it, even if we wanted to.</div>
+        <div><strong>Private local storage.</strong> Your tree stays in your browser's own IndexedDB storage. We cannot read it, even if we wanted to.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">🚫</div>
-        <div><strong>No tracking.</strong> No cookies, no ads. We use Google Analytics anonymously to understand site usage — we don't know who you are.</div>
+        <div><strong>No cookies, no ads.</strong> We measure anonymous page visits with cookieless Google Analytics. Your tree data never leaves your device.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">📤</div>
@@ -1156,6 +1177,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 // UTILITY: safe Math.max over arrays (prevents -Infinity from empty spread)
 // ═══════════════════════════════════════════════════════════════
 function maxGen(arr, key) { return arr.length ? Math.max(...arr.map(key)) : 0; }
+
+function rootsCount(arr) {
+  return arr.filter(p => !p.parents || p.parents.length === 0).length;
+}
 
 // ═══════════════════════════════════════════════════════════════
 // DEBUG LOG CAPTURE (for mobile troubleshooting)
@@ -1279,6 +1304,7 @@ function createPerson(id, gen, name, years, status, opts) {
 
 let people = [];
 let nextId = 1;
+let gedcomFamilies = null; // FAM records from GEDCOM import (for family sheet view)
 let pendingDocFile = null;
 let pendingDocImage = null;
 let lastTranscription = null;
@@ -1359,6 +1385,7 @@ function extractDocDate(entry, type) {
 function initDefaultData() {
   people = [];
   nextId = 1;
+  gedcomFamilies = null;
   // Gen 0: blank placeholder for the user to populate with their birth cert
   people.push(createPerson(nextId++, 0, 'Name', '?', 'blank', {}));
   // Gens 1-8: blank placeholder cards (2^gen each)
@@ -1492,6 +1519,11 @@ async function switchTree(treeId) {
   nextId = data.nextId || maxGen(people, p => p.id) + 1;
   visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
   currentTreeId = treeId;
+  // Apply saved focus if any
+  const savedFocus = localStorage.getItem('vr_focusPerson_' + treeId);
+  if (savedFocus) {
+    setFocusTreeByPerson(parseInt(savedFocus));
+  }
   // Migrate bracketed names (v208+)
   people.forEach(p => {
     if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
@@ -1623,11 +1655,276 @@ function toggleTreeManager() {
   else openTreeManager();
 }
 
+// ─── Family Group Sheet View ───
+let familySheetActive = false;
+let familySheetList = []; // array of family objects
+let familySheetIndex = 0;
+
+function toggleFamilySheetView() {
+  const view = document.getElementById('familySheetView');
+  const treeScroll = document.getElementById('treeScroll');
+  const expandBtn = document.getElementById('expandGenBtn');
+  const sheetBtn = document.getElementById('familySheetBtn');
+
+  if (!view) return;
+
+  if (view.style.display === 'none') {
+    // Show family sheet view
+    familySheetActive = true;
+    view.style.display = 'block';
+    treeScroll.style.display = 'none';
+    if (expandBtn) expandBtn.style.display = 'none';
+    if (sheetBtn) sheetBtn.style.background = '#8a7a5a';
+    buildFamilySheetList();
+    if (familySheetList.length > 0) {
+      loadFamilySheet(familySheetList[0].id);
+    }
+  } else {
+    // Back to tree view
+    familySheetActive = false;
+    view.style.display = 'none';
+    treeScroll.style.display = '';
+    if (expandBtn) expandBtn.style.display = '';
+    if (sheetBtn) sheetBtn.style.background = '';
+  }
+}
+
+function buildFamilySheetList() {
+  familySheetList = [];
+  const select = document.getElementById('familySheetSelect');
+  if (select) select.innerHTML = '<option value="">— Select a family —</option>';
+
+  // Build families from people's relationship data.
+  // For GEDCOM imports, relationships were built from FAM records (authoritative).
+  // For manual trees, relationships were set by the user.
+  // Each unique parent set = one family; childless couples are also included.
+  const familyMap = new Map(); // key = "pid1-pid2" sorted, value = {parents: [], children: []}
+  let famId = 1;
+
+  // First pass: group children by parents
+  people.forEach(p => {
+    if (!p.parents || p.parents.length === 0) return;
+    // Sort parent IDs to create a stable key
+    const parentKey = [...p.parents].sort((a,b) => a-b).join('-');
+    if (!familyMap.has(parentKey)) {
+      const parents = p.parents.map(pid => people.find(x => x.id === pid)).filter(Boolean);
+      familyMap.set(parentKey, {
+        id: famId++,
+        parents: parents,
+        children: []
+      });
+    }
+    familyMap.get(parentKey).children.push(p);
+  });
+
+  // Second pass: also create families for couples without children
+  // (childless couples should still appear in the family sheet view)
+  const seenPairs = new Set();
+  people.forEach(p => {
+    if (!p.spouseId) return;
+    const pairKey = [p.id, p.spouseId].sort((a,b) => a-b).join('-');
+    if (seenPairs.has(pairKey)) return;
+    seenPairs.add(pairKey);
+    if (!familyMap.has(pairKey)) {
+      const spouse = people.find(x => x.id === p.spouseId);
+      if (spouse) {
+        familyMap.set(pairKey, {
+          id: famId++,
+          parents: [p, spouse],
+          children: []
+        });
+      }
+    }
+  });
+
+  // Convert map to list
+  familySheetList = Array.from(familyMap.values()).map(f => {
+    const husband = f.parents.find(p => p.sex !== 'F') || f.parents[0] || null;
+    const wife = f.parents.find(p => p.sex === 'F') || f.parents.find(p => p !== husband) || null;
+    return {
+      id: f.id,
+      husband: husband,
+      wife: wife,
+      children: f.children
+    };
+  });
+
+  // Sort families by surname
+  familySheetList.sort((a, b) => {
+    const aName = (a.husband || a.wife || {}).name || '';
+    const bName = (b.husband || b.wife || {}).name || '';
+    return aName.localeCompare(bName);
+  });
+
+  // Populate dropdown
+  if (select) {
+    familySheetList.forEach(f => {
+      const h = f.husband ? f.husband.name : '';
+      const w = f.wife ? f.wife.name : '';
+      const label = [h, w].filter(Boolean).join(' & ') || 'Unknown';
+      const option = document.createElement('option');
+      option.value = f.id;
+      option.textContent = label + (f.children.length > 0 ? ' (' + f.children.length + ' children)' : '');
+      select.appendChild(option);
+    });
+  }
+}
+
+function loadFamilySheet(famId) {
+  const content = document.getElementById('familySheetContent');
+  if (!content) return;
+
+  const fam = familySheetList.find(f => f.id === parseInt(famId));
+  if (!fam) {
+    content.innerHTML = '<p style="text-align:center;color:#6b5537;padding:40px;">Select a family from the dropdown above.</p>';
+    return;
+  }
+
+  familySheetIndex = familySheetList.indexOf(fam);
+  const select = document.getElementById('familySheetSelect');
+  if (select) select.value = famId;
+
+  const h = fam.husband;
+  const w = fam.wife;
+  const kids = fam.children;
+
+  // Build the family group sheet HTML
+  let html = '';
+
+  // Header
+  html += '<div style="background:#3e3225; color:#f0e6d2; padding:16px 20px; border-radius:8px 8px 0 0; text-align:center;">';
+  html += '<div style="font-family:\'Cinzel Decorative\',serif; font-size:18px;">';
+  html += [h ? h.name : '', w ? w.name : ''].filter(Boolean).join(' & ') || 'Unknown Family';
+  html += '</div>';
+  if (h || w) {
+    const years = [];
+    if (h && h.years) years.push(h.years);
+    if (w && w.years) years.push(w.years);
+    if (years.length) html += '<div style="font-size:13px; margin-top:4px; opacity:0.8;">' + years.join(' | ') + '</div>';
+  }
+  html += '</div>';
+
+  // Parents section
+  html += '<div style="background:#fff; border:2px solid #8a7a5a; border-top:none; border-radius:0 0 8px 8px; padding:20px; margin-bottom:20px;">';
+
+  if (h || w) {
+    html += '<div style="display:flex; gap:16px; flex-wrap:wrap;">';
+
+    // Husband/Father
+    if (h) {
+      html += '<div style="flex:1; min-width:280px;">';
+      html += '<div style="font-size:12px; color:#8a7a5a; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; border-bottom:1px solid #e0d5c0; padding-bottom:4px;">' + (h.sex === 'F' ? 'Wife/Mother' : 'Husband/Father') + '</div>';
+      html += buildPersonCard(h);
+      html += '</div>';
+    }
+
+    // Wife/Mother
+    if (w) {
+      html += '<div style="flex:1; min-width:280px;">';
+      html += '<div style="font-size:12px; color:#8a7a5a; text-transform:uppercase; letter-spacing:1px; margin-bottom:8px; border-bottom:1px solid #e0d5c0; padding-bottom:4px;">' + (w.sex === 'F' ? 'Wife/Mother' : 'Husband/Father') + '</div>';
+      html += buildPersonCard(w);
+      html += '</div>';
+    }
+
+    html += '</div>';
+
+    // Marriage info
+    if ((h && h.marriageDate) || (w && w.marriageDate)) {
+      const mDate = (h && h.marriageDate) || (w && w.marriageDate) || '';
+      html += '<div style="margin-top:12px; padding:8px 12px; background:#f5eedc; border-radius:4px; font-size:13px;">';
+      html += '<strong>Married:</strong> ' + escapeHtml(mDate);
+      html += '</div>';
+    }
+  }
+
+  html += '</div>';
+
+  // Children section
+  html += '<div style="background:#fff; border:2px solid #8a7a5a; border-radius:8px; padding:20px;">';
+  html += '<div style="font-size:12px; color:#8a7a5a; text-transform:uppercase; letter-spacing:1px; margin-bottom:12px; border-bottom:1px solid #e0d5c0; padding-bottom:4px;">Children (' + kids.length + ')</div>';
+
+  if (kids.length === 0) {
+    html += '<p style="color:#6b5537; font-style:italic; text-align:center; padding:20px;">No children recorded in this family.</p>';
+  } else {
+    // Sort children by birth year
+    const sortedKids = [...kids].sort((a, b) => {
+      const aY = parseInt((a.birthDate || '').match(/\d{4}/)?.[0] || '9999');
+      const bY = parseInt((b.birthDate || '').match(/\d{4}/)?.[0] || '9999');
+      return aY - bY;
+    });
+
+    sortedKids.forEach((kid, i) => {
+      html += '<div style="display:flex; gap:12px; padding:12px 0; border-bottom:' + (i < sortedKids.length - 1 ? '1px solid #e0d5c0' : 'none') + ';">';
+      html += '<div style="flex:0 0 30px; font-size:20px; color:#8a7a5a; text-align:center;">' + (i + 1) + '</div>';
+      html += '<div style="flex:1;">' + buildPersonCard(kid, true) + '</div>';
+      html += '</div>';
+    });
+  }
+
+  html += '</div>';
+
+  // Navigation footer
+  html += '<div style="display:flex; justify-content:space-between; align-items:center; margin-top:20px; padding:12px; background:#f5eedc; border-radius:8px;">';
+  html += '<button class="header-btn" onclick="navigateFamily(-1)" style="border-color:#8a7a5a; min-width:44px; font-size:18px;" title="Previous Family">&#9664;</button>';
+  html += '<span style="font-size:13px; color:#6b5537;">Family ' + (familySheetIndex + 1) + ' of ' + familySheetList.length + '</span>';
+  html += '<button class="header-btn" onclick="navigateFamily(1)" style="border-color:#8a7a5a; min-width:44px; font-size:18px;" title="Next Family">&#9654;</button>';
+  html += '</div>';
+
+  content.innerHTML = html;
+}
+
+function buildPersonCard(p, isChild) {
+  if (!p) return '';
+  let html = '';
+  const displayName = p.maidenName
+    ? p.name.replace(/\s+\S+$/, ' ' + p.maidenName)
+    : p.name;
+
+  html += '<div style="cursor:pointer;" onclick="showPersonDetail(' + p.id + ')">';
+  html += '<div style="font-family:\'Cormorant Garamond\',serif; font-size:16px; font-weight:600; color:#2a1f10;">' + escapeHtml(displayName) + '</div>';
+
+  const details = [];
+  if (p.birthDate) details.push('b. ' + escapeHtml(p.birthDate));
+  if (p.birthplace) details.push(escapeHtml(p.birthplace));
+  if (p.deathDate) details.push('d. ' + escapeHtml(p.deathDate));
+  if (details.length) html += '<div style="font-size:13px; color:#6b5537; margin-top:4px;">' + details.join(' · ') + '</div>';
+
+  if (isChild && p.spouseName) {
+    html += '<div style="font-size:13px; color:#8a7a5a; margin-top:2px;">m. ' + escapeHtml(p.spouseName) + '</div>';
+  }
+
+  if (p.occupation) {
+    html += '<div style="font-size:13px; color:#6b5537; margin-top:2px;">' + escapeHtml(p.occupation) + '</div>';
+  }
+
+  // Show siblings count
+  if (p.siblings && p.siblings.length > 0) {
+    html += '<div style="font-size:12px; color:#8a7a5a; margin-top:4px;">🍃 ' + p.siblings.length + ' sibling' + (p.siblings.length > 1 ? 's' : '') + '</div>';
+  }
+
+  html += '</div>';
+  return html;
+}
+
+function showPersonDetail(id) {
+  const person = people.find(p => p.id === id);
+  if (person) openDetail(person);
+}
+
+function navigateFamily(direction) {
+  if (familySheetList.length === 0) return;
+  familySheetIndex += direction;
+  if (familySheetIndex < 0) familySheetIndex = familySheetList.length - 1;
+  if (familySheetIndex >= familySheetList.length) familySheetIndex = 0;
+  loadFamilySheet(familySheetList[familySheetIndex].id);
+}
+
 // ─── Auto-save to IndexedDB every 30s (replacing localStorage) ───
 setInterval(async () => {
   if (currentTreeId) await saveCurrentTreeToDB();
 }, 30000);
 const CARD_W = 130, GAP_Y = 3;
+const GEN_X_GAP = 55;
 const MINI_W = 100, MINI_H = 14;
 let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
 
@@ -1640,27 +1937,13 @@ let cardEls = new Map();
 let treeWidth = 0, treeHeight = 0;
 let zoom = 0.25;
 
-function colLeftForGen(g, maxGen) {
-  if (g === 0) return CARD_W * 0.5;      // 65
-  if (g === 1) return CARD_W * 0.75;     // 97.5
-  if (g === 2) return CARD_W * 1.5;       // 195 — shifted half a card right
-
-  let pos = CARD_W * 1.5; // gen 2 position (195px)
-  for (let i = 3; i <= g; i++) {
-    const isLast = i === maxGen;
-    const isMinicard = isLast && maxGen >= 5;
-    if (isMinicard) {
-      pos += CARD_W + 4; // gap before minicard
-    } else if (isLast) {
-      pos += CARD_W; // full card rightmost, touching
-    } else {
-      // Alternate: gap (odd i-3), touch (even i-3)
-      if ((i - 3) % 2 === 0) {
-        pos += CARD_W + 4;
-      } else {
-        pos += CARD_W;
-      }
-    }
+function colLeftForGen(g, maxGen, bigTree) {
+  let pos = 40;
+  // For very wide trees (many roots or many people), add extra breathing room
+  const extraGap = bigTree ? 20 : 0;
+  for (let i = 0; i < g; i++) {
+    const isMini = (i === maxGen && maxGen >= 5);
+    pos += (isMini ? MINI_W : CARD_W) + GEN_X_GAP + extraGap;
   }
   return pos;
 }
@@ -1670,14 +1953,38 @@ function renderTree() {
   cardEls.clear();
 
   const displayMax = Math.min(visibleMaxGen, maxGen(people, p => p.gen));
-  const visiblePeople = people.filter(p => p.gen <= displayMax);
+  const visiblePeople = people.filter(p => !p.focusHidden && p.gen >= 0 && p.gen <= displayMax);
   const gens = [];
+
+  // Sort a generation's people so spouses are vertically adjacent.
+  // Groups people into couple-pairs (or singles), then orders pairs by min ID.
+  function sortByCouples(genPeople) {
+    const visited = new Set();
+    const result = [];
+    // First pass: group spouses together
+    for (const p of genPeople) {
+      if (visited.has(p.id)) continue;
+      visited.add(p.id);
+      result.push(p);
+      // If this person has a spouse in the same generation, place them next
+      if (p.spouseId) {
+        const spouse = genPeople.find(x => x.id === p.spouseId && !visited.has(x.id));
+        if (spouse) {
+          visited.add(spouse.id);
+          result.push(spouse);
+        }
+      }
+    }
+    return result;
+  }
+
   for (let g = 0; g <= displayMax; g++) {
-    gens[g] = visiblePeople.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+    gens[g] = sortByCouples(visiblePeople.filter(p => p.gen === g));
   }
 
   const colLeft = [];
-  for (let g = 0; g <= displayMax; g++) colLeft[g] = colLeftForGen(g, displayMax);
+  const bigTree = visiblePeople.length > 80 || rootsCount(people) > 6;
+  for (let g = 0; g <= displayMax; g++) colLeft[g] = colLeftForGen(g, displayMax, bigTree);
 
   const hMap = new Map();
 
@@ -1740,9 +2047,11 @@ function renderTree() {
   const topMap = new Map();
 
   // Determine the rightmost generation to use as layout anchor.
-  // For binary trees (default data), we expect 2^gen cards per generation.
-  // For GEDCOM imports, the tree is irregular so we just use the deepest gen.
+  // Use only visible (non-hidden) people for the anchor gen.
   let rightmostFull = displayMax;
+  while (rightmostFull > 0 && (!gens[rightmostFull] || gens[rightmostFull].length === 0)) {
+    rightmostFull--;
+  }
 
   // STEP 1: Place the deepest generation as a neat vertical column.
   // This is the anchor generation — everything else positions relative to it.
@@ -1864,7 +2173,7 @@ function drawLines() {
   svg.setAttribute('height', treeHeight);
   svg.innerHTML = '';
   const displayMax = Math.min(visibleMaxGen, maxGen(people, p => p.gen));
-  const visiblePeople = people.filter(p => p.gen <= displayMax);
+  const visiblePeople = people.filter(p => p.gen >= 0 && p.gen <= displayMax);
   const hMap = new Map();
   cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
   visiblePeople.forEach(p => {
@@ -2236,7 +2545,8 @@ function updateExpandGenBtn() {
     document.getElementById('privacyModal')?.style.display !== 'none' ||
     document.getElementById('printChoiceDlg') ||
     document.getElementById('ambigModal')?.style.display !== 'none' ||
-    document.getElementById('confirmModal')?.style.display !== 'none';
+    document.getElementById('confirmModal')?.style.display !== 'none' ||
+    document.getElementById('focusPickerOverlay')?.style.display !== 'none';
   btn.style.display = anyPanelOpen ? 'none' : 'block';
 }
 function clearCertPanel() {
@@ -2331,7 +2641,7 @@ document.getElementById('certFileInput')?.addEventListener('change', async (e) =
     console.error('[UPLOAD ERROR]', err);
     const cs = document.getElementById('certStatus');
     cs.className = 'cert-status error'; cs.style.display = 'block';
-    cs.innerHTML = 'Error: ' + (err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    cs.innerHTML = 'Error: ' + escapeHtml(err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
     document.getElementById('certRetry').style.display = 'block';
   }
 });
@@ -2342,7 +2652,7 @@ document.getElementById('certCameraInput').addEventListener('change', async (e) 
     console.error('[CAMERA ERROR]', err);
     const cs = document.getElementById('certStatus');
     cs.className = 'cert-status error'; cs.style.display = 'block';
-    cs.innerHTML = 'Error: ' + (err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    cs.innerHTML = 'Error: ' + escapeHtml(err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
     document.getElementById('certRetry').style.display = 'block';
   }
 });
@@ -2500,7 +2810,7 @@ async function sendToTranscriptionAPI(base64) {
 
       if (!json.success) {
         cs.className = 'cert-status error';
-        cs.innerHTML = 'Scan failed: ' + (json.error || json.message || 'Unknown error') + '<br><small>Tap Retry to try again</small>';
+        cs.innerHTML = 'Scan failed: ' + escapeHtml(json.error || json.message || 'Unknown error') + '<br><small>Tap Retry to try again</small>';
         certPanel.classList.add('has-results');
         return;
       }
@@ -2532,7 +2842,7 @@ async function sendToTranscriptionAPI(base64) {
   let msg = lastErr?.name === 'AbortError' ? 'Scan timed out after 90 seconds.' : (lastErr?.message || 'Could not reach server');
   if (msg.includes('Failed to fetch')) msg = 'Connection failed on image upload. Your network may block large uploads.';
   const debugId = 'debug_' + Date.now();
-  cs.innerHTML = 'Network error: ' + msg + '<br><small>Try: 1) Different WiFi, 2) Camera not gallery, 3) Clear and retry</small><br><button onclick="document.getElementById(\'' + debugId + '\').style.display=\'block\'" style="margin-top:6px;padding:4px 8px;font-size:11px;background:#8a7a5a;color:#fff;border:none;border-radius:4px;">Show Debug Logs</button><pre id="' + debugId + '" style="display:none;margin-top:6px;padding:6px;background:#3e2b1a;color:#e8dcc8;font-size:10px;max-height:150px;overflow:auto;border-radius:4px;white-space:pre-wrap;">' + getDebugLogs().replace(/</g,'&lt;') + '</pre>';
+  cs.innerHTML = 'Network error: ' + escapeHtml(msg) + '<br><small>Try: 1) Different WiFi, 2) Camera not gallery, 3) Clear and retry</small><br><button onclick="document.getElementById(\'' + debugId + '\').style.display=\'block\'" style="margin-top:6px;padding:4px 8px;font-size:11px;background:#8a7a5a;color:#fff;border:none;border-radius:4px;">Show Debug Logs</button><pre id="' + debugId + '" style="display:none;margin-top:6px;padding:6px;background:#3e2b1a;color:#e8dcc8;font-size:10px;max-height:150px;overflow:auto;border-radius:4px;white-space:pre-wrap;">' + escapeHtml(getDebugLogs()) + '</pre>';
   certPanel.classList.add('has-results');
 }
 
@@ -2560,10 +2870,10 @@ function renderTranscriptionResults(data) {
     card.className = 'cert-result-card' + (idx === 0 ? ' selected' : '');
     card.dataset.index = idx;
     const fields = extractEntryFields(entry, type);
-    let html = '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">' + entrySummary(entry, type) + '</div>';
+    let html = '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">' + escapeHtml(entrySummary(entry, type)) + '</div>';
     fields.forEach((f, fi) => {
       const fieldId = 'cf_' + idx + '_' + fi;
-      html += '<div class="cert-field-edit"><span class="cert-field-label">' + f.label + ':</span><input id="' + fieldId + '" type="text" value="' + f.value.replace(/"/g, '&quot;') + '" data-entry="' + idx + '" data-field="' + f.key + '" onfocus="event.stopPropagation()" onclick="event.stopPropagation()"></div>';
+      html += '<div class="cert-field-edit"><span class="cert-field-label">' + escapeHtml(f.label) + ':</span><input id="' + fieldId + '" type="text" value="' + (f.value || '').toString().replace(/"/g, '&quot;') + '" data-entry="' + idx + '" data-field="' + escapeHtml(f.key) + '" onfocus="event.stopPropagation()" onclick="event.stopPropagation()"></div>';
     });
     card.innerHTML = html;
     card.addEventListener('click', () => {
@@ -2638,9 +2948,9 @@ function extractEntryFields(entry, type) {
 }
 
 function entrySummary(entry, type) {
-  const name = entry.child?.name || entry.groom?.name || entry.bride?.name || entry.deceased?.name || 'Unknown';
-  const date = entry.child?.birthDate || entry.date || entry.deathDate || '';
-  if (type === 'marriage') return (entry.groom?.name || 'Unknown') + ' & ' + (entry.bride?.name || 'Unknown') + (date ? ' — ' + date : '');
+  const name = escapeHtml(entry.child?.name || entry.groom?.name || entry.bride?.name || entry.deceased?.name || 'Unknown');
+  const date = escapeHtml(entry.child?.birthDate || entry.date || entry.deathDate || '');
+  if (type === 'marriage') return escapeHtml(entry.groom?.name || 'Unknown') + ' & ' + escapeHtml(entry.bride?.name || 'Unknown') + (date ? ' — ' + date : '');
   if (type === 'birth') return name + (date ? ' — b. ' + date : '');
   if (type === 'death') return name + (date ? ' — d. ' + date : '');
   return name;
@@ -4221,10 +4531,9 @@ function renderOnboardingGuide() {
     </ol>
     <div style="margin:10px 0;text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
       <input type="file" id="gedcomFileInput" accept=".ged" style="display:none">
-      <button style="padding:10px 16px;border:2px solid #999;border-radius:4px;background:#ccc;color:#666;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:not-allowed;" disabled title="Under Construction">🚧 Import GEDCOM</button>
-      <button style="padding:10px 16px;border:2px solid #999;border-radius:4px;background:#ccc;color:#666;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:not-allowed;" disabled title="Under Construction">🚧 Export GEDCOM</button>
+      <button onclick="checkMemberFeature('gedcom', function(){document.getElementById('gedcomFileInput').click()})" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
+      <button onclick="checkMemberFeature('gedcom', exportGedcom)" style="padding:10px 16px;border:2px solid #4a5a8a;border-radius:4px;background:#4a5a8a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">📤 Export GEDCOM</button>
     </div>
-    <p style="margin:8px 0 0;color:#c0392b;font-weight:bold;text-align:center;font-family:'Cinzel Decorative',serif;">🔧 Under Construction — coming soon</p>
     <p style="margin:8px 0 0;"><em>Export creates a standard <code>.ged</code> file that any genealogy software can read. Your data never leaves your device.</em></p>
   </div>
 </div>
@@ -4337,13 +4646,19 @@ function renderGuidanceResults({ suggestions, stats }) {
 
   for (const s of suggestions) {
     const cls = s.priority === 'high' ? 'high' : (s.priority === 'med' ? 'med' : 'low');
+    const safeTitle = escapeHtml(s.title);
+    const safeDesc = escapeHtml(s.desc);
+    const safeFills = (s.fills || []).map(f => escapeHtml(String(f)));
+    const safeSourceUrl = encodeURI(s.source.url).replace(/'/g, '%27');
+    const safeSourceName = s.source.name ? escapeHtml(s.source.name) : '';
+    const safeCost = escapeHtml(s.cost);
     html += '<div class="guidance-card ' + cls + '">';
-    html += '<div class="title">' + (icons[s.type] || '📄') + ' ' + s.title + '</div>';
-    html += '<div class="desc">' + s.desc + '</div>';
-    html += '<ul class="fills">' + s.fills.map(f => '<li>• ' + f + '</li>').join('') + '</ul>';
+    html += '<div class="title">' + (icons[s.type] || '📄') + ' ' + safeTitle + '</div>';
+    html += '<div class="desc">' + safeDesc + '</div>';
+    html += '<ul class="fills">' + safeFills.map(f => '<li>• ' + f + '</li>').join('') + '</ul>';
     html += '<div class="actions">';
-    html += '<a href="' + s.source.url + '" target="_blank" rel="noopener" class="source-link">🔍 Search ' + s.source.name + '</a>';
-    html += '<span class="cost-note">🛒 ' + s.type + ' cert: ' + s.cost + '</span>';
+    html += '<a href="' + safeSourceUrl + '" target="_blank" rel="noopener" class="source-link">🔍 Search ' + safeSourceName + '</a>';
+    html += '<span class="cost-note">🛒 ' + s.type + ' cert: ' + safeCost + '</span>';
     html += '</div></div>';
   }
   if (suggestionsGated) {
@@ -4538,6 +4853,7 @@ async function loadSession(file) {
     if (!data.people) { showToast('Invalid session file'); return; }
     people = data.people;
     nextId = data.nextId || maxGen(people, p => p.id) + 1;
+    gedcomFamilies = null; // loading a .familytree file clears GEDCOM FAM records
     visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
     // Migrate stale bracketed names to maidenName/marriedName model (v208+)
     people.forEach(p => {
@@ -4573,6 +4889,13 @@ async function loadSession(file) {
         }
       }
     }
+
+    // Apply saved focus if present for current tree
+    if (currentTreeId) {
+      const savedFocus = localStorage.getItem('vr_focusPerson_' + currentTreeId);
+      if (savedFocus) setFocusTreeByPerson(parseInt(savedFocus));
+    }
+
     renderTree();
     const btn = document.getElementById('expandGenBtn');
     const actualMax = maxGen(people, p => p.gen);
@@ -4984,8 +5307,8 @@ function backfillComputedFields() {
 // if (!getCountry()) { setTimeout(() => showCountryModal(), 800); }
 
 function centerOnGen0() {
-  // Find Graeme (the root person, ID 1, gen 0)
-  const root = people.find(p => p.gen === 0);
+  // Find the visible root person (gen 0 and not hidden)
+  const root = people.find(p => p.gen === 0 && p.status !== 'blank');
   if (!root) return;
   const rootEl = cardEls.get(root.id);
   if (!rootEl) return;
@@ -5273,27 +5596,23 @@ function parseGedcom(text) {
     }
   }
 
-  // Build tree: assign generations
-  // Find root: person with no FAMC (no parents)
-  const roots = Object.values(indis).filter(p => !p.famc);
-  // If multiple roots, pick the first one with children
-  const root = roots.find(p => p.fams.length > 0) || roots[0] || Object.values(indis)[0];
-  if (!root) return null;
-
+  // --- Build ALL people from ALL INDI records (no recursive traversal) ---
+  // Every individual gets a person object regardless of connectivity to the
+  // chosen root. Relationships are built from FAM records, not by walking
+  // the graph from a single starting person.
   const people = [];
   let nextId = 1;
   const xrefMap = {}; // gedcom xref -> our id
 
-  function addPerson(gedIndi, gen) {
-    if (xrefMap[gedIndi.id]) return xrefMap[gedIndi.id];
+  for (const [xref, gedIndi] of Object.entries(indis)) {
     const id = nextId++;
-    xrefMap[gedIndi.id] = id;
+    xrefMap[xref] = id;
     let years = '?';
     const bYear = (gedIndi.birthDate || '').match(/\d{4}/);
     const dYear = (gedIndi.deathDate || '').match(/\d{4}/);
     if (bYear && dYear) years = bYear[0] + ' \u2014 ' + dYear[0];
     else if (bYear) years = 'b. ' + bYear[0];
-    const p = {
+    people.push({
       id: id,
       name: gedIndi.name || 'Unknown',
       fullName: gedIndi.name || '',
@@ -5304,7 +5623,8 @@ function parseGedcom(text) {
       maidenName: gedIndi.sex === 'F' ? gedIndi.surname : '',
       spouseName: '',
       occupation: '',
-      gen: gen,
+      sex: gedIndi.sex || '',
+      gen: 0,
       years: years,
       status: 'probable',
       docs: [],
@@ -5313,85 +5633,279 @@ function parseGedcom(text) {
       children: [],
       spouseId: null,
       notes: ''
-    };
-    people.push(p);
+    });
+  }
 
-    // Add parents
-    if (gedIndi.famc && fams[gedIndi.famc]) {
-      const fam = fams[gedIndi.famc];
-      const father = fam.husb ? indis[fam.husb] : null;
-      const mother = fam.wife ? indis[fam.wife] : null;
-      if (father) {
-        const fid = addPerson(father, gen + 1);
-        p.parents.push(fid);
+  // Helper: look up person by gedcom xref
+  function personByXref(xref) {
+    const id = xrefMap[xref];
+    return id ? people.find(p => p.id === id) : undefined;
+  }
+
+  // --- Build relationships from FAM records ---
+  // This is authoritative: HUSB, WIFE, CHIL tags define the family graph.
+  for (const [famXref, fam] of Object.entries(fams)) {
+    const husband = fam.husb ? personByXref(fam.husb) : null;
+    const wife = fam.wife ? personByXref(fam.wife) : null;
+
+    // Spouse links (bidirectional)
+    if (husband && wife) {
+      husband.spouseId = wife.id;
+      husband.spouseName = wife.name;
+      wife.spouseId = husband.id;
+      wife.spouseName = husband.name;
+      // Marriage date (first one wins; multi-marriage people keep the first)
+      if (fam.marriageDate) {
+        if (!husband.marriageDate) husband.marriageDate = fam.marriageDate;
+        if (!wife.marriageDate) wife.marriageDate = fam.marriageDate;
       }
-      if (mother) {
-        const mid = addPerson(mother, gen + 1);
-        p.parents.push(mid);
+    }
+
+    // Parent-child links
+    const parentIds = [];
+    if (husband) parentIds.push(husband.id);
+    if (wife) parentIds.push(wife.id);
+
+    // Children
+    for (const childXref of fam.children) {
+      const child = personByXref(childXref);
+      if (!child) continue;
+      // Assign parents from FAM record (authoritative)
+      child.parents = parentIds.slice();
+      // Add child to each parent's children array
+      for (const pid of parentIds) {
+        const parent = people.find(p => p.id === pid);
+        if (parent && !parent.children.includes(child.id)) {
+          parent.children.push(child.id);
+        }
       }
-      // Add siblings from same family
+      // Siblings: other children in this family
       for (const sibXref of fam.children) {
-        if (sibXref === gedIndi.id) continue;
-        const sib = indis[sibXref];
+        if (sibXref === childXref) continue;
+        const sib = personByXref(sibXref);
         if (sib) {
-          // Add sibling name to this person
           const sibName = sib.name || 'Unknown';
-          if (!p.siblings.includes(sibName)) p.siblings.push(sibName);
+          if (!child.siblings.includes(sibName)) child.siblings.push(sibName);
         }
       }
     }
-
-    // Add spouse and children
-    for (const famXref of gedIndi.fams) {
-      const fam = fams[famXref];
-      if (!fam) continue;
-      const spouseXref = (fam.husb === gedIndi.id) ? fam.wife : fam.husb;
-      if (spouseXref && indis[spouseXref]) {
-        const spouse = indis[spouseXref];
-        const spouseId = xrefMap[spouseXref] || addPerson(spouse, gen);
-        p.spouseId = spouseId;
-        p.spouseName = spouse.name || '';
-        if (fam.marriageDate) p.marriageDate = fam.marriageDate;
-        const spousePerson = people.find(pp => pp.id === spouseId);
-        if (spousePerson) {
-          spousePerson.spouseId = id;
-          spousePerson.spouseName = p.name;
-        }
-        // Add children
-        for (const childXref of fam.children) {
-          const child = indis[childXref];
-          if (child) {
-            const childId = xrefMap[childXref] || addPerson(child, gen - 1);
-            if (!p.children.includes(childId)) p.children.push(childId);
-            const childPerson = people.find(pp => pp.id === childId);
-            if (childPerson) {
-              childPerson.parents = childPerson.parents.filter(pid => pid !== id);
-              childPerson.parents.push(id);
-            }
-          }
-        }
-      }
-    }
-
-    return id;
   }
 
-  addPerson(root, 0);
-
-  // Mark root as "you"
-  const rootPerson = people.find(p => p.id === xrefMap[root.id]);
-  if (rootPerson) rootPerson.status = 'you';
-
-  // Second pass: fix parent links for children discovered via FAMC
+  // --- Assign generations via BFS from roots ---
+  // Roots = people with no parents. Multiple disconnected sub-trees are fine.
+  const visited = new Set();
+  const queue = [];
   for (const p of people) {
-    if (p.parents.length === 0 && p.famc && fams[p.famc]) {
-      const fam = fams[p.famc];
-      if (fam.husb && xrefMap[fam.husb]) p.parents.push(xrefMap[fam.husb]);
-      if (fam.wife && xrefMap[fam.wife]) p.parents.push(xrefMap[fam.wife]);
+    if (p.parents.length === 0) {
+      p.gen = 0;
+      visited.add(p.id);
+      queue.push(p);
+    }
+  }
+  while (queue.length > 0) {
+    const p = queue.shift();
+    if (p.spouseId && !visited.has(p.spouseId)) {
+      const sp = people.find(pp => pp.id === p.spouseId);
+      if (sp && sp.parents.length === 0) {
+        sp.gen = p.gen;
+        visited.add(sp.id);
+        queue.push(sp);
+      }
+    }
+    for (const cid of p.children) {
+      if (!visited.has(cid)) {
+        const child = people.find(pp => pp.id === cid);
+        if (child) {
+          child.gen = p.gen - 1;
+          visited.add(cid);
+          queue.push(child);
+        }
+      }
+    }
+  }
+  for (const p of people) {
+    if (!visited.has(p.id)) {
+      p.gen = 0;
     }
   }
 
-  return { people: people, nextId: nextId };
+  // Build connected components and focus-candidate info (stored for UI)
+  const components = [];
+  const compVisited = new Set();
+  const getComponent = (startId) => {
+    const comp = [];
+    const stack = [startId];
+    while (stack.length) {
+      const id = stack.pop();
+      if (compVisited.has(id)) continue;
+      compVisited.add(id);
+      const per = people.find(pp => pp.id === id);
+      if (!per) continue;
+      comp.push(per);
+      const rels = [...(per.parents || []), ...(per.children || []), (per.spouseId || null)];
+      for (const rid of rels) if (rid) stack.push(rid);
+    }
+    return comp;
+  };
+  for (const p of people) {
+    if (!compVisited.has(p.id)) {
+      const comp = getComponent(p.id);
+      if (comp.length) components.push(comp);
+    }
+  }
+  const yearFrom = (s) => {
+    const m = String(s || '').match(/\b(\d{4})\b/);
+    return m ? parseInt(m[1]) : 9999;
+  };
+  const ancestors = (id, memo = {}) => {
+    if (memo[id]) return memo[id];
+    const per = people.find(pp => pp.id === id);
+    const set = new Set([id]);
+    if (per) {
+      for (const pid of per.parents || []) {
+        ancestors(pid, memo).forEach(x => set.add(x));
+      }
+    }
+    memo[id] = set;
+    return set;
+  };
+  const descendants = (id, memo = {}) => {
+    if (memo[id]) return memo[id];
+    const per = people.find(pp => pp.id === id);
+    const set = new Set([id]);
+    if (per) {
+      for (const cid of per.children || []) {
+        descendants(cid, memo).forEach(x => set.add(x));
+      }
+    }
+    memo[id] = set;
+    return set;
+  };
+  const componentSummaries = components.map((comp, idx) => {
+    // Find best focus: prefer people with the most ancestors (deeper pedigree).
+    // Tiebreak by youngest (highest birth year) — a younger person's ancestors
+    // encompass older relatives' ancestors, giving the richest tree view.
+    let best = null;
+    for (const per of comp) {
+      const y = yearFrom(per.birthDate || per.deathDate || per.years);
+      const a = ancestors(per.id).size - 1;
+      const d = descendants(per.id).size - 1;
+      const total = a + d + 1;
+      const hasParents = a >= 1;
+      const score = (hasParents ? 10000 : 0) + a * 100 + (y / 100);
+      if (best === null || score > best.score) {
+        best = { id: per.id, score, name: per.name, birth: per.birthDate || per.years || '', total, ancestors: a, descendants: d };
+      }
+    }
+    return { index: idx, size: comp.length, focus: best };
+  }).sort((a, b) => b.size - a.size);
+
+  // Store focus candidates on the global result object so the UI can use them
+  const focusCandidates = componentSummaries.map(c => c.focus).filter(Boolean);
+
+  return { people: people, nextId: nextId, families: fams, components: componentSummaries, focusCandidates: focusCandidates };
+}
+
+function setFocusTreeByPerson(focusId) {
+  if (!focusId) return;
+  const focusPerson = people.find(p => p.id === focusId);
+  if (!focusPerson) return;
+
+  // Build ancestor-only view: focus person, their parents, grandparents, etc.
+  // Their spouse and descendants are NOT included in the tree cards (they appear in family sheets)
+  const included = new Set();
+  included.add(focusId);
+  const maxDepth = 8;
+  let current = [focusId];
+  for (let d = 0; d < maxDepth && current.length; d++) {
+    const next = [];
+    for (const id of current) {
+      const p = people.find(pp => pp.id === id);
+      if (!p) continue;
+      for (const pid of p.parents || []) {
+        included.add(pid);
+        next.push(pid);
+      }
+    }
+    current = next;
+  }
+
+  // Renumber generations: focus = 0, parents = 1, grandparents = 2...
+  const genMap = new Map();
+  genMap.set(focusId, 0);
+  current = [focusId];
+  for (let d = 0; d < maxDepth && current.length; d++) {
+    const next = [];
+    for (const id of current) {
+      const p = people.find(pp => pp.id === id);
+      if (!p) continue;
+      for (const pid of p.parents || []) {
+        genMap.set(pid, d + 1);
+        next.push(pid);
+      }
+    }
+    current = next;
+  }
+
+  for (const p of people) {
+    if (included.has(p.id)) {
+      p.gen = genMap.get(p.id) || 0;
+      p.status = (p.id === focusId) ? 'you' : 'probable';
+      p.focusHidden = false;
+    } else {
+      p.focusHidden = true;
+      p.status = 'probable';
+    }
+  }
+
+  // Update visibleMaxGen to cover the focus tree's depth
+  const focusMaxGen = Math.max(...people.filter(p => !p.focusHidden).map(p => p.gen));
+  visibleMaxGen = Math.min(focusMaxGen, 8);
+}
+
+function showFocusPicker(candidates, components, onSelect) {
+  // Build modal
+  let overlay = document.getElementById('focusPickerOverlay');
+  if (!overlay) {
+    overlay = document.createElement('div');
+    overlay.id = 'focusPickerOverlay';
+    overlay.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.75);z-index:12000;display:flex;align-items:flex-start;justify-content:center;padding:20px;overflow:auto;';
+    document.body.appendChild(overlay);
+  }
+  overlay.innerHTML = '';
+
+  const box = document.createElement('div');
+  box.style.cssText = 'background:#f5eedc;border:3px solid #8a7a5a;border-radius:10px;max-width:500px;width:100%;padding:20px;margin-top:40px;font-family:Cormorant Garamond,serif;color:#2a1f10;';
+
+  box.innerHTML = '\
+    <div style="font-family:Cinzel Decorative,serif;font-size:20px;color:#3e2b1a;margin-bottom:8px;">Choose a focus person</div>\
+    <div style="font-size:13px;color:#6b5537;margin-bottom:16px;line-height:1.5;">This tree has ' + people.length + ' people across ' + components.length + ' family groups. Pick the person whose ancestors you want to explore. Family sheets still list everyone.</div>\
+    <div id="focusList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;"></div>\
+    <button id="focusShowAll" style="width:100%;padding:10px;background:#5c4033;color:#e8dcc8;border:none;border-radius:6px;font-family:Cinzel Decorative,serif;font-size:14px;cursor:pointer;">Show everyone</button>\
+  ';
+  overlay.appendChild(box);
+  overlay.style.display = 'flex';
+
+  const list = box.querySelector('#focusList');
+  candidates.forEach((c, idx) => {
+    const row = document.createElement('button');
+    row.style.cssText = 'text-align:left;background:#fff;border:2px solid #c9b896;border-radius:6px;padding:12px;cursor:pointer;font-family:Cormorant Garamond,serif;color:#2a1f10;';
+    row.innerHTML = '\
+      <div style="font-weight:600;font-size:15px;">' + escapeHtml(c.name) + '</div>\
+      <div style="font-size:12px;color:#6b5537;">' + (c.birth ? escapeHtml(c.birth) : '') + '</div>\
+      <div style="font-size:11px;color:#8a7a5a;margin-top:4px;">' + c.ancestors + ' ancestors · ' + c.descendants + ' descendants · covers ' + c.total + ' people</div>\
+    ';
+    row.addEventListener('click', () => {
+      overlay.style.display = 'none';
+      onSelect(c.id);
+    });
+    list.appendChild(row);
+  });
+
+  box.querySelector('#focusShowAll').addEventListener('click', () => {
+    overlay.style.display = 'none';
+    onSelect(null);
+  });
 }
 
 function convertGedcomFile(file) {
@@ -5408,7 +5922,9 @@ function convertGedcomFile(file) {
         exportedAt: new Date().toISOString(),
         people: result.people,
         nextId: result.nextId,
-        visibleMaxGen: Math.max(...result.people.map(p => p.gen))
+        visibleMaxGen: Math.max(...result.people.map(p => p.gen)),
+        focusCandidates: result.focusCandidates || [],
+        components: result.components || []
       };
       const json = JSON.stringify(payload, null, 2);
       const blob = new Blob([json], { type: 'application/json' });
@@ -5423,8 +5939,29 @@ function convertGedcomFile(file) {
         if (!payload.people) { showToast('No people in GEDCOM'); return; }
         people = payload.people;
         nextId = payload.nextId || maxGen(people, p => p.id) + 1;
+        gedcomFamilies = result.families || null;
         visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
-        renderTree();
+
+        // Focus-tree picker for big/complex imports
+        if (result.focusCandidates && result.focusCandidates.length > 0 && (people.length > 80 || result.components.length > 1)) {
+          showFocusPicker(result.focusCandidates, result.components, (focusId) => {
+            if (focusId) {
+              setFocusTreeByPerson(focusId);
+              localStorage.setItem('vr_focusPerson_' + currentTreeId, focusId);
+            } else {
+              // show all: parsed generations already set, but clear any saved focus
+              localStorage.removeItem('vr_focusPerson_' + currentTreeId);
+              people.forEach(p => { p.focusHidden = false; });
+              // Restore original visibleMaxGen from the GEDCOM payload
+              visibleMaxGen = Math.min(4, maxGen(people, p => p.gen));
+            }
+            renderTree();
+            updateExpandGenBtn();
+            centerOnGen0();
+          });
+        } else {
+          renderTree();
+        }
         const btn = document.getElementById('expandGenBtn');
         const actualMax = maxGen(people, p => p.gen);
         if (visibleMaxGen >= actualMax) {
@@ -5435,8 +5972,8 @@ function convertGedcomFile(file) {
           btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
         }
         // Save tree to IndexedDB
-        if (currentTreeId) await saveCurrentTreeToDB();
-        showToast('Converted ' + result.people.length + ' people. Tree loaded! A .familytree backup was also downloaded.');
+        await saveCurrentTreeToDB();
+        showToast('Loaded ' + result.people.length + ' people. Tree shows first 5 generations. Tap 📋 for Family Group Sheets to browse all families.');
       } catch (loadErr) {
         console.error('[GEDCOM] load error:', loadErr);
         showToast('Converted ' + result.people.length + ' people. A .familytree file was downloaded — tap 📂 Load to import it.');
@@ -6138,7 +6675,9 @@ function closeMemberModal() {
   var origOpenDetail = window.openDetail;
   if (typeof origOpenDetail === 'function') {
     window.openDetail = function(person) {
-      trackEvent('view_person', 'tree', person ? (person.name || person.id) : 'unknown');
+      // Analytics: track that a person card was opened, but NEVER send the
+      // person's name or any other user-entered data to Google.
+      trackEvent('view_person', 'tree', person ? String(person.id) : 'unknown');
       return origOpenDetail.apply(this, arguments);
     };
   }
@@ -6164,3 +6703,4 @@ function closeMemberModal() {
 </body>
 </html>
 <!-- Build: 1782741103 -->
+<!-- rebuild trigger Sun Jul  5 08:40:34 UTC 2026 -->
