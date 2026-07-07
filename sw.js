@@ -1,4 +1,4 @@
-const CACHE_NAME = 'vaulted-roots-staging-v6';
+const CACHE_NAME = 'vaulted-roots-staging-v10';
 
 // Do NOT cache HTML files — always fetch fresh (prevents stale content bugs)
 const ASSETS = [
@@ -40,3 +40,4 @@ self.addEventListener('fetch', (event) => {
     })
   );
 });
+/* build: 1783342613 */
