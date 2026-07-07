@@ -6723,12 +6723,9 @@ setTimeout(updateOfflineBadge, 100);
     <div class="member-title">A members feature — free for now</div>
     <div class="member-price" id="memberModalFeature">This feature is available to Vaulted Roots members.<br>It's free during early access while we build the community.</div>
     <button class="member-continue-btn" onclick="closeMemberModal()">Use it free →</button>
-    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #d8c9a8;">
-      <div style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#6b5537;margin-bottom:6px;">🔔 Be first to know when founding spots open ($19.99, first 100):</div>
-      <div style="display:flex;gap:6px;">
-        <input type="email" id="foundingEmail" placeholder="you@example.com" style="flex:1;padding:8px 10px;border:1px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:13px;color:#2a1f10;box-sizing:border-box;">
-        <button class="member-join-btn" onclick="notifyMeFounding()" style="white-space:nowrap;">Notify me</button>
-      </div>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #d8c9a8;text-align:center;">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#6b5537;margin-bottom:8px;">🔔 Want first access when founding spots open ($19.99, first 100)?</div>
+      <a href="https://formspree.io/f/xaqglnpa" target="_blank" rel="noopener" style="display:inline-block;padding:8px 16px;border:1px solid #d4af37;border-radius:8px;background:transparent;color:#8a6a3a;font-family:'Georgia',serif;font-size:13px;cursor:pointer;text-decoration:none;transition:all 0.2s;" onmouseover="this.style.background='#d4af37';this.style.color='#3a2a10'" onmouseout="this.style.background='transparent';this.style.color='#8a6a3a'">Notify me when spots open</a>
       <div class="member-early-note">No account needed. We'll only email once.</div>
     </div>
   </div>
@@ -6792,50 +6789,7 @@ function closeMemberModal() {
   }
 }
 
-async function notifyMeFounding() {
-  const emailInput = document.getElementById('foundingEmail');
-  const email = emailInput ? emailInput.value.trim() : '';
 
-  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
-    showToast('Please enter a valid email address');
-    if (emailInput) emailInput.focus();
-    return;
-  }
-
-  // GA4 event — count intent even if Formspree fails
-  if (typeof gtag === 'function') {
-    gtag('event', 'founding_intent', {
-      event_category: 'membership',
-      event_label: 'founding_spots_notify'
-    });
-  }
-
-  // POST to Formspree (same endpoint as feedback, different _subject)
-  try {
-    await fetch('https://formspree.io/f/xaqglnpa', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
-      body: JSON.stringify({
-        email: email,
-        _subject: 'VR Founding Member Intent',
-        message: 'User wants to be notified when founding member spots open ($19.99, first 100).',
-        source: 'member_popup'
-      })
-    });
-  } catch (e) {
-    // Non-blocking — user still gets the feature
-    console.warn('[VR] Formspree submit failed:', e);
-  }
-
-  localStorage.setItem('vr_founding_notify', '1');
-  document.getElementById('memberModal').classList.remove('active');
-  showToast("You're on the list! We'll email you when founding spots open.");
-  if (_memberCallback) {
-    const cb = _memberCallback;
-    _memberCallback = null;
-    cb();
-  }
-}
 
 // Add MEMBER badges to toolbar buttons
 (function addMemberBadges() {
