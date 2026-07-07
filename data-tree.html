@@ -2027,7 +2027,7 @@ function renderTree() {
         h += '<div class="doc-badges">';
         person.docs.forEach(d => {
           const t = (d.type || 'bc').toLowerCase();
-          h += '<span class="doc-badge ' + t + '" data-doc-type="' + t + '" data-doc-id="' + (d.docId || '') + '" data-date="' + (d.date || '') + '" data-person="' + person.id + '" onclick="event.stopPropagation(); openDocImage(' + d.docId + ')">' + t.toUpperCase() + '</span>';
+          h += '<span class="doc-badge ' + t + '\" data-doc-type="' + t + '\" data-doc-id="' + (d.docId || '') + '\" data-date="' + (d.date || '') + '\" data-person="' + person.id + '">' + t.toUpperCase() + '</span>';
         });
         h += '</div>';
       }
@@ -2045,6 +2045,22 @@ function renderTree() {
     wrap.appendChild(el);
     cardEls.set(person.id, el);
   });
+
+  // Delegated listener for doc-badge clicks (replaces fragile inline onclick)
+  if (!wrap._docBadgeWired) {
+    wrap.addEventListener('click', (e) => {
+      const badge = e.target.closest('.doc-badge');
+      if (!badge) return;
+      e.stopPropagation();
+      const docId = badge.dataset.docId;
+      const personId = parseInt(badge.dataset.person);
+      if (docId && personId) {
+        selectedPersonId = personId;
+        openDocImage(docId);
+      }
+    });
+    wrap._docBadgeWired = true;
+  }
 
   document.body.offsetHeight;
   cardEls.forEach((el, id) => hMap.set(id, el.offsetHeight));
@@ -5010,7 +5026,8 @@ function expandNextGen() {
     sc.scrollTo({ left: wrap.scrollWidth, behavior: 'smooth' });
   }, 50);
 }
-document.getElementById('expandGenBtn').addEventListener('click', expandNextGen);
+// NOTE: expandGenBtn already has inline onclick="checkMemberFeature('expand_generation', expandNextGen)"
+// Do NOT add a second addEventListener here — it causes expandNextGen to fire twice.
 
 // Removed duplicate listen
 document.getElementById('guidanceClose').addEventListener('click', closeGuidancePanel);
@@ -5111,9 +5128,11 @@ let _confirmCallback = null;
 function showConfirm(text, onOk) {
   const modal = document.getElementById('confirmModal');
   const textEl = document.getElementById('confirmText');
-  const okBtn = document.getElementById('confirmOk');
-  const cancelBtn = document.getElementById('confirmCancel');
   if (!modal || !textEl) return;
+  // Scope to the visible modal so duplicate IDs in the reset dialog don't win.
+  const okBtn = modal.querySelector('#confirmOk');
+  const cancelBtn = modal.querySelector('#confirmCancel');
+  if (!okBtn || !cancelBtn) return;
   textEl.textContent = text;
   _confirmCallback = onOk;
   modal.style.display = 'flex';
@@ -5133,6 +5152,13 @@ function showConfirm(text, onOk) {
     });
     cancelBtn._confirmedWired = true;
   }
+  // Tap outside to close
+  modal.onclick = (e) => {
+    if (e.target === modal) {
+      modal.style.display = 'none';
+      _confirmCallback = null;
+    }
+  };
 }
 
 function addParentsForPerson(person) {

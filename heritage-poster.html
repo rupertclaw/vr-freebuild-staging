@@ -1011,16 +1011,18 @@ if (gridOverlay && gridToggle) {
   console.warn('[heritage-poster] gridOverlay or gridToggle not found in DOM; skipping grid features');
 }
 
-// Coordinate readout on hover
+// Coordinate readout on hover (dev-only — element may not exist in production DOM)
 const coordReadout = document.getElementById('coordReadout');
-poster.addEventListener('mousemove', (e) => {
-  const rect = poster.getBoundingClientRect();
-  const x = (e.clientX - rect.left) / scale;
-  const y = (e.clientY - rect.top) / scale;
-  const col = Math.round(x / cellW);
-  const row = Math.round(y / cellH);
-  coordReadout.textContent = `Col: ${col}, Row: ${row} | Pixel: ${Math.round(x)}, ${Math.round(y)}`;
-});
+if (coordReadout) {
+  poster.addEventListener('mousemove', (e) => {
+    const rect = poster.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / scale;
+    const y = (e.clientY - rect.top) / scale;
+    const col = Math.round(x / cellW);
+    const row = Math.round(y / cellH);
+    coordReadout.textContent = `Col: ${col}, Row: ${row} | Pixel: ${Math.round(x)}, ${Math.round(y)}`;
+  });
+}
 
 // Zoom
 let scale = 1;
