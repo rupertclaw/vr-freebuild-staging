@@ -52,7 +52,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
+@import url('./fonts.css');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -5757,7 +5757,7 @@ function openPrintDialog() {
       captureAndDownload();
     } else {
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      script.src = 'html2canvas.min.js';
       script.onload = captureAndDownload;
       script.onerror = () => {
         showToast('Unable to load image generator. Use your browser\'s Share → Print → Save as PDF.');
