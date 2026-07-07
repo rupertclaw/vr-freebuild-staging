@@ -1529,15 +1529,15 @@ function initDefaultData() {
   const you = createPerson(nextId++, 0, 'You', 'Start your tree', 'blank', {});
   you.isYou = true;
   people.push(you);
-  // Gens 1-2: blank placeholder cards (parents + grandparents = 6 cards)
-  for (let g = 1; g <= 2; g++) {
+  // Gens 1-8: blank placeholder cards (2^gen each)
+  for (let g = 1; g <= 8; g++) {
     const count = Math.pow(2, g);
     for (let i = 0; i < count; i++) {
       people.push(createPerson(nextId++, g, 'Name', '?', 'blank', {}));
     }
   }
   // Wire parent-child relationships AND spouse relationships
-  for (let g = 0; g < 2; g++) {
+  for (let g = 0; g < 8; g++) {
     const gen = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
     const nextGen = people.filter(p => p.gen === g + 1).sort((a,b) => a.id - b.id);
     gen.forEach((p, i) => {
@@ -2075,7 +2075,7 @@ setInterval(async () => {
   if (currentTreeId) await saveCurrentTreeToDB();
 }, 30000);
 const CARD_W = 130, GAP_Y = 8;
-const GEN_X_GAP = 75;
+const GEN_X_GAP = 95; // wider gap since gen 0 is offset right by a full card width
 const MINI_W = 100, MINI_H = 14;
 let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
 
