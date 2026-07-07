@@ -83,6 +83,9 @@ if ('serviceWorker' in navigator) {
   --bg-card-you: rgba(255, 248, 225, 0.98);
   --bg-card-blank: rgba(250, 244, 230, 0.6);
   --text-card-blank: #9a8a6a;
+  --gold: #c4a875;
+  --gold-bright: #d4af37;
+  --brown-dark: #2a1f10;
   --line-stroke: #7a6a4a;
   --bg-modal-overlay: rgba(0,0,0,0.75);
   --text-gen-label: #6b5a3a;
@@ -192,7 +195,52 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   display: flex; align-items: center; gap: 6px;
   flex-wrap: wrap;
   justify-content: flex-end;
+  position: relative;
 }
+/* New labeled toolbar buttons */
+.tb-btn {
+  height: 38px; padding: 0 12px;
+  background: var(--bg-btn); color: var(--text-btn);
+  border: 1px solid var(--bg-btn-border); border-radius: 8px;
+  font-size: 12px; cursor: pointer;
+  display: flex; gap: 5px; align-items: center;
+  font-family: 'Cormorant Garamond', serif;
+  white-space: nowrap;
+  position: relative;
+}
+.tb-btn.primary { background: #6b4c35; border-color: var(--gold); }
+.tb-btn small { opacity: 0.65; font-size: 9px; }
+.tb-btn .m {
+  position: absolute; top: -4px; right: -4px;
+  width: 15px; height: 15px; border-radius: 50%;
+  background: linear-gradient(135deg, #d4af37, #f4d03f);
+  color: #3a2a10; font-size: 9px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  font-family: sans-serif;
+}
+/* Dropdown menu */
+.tb-menu {
+  display: none; position: absolute; top: 100%; right: 0; margin-top: 6px;
+  background: #f5eedc; border: 1px solid #c4b89a; border-radius: 8px;
+  width: 240px; padding: 6px; z-index: 10000;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+.tb-menu.open { display: block; }
+.tb-menu-item {
+  display: flex; gap: 10px; align-items: center;
+  padding: 9px 10px; font-size: 13px; border-radius: 6px;
+  color: #3e2b1a; cursor: pointer; font-family: 'Cormorant Garamond', serif;
+}
+.tb-menu-item:hover { background: #efe4c8; }
+.tb-menu-item.danger { color: #8a2a2a; border-top: 1px solid #d8c9a8; margin-top: 4px; padding-top: 11px; }
+.tb-menu-item .m {
+  width: 15px; height: 15px; border-radius: 50%;
+  background: linear-gradient(135deg, #d4af37, #f4d03f);
+  color: #3a2a10; font-size: 9px; font-weight: 800;
+  display: flex; align-items: center; justify-content: center;
+  font-family: sans-serif; margin-left: auto;
+}
+.tb-menu-item .icon { font-size: 16px; width: 20px; text-align: center; }
 .header-emblem {
   position: absolute;
   left: 50%; top: 50%;
@@ -222,20 +270,25 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .header-emblem { height: 120px; width: 120px; opacity: 0.25; }
   .offline-badge { top: 120px; font-size: 9px; padding: 1px 6px; }
   .header-btn { width: 28px; height: 28px; font-size: 14px; }
-  .header-actions { gap: 2px; }
+  .header-actions { gap: 3px; }
   .header-left-group { gap: 3px; }
   .tree-scroll { top: 180px; }
   .header-bottom { flex-direction: column; align-items: stretch; }
   .zoom-controls span { font-size: 11px; min-width: 36px; }
+  .tb-btn { height: 34px; padding: 0 8px; font-size: 11px; }
+  .tb-btn small { display: none; }
+  .tb-menu { width: 200px; right: 0; }
 }
 @media (max-width: 340px) {
   .header-btn { width: 26px; height: 26px; font-size: 13px; }
-  .header-actions { gap: 1px; }
+  .header-actions { gap: 2px; }
   .header-left-group { gap: 2px; }
+  .tb-btn { height: 32px; padding: 0 6px; font-size: 10px; }
 }
 @media (max-width: 600px) and (min-width: 381px) {
   .header-btn { width: 34px; height: 34px; font-size: 17px; }
   .header-emblem { height: 130px; width: 130px; opacity: 0.25; }
+  .tb-btn { height: 36px; padding: 0 10px; }
 }
 .header-btn {
   width: 42px; height: 36px; background: var(--bg-btn); color: var(--text-btn);
@@ -373,14 +426,65 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .doc-form-section .form-title { font-family: 'Cinzel Decorative', serif; font-size: 11px; color: #3e2b1a; margin-bottom: 8px; }
 
 
-.person-card.confirmed { border-left: 4px solid #22c55e; }
-.person-card.probable { border-left: 4px solid #f59e0b; }
-.person-card.brickwall { border-left: 4px dashed #ef4444; }
+.person-card.confirmed { border: 2px solid #22c55e; }
+.person-card.probable { border: 2px solid #f59e0b; }
+.person-card.brickwall { border: 2px dashed #ef4444; }
+/* Corner certainty glyphs */
+.person-card.confirmed::after,
+.person-card.probable::after,
+.person-card.brickwall::after {
+  content: ''; position: absolute; top: -8px; right: -8px;
+  width: 20px; height: 20px; border-radius: 50%; font-size: 11px;
+  display: flex; align-items: center; justify-content: center;
+  background: #fff; box-shadow: 0 1px 4px rgba(0,0,0,0.25); z-index: 5;
+}
+.person-card.confirmed::after { content: '✓'; color: #166534; }
+.person-card.probable::after { content: '?'; color: #92400e; }
+.person-card.brickwall::after { content: '🧱'; font-size: 9px; }
+/* Certainty legend chip */
+.certainty-legend {
+  position: fixed; bottom: 70px; right: 12px; z-index: 100;
+  background: rgba(250,244,230,0.95); border: 1px solid #b8a88a; border-radius: 8px;
+  padding: 10px 14px; font-size: 12px; box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+  font-family: 'Cormorant Garamond', serif; max-width: 200px;
+}
+.certainty-legend .legend-title { font-weight: bold; font-size: 10px; letter-spacing: 1px; color: #6b5537; margin-bottom: 4px; }
+.certainty-legend .legend-item { display: flex; align-items: center; gap: 8px; margin: 3px 0; }
+.certainty-legend .legend-dot { width: 12px; height: 12px; border-radius: 3px; display: inline-block; flex-shrink: 0; }
+.certainty-legend .legend-dot.confirmed { background: #22c55e; }
+.certainty-legend .legend-dot.probable { background: #f59e0b; }
+.certainty-legend .legend-dot.brick { background: #fff; border: 2px dashed #ef4444; }
+.certainty-legend .toggle-legend { cursor: pointer; color: #8a7a5a; font-size: 11px; margin-top: 4px; text-decoration: underline; }
 .person-card.unknown-parent { border-left: 4px dotted #9ca3af; background: var(--bg-person-unknown); opacity: 0.7; cursor: default; }
 .person-card.unknown-parent:hover { transform: none; box-shadow: none; }
 .person-card.unknown-parent .name,
 .person-card.unknown-parent .years { color: var(--text-person-unknown); font-style: italic; }
-.person-card.you { border: 2px solid #c4a875; background: var(--bg-card-you); }
+.person-card.you {
+  border: 3px solid var(--gold-bright);
+  background: #fff8e1;
+  box-shadow: 0 0 0 5px rgba(212,175,55,0.22), 0 3px 10px rgba(0,0,0,0.18);
+}
+.person-card.you .name { font-size: 14px; font-weight: 700; }
+.person-card.you .cta {
+  margin-top: 4px; background: var(--brown-dark); color: var(--gold);
+  border-radius: 4px; padding: 3px 6px; font-size: 9px; text-align: center;
+}
+/* First-run coachmark */
+.coachmark {
+  position: fixed; z-index: 200;
+  background: #2a1f10; color: #f0e6d2; border-radius: 8px;
+  padding: 10px 14px; font-size: 12px; max-width: 220px;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.3);
+  font-family: 'Cormorant Garamond', serif; line-height: 1.4;
+}
+.coachmark:before {
+  content: ''; position: absolute; left: -8px; top: 22px;
+  border: 8px solid transparent; border-right-color: #2a1f10; border-left: 0;
+}
+.coachmark .close-cm {
+  position: absolute; top: 4px; right: 8px; cursor: pointer;
+  color: #8a7a5a; font-size: 14px; border: none; background: none;
+}
 .person-card.blank {
   background: #f0ebe0;
   border: 1px dashed #b8a88a;
@@ -428,6 +532,21 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 /* SVG connectors */
 .lines-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+
+/* Detail panel accordion */
+details.acc {
+  border: 1px solid #d8c9a8; border-radius: 6px; margin-bottom: 8px;
+  background: #fff; overflow: hidden;
+}
+details.acc summary {
+  padding: 9px 12px; font-weight: bold; cursor: pointer; font-size: 12px;
+  background: #faf4e4; list-style: none; display: flex; justify-content: space-between;
+  font-family: 'Cinzel Decorative', serif; color: #3e2b1a;
+}
+details.acc summary::-webkit-details-marker { display: none; }
+details.acc summary:after { content: '▾'; color: #8a7a5a; }
+details.acc[open] summary:after { content: '▴'; }
+details.acc .acc-body { padding: 6px 12px; }
 
 /* Cert panel */
 .cert-panel {
@@ -778,20 +897,31 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </div>
     </div>
     <div class="header-actions">
-      <button class="header-btn" id="saveBtn" title="Save session" onclick="saveSession()">💾</button>
-      <button class="header-btn" id="loadBtn" title="Load session">📂</button>
-      <button class="header-btn" id="shareBtn" title="Share tree" onclick="checkMemberFeature('share_tree', shareTree)">📤</button>
-      <button class="header-btn" id="treeManagerToggle" title="My trees" onclick="checkMemberFeature('multiple_trees', toggleTreeManager)">🌳</button>
-      <button class="header-btn" id="privacyBtn" title="Privacy &amp; data protection" onclick="showPrivacyModal()">🔒</button>
-      <button class="header-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖</button>
-      <button class="header-btn" id="feedbackBtn" title="Send feedback" onclick="showFeedbackModal()">💬</button>
-      <a class="header-btn" id="facebookBtn" title="Vaulted Roots on Facebook" href="https://www.facebook.com/profile.php?id=61591673636516" target="_blank" rel="noopener" style="text-decoration:none;background:#1877F2;border-color:#1877F2;border-radius:50%;width:36px;height:36px;padding:0;display:inline-flex;align-items:center;justify-content:center;"><span style="font-family:sans-serif;font-weight:bold;font-size:20px;color:#fff;">f</span></a>
-      <button class="header-btn" id="viewPosterBtn" title="Heritage poster (new tab)" onclick="checkMemberFeature('heritage_poster', openPoster)">🖼️</button>
-      <button class="header-btn cert-btn" id="certToggle" title="Scan certificate" onclick="checkMemberFeature('cert_scanning', toggleCertPanel)">📄</button>
-      <button class="header-btn" id="darkModeToggle" title="Toggle dark mode" onclick="toggleDarkMode()">🌙</button>
-      <button class="header-btn" id="printTreeBtn" title="Print tree" onclick="checkMemberFeature('print', openPrintDialog)">🖨️</button>
-      <button class="header-btn" id="resetBtn" title="Reset tree">🔄</button>
-      <a class="header-btn" id="familySheetBtn" href="families.html" target="_blank" title="Family sheets (new tab)" style="text-decoration:none;">&#128203;</a>
+      <!-- Primary labeled buttons -->
+      <button class="tb-btn primary" id="certToggle" title="Scan certificate" onclick="checkMemberFeature('cert_scanning', toggleCertPanel)">📷 <span>Scan</span></button>
+      <button class="tb-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖 <span>Guide</span></button>
+      <button class="tb-btn" id="saveBtn" title="Save session" onclick="saveSession()">💾 <span>Save</span></button>
+      <!-- Tree menu -->
+      <button class="tb-btn" id="treeMenuBtn" title="Tree options">🌳 <span>Tree</span> ▾</button>
+      <div class="tb-menu" id="treeMenu">
+        <div class="tb-menu-item" id="treeManagerToggle" onclick="checkMemberFeature('multiple_trees', toggleTreeManager)"><span class="icon">🌳</span> My Trees <span class="m">M</span></div>
+        <div class="tb-menu-item" onclick="document.getElementById('familySheetBtn').click()"><span class="icon">📋</span> Family Sheets</div>
+        <div class="tb-menu-item" id="viewPosterBtn" onclick="checkMemberFeature('heritage_poster', openPoster)"><span class="icon">🖼️</span> Heritage Poster <span class="m">M</span></div>
+        <div class="tb-menu-item" id="printTreeBtn" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree <span class="m">M</span></div>
+      </div>
+      <!-- More menu -->
+      <button class="tb-btn" id="moreMenuBtn" title="More options">⋯ <span>More</span> ▾</button>
+      <div class="tb-menu" id="moreMenu">
+        <div class="tb-menu-item" id="shareBtn" onclick="checkMemberFeature('share_tree', shareTree)"><span class="icon">📤</span> Share Tree <span class="m">M</span></div>
+        <div class="tb-menu-item" id="loadBtn"><span class="icon">📂</span> Load Backup</div>
+        <div class="tb-menu-item" id="darkModeToggleLi"><span class="icon" id="darkModeToggle">🌙</span> Dark Mode</div>
+        <div class="tb-menu-item" id="privacyBtn" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
+        <div class="tb-menu-item" id="feedbackBtn" onclick="showFeedbackModal()"><span class="icon">💬</span> Send Feedback</div>
+        <div class="tb-menu-item" id="facebookBtnLi" onclick="window.open('https://www.facebook.com/profile.php?id=61591673636516','_blank','noopener')"><span class="icon">👍</span> Follow on Facebook</div>
+        <div class="tb-menu-item danger" id="resetBtn">🗑️ Reset Tree</div>
+      </div>
+      <!-- Hidden anchors preserved for event listeners -->
+      <a id="familySheetBtn" href="families.html" target="_blank" style="display:none;">&#128203;</a>
     </div>
   </div>
 </div>
@@ -800,6 +930,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 
 <div id="treeTitleContainer" style="position:fixed; top:118px; left:12px; z-index:100; background:rgba(62,43,26,0.88); border:1px solid #c4a875; border-radius:6px; padding:6px 14px; font-family:'Cinzel Decorative',serif; font-size:13px; color:#d4b896; max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,0.25); display:none;"><span id="treeTitle"></span></div>
+<!-- Certainty legend -->
+<div class="certainty-legend" id="certaintyLegend">
+  <div class="legend-title">CERTAINTY</div>
+  <div class="legend-item"><span class="legend-dot confirmed"></span> Confirmed — has a record</div>
+  <div class="legend-item"><span class="legend-dot probable"></span> Probable — good evidence</div>
+  <div class="legend-item"><span class="legend-dot brick"></span> Brick wall — dead end</div>
+  <div class="toggle-legend" id="toggleLegend">Hide</div>
+</div>
 <div class="tree-scroll" id="treeScroll" style="top: 154px;">
   <div id="zoomSizer" style="position:absolute; top:0; left:0; pointer-events:none; opacity:0;"></div>
 
@@ -1387,17 +1525,19 @@ function initDefaultData() {
   people = [];
   nextId = 1;
   gedcomFamilies = null;
-  // Gen 0: blank placeholder for the user to populate with their birth cert
-  people.push(createPerson(nextId++, 0, 'Name', '?', 'blank', {}));
-  // Gens 1-8: blank placeholder cards (2^gen each)
-  for (let g = 1; g <= 8; g++) {
+  // Gen 0: "You" card — bigger, gold-bordered, calls to action
+  const you = createPerson(nextId++, 0, 'You', 'Start your tree', 'blank', {});
+  you.isYou = true;
+  people.push(you);
+  // Gens 1-2: blank placeholder cards (parents + grandparents = 6 cards)
+  for (let g = 1; g <= 2; g++) {
     const count = Math.pow(2, g);
     for (let i = 0; i < count; i++) {
       people.push(createPerson(nextId++, g, 'Name', '?', 'blank', {}));
     }
   }
   // Wire parent-child relationships AND spouse relationships
-  for (let g = 0; g < 8; g++) {
+  for (let g = 0; g < 2; g++) {
     const gen = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
     const nextGen = people.filter(p => p.gen === g + 1).sort((a,b) => a.id - b.id);
     gen.forEach((p, i) => {
@@ -1405,7 +1545,6 @@ function initDefaultData() {
       const mother = nextGen[2 * i + 1];
       if (father && mother) {
         p.parents = [father.id, mother.id];
-        // Wire spouse relationship between parents
         father.spouseId = mother.id;
         mother.spouseId = father.id;
       }
@@ -1621,13 +1760,8 @@ function updateTreeManagerUI() {
     html += '</div>';
   }
   container.innerHTML = html;
-  const btn = document.getElementById('treeManagerToggle');
-  if (btn) {
-    // Preserve MEMBER badge — only update the icon text node, not innerHTML
-    var badge = btn.querySelector('.member-badge');
-    btn.textContent = '🌳';
-    if (badge) btn.appendChild(badge);
-  }
+  // treeManagerToggle is now inside the Tree dropdown menu — no icon to update
+  // (previously updated button text; now it's a static menu item)
   const title = document.getElementById('treeTitle');
   const titleContainer = document.getElementById('treeTitleContainer');
   if (title) {
@@ -2010,7 +2144,7 @@ function renderTree() {
   visiblePeople.forEach(person => {
     const isMini = displayMax >= 5 && person.gen === displayMax;
     const el = document.createElement('div');
-    el.className = 'person-card ' + person.status + (person.id === 1 ? ' you' : '') + (isMini ? ' minicard' : '');
+    el.className = 'person-card ' + person.status + ((person.id === 1 || person.isYou) ? ' you' : '') + (isMini ? ' minicard' : '');
     el.dataset.id = person.id;
 
     const bYear = (person.birthDate || person.years || '').match(/\d{4}/);
@@ -2032,6 +2166,10 @@ function renderTree() {
       }
       return p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
     })(person) + '</div>' + (cardYears ? '<div class="years">' + cardYears + '</div>' : '');
+    // Add CTA on the You card for first-run
+    if (person.isYou && person.status === 'blank') {
+      h += '<div class="cta">✍️ Tap to add yourself</div>';
+    }
     if (!isMini) {
       if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
       if (person.siblings && person.siblings.length) {
@@ -2048,7 +2186,9 @@ function renderTree() {
     }
 
     el.innerHTML = h;
-    el.style.left = colLeft[person.gen] + 'px';
+    // Gen 0 card offset 1 full card width to the right
+    const gen0Offset = person.gen === 0 ? CARD_W : 0;
+    el.style.left = (colLeft[person.gen] + gen0Offset) + 'px';
     el.style.top = '0px';
     el.style.opacity = '0';
     if (isMini) {
@@ -2394,74 +2534,94 @@ function openDetail(person) {
   detailPanel.classList.add('active');
   detailTitle.textContent = (person.maidenName ? person.name.replace(person.name.split(/\s+/).pop(), person.maidenName) : person.name);
   detailBody.innerHTML = `
-    <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${escapeHtml(person.fullName || person.name)}"></div>
-    <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${escapeHtml(person.name)}"></div>
-    <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${escapeHtml(person.birthDate)}"></div>
-    <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${escapeHtml(person.deathDate || '')}"></div>
-    <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${escapeHtml(person.ageAtDeath || '')}"></div>
-    <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${escapeHtml(person.marriageDate || '')}"></div>
-    <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${escapeHtml(person.maidenName)}"></div>
-    <div class="detail-field"><label>Married Name</label><input type="text" id="d_marriedName" value="${escapeHtml(person.marriedName || '')}"></div>
-    <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${escapeHtml(person.spouseName)}"></div>
-    <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${escapeHtml(person.occupation)}"></div>
-    <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${escapeHtml(person.birthplace)}"></div>
-    <div class="detail-field"><label>Status</label>
-      <select id="d_status" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:13px;">
-        <option value="confirmed" ${person.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
-        <option value="probable" ${person.status === 'probable' ? 'selected' : ''}>Probable</option>
-        <option value="brickwall" ${person.status === 'brickwall' ? 'selected' : ''}>Brick Wall</option>
-        <option value="unknown-parent" ${person.status === 'unknown-parent' ? 'selected' : ''}>Parent Unknown</option>
-        <option value="you" ${person.status === 'you' ? 'selected' : ''}>You</option>
-      </select>
-    </div>
-    <div class="detail-field"><label>Notes</label><textarea id="d_notes">${escapeHtml(person.notes)}</textarea></div>
-    <div class="detail-field"><label>Documents (<span id="docCount">${person.docs.length}</span>)</label>
-      <div id="docThumbs" class="doc-gallery">${person.docs.length ? '<em style="font-size:12px;color:#6b5537;">Loading...</em>' : '<em style="font-size:12px;color:#6b5537;">No documents</em>'}</div>
-    </div>
-    <div class="detail-field">
-      <label>Add Document</label>
-      <div class="doc-add-options" id="docAddOptions">
-        <button class="doc-add-btn" id="daUploadBtn" type="button"><span class="icon">📤</span><span class="lbl">Upload File</span></button>
-        <button class="doc-add-btn" id="daScanBtn" type="button"><span class="icon">📷</span><span class="lbl">Scan Cert</span></button>
-        <button class="doc-add-btn" id="daManualBtn" type="button"><span class="icon">⌨️</span><span class="lbl">Type In</span></button>
-      </div>
-      <div class="doc-form-section" id="daUploadForm" style="display:none;">
-        <div class="form-title">📤 Upload File</div>
-        <div class="detail-field" style="margin-bottom:8px;"><label>Select File</label><input type="file" id="daUploadFile" accept="image/*,.pdf"></div>
-        <div id="daUploadPreview" style="display:none;margin-bottom:8px;">
-          <div class="doc-thumb" style="height:100px;"><img id="daUploadPreviewImg" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" src="" alt=""></div>
-          <div style="font-size:11px;color:#6b5537;margin-top:4px;"><span id="daUploadFileName">file.jpg</span> · <span id="daUploadFileSize" style="color:#166534;font-weight:600;"></span></div>
+    <details class="acc" open>
+      <summary>Identity</summary>
+      <div class="acc-body">
+        <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${escapeHtml(person.fullName || person.name)}"></div>
+        <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${escapeHtml(person.name)}"></div>
+        <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${escapeHtml(person.maidenName)}"></div>
+        <div class="detail-field"><label>Married Name</label><input type="text" id="d_marriedName" value="${escapeHtml(person.marriedName || '')}"></div>
+        <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${escapeHtml(person.spouseName)}"></div>
+        <div class="detail-field"><label>Status</label>
+          <select id="d_status" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:13px;">
+            <option value="confirmed" ${person.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+            <option value="probable" ${person.status === 'probable' ? 'selected' : ''}>Probable</option>
+            <option value="brickwall" ${person.status === 'brickwall' ? 'selected' : ''}>Brick Wall</option>
+            <option value="unknown-parent" ${person.status === 'unknown-parent' ? 'selected' : ''}>Parent Unknown</option>
+            <option value="you" ${person.status === 'you' ? 'selected' : ''}>You</option>
+          </select>
         </div>
-        <div class="detail-field" style="margin-bottom:8px;"><label>Document Type</label><select id="daUploadType"><option value="photo">Photo</option><option value="article">News Article</option><option value="bc">Birth Certificate</option><option value="mc">Marriage Certificate</option><option value="dc">Death Certificate</option><option value="other">Other</option></select></div>
-        <div class="detail-field" style="margin-bottom:8px;"><label>Title (optional)</label><input type="text" id="daUploadTitle" placeholder="e.g. Wedding Day 1938"></div>
-        <div style="display:flex;gap:8px;"><button class="cancel-btn" id="daUploadCancel" type="button" style="flex:1;">Cancel</button><button class="save-btn" id="daUploadSave" type="button" style="flex:1;">Attach</button></div>
       </div>
-      <div class="doc-form-section" id="daManualForm" style="display:none;">
-        <div class="form-title">⌨️ Type Manually</div>
-        <div class="detail-field" style="margin-bottom:8px;"><label>Document Type</label><select id="daManualType"><option value="bc">Birth Certificate</option><option value="mc">Marriage Certificate</option><option value="dc">Death Certificate</option><option value="photo">Photo</option><option value="article">News Article</option><option value="other">Other</option></select></div>
-        <div class="detail-field" style="margin-bottom:8px;"><label>Title</label><input type="text" id="daManualTitle" placeholder="e.g. Birth of Joseph Marsh"></div>
-        <div class="detail-field" style="margin-bottom:8px;"><label>Date (if known)</label><input type="text" id="daManualDate" placeholder="1912-03-15"></div>
-        <div class="detail-field" style="margin-bottom:8px;"><label>Source / Location</label><input type="text" id="daManualSource" placeholder="e.g. GRO Dublin"></div>
-        <div class="detail-field" style="margin-bottom:8px;"><label>Details / Transcription</label><textarea id="daManualDetails" placeholder="Enter any details, transcription, or notes..." style="min-height:60px;"></textarea></div>
-        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;color:#6b5537;">
-          <input type="checkbox" id="daManualUpdateFields"><label for="daManualUpdateFields" style="display:inline;font-size:12px;text-transform:none;font-weight:400;margin-bottom:0;">Update person card fields from this data</label>
+    </details>
+    <details class="acc">
+      <summary>Dates &amp; Places</summary>
+      <div class="acc-body">
+        <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${escapeHtml(person.birthDate)}" placeholder="YYYY or YYYY-MM-DD"></div>
+        <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${escapeHtml(person.deathDate || '')}"></div>
+        <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${escapeHtml(person.ageAtDeath || '')}"></div>
+        <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${escapeHtml(person.marriageDate || '')}"></div>
+        <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${escapeHtml(person.birthplace)}"></div>
+        <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${escapeHtml(person.occupation)}"></div>
+      </div>
+    </details>
+    <details class="acc">
+      <summary>Documents (${person.docs.length})</summary>
+      <div class="acc-body">
+        <div class="detail-field">
+          <div id="docThumbs" class="doc-gallery">${person.docs.length ? '<em style="font-size:12px;color:#6b5537;">Loading...</em>' : '<em style="font-size:12px;color:#6b5537;">No documents</em>'}</div>
         </div>
-        <div style="display:flex;gap:8px;"><button class="cancel-btn" id="daManualCancel" type="button" style="flex:1;">Cancel</button><button class="save-btn" id="daManualSave" type="button" style="flex:1;">Save Document</button></div>
+        <div class="detail-field">
+          <label>Add Document</label>
+          <div class="doc-add-options" id="docAddOptions">
+            <button class="doc-add-btn" id="daUploadBtn" type="button"><span class="icon">📤</span><span class="lbl">Upload File</span></button>
+            <button class="doc-add-btn" id="daScanBtn" type="button"><span class="icon">📷</span><span class="lbl">Scan Cert</span></button>
+            <button class="doc-add-btn" id="daManualBtn" type="button"><span class="icon">⌨️</span><span class="lbl">Type In</span></button>
+          </div>
+          <div class="doc-form-section" id="daUploadForm" style="display:none;">
+            <div class="form-title">📤 Upload File</div>
+            <div class="detail-field" style="margin-bottom:8px;"><label>Select File</label><input type="file" id="daUploadFile" accept="image/*,.pdf"></div>
+            <div id="daUploadPreview" style="display:none;margin-bottom:8px;">
+              <div class="doc-thumb" style="height:100px;"><img id="daUploadPreviewImg" style="width:100%;height:100%;object-fit:cover;border-radius:4px;" src="" alt=""></div>
+              <div style="font-size:11px;color:#6b5537;margin-top:4px;"><span id="daUploadFileName">file.jpg</span> · <span id="daUploadFileSize" style="color:#166534;font-weight:600;"></span></div>
+            </div>
+            <div class="detail-field" style="margin-bottom:8px;"><label>Document Type</label><select id="daUploadType"><option value="photo">Photo</option><option value="article">News Article</option><option value="bc">Birth Certificate</option><option value="mc">Marriage Certificate</option><option value="dc">Death Certificate</option><option value="other">Other</option></select></div>
+            <div class="detail-field" style="margin-bottom:8px;"><label>Title (optional)</label><input type="text" id="daUploadTitle" placeholder="e.g. Wedding Day 1938"></div>
+            <div style="display:flex;gap:8px;"><button class="cancel-btn" id="daUploadCancel" type="button" style="flex:1;">Cancel</button><button class="save-btn" id="daUploadSave" type="button" style="flex:1;">Attach</button></div>
+          </div>
+          <div class="doc-form-section" id="daManualForm" style="display:none;">
+            <div class="form-title">⌨️ Type Manually</div>
+            <div class="detail-field" style="margin-bottom:8px;"><label>Document Type</label><select id="daManualType"><option value="bc">Birth Certificate</option><option value="mc">Marriage Certificate</option><option value="dc">Death Certificate</option><option value="photo">Photo</option><option value="article">News Article</option><option value="other">Other</option></select></div>
+            <div class="detail-field" style="margin-bottom:8px;"><label>Title</label><input type="text" id="daManualTitle" placeholder="e.g. Birth of Joseph Marsh"></div>
+            <div class="detail-field" style="margin-bottom:8px;"><label>Date (if known)</label><input type="text" id="daManualDate" placeholder="1912-03-15"></div>
+            <div class="detail-field" style="margin-bottom:8px;"><label>Source / Location</label><input type="text" id="daManualSource" placeholder="e.g. GRO Dublin"></div>
+            <div class="detail-field" style="margin-bottom:8px;"><label>Details / Transcription</label><textarea id="daManualDetails" placeholder="Enter any details, transcription, or notes..." style="min-height:60px;"></textarea></div>
+            <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px;font-size:12px;color:#6b5537;">
+              <input type="checkbox" id="daManualUpdateFields"><label for="daManualUpdateFields" style="display:inline;font-size:12px;text-transform:none;font-weight:400;margin-bottom:0;">Update person card fields from this data</label>
+            </div>
+            <div style="display:flex;gap:8px;"><button class="cancel-btn" id="daManualCancel" type="button" style="flex:1;">Cancel</button><button class="save-btn" id="daManualSave" type="button" style="flex:1;">Save Document</button></div>
+          </div>
+        </div>
       </div>
-    </div>
-    <div class="detail-field"><label>Find Source Records</label>
-      <div id="sourceCountryGrid" style="display:flex;flex-wrap:wrap;gap:6px;">
-        ${buildCountryButtons()}
+    </details>
+    <details class="acc">
+      <summary>Research — notes · siblings · sources</summary>
+      <div class="acc-body">
+        <div class="detail-field"><label>Notes</label><textarea id="d_notes">${escapeHtml(person.notes)}</textarea></div>
+        <div class="detail-field"><label>Siblings</label>
+          <div style="display:flex;gap:6px;margin-bottom:4px;">
+            <input type="text" id="d_siblingInput" placeholder="Sibling name" style="flex:1;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:14px;">
+            <button id="d_addSibling" style="background:#4a6b4a;color:#fff;border:none;padding:8px 14px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;">+</button>
+          </div>
+          <div id="d_siblingList" style="display:flex;flex-direction:column;gap:4px;"></div>
+        </div>
+        <div class="detail-field"><label>Find Source Records</label>
+          <div id="sourceCountryGrid" style="display:flex;flex-wrap:wrap;gap:6px;">
+            ${buildCountryButtons()}
+          </div>
+          <div id="sourceRecordLinks" style="display:none;margin-top:6px;flex-wrap:wrap;gap:6px;"></div>
+        </div>
       </div>
-      <div id="sourceRecordLinks" style="display:none;margin-top:6px;flex-wrap:wrap;gap:6px;"></div>
-    </div>
-    <div class="detail-field"><label>Siblings</label>
-      <div style="display:flex;gap:6px;margin-bottom:4px;">
-        <input type="text" id="d_siblingInput" placeholder="Sibling name" style="flex:1;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:14px;">
-        <button id="d_addSibling" style="background:#4a6b4a;color:#fff;border:none;padding:8px 14px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;">+</button>
-      </div>
-      <div id="d_siblingList" style="display:flex;flex-direction:column;gap:4px;"></div>
-    </div>
+    </details>
     ${(!person.parents || person.parents.length < 2) ? `
     <div class="detail-field">
       <button id="addParentsBtn" style="background:#faf6ee;border:2px solid #8a7a5a;color:#4a3a22;padding:8px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">➕ Add Parents</button>
@@ -5055,6 +5215,53 @@ document.getElementById('guidancePanel').addEventListener('click', (e) => {
   if (e.target === document.getElementById('guidancePanel')) closeGuidancePanel();
 });
 
+// ─── Toolbar dropdown menus ───
+(function() {
+  const treeMenuBtn = document.getElementById('treeMenuBtn');
+  const treeMenu = document.getElementById('treeMenu');
+  const moreMenuBtn = document.getElementById('moreMenuBtn');
+  const moreMenu = document.getElementById('moreMenu');
+
+  function toggleMenu(menu, btn) {
+    // Close the other menu
+    const other = menu === treeMenu ? moreMenu : treeMenu;
+    other.classList.remove('open');
+    menu.classList.toggle('open');
+  }
+
+  if (treeMenuBtn) treeMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(treeMenu, treeMenuBtn); });
+  if (moreMenuBtn) moreMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(moreMenu, moreMenuBtn); });
+
+  // Close menus on outside click
+  document.addEventListener('click', (e) => {
+    if (!treeMenu?.contains(e.target) && e.target !== treeMenuBtn) treeMenu?.classList.remove('open');
+    if (!moreMenu?.contains(e.target) && e.target !== moreMenuBtn) moreMenu?.classList.remove('open');
+  });
+
+  // Close menu when any menu item is clicked
+  [treeMenu, moreMenu].forEach(menu => {
+    if (!menu) return;
+    menu.addEventListener('click', () => menu.classList.remove('open'));
+  });
+
+  // Dark mode toggle from menu item
+  const darkModeLi = document.getElementById('darkModeToggleLi');
+  if (darkModeLi) darkModeLi.addEventListener('click', toggleDarkMode);
+})();
+
+// Certainty legend toggle
+(function() {
+  const legend = document.getElementById('certaintyLegend');
+  const toggle = document.getElementById('toggleLegend');
+  if (!legend || !toggle) return;
+  toggle.addEventListener('click', () => {
+    const items = legend.querySelectorAll('.legend-item');
+    const hidden = items[0].style.display === 'none';
+    items.forEach(item => item.style.display = hidden ? 'flex' : 'none');
+    toggle.textContent = hidden ? 'Hide' : 'Show';
+  });
+})();
+
 
 // (Duplicate auto-save interval removed — see single interval above, BUG-13 fix)
 async function autoRestore() {
@@ -5379,6 +5586,22 @@ function backfillComputedFields() {
   updateTreeManagerUI();
   // Ensure Reveal Next Generation button is visible after init
   updateExpandGenBtn();
+  // First-run coachmark — show once, point at the You card
+  if (!localStorage.getItem('vaultedRootsCoachmarkSeen')) {
+    setTimeout(() => {
+      const youEl = document.querySelector('.person-card.you');
+      if (!youEl) return;
+      const rect = youEl.getBoundingClientRect();
+      const cm = document.createElement('div');
+      cm.className = 'coachmark';
+      cm.style.left = (rect.right + 8) + 'px';
+      cm.style.top = (rect.top + 10) + 'px';
+      cm.innerHTML = '🌱 <b>Start with yourself.</b> Then add your parents — certificates can fill the rest automatically. <button class="close-cm" onclick="this.parentElement.remove();localStorage.setItem(\'vaultedRootsCoachmarkSeen\',\'1\')">×</button>';
+      document.body.appendChild(cm);
+      // Auto-dismiss after 10s
+      setTimeout(() => { if (cm.parentElement) { cm.remove(); localStorage.setItem('vaultedRootsCoachmarkSeen', '1'); } }, 10000);
+    }, 500);
+  }
 })();
 
 // Country init
@@ -6496,11 +6719,17 @@ setTimeout(updateOfflineBadge, 100);
 <div id="memberModal">
   <div class="member-modal-box">
     <div class="member-icon" id="memberModalIcon">⭐</div>
-    <div class="member-title">Members Feature</div>
+    <div class="member-title">A members feature — free for now</div>
     <div class="member-price" id="memberModalFeature">This feature is available to Vaulted Roots members.<br>It's free during early access while we build the community.</div>
-    <button class="member-continue-btn" onclick="closeMemberModal()">Continue (Free for now)</button>
-    <button class="member-join-btn" onclick="closeMemberModal()">Become a Member</button>
-    <div class="member-early-note">No signup required during early access.</div>
+    <button class="member-continue-btn" onclick="closeMemberModal()">Use it free →</button>
+    <div style="margin-top:12px;padding-top:12px;border-top:1px solid #d8c9a8;">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#6b5537;margin-bottom:6px;">🔔 Be first to know when founding spots open ($19.99, first 100):</div>
+      <div style="display:flex;gap:6px;">
+        <input type="email" id="foundingEmail" placeholder="you@example.com" style="flex:1;padding:8px 10px;border:1px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:13px;color:#2a1f10;box-sizing:border-box;">
+        <button class="member-join-btn" onclick="notifyMeFounding()" style="white-space:nowrap;">Notify me</button>
+      </div>
+      <div class="member-early-note">No account needed. We'll only email once.</div>
+    </div>
   </div>
 </div>
 
@@ -6545,7 +6774,7 @@ function checkMemberFeature(featureKey, callback) {
 
     document.getElementById('memberModalIcon').textContent = feat.icon;
     document.getElementById('memberModalFeature').innerHTML =
-      '<strong>' + escapeHtml(feat.label) + '</strong> is available to Vaulted Roots members.<br>It\'s free during early access while we build the community.';
+      '<strong>' + escapeHtml(feat.label) + '</strong> will be part of Vaulted Roots membership: <strong>one payment, yours for life.</strong> Early access is free while we build.';
     document.getElementById('memberModal').classList.add('active');
   } else {
     // Already seen — just run the callback
@@ -6555,6 +6784,51 @@ function checkMemberFeature(featureKey, callback) {
 
 function closeMemberModal() {
   document.getElementById('memberModal').classList.remove('active');
+  if (_memberCallback) {
+    const cb = _memberCallback;
+    _memberCallback = null;
+    cb();
+  }
+}
+
+async function notifyMeFounding() {
+  const emailInput = document.getElementById('foundingEmail');
+  const email = emailInput ? emailInput.value.trim() : '';
+
+  if (!email || !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) {
+    showToast('Please enter a valid email address');
+    if (emailInput) emailInput.focus();
+    return;
+  }
+
+  // GA4 event — count intent even if Formspree fails
+  if (typeof gtag === 'function') {
+    gtag('event', 'founding_intent', {
+      event_category: 'membership',
+      event_label: 'founding_spots_notify'
+    });
+  }
+
+  // POST to Formspree (same endpoint as feedback, different _subject)
+  try {
+    await fetch('https://formspree.io/f/xaqglnpa', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+      body: JSON.stringify({
+        email: email,
+        _subject: 'VR Founding Member Intent',
+        message: 'User wants to be notified when founding member spots open ($19.99, first 100).',
+        source: 'member_popup'
+      })
+    });
+  } catch (e) {
+    // Non-blocking — user still gets the feature
+    console.warn('[VR] Formspree submit failed:', e);
+  }
+
+  localStorage.setItem('vr_founding_notify', '1');
+  document.getElementById('memberModal').classList.remove('active');
+  showToast("You're on the list! We'll email you when founding spots open.");
   if (_memberCallback) {
     const cb = _memberCallback;
     _memberCallback = null;
