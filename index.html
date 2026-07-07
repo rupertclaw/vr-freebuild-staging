@@ -904,15 +904,16 @@ details.acc .acc-body { padding: 6px 12px; }
       <!-- Tree menu -->
       <button class="tb-btn" id="treeMenuBtn" title="Tree options">🌳 <span>Tree</span> ▾</button>
       <div class="tb-menu" id="treeMenu">
-        <div class="tb-menu-item" id="treeManagerToggle" onclick="checkMemberFeature('multiple_trees', toggleTreeManager)"><span class="icon">🌳</span> My Trees <span class="m">M</span></div>
-        <div class="tb-menu-item" onclick="document.getElementById('familySheetBtn').click()"><span class="icon">📋</span> Family Sheets</div>
-        <div class="tb-menu-item" id="viewPosterBtn" onclick="checkMemberFeature('heritage_poster', openPoster)"><span class="icon">🖼️</span> Heritage Poster <span class="m">M</span></div>
-        <div class="tb-menu-item" id="printTreeBtn" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree <span class="m">M</span></div>
+        <div class="tb-menu-item" id="treeManagerToggle" onclick="checkMemberFeature('multiple_trees', toggleTreeManager)"><span class="icon">🌳</span> My Trees</div>
+        <div class="tb-menu-item" id="familySheetMenuItem" onclick="checkMemberFeature('family_sheets', function(){document.getElementById('familySheetBtn').click()})"><span class="icon">📋</span> Family Sheets</div>
+        <div class="tb-menu-item" id="viewPosterBtn" onclick="checkMemberFeature('heritage_poster', openPoster)"><span class="icon">🖼️</span> Heritage Poster</div>
+        <div class="tb-menu-item" id="printTreeBtn" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree</div>
+        <div class="tb-menu-item" id="gedcomToggle" onclick="document.getElementById('importBody').style.display=document.getElementById('importBody').style.display==='none'?'block':'none';closeAllMenus()"><span class="icon">🔄</span> Import & Export GEDCOM</div>
       </div>
       <!-- More menu -->
       <button class="tb-btn" id="moreMenuBtn" title="More options">⋯ <span>More</span> ▾</button>
       <div class="tb-menu" id="moreMenu">
-        <div class="tb-menu-item" id="shareBtn" onclick="checkMemberFeature('share_tree', shareTree)"><span class="icon">📤</span> Share Tree <span class="m">M</span></div>
+        <div class="tb-menu-item" id="shareBtn" onclick="checkMemberFeature('share_tree', shareTree)"><span class="icon">📤</span> Share Tree</div>
         <div class="tb-menu-item" id="loadBtn"><span class="icon">📂</span> Load Backup</div>
         <div class="tb-menu-item" id="darkModeToggleLi"><span class="icon" id="darkModeToggle">🌙</span> Dark Mode</div>
         <div class="tb-menu-item" id="privacyBtn" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
@@ -6773,6 +6774,7 @@ const MEMBER_FEATURES = {
   'heritage_poster':     { label: 'Heritage Poster', icon: '🖼️' },
   'gedcom':              { label: 'GEDCOM Import/Export', icon: '🔄' },
   'multiple_trees':      { label: 'Multiple Trees', icon: '🌳' },
+  'family_sheets':       { label: 'Family Sheets', icon: '📋' },
   'share_tree':          { label: 'Share Tree', icon: '📤' },
   'print':               { label: 'Print Tree', icon: '🖨️' },
   'guidance_suggestions':{ label: 'Research Suggestions', icon: '🧭' },
@@ -6823,14 +6825,16 @@ function closeMemberModal() {
 
 
 
-// Add MEMBER badges to toolbar buttons
+// Add MEMBER badges to toolbar buttons and menu items
 (function addMemberBadges() {
   var badgeMap = {
-    'shareBtn': 'share_tree',
-    'treeManagerToggle': 'multiple_trees',
-    'viewPosterBtn': 'heritage_poster',
     'certToggle': 'cert_scanning',
-    'printTreeBtn': 'print'
+    'treeManagerToggle': 'multiple_trees',
+    'familySheetMenuItem': 'family_sheets',
+    'viewPosterBtn': 'heritage_poster',
+    'printTreeBtn': 'print',
+    'gedcomToggle': 'gedcom',
+    'shareBtn': 'share_tree'
   };
   Object.keys(badgeMap).forEach(function(btnId) {
     var btn = document.getElementById(btnId);
