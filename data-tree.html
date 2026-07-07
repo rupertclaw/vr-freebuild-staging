@@ -1298,7 +1298,8 @@ function createPerson(id, gen, name, years, status, opts) {
     docs: opts.docs || [],
     siblings: opts.siblings || [],
     notes: opts.notes || '',
-    source: opts.source || ''
+    source: opts.source || '',
+    sex: opts.sex || ''
   };
 }
 
@@ -1493,6 +1494,10 @@ async function deleteTreeData(treeId) {
 }
 
 async function createTree(name) {
+  // BUG-17 fix: save outgoing tree before wiping in-memory data
+  if (currentTreeId) {
+    await saveTreeData(currentTreeId, { people, nextId, visibleMaxGen });
+  }
   const treeId = 'tree_' + Date.now();
   initDefaultData(); // resets people, nextId to fresh 511 nodes
   visibleMaxGen = 4;
@@ -1556,23 +1561,18 @@ async function deleteTree(treeId) {
   if (!confirm('Delete this tree permanently? All people and documents will be removed.')) return;
   await deleteTreeData(treeId);
   await deleteTreeMeta(treeId);
-  // Also delete scoped docs
+  // Also delete scoped docs — BUG-18 fix: do all deletes in same transaction tick
   if (_docDB) {
     const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
     const store = tx.objectStore(DOC_STORE_NAME);
     const idx = store.index('treeId');
-    const allDocs = await new Promise((resolve, reject) => {
-      const req = idx.getAll(treeId);
-      req.onsuccess = () => resolve(req.result || []);
-      req.onerror = () => reject(req.error);
+    idx.getAll(treeId).onsuccess = (e) => {
+      e.target.result.forEach((doc) => store.delete(doc.id));
+    };
+    await new Promise((res, rej) => {
+      tx.oncomplete = res;
+      tx.onerror = () => rej(tx.error);
     });
-    for (const doc of allDocs) {
-      await new Promise((resolve, reject) => {
-        const req = store.delete(doc.id);
-        req.onsuccess = () => resolve();
-        req.onerror = () => reject(req.error);
-      });
-    }
   }
   treesList = await loadAllTreeMetas();
   if (currentTreeId === treeId) {
@@ -1631,18 +1631,27 @@ function updateTreeManagerUI() {
   const title = document.getElementById('treeTitle');
   if (title) {
     const activeTree = treesList.find(t => t.id === currentTreeId);
-    title.textContent = activeTree ? escapeHtml(activeTree.name) : '';
+    title.textContent = activeTree ? activeTree.name : '';
   }
   const banner = document.getElementById('treeNameBanner');
   if (banner) {
     const activeTree = treesList.find(t => t.id === currentTreeId);
-    banner.textContent = activeTree ? escapeHtml(activeTree.name) : 'Your legacy. Secure.';
+    banner.textContent = activeTree ? activeTree.name : 'Your legacy. Secure.';
   }
 }
 
 function escapeHtml(s) {
   if (!s) return '';
-  return s.replace(/[<>&"]/g, c => ({'<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'}[c]));
+  return s.replace(/[<>&\"]/g, c => ({'<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'}[c]));
+}
+
+// Normalise document type codes — stored as 'bc'/'mc'/'dc' but some code uses long-form
+function docCode(t) {
+  t = (t || '').toLowerCase();
+  if (t === 'birth') return 'bc';
+  if (t === 'marriage') return 'mc';
+  if (t === 'death') return 'dc';
+  return t; // already 'bc'/'mc'/'dc'/'photo'/...
 }
 
 function openTreeManager() {
@@ -1924,7 +1933,8 @@ function navigateFamily(direction) {
   loadFamilySheet(familySheetList[familySheetIndex].id);
 }
 
-// ─── Auto-save to IndexedDB every 30s (replacing localStorage) ───
+// ─── Auto-save to IndexedDB every 30s ───
+// (Single interval — BUG-13 fix: was duplicated, causing double I/O)
 setInterval(async () => {
   if (currentTreeId) await saveCurrentTreeToDB();
 }, 30000);
@@ -1941,6 +1951,7 @@ let cardEls = new Map();
 
 let treeWidth = 0, treeHeight = 0;
 let zoom = 0.35;
+let homeZoom = 0.35; // updated by init() — BUG-20: zoomReset uses this instead of hardcoded value
 
 function colLeftForGen(g, maxGen, bigTree) {
   let pos = 40;
@@ -2286,7 +2297,7 @@ function setZoom(z) {
 }
 document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.2));
 document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
-document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.35));
+document.getElementById('zoomReset').addEventListener('click', () => { setZoom(homeZoom); centerOnGen0(); });
 
 // Auto-fit zoom to fill available vertical space on desktop
 function fitZoomToViewport() {
@@ -2376,20 +2387,21 @@ const detailTitle = document.getElementById('detailTitle');
 
 function openDetail(person) {
   selectedPersonId = person.id;
-  history.pushState({panel: 'detail'}, '');
+  if (!history.state || history.state.panel !== 'detail') history.pushState({panel: 'detail'}, '');
+  detailPanel.classList.add('active');
   detailTitle.textContent = (person.maidenName ? person.name.replace(person.name.split(/\s+/).pop(), person.maidenName) : person.name);
   detailBody.innerHTML = `
-    <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${person.fullName || person.name}"></div>
-    <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${person.name}"></div>
-    <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${person.birthDate}"></div>
-    <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${person.deathDate || ''}"></div>
-    <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${person.ageAtDeath || ''}"></div>
-    <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${person.marriageDate || ''}"></div>
-    <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${person.maidenName}"></div>
-    <div class="detail-field"><label>Married Name</label><input type="text" id="d_marriedName" value="${person.marriedName || ''}"></div>
-    <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${person.spouseName}"></div>
-    <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${person.occupation}"></div>
-    <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${person.birthplace}"></div>
+    <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${escapeHtml(person.fullName || person.name)}"></div>
+    <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${escapeHtml(person.name)}"></div>
+    <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${escapeHtml(person.birthDate)}"></div>
+    <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${escapeHtml(person.deathDate || '')}"></div>
+    <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${escapeHtml(person.ageAtDeath || '')}"></div>
+    <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${escapeHtml(person.marriageDate || '')}"></div>
+    <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${escapeHtml(person.maidenName)}"></div>
+    <div class="detail-field"><label>Married Name</label><input type="text" id="d_marriedName" value="${escapeHtml(person.marriedName || '')}"></div>
+    <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${escapeHtml(person.spouseName)}"></div>
+    <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${escapeHtml(person.occupation)}"></div>
+    <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${escapeHtml(person.birthplace)}"></div>
     <div class="detail-field"><label>Status</label>
       <select id="d_status" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:13px;">
         <option value="confirmed" ${person.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
@@ -2399,7 +2411,7 @@ function openDetail(person) {
         <option value="you" ${person.status === 'you' ? 'selected' : ''}>You</option>
       </select>
     </div>
-    <div class="detail-field"><label>Notes</label><textarea id="d_notes">${person.notes}</textarea></div>
+    <div class="detail-field"><label>Notes</label><textarea id="d_notes">${escapeHtml(person.notes)}</textarea></div>
     <div class="detail-field"><label>Documents (<span id="docCount">${person.docs.length}</span>)</label>
       <div id="docThumbs" class="doc-gallery">${person.docs.length ? '<em style="font-size:12px;color:#6b5537;">Loading...</em>' : '<em style="font-size:12px;color:#6b5537;">No documents</em>'}</div>
     </div>
@@ -2539,46 +2551,50 @@ function openDetail(person) {
       container.dataset.activeCountry = code;
     });
   });
-  // Wire up siblings UI inside openDetail
+  // Wire up siblings UI inside openDetail — use a DRAFT copy so Cancel works
+  let draftSiblings = [...(person.siblings || [])];
   const siblingList = document.getElementById('d_siblingList');
   const siblingInput = document.getElementById('d_siblingInput');
   const addSiblingBtn = document.getElementById('d_addSibling');
   function renderSiblingList() {
     if (!siblingList) return;
     siblingList.innerHTML = '';
-    (person.siblings || []).forEach((name, idx) => {
+    draftSiblings.forEach((name, idx) => {
       const row = document.createElement('div');
       row.style.cssText = 'display:flex;justify-content:space-between;align-items:center;padding:4px 6px;background:rgba(250,244,230,0.7);border:1px solid rgba(138,122,90,0.3);border-radius:4px;';
-      row.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:13px;color:#3e2b1a;">' + escapeHtml(name) + '</span><button style="background:none;border:none;color:#8a3a3a;cursor:pointer;font-size:16px;line-height:1;" onclick="removeSibling(' + idx + ')">×</button>';
+      row.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:13px;color:#3e2b1a;">' + escapeHtml(name) + '</span><button style="background:none;border:none;color:#8a3a3a;cursor:pointer;font-size:16px;line-height:1;" data-sib-idx="' + idx + '">×</button>';
       siblingList.appendChild(row);
     });
+    // Wire remove buttons
+    siblingList.querySelectorAll('button[data-sib-idx]').forEach(btn => {
+      btn.addEventListener('click', () => {
+        const idx = parseInt(btn.dataset.sibIdx);
+        draftSiblings.splice(idx, 1);
+        renderSiblingList();
+      });
+    });
   }
-  window.removeSibling = function(idx) {
-    person.siblings.splice(idx, 1);
-    renderSiblingList();
-  };
   if (addSiblingBtn) {
     addSiblingBtn.addEventListener('click', () => {
       const val = (siblingInput?.value || '').trim();
       if (!val) return;
-      if (!person.siblings) person.siblings = [];
-      person.siblings.push(val);
+      draftSiblings.push(val);
       if (siblingInput) siblingInput.value = '';
       renderSiblingList();
     });
   }
   renderSiblingList();
+  // Expose draft for saveDetail to pick up
+  person._draftSiblings = draftSiblings;
 
   // Load document gallery
   (async function() { await refreshDocGallery(person); })();
 }
-function closeDetail() {
-  if (detailPanel.classList.contains('active')) {
-    history.back();
-  }
+function closeDetail(fromPopstate) {
   detailPanel.classList.remove('active');
   selectedPersonId = null;
   updateExpandGenBtn();
+  if (!fromPopstate && history.state && history.state.panel === 'detail') history.back();
 }
 function updateExpandGenBtn() {
   const btn = document.getElementById('expandGenBtn');
@@ -2651,7 +2667,11 @@ function saveDetail() {
   person.birthplace = document.getElementById('d_birthplace').value;
   person.status = document.getElementById('d_status').value;
   person.notes = document.getElementById('d_notes').value;
-  // Siblings are already updated live in the UI, just read the array from the person object
+  // Apply draft siblings (BUG-10: siblings no longer mutate until Save)
+  if (person._draftSiblings) {
+    person.siblings = person._draftSiblings.slice();
+    delete person._draftSiblings;
+  }
   renderTree(); closeDetail(); showToast('Saved: ' + person.name);
 }
 document.getElementById('detailClose').addEventListener('click', closeDetail);
@@ -2662,7 +2682,7 @@ function toggleCertPanel() {
   certPanel.classList.toggle('active');
   if (isOpening) {
     clearCertPanel();
-    history.pushState({panel: 'cert'}, '');
+    if (!history.state || history.state.panel !== 'cert') history.pushState({panel: 'cert'}, '');
   }
   updateExpandGenBtn();
 }
@@ -2672,7 +2692,7 @@ document.getElementById('certClose').addEventListener('click', () => {
   pendingDirectAttachId = null;
   const headerTitle = certPanel.querySelector('.cert-header div');
   if (headerTitle) headerTitle.textContent = '📄 Scan Certificate';
-  history.back();
+  if (history.state && history.state.panel === 'cert') history.back();
   updateExpandGenBtn();
 });
 document.getElementById('certFileBtn')?.addEventListener('click', () => document.getElementById('certFileInput').click());
@@ -3749,9 +3769,10 @@ function escapeHtml(text) {
   return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
+// Single canonical extractYear — word-boundary, century-agnostic (BUG-11 fix)
 function extractYear(str) {
   if (!str) return null;
-  const m = String(str).match(/(\d{4})/);
+  const m = String(str).match(/\b(\d{4})\b/);
   return m ? parseInt(m[1]) : null;
 }
 
@@ -4345,14 +4366,15 @@ document.getElementById('certRetry').addEventListener('click', () => {
 function openGuidancePanel() {
   const panel = document.getElementById('guidancePanel');
   panel.classList.add('active');
-  history.pushState({panel: 'guidance'}, '');
+  if (!history.state || history.state.panel !== 'guidance') history.pushState({panel: 'guidance'}, '');
   runGuidanceAnalysis();
   updateExpandGenBtn();
 }
 
-function closeGuidancePanel() {
+function closeGuidancePanel(fromPopstate) {
   document.getElementById('guidancePanel').classList.remove('active');
   updateExpandGenBtn();
+  if (!fromPopstate && history.state && history.state.panel === 'guidance') history.back();
 }
 
 function runGuidanceAnalysis() {
@@ -4374,11 +4396,7 @@ function countEmptyParentSlots(p) {
   return count;
 }
 
-function extractYear(dateStr) {
-  if (!dateStr) return null;
-  const m = String(dateStr).match(/\b(17|18|19|20)\d{2}\b/);
-  return m ? parseInt(m[0]) : null;
-}
+// (Duplicate extractYear removed — see canonical version above, BUG-11 fix)
 
 function buildFillsList(type, p, spouse) {
   const fills = [];
@@ -4439,9 +4457,9 @@ function buildGuidanceSuggestions() {
     if (p.status === 'brickwall') brickWalls++;
     if (p.docs) {
       for (const d of p.docs) {
-        if (d.type === 'birth') bcDocs++;
-        else if (d.type === 'marriage') mcDocs++;
-        else if (d.type === 'death') dcDocs++;
+        if (docCode(d.type) === 'bc') bcDocs++;
+        else if (docCode(d.type) === 'mc') mcDocs++;
+        else if (docCode(d.type) === 'dc') dcDocs++;
       }
     }
   }
@@ -4458,8 +4476,8 @@ function buildGuidanceSuggestions() {
     // Skip suggestions for blank/unfilled couples
     if (isEffectivelyBlank(p.name) || isEffectivelyBlank(spouse.name)) continue;
 
-    const pHasMC = p.docs && p.docs.some(d => d.type === 'marriage');
-    const sHasMC = spouse.docs && spouse.docs.some(d => d.type === 'marriage');
+    const pHasMC = p.docs && p.docs.some(d => docCode(d.type) === 'mc');
+    const sHasMC = spouse.docs && spouse.docs.some(d => docCode(d.type) === 'mc');
     const pMissing = countEmptyParentSlots(p);
     const sMissing = countEmptyParentSlots(spouse);
     const totalMissing = pMissing + sMissing;
@@ -4484,7 +4502,7 @@ function buildGuidanceSuggestions() {
     if (isEffectivelyBlank(p.name)) continue;
     const missing = countEmptyParentSlots(p);
     if (missing === 0) continue;
-    const hasDC = p.docs && p.docs.some(d => d.type === 'death');
+    const hasDC = p.docs && p.docs.some(d => docCode(d.type) === 'dc');
     if (p.gen > 2 && !hasDC) {
       const deathYear = extractYear(p.deathDate);
       suggestions.push({
@@ -4503,7 +4521,7 @@ function buildGuidanceSuggestions() {
   for (const p of people) {
     if (p.status === 'blank' || p.status === 'you') continue;
     if (isEffectivelyBlank(p.name)) continue;
-    const hasBC = p.docs && p.docs.some(d => d.type === 'birth');
+    const hasBC = p.docs && p.docs.some(d => docCode(d.type) === 'bc');
     if (hasBC) continue;
     const missing = countEmptyParentSlots(p);
     const birthYear = extractYear(p.birthDate);
@@ -4550,15 +4568,15 @@ function renderOnboardingGuide() {
   </button>
   <div id="onboardingBody" style="display:none;padding:0 12px 12px;font-size:12px;color:#3e2b1a;line-height:1.6;">
     <ol style="margin:0;padding-left:18px;">
-      <li><strong>Start with yourself.</strong> Tap the rightmost card (top of the tree), enter your name and birth date, set status to "You".</li>
-      <li><strong>Add your parents.</strong> Tap the two cards to the left of yours (Generation 1). Fill in father and mother. The tree holds 9 generations total.</li>
+      <li><strong>Start with yourself.</strong> Tap the leftmost card (you, at the start of the tree), enter your name and birth date, set status to "You".</li>
+      <li><strong>Add your parents.</strong> Tap the two cards to the right of yours (Generation 1). Fill in father and mother. The tree holds 9 generations total.</li>
       <li><strong>Scan certificates for speed.</strong> Use the 📄 Scan panel (top toolbar). Choose Venice (100% private, best for printed text) or Gemini (more accurate, including handwriting). Copy the prompt, upload your cert on the AI site, then paste the JSON result to autofill cards.</li>
       <li><strong>Or fill manually.</strong> Tap any card to open the detail panel. Add names, dates, maiden names, occupation, and change status (Confirmed, Probable, Brick Wall, Unknown Parent).</li>
-      <li><strong>Attach documents.</strong> In a person's detail panel, tap "Attach Document" to link a certificate image directly to that person.</li>
+      <li><strong>Attach documents.</strong> In a person's detail panel, tap "Add Document" to link a certificate image directly to that person.</li>
       <li><strong>Track siblings.</strong> In the detail panel, add brothers and sisters under the Siblings section. A 🍃 leaf appears on cards with siblings recorded.</li>
       <li><strong>Save your work.</strong> Tap 💾 to export a <code>.familytree</code> backup. Load it later with 📂, or send it to someone else.</li>
       <li><strong>Get suggestions.</strong> This panel shows which certificates to find next, with direct links to source records and cost estimates.</li>
-      <li><strong>Zoom and pan.</strong> Pinch to zoom in/out on the tree. Drag to scroll. Use the zoom controls (top right) for precise adjustment.</li>
+      <li><strong>Zoom and pan.</strong> Pinch to zoom in/out on the tree. Drag to scroll. Use the zoom controls (top left) for precise adjustment.</li>
     </ol>
   </div>
 </div>
@@ -5036,10 +5054,7 @@ document.getElementById('guidancePanel').addEventListener('click', (e) => {
 });
 
 
-// ─── Auto-save to IndexedDB every 30s (replacing localStorage) ───
-setInterval(async () => {
-  if (currentTreeId) await saveCurrentTreeToDB();
-}, 30000);
+// (Duplicate auto-save interval removed — see single interval above, BUG-13 fix)
 async function autoRestore() {
   // First try IndexedDB multi-tree store
   treesList = await loadAllTreeMetas();
@@ -5299,8 +5314,10 @@ function backfillComputedFields() {
     zoom = 1;
     renderTree();
     fitZoomToViewport();
+    homeZoom = zoom;
   } else {
     zoom = 0.45; // mobile default — enough to read names without crowding
+    homeZoom = zoom;
     renderTree();
   }
   document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
@@ -5336,19 +5353,23 @@ function backfillComputedFields() {
     attachAmbigCancelListener();
   }
 
-  // Mobile back button closes panels
+  // Mobile back button closes panels (BUG-16: pass fromPopstate=true to avoid extra history.back())
   window.addEventListener('popstate', (e) => {
-    if (!e.state || !e.state.panel) return;
-    if (e.state.panel === 'detail' && detailPanel.classList.contains('active')) {
-      detailPanel.classList.remove('active');
-      selectedPersonId = null;
-    }
-    if (e.state.panel === 'cert' && certPanel.classList.contains('active')) {
-      certPanel.classList.remove('active');
-      certPanel.classList.remove('has-results');
-    }
-    if (e.state.panel === 'guidance' && guidancePanel.classList.contains('active')) {
-      guidancePanel.classList.remove('active');
+    if (e.state && e.state.panel) {
+      if (e.state.panel === 'detail') closeDetail(true);
+      if (e.state.panel === 'cert') {
+        certPanel.classList.remove('active');
+        certPanel.classList.remove('has-results');
+      }
+      if (e.state.panel === 'guidance') closeGuidancePanel(true);
+    } else {
+      // No panel state — close any open panel
+      if (detailPanel.classList.contains('active')) closeDetail(true);
+      if (certPanel.classList.contains('active')) {
+        certPanel.classList.remove('active');
+        certPanel.classList.remove('has-results');
+      }
+      if (guidancePanel.classList.contains('active')) closeGuidancePanel(true);
     }
   });
 
@@ -6078,16 +6099,10 @@ if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
 }
 
 // Share tree functionality
-function shareTree() {
-  const payload = { version: 5, exportedAt: new Date().toISOString(), people: people, nextId: nextId, visibleMaxGen: visibleMaxGen };
-  const json = JSON.stringify(payload, null, 2);
-  const blob = new Blob([json], { type: 'application/json' });
-  const url = URL.createObjectURL(blob);
-  const a = document.createElement('a');
-  a.href = url;
-  a.download = 'vaultedroots_tree_' + new Date().toISOString().slice(0, 10) + '.familytree';
-  a.click();
-  URL.revokeObjectURL(url);
+// Share tree — same as saveSession (inlines images so recipient gets everything)
+// BUG-14 fix: previously exported docId references without images, leaving dangling docs
+async function shareTree() {
+  await saveSession();
   showToast('Tree file ready to share');
 }
 

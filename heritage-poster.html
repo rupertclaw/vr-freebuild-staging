@@ -1797,6 +1797,27 @@ const loadSessionBtn = document.getElementById('loadSessionBtn');
 const sessionFileInput = document.getElementById('sessionFileInput');
 
 async function exportSession() {
+  // BUG-21 fix: in data-tree mode, export the canonical {people} format
+  // so the main app's loadSession can read it.
+  if (typeof dtModeActive !== 'undefined' && dtModeActive && typeof dtPeopleMap !== 'undefined' && dtPeopleMap && dtPeopleMap.size > 0) {
+    const peopleArr = Array.from(dtPeopleMap.values());
+    const payload = {
+      version: 5,
+      exportedAt: new Date().toISOString(),
+      people: peopleArr,
+      nextId: peopleArr.reduce((mx, p) => Math.max(mx, p.id || 0), 0) + 1,
+      visibleMaxGen: typeof visibleMaxGen !== 'undefined' ? visibleMaxGen : 8
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
+    a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+  // Poster-native format (for standalone poster saves)
   const payload = {
     version: 1,
     exportedAt: new Date().toISOString(),
