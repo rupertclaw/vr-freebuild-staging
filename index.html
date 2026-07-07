@@ -2090,9 +2090,7 @@ let zoom = 0.35;
 let homeZoom = 0.35; // updated by init() — BUG-20: zoomReset uses this instead of hardcoded value
 
 function colLeftForGen(g, maxGen, bigTree) {
-  // Shift all cards 1 full card width to the right so left edge has breathing room
-  let pos = 40 + CARD_W;
-  // For very wide trees (many roots or many people), add extra breathing room
+  let pos = 40;
   const extraGap = bigTree ? 20 : 0;
   for (let i = 0; i < g; i++) {
     const isMini = (i === maxGen && maxGen >= 5);
@@ -2186,8 +2184,9 @@ function renderTree() {
     }
 
     el.innerHTML = h;
-    // Whole tree shifted right via colLeftForGen; gen-0 no longer gets extra offset
-    el.style.left = colLeft[person.gen] + 'px';
+    // Gen 0 shifted 3/4 card width to the right
+    const gen0Offset = person.gen === 0 ? Math.round(CARD_W * 0.75) : 0;
+    el.style.left = (colLeft[person.gen] + gen0Offset) + 'px';
     el.style.top = '0px';
     el.style.opacity = '0';
     if (isMini) {
