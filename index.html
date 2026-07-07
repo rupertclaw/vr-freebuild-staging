@@ -21,13 +21,18 @@
 <meta property="og:image" content="https://vaultedroots.com/vaulted-roots-shield.png">
 <meta property="og:site_name" content="Vaulted Roots">
 
-<!-- Google Analytics 4 -->
+<!-- Google Analytics 4 — cookieless mode -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MFQ3DV323Y"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-MFQ3DV323Y');
+  gtag('config', 'G-MFQ3DV323Y', {
+    client_storage: 'none',
+    anonymize_ip: true,
+    allow_google_signals: false,
+    allow_ad_personalization_signals: false
+  });
 </script>
 
 <link rel="manifest" href="./manifest.json">
@@ -1112,7 +1117,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">🚫</div>
-        <div><strong>No tracking.</strong> No cookies, no ads. We use Google Analytics anonymously to understand site usage — we don't know who you are.</div>
+        <div><strong>No cookies, no ads.</strong> We measure anonymous page visits with cookieless Google Analytics. Your tree data never leaves your device.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">📤</div>
@@ -1919,6 +1924,7 @@ setInterval(async () => {
   if (currentTreeId) await saveCurrentTreeToDB();
 }, 30000);
 const CARD_W = 130, GAP_Y = 3;
+const GEN_X_GAP = 55;
 const MINI_W = 100, MINI_H = 14;
 let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
 
@@ -1932,31 +1938,12 @@ let treeWidth = 0, treeHeight = 0;
 let zoom = 0.25;
 
 function colLeftForGen(g, maxGen, bigTree) {
-  // For small/demo trees, keep the original compact layout
-  if (!bigTree) {
-    if (g === 0) return CARD_W * 0.5;
-    if (g === 1) return CARD_W * 0.75;
-    if (g === 2) return CARD_W * 1.5;
-    let pos = CARD_W * 1.5;
-    for (let i = 3; i <= g; i++) {
-      const isLast = i === maxGen;
-      const isMinicard = isLast && maxGen >= 5;
-      if (isMinicard) {
-        pos += CARD_W + 4;
-      } else if (isLast) {
-        pos += CARD_W;
-      } else {
-        pos += ((i - 3) % 2 === 0) ? CARD_W + 4 : CARD_W;
-      }
-    }
-    return pos;
-  }
-  // For big/GEDCOM trees, use generous fixed gaps so cards don't overlap
   let pos = 40;
-  const GAP_X = 55;
+  // For very wide trees (many roots or many people), add extra breathing room
+  const extraGap = bigTree ? 20 : 0;
   for (let i = 0; i < g; i++) {
     const isMini = (i === maxGen && maxGen >= 5);
-    pos += (isMini ? MINI_W : CARD_W) + GAP_X;
+    pos += (isMini ? MINI_W : CARD_W) + GEN_X_GAP + extraGap;
   }
   return pos;
 }
@@ -1968,8 +1955,31 @@ function renderTree() {
   const displayMax = Math.min(visibleMaxGen, maxGen(people, p => p.gen));
   const visiblePeople = people.filter(p => !p.focusHidden && p.gen >= 0 && p.gen <= displayMax);
   const gens = [];
+
+  // Sort a generation's people so spouses are vertically adjacent.
+  // Groups people into couple-pairs (or singles), then orders pairs by min ID.
+  function sortByCouples(genPeople) {
+    const visited = new Set();
+    const result = [];
+    // First pass: group spouses together
+    for (const p of genPeople) {
+      if (visited.has(p.id)) continue;
+      visited.add(p.id);
+      result.push(p);
+      // If this person has a spouse in the same generation, place them next
+      if (p.spouseId) {
+        const spouse = genPeople.find(x => x.id === p.spouseId && !visited.has(x.id));
+        if (spouse) {
+          visited.add(spouse.id);
+          result.push(spouse);
+        }
+      }
+    }
+    return result;
+  }
+
   for (let g = 0; g <= displayMax; g++) {
-    gens[g] = visiblePeople.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+    gens[g] = sortByCouples(visiblePeople.filter(p => p.gen === g));
   }
 
   const colLeft = [];
@@ -2037,9 +2047,11 @@ function renderTree() {
   const topMap = new Map();
 
   // Determine the rightmost generation to use as layout anchor.
-  // For binary trees (default data), we expect 2^gen cards per generation.
-  // For GEDCOM imports, the tree is irregular so we just use the deepest gen.
+  // Use only visible (non-hidden) people for the anchor gen.
   let rightmostFull = displayMax;
+  while (rightmostFull > 0 && (!gens[rightmostFull] || gens[rightmostFull].length === 0)) {
+    rightmostFull--;
+  }
 
   // STEP 1: Place the deepest generation as a neat vertical column.
   // This is the anchor generation — everything else positions relative to it.
@@ -5770,16 +5782,17 @@ function parseGedcom(text) {
     return set;
   };
   const componentSummaries = components.map((comp, idx) => {
-    // Find best focus: maximize ancestors+descendants, prefer recent people
+    // Find best focus: prefer people with the most ancestors (deeper pedigree).
+    // Tiebreak by youngest (highest birth year) — a younger person's ancestors
+    // encompass older relatives' ancestors, giving the richest tree view.
     let best = null;
     for (const per of comp) {
       const y = yearFrom(per.birthDate || per.deathDate || per.years);
       const a = ancestors(per.id).size - 1;
       const d = descendants(per.id).size - 1;
       const total = a + d + 1;
-      // Prefer people with at least 4 ancestors (grandparent-level) and some descendants
-      const hasGrandparents = a >= 4;
-      const score = (hasGrandparents ? 1000 : 0) + total - (y / 1000);
+      const hasParents = a >= 1;
+      const score = (hasParents ? 10000 : 0) + a * 100 + (y / 100);
       if (best === null || score > best.score) {
         best = { id: per.id, score, name: per.name, birth: per.birthDate || per.years || '', total, ancestors: a, descendants: d };
       }
@@ -5844,6 +5857,10 @@ function setFocusTreeByPerson(focusId) {
       p.status = 'probable';
     }
   }
+
+  // Update visibleMaxGen to cover the focus tree's depth
+  const focusMaxGen = Math.max(...people.filter(p => !p.focusHidden).map(p => p.gen));
+  visibleMaxGen = Math.min(focusMaxGen, 8);
 }
 
 function showFocusPicker(candidates, components, onSelect) {
@@ -5935,6 +5952,8 @@ function convertGedcomFile(file) {
               // show all: parsed generations already set, but clear any saved focus
               localStorage.removeItem('vr_focusPerson_' + currentTreeId);
               people.forEach(p => { p.focusHidden = false; });
+              // Restore original visibleMaxGen from the GEDCOM payload
+              visibleMaxGen = Math.min(4, maxGen(people, p => p.gen));
             }
             renderTree();
             updateExpandGenBtn();
@@ -5953,8 +5972,8 @@ function convertGedcomFile(file) {
           btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
         }
         // Save tree to IndexedDB
-        if (currentTreeId) await saveCurrentTreeToDB();
-        showToast('Converted ' + result.people.length + ' people. Tree loaded! A .familytree backup was also downloaded.');
+        await saveCurrentTreeToDB();
+        showToast('Loaded ' + result.people.length + ' people. Tree shows first 5 generations. Tap 📋 for Family Group Sheets to browse all families.');
       } catch (loadErr) {
         console.error('[GEDCOM] load error:', loadErr);
         showToast('Converted ' + result.people.length + ' people. A .familytree file was downloaded — tap 📂 Load to import it.');
@@ -6656,7 +6675,9 @@ function closeMemberModal() {
   var origOpenDetail = window.openDetail;
   if (typeof origOpenDetail === 'function') {
     window.openDetail = function(person) {
-      trackEvent('view_person', 'tree', person ? (person.name || person.id) : 'unknown');
+      // Analytics: track that a person card was opened, but NEVER send the
+      // person's name or any other user-entered data to Google.
+      trackEvent('view_person', 'tree', person ? String(person.id) : 'unknown');
       return origOpenDetail.apply(this, arguments);
     };
   }
@@ -6682,3 +6703,4 @@ function closeMemberModal() {
 </body>
 </html>
 <!-- Build: 1782741103 -->
+<!-- rebuild trigger Sun Jul  5 08:40:34 UTC 2026 -->

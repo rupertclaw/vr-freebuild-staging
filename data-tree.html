@@ -21,13 +21,18 @@
 <meta property="og:image" content="https://vaultedroots.com/vaulted-roots-shield.png">
 <meta property="og:site_name" content="Vaulted Roots">
 
-<!-- Google Analytics 4 -->
+<!-- Google Analytics 4 — cookieless mode -->
 <script async src="https://www.googletagmanager.com/gtag/js?id=G-MFQ3DV323Y"></script>
 <script>
   window.dataLayer = window.dataLayer || [];
   function gtag(){dataLayer.push(arguments);}
   gtag('js', new Date());
-  gtag('config', 'G-MFQ3DV323Y');
+  gtag('config', 'G-MFQ3DV323Y', {
+    client_storage: 'none',
+    anonymize_ip: true,
+    allow_google_signals: false,
+    allow_ad_personalization_signals: false
+  });
 </script>
 
 <link rel="manifest" href="./manifest.json">
@@ -1112,7 +1117,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">🚫</div>
-        <div><strong>No tracking.</strong> No cookies, no ads. We use Google Analytics anonymously to understand site usage — we don't know who you are.</div>
+        <div><strong>No cookies, no ads.</strong> We measure anonymous page visits with cookieless Google Analytics. Your tree data never leaves your device.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
         <div style="font-size:20px;flex-shrink:0;">📤</div>
@@ -6670,7 +6675,9 @@ function closeMemberModal() {
   var origOpenDetail = window.openDetail;
   if (typeof origOpenDetail === 'function') {
     window.openDetail = function(person) {
-      trackEvent('view_person', 'tree', person ? (person.name || person.id) : 'unknown');
+      // Analytics: track that a person card was opened, but NEVER send the
+      // person's name or any other user-entered data to Google.
+      trackEvent('view_person', 'tree', person ? String(person.id) : 'unknown');
       return origOpenDetail.apply(this, arguments);
     };
   }
