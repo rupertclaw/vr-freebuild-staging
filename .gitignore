@@ -1,15 +1,12 @@
-.vercel
-*.familytree
-familytree_*.json
-downloads/
-data-tree.html.bak*
-data-tree.html.backup*
-data-tree.html.pre-doc-attach
-download-corrected.html
-download-v208.html
-heritage-poster-backup*.html
-heritage-poster-gen5-demo.html
-design[1-6]-*.html
-comparison.html
-heritage-view.html
-scan-prototype.html
+# Editor files
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
+
+# Node (if ever added)
+node_modules/
+
+# Local dev artifacts
+*.log

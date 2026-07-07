@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Family Tree Branch</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
+@import url('./fonts.css');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
@@ -389,58 +389,10 @@ const h = 981;
 const cellW = w / cols;
 const cellH = h / rows;
 
-const gridOverlay = document.getElementById('gridOverlay');
-const gridToggle = document.getElementById('gridToggle');
 const poster = document.getElementById('poster');
 
-// Build grid
-for (let i = 0; i <= cols; i++) {
-  const x = i * cellW;
-  const line = document.createElement('div');
-  line.className = 'grid-line-v';
-  line.style.left = x + 'px';
-  gridOverlay.appendChild(line);
-
-  if (i < cols && i % 5 === 0) {
-    const label = document.createElement('div');
-    label.className = 'grid-label-x';
-    label.style.left = (x + cellW/2) + 'px';
-    label.textContent = i;
-    gridOverlay.appendChild(label);
-  }
-}
-
-for (let i = 0; i <= rows; i++) {
-  const y = i * cellH;
-  const line = document.createElement('div');
-  line.className = 'grid-line-h';
-  line.style.top = y + 'px';
-  gridOverlay.appendChild(line);
-
-  if (i < rows && i % 5 === 0) {
-    const label = document.createElement('div');
-    label.className = 'grid-label-y';
-    label.style.top = (y + cellH/2) + 'px';
-    label.textContent = i;
-    gridOverlay.appendChild(label);
-  }
-}
-
-gridToggle.addEventListener('click', () => {
-  gridOverlay.classList.toggle('active');
-  gridToggle.textContent = gridOverlay.classList.contains('active') ? 'Hide Grid' : 'Show Grid';
-});
-
-// Coordinate readout on hover
-const coordReadout = document.getElementById('coordReadout');
-poster.addEventListener('mousemove', (e) => {
-  const rect = poster.getBoundingClientRect();
-  const x = (e.clientX - rect.left) / scale;
-  const y = (e.clientY - rect.top) / scale;
-  const col = Math.round(x / cellW);
-  const row = Math.round(y / cellH);
-  coordReadout.textContent = `Col: ${col}, Row: ${row} | Pixel: ${Math.round(x)}, ${Math.round(y)}`;
-});
+// Grid overlay and coordinate readout are dev-only alignment tools.
+// The elements don't exist in this page's DOM, so skip them entirely.
 
 // Zoom
 let scale = 1;

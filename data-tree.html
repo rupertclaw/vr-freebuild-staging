@@ -52,7 +52,7 @@ if ('serviceWorker' in navigator) {
 }
 </script>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
+@import url('./fonts.css');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -908,7 +908,7 @@ details.acc .acc-body { padding: 6px 12px; }
         <div class="tb-menu-item" id="familySheetMenuItem" onclick="checkMemberFeature('family_sheets', function(){document.getElementById('familySheetBtn').click()})"><span class="icon">📋</span> Family Sheets</div>
         <div class="tb-menu-item" id="viewPosterBtn" onclick="checkMemberFeature('heritage_poster', openPoster)"><span class="icon">🖼️</span> Heritage Poster</div>
         <div class="tb-menu-item" id="printTreeBtn" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree</div>
-        <div class="tb-menu-item" id="gedcomToggle" onclick="document.getElementById('importBody').style.display=document.getElementById('importBody').style.display==='none'?'block':'none';closeAllMenus()"><span class="icon">🔄</span> Import & Export GEDCOM</div>
+        <div class="tb-menu-item" id="gedcomToggle" onclick="checkMemberFeature('gedcom', function(){ openGuidancePanel(); setTimeout(function(){ var ib=document.getElementById('importBody'); if(ib) ib.style.display='block'; var ig=document.getElementById('importGuide'); if(ig){ var btn=ig.querySelector('button span'); if(btn) btn.style.transform='rotate(180deg)'; } },100); })"><span class="icon">🔄</span> Import & Export GEDCOM</div>
       </div>
       <!-- More menu -->
       <button class="tb-btn" id="moreMenuBtn" title="More options">⋯ <span>More</span> ▾</button>
@@ -1485,6 +1485,11 @@ function openDocDB() {
   });
 }
 async function saveDocToDB(personId, type, base64Image, meta) {
+  // SEC-02: Validate image is a proper data URL before storing
+  if (base64Image && !/^data:image\/(jpeg|png|webp|gif);base64,/.test(base64Image)) {
+    console.warn('[SEC-02] Rejected doc image with invalid format for person', personId);
+    return null;
+  }
   if (!_docDB) await openDocDB();
   const id = personId + '_' + type + '_' + Date.now();
   const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
@@ -2155,7 +2160,7 @@ function renderTree() {
     else if (dYear) cardYears = 'd. ' + dYear[0];
     else cardYears = person.years || '?';
 
-    let h = '<div class="name">' + (function getDisplayName(p) {
+    let h = '<div class="name">' + escapeHtml((function getDisplayName(p) {
       // If maidenName exists, show birth identity (firstName + maidenName)
       if (p.maidenName) {
         const parts = p.name.split(/\s+/);
@@ -2164,7 +2169,7 @@ function renderTree() {
         return (firstName + ' ' + p.maidenName).trim();
       }
       return p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
-    })(person) + '</div>' + (cardYears ? '<div class="years">' + cardYears + '</div>' : '');
+    })(person)) + '</div>' + (cardYears ? '<div class="years">' + escapeHtml(cardYears) + '</div>' : '');
     // Add CTA on the You card for first-run
     if (person.isYou && person.status === 'blank') {
       h += '<div class="cta">✍️ Tap to add yourself</div>';
@@ -2399,8 +2404,12 @@ function drawLines() {
     svg.appendChild(path);
   });
 }
-scroll.addEventListener('scroll', drawLines);
-window.addEventListener('resize', () => renderTree());
+// PERF-04: Debounce resize→renderTree to avoid thrashing on rapid window resizing
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => renderTree(), 150);
+});
 
 // Sync tree-scroll top to actual header height (handles mobile text wrapping)
 function syncHeaderHeight() {
@@ -2432,10 +2441,14 @@ renderTree = function() { originalRenderTree(); syncHeaderHeight(); };
 // Zoom controls
 function setZoom(z) {
   zoom = Math.max(0.05, Math.min(3, z));
-  renderTree();
+  // PERF-01: zoom is a CSS transform — no need to rebuild all cards
+  wrap.style.setProperty('--zoom', zoom);
+  const sizer = document.getElementById('zoomSizer');
+  if (sizer) {
+    sizer.style.width = (treeWidth * zoom) + 'px';
+    sizer.style.height = (treeHeight * zoom) + 'px';
+  }
   document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
-  // Re-center on Gen 0 after zoom change
-  setTimeout(() => centerOnGen0(), 50);
 }
 document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.2));
 document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
@@ -2445,15 +2458,10 @@ document.getElementById('zoomReset').addEventListener('click', () => { setZoom(h
 function fitZoomToViewport() {
   const headerH = document.querySelector('.header').offsetHeight;
   const availH = window.innerHeight - headerH - 20; // small margin
-  // Measure tree at 100% zoom
-  const savedZoom = zoom;
-  zoom = 1;
-  renderTree();
-  const treeH = document.getElementById('treeWrap').offsetHeight;
+  // PERF-01: treeHeight is in unscaled coords — no need to renderTree to measure
+  const treeH = treeHeight || document.getElementById('treeWrap').offsetHeight;
   const optimal = (availH / treeH) * 0.95; // 95% fill, slight breathing room
-  zoom = Math.max(0.3, Math.min(1.2, optimal));
-  renderTree();
-  document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+  setZoom(Math.max(0.3, Math.min(1.2, optimal)));
 }
 
 // Pinch-to-zoom on tree scroll area
@@ -3281,7 +3289,7 @@ function openGemini() {
   var url = 'https://gemini.google.com';
   var opened = false;
   try {
-    var win = window.open(url, '_blank');
+    var win = window.open(url, '_blank', 'noopener');
     if (win) opened = true;
   } catch (e) {}
   if (!opened) {
@@ -3336,7 +3344,7 @@ function openVenice() {
   var url = 'https://venice.ai/chat';
   var opened = false;
   try {
-    var win = window.open(url, '_blank');
+    var win = window.open(url, '_blank', 'noopener');
     if (win) opened = true;
   } catch (e) {}
   if (!opened) {
@@ -3599,7 +3607,7 @@ function openAmbigDialog(entry, type, docImage, targetName, matches, certKey) {
     if (p.status) info.push('status: ' + p.status);
     const btn = document.createElement('button');
     btn.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:8px;border:2px solid #8a7a5a;border-radius:6px;background:#faf6ee;cursor:pointer;font-family:"Cormorant Garamond",serif;font-size:13px;color:#2a1f10;';
-    btn.innerHTML = '<b>' + p.name + '</b> <span style="color:#6b5537;font-size:11px;">' + info.join(' | ') + '</span>';
+    btn.innerHTML = '<b>' + escapeHtml(p.name) + '</b> <span style="color:#6b5537;font-size:11px;">' + escapeHtml(info.join(' | ')) + '</span>';
     btn.addEventListener('click', () => {
       pendingAmbigTarget.resolveId = p.id;
       modal.style.display = 'none';
@@ -3923,11 +3931,6 @@ function findPersonGenAware(name, opts) {
   // Fall back: lowest-gen top-scoring match
   if (topMatches.length === 0) return null;
   return topMatches.sort((a, b) => a.person.gen - b.person.gen)[0].person;
-}
-
-function escapeHtml(text) {
-  if (!text) return '';
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 // Single canonical extractYear — word-boundary, century-agnostic (BUG-11 fix)
@@ -5466,35 +5469,6 @@ function clearCard() {
   closeDetail();
   showToast('Cleared all data from ' + oldName);
 }
-function clearPersonDocs() {
-  const btn = document.getElementById('clearDocBtn');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    const dlg = document.getElementById('confirmDialog');
-    document.getElementById('confirmTitle').textContent = 'Clear Documents?';
-    document.getElementById('confirmMessage').textContent = `Remove all documents from this person's record? This cannot be undone.`;
-    dlg.style.display = 'flex';
-    document.getElementById('confirmOk').onclick = () => {
-      dlg.style.display = 'none';
-      if (!selectedPersonId) return;
-      const person = people.find(p => p.id === selectedPersonId);
-      if (!person) return;
-      person.docs = [];
-      // Also clear IndexedDB
-      if (_docDB) {
-        getDocsForPerson(selectedPersonId).then(docs => {
-          const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
-          const store = tx.objectStore(DOC_STORE_NAME);
-          docs.forEach(d => store.delete(d.id));
-        }).catch(() => {});
-      }
-      renderTree(); showToast('Documents cleared');
-    };
-    document.getElementById('confirmCancel').onclick = () => {
-      dlg.style.display = 'none';
-    };
-  });
-}
 // Backfill computed fields from existing doc data (migration for pre-v204 data)
 function backfillComputedFields() {
   for (const p of people) {
@@ -5702,7 +5676,7 @@ function openPrintDialog() {
     cleanup();
     localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
     try {
-      const w = window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
+      const w = window.open('heritage-poster.html?_t=' + Date.now(), '_blank', 'noopener');
       if (!w || w.closed || typeof w.closed === 'undefined') {
         // Popup blocked — fallback to same-tab
         location.href = 'heritage-poster.html?_t=' + Date.now();
@@ -5783,7 +5757,7 @@ function openPrintDialog() {
       captureAndDownload();
     } else {
       const script = document.createElement('script');
-      script.src = 'https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js';
+      script.src = 'html2canvas.min.js';
       script.onload = captureAndDownload;
       script.onerror = () => {
         showToast('Unable to load image generator. Use your browser\'s Share → Print → Save as PDF.');
@@ -5804,6 +5778,8 @@ function openPrintDialog() {
 // ═══════════════════════════════════════════════════════════════
 
 function parseGedcom(text) {
+  // SEC-01: Sanitise GEDCOM field values — strip angle brackets as defence-in-depth
+  function sanitize(s) { return (s || '').replace(/[<>]/g, ''); }
   const lines = text.split(/\r\n|\r|\n/);
   const records = {};
   let current = null;
@@ -5864,7 +5840,7 @@ function parseGedcom(text) {
   for (const [xref, rec] of Object.entries(records)) {
     if (rec.tag === 'INDI') {
       const nameArr = rec.data['NAME'] || [];
-      const name = nameArr[0]?.value || '';
+      const name = sanitize(nameArr[0]?.value || '');
       const surnameMatch = name.match(/\/([^/]*)\//);
       const surname = surnameMatch ? surnameMatch[1] : '';
       const given = name.replace(/\s*\/.*\//, '').trim();
@@ -5878,13 +5854,13 @@ function parseGedcom(text) {
         name: fullName || name,
         givenName: given,
         surname: surname,
-        birthDate: birth?.DATE?.[0]?.value || '',
-        birthPlace: birth?.PLAC?.[0]?.value || '',
-        deathDate: death?.DATE?.[0]?.value || '',
-        deathPlace: death?.PLAC?.[0]?.value || '',
+        birthDate: sanitize(birth?.DATE?.[0]?.value || ''),
+        birthPlace: sanitize(birth?.PLAC?.[0]?.value || ''),
+        deathDate: sanitize(death?.DATE?.[0]?.value || ''),
+        deathPlace: sanitize(death?.PLAC?.[0]?.value || ''),
         famc: famc,
         fams: famsSpouse,
-        sex: rec.data['SEX']?.[0]?.value || ''
+        sex: sanitize(rec.data['SEX']?.[0]?.value || '')
       };
     } else if (rec.tag === 'FAM') {
       const husb = rec.data['HUSB']?.[0]?.pointer;
@@ -5896,7 +5872,7 @@ function parseGedcom(text) {
         husb: husb,
         wife: wife,
         children: children,
-        marriageDate: marr?.DATE?.[0]?.value || ''
+        marriageDate: sanitize(marr?.DATE?.[0]?.value || '')
       };
     }
   }
@@ -6033,6 +6009,14 @@ function parseGedcom(text) {
       p.gen = 0;
     }
   }
+
+  // Normalise: shift so the youngest generation (most negative) is gen 0.
+  // BFS above assigns gen 0 to roots (oldest), children get gen -1, etc.
+  // The data tree and heritage poster both expect gen 0 = the subject (youngest).
+  let minGen = 0;
+  for (const p of people) { if (p.gen < minGen) minGen = p.gen; }
+  const genOffset = -minGen;
+  for (const p of people) { p.gen += genOffset; }
 
   // Build connected components and focus-candidate info (stored for UI)
   const components = [];
