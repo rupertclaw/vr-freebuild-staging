@@ -1923,8 +1923,8 @@ function navigateFamily(direction) {
 setInterval(async () => {
   if (currentTreeId) await saveCurrentTreeToDB();
 }, 30000);
-const CARD_W = 130, GAP_Y = 3;
-const GEN_X_GAP = 55;
+const CARD_W = 130, GAP_Y = 8;
+const GEN_X_GAP = 75;
 const MINI_W = 100, MINI_H = 14;
 let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
 
@@ -1935,7 +1935,7 @@ const svgNS = 'http://www.w3.org/2000/svg';
 let cardEls = new Map();
 
 let treeWidth = 0, treeHeight = 0;
-let zoom = 0.25;
+let zoom = 0.35;
 
 function colLeftForGen(g, maxGen, bigTree) {
   let pos = 40;
@@ -2241,7 +2241,7 @@ function setZoom(z) {
 }
 document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.2));
 document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
-document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.25));
+document.getElementById('zoomReset').addEventListener('click', () => setZoom(0.35));
 
 // Auto-fit zoom to fill available vertical space on desktop
 function fitZoomToViewport() {
@@ -5245,7 +5245,7 @@ function backfillComputedFields() {
     renderTree();
     fitZoomToViewport();
   } else {
-    zoom = 0.70; // mobile default
+    zoom = 0.45; // mobile default — enough to read names without crowding
     renderTree();
   }
   document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
