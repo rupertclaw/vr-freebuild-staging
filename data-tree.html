@@ -908,7 +908,7 @@ details.acc .acc-body { padding: 6px 12px; }
         <div class="tb-menu-item" id="familySheetMenuItem" onclick="checkMemberFeature('family_sheets', function(){document.getElementById('familySheetBtn').click()})"><span class="icon">📋</span> Family Sheets</div>
         <div class="tb-menu-item" id="viewPosterBtn" onclick="checkMemberFeature('heritage_poster', openPoster)"><span class="icon">🖼️</span> Heritage Poster</div>
         <div class="tb-menu-item" id="printTreeBtn" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree</div>
-        <div class="tb-menu-item" id="gedcomToggle" onclick="document.getElementById('importBody').style.display=document.getElementById('importBody').style.display==='none'?'block':'none';closeAllMenus()"><span class="icon">🔄</span> Import & Export GEDCOM</div>
+        <div class="tb-menu-item" id="gedcomToggle" onclick="checkMemberFeature('gedcom', function(){ openGuidancePanel(); setTimeout(function(){ var ib=document.getElementById('importBody'); if(ib) ib.style.display='block'; var ig=document.getElementById('importGuide'); if(ig){ var btn=ig.querySelector('button span'); if(btn) btn.style.transform='rotate(180deg)'; } },100); })"><span class="icon">🔄</span> Import & Export GEDCOM</div>
       </div>
       <!-- More menu -->
       <button class="tb-btn" id="moreMenuBtn" title="More options">⋯ <span>More</span> ▾</button>
@@ -6009,6 +6009,14 @@ function parseGedcom(text) {
       p.gen = 0;
     }
   }
+
+  // Normalise: shift so the youngest generation (most negative) is gen 0.
+  // BFS above assigns gen 0 to roots (oldest), children get gen -1, etc.
+  // The data tree and heritage poster both expect gen 0 = the subject (youngest).
+  let minGen = 0;
+  for (const p of people) { if (p.gen < minGen) minGen = p.gen; }
+  const genOffset = -minGen;
+  for (const p of people) { p.gen += genOffset; }
 
   // Build connected components and focus-candidate info (stored for UI)
   const components = [];

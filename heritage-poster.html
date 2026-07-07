@@ -4094,9 +4094,11 @@ function loadFromDataTree() {
   dtPeopleMap = new Map();
   data.people.forEach(p => dtPeopleMap.set(p.id, p));
 
-  // Find subject: gen 0, or status='you', or first confirmed, or first person
-  const subject = data.people.find(p => p.gen === 0) ||
-                  data.people.find(p => p.status === 'you') ||
+  // Find subject: prefer status='you' (set by focus picker), then gen 0 with parents,
+  // then gen 0, then first confirmed, then first person
+  const subject = data.people.find(p => p.status === 'you') ||
+                  data.people.find(p => p.gen === 0 && p.parents && p.parents.length > 0) ||
+                  data.people.find(p => p.gen === 0) ||
                   data.people.find(p => p.status === 'confirmed') ||
                   data.people[0];
   if (!subject) { console.log('[DT LOAD] no subject found'); return false; }
