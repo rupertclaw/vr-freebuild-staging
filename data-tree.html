@@ -2399,7 +2399,12 @@ function drawLines() {
     svg.appendChild(path);
   });
 }
-window.addEventListener('resize', () => renderTree());
+// PERF-04: Debounce resize→renderTree to avoid thrashing on rapid window resizing
+let _resizeTimer = null;
+window.addEventListener('resize', () => {
+  clearTimeout(_resizeTimer);
+  _resizeTimer = setTimeout(() => renderTree(), 150);
+});
 
 // Sync tree-scroll top to actual header height (handles mobile text wrapping)
 function syncHeaderHeight() {
@@ -2431,10 +2436,14 @@ renderTree = function() { originalRenderTree(); syncHeaderHeight(); };
 // Zoom controls
 function setZoom(z) {
   zoom = Math.max(0.05, Math.min(3, z));
-  renderTree();
+  // PERF-01: zoom is a CSS transform — no need to rebuild all cards
+  wrap.style.setProperty('--zoom', zoom);
+  const sizer = document.getElementById('zoomSizer');
+  if (sizer) {
+    sizer.style.width = (treeWidth * zoom) + 'px';
+    sizer.style.height = (treeHeight * zoom) + 'px';
+  }
   document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
-  // Re-center on Gen 0 after zoom change
-  setTimeout(() => centerOnGen0(), 50);
 }
 document.getElementById('zoomIn').addEventListener('click', () => setZoom(zoom * 1.2));
 document.getElementById('zoomOut').addEventListener('click', () => setZoom(zoom / 1.2));
@@ -2444,15 +2453,10 @@ document.getElementById('zoomReset').addEventListener('click', () => { setZoom(h
 function fitZoomToViewport() {
   const headerH = document.querySelector('.header').offsetHeight;
   const availH = window.innerHeight - headerH - 20; // small margin
-  // Measure tree at 100% zoom
-  const savedZoom = zoom;
-  zoom = 1;
-  renderTree();
-  const treeH = document.getElementById('treeWrap').offsetHeight;
+  // PERF-01: treeHeight is in unscaled coords — no need to renderTree to measure
+  const treeH = treeHeight || document.getElementById('treeWrap').offsetHeight;
   const optimal = (availH / treeH) * 0.95; // 95% fill, slight breathing room
-  zoom = Math.max(0.3, Math.min(1.2, optimal));
-  renderTree();
-  document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+  setZoom(Math.max(0.3, Math.min(1.2, optimal)));
 }
 
 // Pinch-to-zoom on tree scroll area
