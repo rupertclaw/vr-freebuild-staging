@@ -2139,6 +2139,30 @@ function renderTree() {
   const minTop = Math.min(10, ...topMap.values());
   const topOffset = minTop < 0 ? -minTop + 10 : 0;
 
+  // ─── Collision resolution: spouses and packed generations can overlap.
+  // Push any overlapping card down so there is always GAP_Y between them.
+  // Do this per generation, bottom-up, so parent positions stay consistent.
+  const genSorted = [];
+  for (let g = 0; g <= displayMax; g++) genSorted[g] = [];
+  visiblePeople.forEach(p => {
+    if (!genSorted[p.gen]) genSorted[p.gen] = [];
+    genSorted[p.gen].push(p.id);
+  });
+  for (let g = 0; g <= displayMax; g++) {
+    if (!genSorted[g]) continue;
+    genSorted[g].sort((a, b) => (topMap.get(a) || 0) - (topMap.get(b) || 0));
+    let lastBottom = -Infinity;
+    genSorted[g].forEach(id => {
+      const t = (topMap.get(id) || 10) + topOffset;
+      const h = hMap.get(id) || 28;
+      if (t < lastBottom + GAP_Y) {
+        const newTop = lastBottom + GAP_Y - topOffset;
+        topMap.set(id, newTop);
+      }
+      lastBottom = (topMap.get(id) || 10) + topOffset + h;
+    });
+  }
+
   cardEls.forEach((el, id) => {
     el.style.top = ((topMap.get(id) || 10) + topOffset) + 'px';
     el.style.opacity = '1';
