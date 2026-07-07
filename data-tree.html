@@ -1633,6 +1633,11 @@ function updateTreeManagerUI() {
     const activeTree = treesList.find(t => t.id === currentTreeId);
     title.textContent = activeTree ? escapeHtml(activeTree.name) : '';
   }
+  const banner = document.getElementById('treeNameBanner');
+  if (banner) {
+    const activeTree = treesList.find(t => t.id === currentTreeId);
+    banner.textContent = activeTree ? escapeHtml(activeTree.name) : 'Your legacy. Secure.';
+  }
 }
 
 function escapeHtml(s) {
