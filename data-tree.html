@@ -3933,11 +3933,6 @@ function findPersonGenAware(name, opts) {
   return topMatches.sort((a, b) => a.person.gen - b.person.gen)[0].person;
 }
 
-function escapeHtml(text) {
-  if (!text) return '';
-  return text.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
-}
-
 // Single canonical extractYear — word-boundary, century-agnostic (BUG-11 fix)
 function extractYear(str) {
   if (!str) return null;
@@ -5473,35 +5468,6 @@ function clearCard() {
   renderTree();
   closeDetail();
   showToast('Cleared all data from ' + oldName);
-}
-function clearPersonDocs() {
-  const btn = document.getElementById('clearDocBtn');
-  if (!btn) return;
-  btn.addEventListener('click', () => {
-    const dlg = document.getElementById('confirmDialog');
-    document.getElementById('confirmTitle').textContent = 'Clear Documents?';
-    document.getElementById('confirmMessage').textContent = `Remove all documents from this person's record? This cannot be undone.`;
-    dlg.style.display = 'flex';
-    document.getElementById('confirmOk').onclick = () => {
-      dlg.style.display = 'none';
-      if (!selectedPersonId) return;
-      const person = people.find(p => p.id === selectedPersonId);
-      if (!person) return;
-      person.docs = [];
-      // Also clear IndexedDB
-      if (_docDB) {
-        getDocsForPerson(selectedPersonId).then(docs => {
-          const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
-          const store = tx.objectStore(DOC_STORE_NAME);
-          docs.forEach(d => store.delete(d.id));
-        }).catch(() => {});
-      }
-      renderTree(); showToast('Documents cleared');
-    };
-    document.getElementById('confirmCancel').onclick = () => {
-      dlg.style.display = 'none';
-    };
-  });
 }
 // Backfill computed fields from existing doc data (migration for pre-v204 data)
 function backfillComputedFields() {
