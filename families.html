@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Family Sheets — Vaulted Roots</title>
+<meta name="description" content="Browse every family in your tree. Vaulted Roots family group sheets.">
+<link rel="manifest" href="./manifest.json">
+<link rel="apple-touch-icon" href="./apple-touch-icon.png">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<style>
+@import url('./fonts.css');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-page: #f0e2c5;
+  --bg-header: #3e2b1a;
+  --bg-header-border: #5c4033;
+  --text-logo: #38bdf8;
+  --text-tagline: #7dd3fc;
+  --bg-stat: rgba(56, 189, 248, 0.10);
+  --border-stat: rgba(56, 189, 248, 0.20);
+  --text-stat-label: #93c5fd;
+  --text-stat-value: #38bdf8;
+  --bg-card: rgba(255, 250, 240, 0.97);
+  --border-card: #5c4033;
+  --bg-detail-header: #3e3225;
+  --text-detail-header: #f0e6d2;
+}
+
+html, body { min-height: 100%; background: var(--bg-page); font-family: 'Cormorant Garamond', serif; }
+
+.header {
+  position: fixed; top: 0; left: 0; right: 0;
+  background: var(--bg-header); border-bottom: 2px solid var(--bg-header-border);
+  display: flex; flex-direction: column;
+  padding: 8px 14px; z-index: 300;
+}
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.header-brand {
+  display: flex; flex-direction: column;
+}
+.header-logo {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 22px; color: var(--text-logo); font-weight: 700;
+  line-height: 1.1; letter-spacing: 1px;
+}
+.header-tagline {
+  font-size: 13px; color: var(--text-tagline); font-weight: 700; letter-spacing: 2px; margin-top: 2px;
+}
+.header-stats {
+  display: flex; gap: 10px; align-items: center;
+}
+.header-stat {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg-stat);
+  border: 1px solid var(--border-stat);
+  padding: 6px 12px; border-radius: 6px;
+  min-width: 68px;
+}
+.header-stat .stat-label {
+  font-size: 11px; color: var(--text-stat-label); text-transform: uppercase; letter-spacing: 1px;
+}
+.header-stat .stat-value {
+  font-size: 18px; color: var(--text-stat-value); font-weight: 600; font-family: 'Cormorant Garamond', serif;
+}
+
+.header-actions {
+  display: flex; gap: 8px; align-items: center; padding-top: 8px;
+}
+.header-btn {
+  height: 36px; padding: 0 14px; background: #5c4033; color: #e8dcc8;
+  border: 1px solid #7a6a4a; border-radius: 6px; font-size: 14px; cursor: pointer;
+  display: inline-flex; align-items: center; justify-content: center;
+  font-family: 'Cormorant Garamond', serif; text-decoration: none;
+}
+
+.content {
+  padding: 130px 14px 40px;
+  max-width: 900px; margin: 0 auto;
+}
+
+.filter-bar {
+  display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap;
+}
+.filter-bar input {
+  flex: 1; min-width: 180px; padding: 8px 12px; border: 1px solid #8a7a5a;
+  border-radius: 6px; background: #fff; font-family: 'Cormorant Garamond', serif;
+  font-size: 14px; color: #2a1f10;
+}
+.filter-bar select {
+  padding: 8px 12px; border: 1px solid #8a7a5a; border-radius: 6px;
+  background: #fff; font-family: 'Cormorant Garamond', serif; font-size: 14px; color: #2a1f10;
+}
+.filter-bar button {
+  padding: 8px 14px; border: 1px solid #8a7a5a; border-radius: 6px;
+  background: #f5eedc; color: #2a1f10; font-family: 'Cormorant Garamond', serif; font-size: 14px; cursor: pointer;
+}
+
+.family-list {
+  display: flex; flex-direction: column; gap: 14px;
+}
+.family-card {
+  background: var(--bg-card); border: 2px solid var(--border-card); border-radius: 8px;
+  overflow: hidden; cursor: pointer; transition: box-shadow 0.15s, transform 0.1s;
+}
+.family-card:hover { box-shadow: 0 4px 12px rgba(90,60,30,0.15); transform: translateY(-1px); }
+.family-card.expanded { border-color: #8a7a5a; }
+
+.family-header {
+  background: var(--bg-detail-header); color: var(--text-detail-header);
+  padding: 14px 16px; display: flex; justify-content: space-between; align-items: center; gap: 12px;
+}
+.family-header .names {
+  font-family: 'Cinzel Decorative', serif; font-size: 16px;
+}
+.family-header .years {
+  font-size: 12px; opacity: 0.8; margin-top: 2px;
+}
+.family-header .children-badge {
+  flex-shrink: 0; background: rgba(255,255,255,0.12); padding: 4px 10px; border-radius: 12px;
+  font-size: 12px; white-space: nowrap;
+}
+
+.family-body {
+  padding: 16px; display: none;
+}
+.family-card.expanded .family-body { display: block; }
+
+.parents-grid {
+  display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; margin-bottom: 16px;
+}
+.parent-card {
+  background: #fff; border: 1px solid #c9b896; border-radius: 6px; padding: 12px;
+}
+.parent-card .label {
+  font-size: 10px; color: #8a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 4px;
+}
+.parent-card .name {
+  font-family: 'Cinzel Decorative', serif; font-size: 15px; color: #2a1f10;
+}
+.parent-card .dates {
+  font-size: 13px; color: #6b5537; margin-top: 4px;
+}
+.parent-card .place {
+  font-size: 12px; color: #8a7a5a; margin-top: 2px;
+}
+
+.children-section {
+  border-top: 1px solid #e0d5c0; padding-top: 14px;
+}
+.children-title {
+  font-size: 11px; color: #8a7a5a; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 10px;
+}
+.children-grid {
+  display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px;
+}
+.child-card {
+  background: #fff; border-left: 4px solid #c9b896; padding: 10px; border-radius: 0 6px 6px 0;
+}
+.child-card .name {
+  font-family: 'Cormorant Garamond', serif; font-weight: 600; font-size: 14px; color: #2a1f10;
+}
+.child-card .dates {
+  font-size: 12px; color: #6b5537; margin-top: 2px;
+}
+
+.empty-state {
+  text-align: center; padding: 60px 20px; color: #6b5537;
+}
+.empty-state .icon { font-size: 36px; margin-bottom: 12px; }
+.empty-state .title { font-family: 'Cinzel Decorative', serif; font-size: 18px; color: #2a1f10; }
+
+.loading {
+  text-align: center; padding: 60px 20px; color: #6b5537; font-size: 16px;
+}
+
+.no-match {
+  text-align: center; padding: 40px 20px; color: #6b5537; font-style: italic;
+}
+
+@media (max-width: 500px) {
+  .header-logo { font-size: 18px; }
+  .header-stat { padding: 4px 8px; min-width: 56px; }
+  .header-stat .stat-value { font-size: 15px; }
+  .content { padding-top: 150px; }
+  .family-header { flex-direction: column; align-items: flex-start; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="header-brand">
+      <div class="header-logo">Vaulted Roots</div>
+      <div class="header-tagline">Family Sheets</div>
+    </div>
+    <div class="header-stats">
+      <div class="header-stat"><div class="stat-label">Families</div><div class="stat-value" id="statFamilies">0</div></div>
+      <div class="header-stat"><div class="stat-label">People</div><div class="stat-value" id="statPeople">0</div></div>
+    </div>
+  </div>
+  <div class="header-actions">
+    <a class="header-btn" href="data-tree.html">&#9664; Back to Tree</a>
+    <a class="header-btn" href="heritage-poster.html" target="_blank">Heritage Poster</a>
+  </div>
+</div>
+
+<div class="content">
+  <div class="filter-bar">
+    <input type="text" id="surnameFilter" placeholder="Search surname or name...">
+    <select id="sortOrder">
+      <option value="newest">Newest first</option>
+      <option value="oldest">Oldest first</option>
+      <option value="alpha">A – Z</option>
+    </select>
+    <button id="expandAll">Expand all</button>
+    <button id="collapseAll">Collapse all</button>
+  </div>
+
+  <div id="loading" class="loading">Loading family sheets...</div>
+  <div id="familyList" class="family-list" style="display:none;"></div>
+  <div id="emptyState" class="empty-state" style="display:none;">
+    <div class="icon">&#128203;</div>
+    <div class="title">No family data found</div>
+    <p>Build or import a tree on the main page first.</p>
+    <a class="header-btn" href="data-tree.html" style="margin-top:16px;">Go to Tree</a>
+  </div>
+</div>
+
+<script>
+const DOC_DB_NAME = 'VRTDocs';
+const DOC_DB_VERSION = 3;
+const TM_DATA_STORE = 'treeData';
+
+const familyList = document.getElementById('familyList');
+const loadingDiv = document.getElementById('loading');
+const emptyState = document.getElementById('emptyState');
+const surnameFilter = document.getElementById('surnameFilter');
+const sortOrder = document.getElementById('sortOrder');
+
+function escapeHtml(s) {
+  if (!s) return '';
+  return s.replace(/[<>&"]/g, c => ({'<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'}[c]));
+}
+
+function yearFrom(s) {
+  const m = String(s || '').match(/\b(\d{4})\b/);
+  return m ? parseInt(m[1]) : 9999;
+}
+
+function formatYears(p) {
+  const b = p.birthDate || p.birthYear || '';
+  const d = p.deathDate || p.deathYear || '';
+  if (b && d) return 'b. ' + escapeHtml(b) + ' · d. ' + escapeHtml(d);
+  if (b) return 'b. ' + escapeHtml(b);
+  if (d) return 'd. ' + escapeHtml(d);
+  return '';
+}
+
+function openDocDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DOC_DB_NAME, DOC_DB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => resolve(req.result);
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(TM_DATA_STORE)) d.createObjectStore(TM_DATA_STORE, { keyPath: 'treeId' });
+    };
+  });
+}
+
+async function loadMostRecentTree() {
+  const db = await openDocDB();
+  return new Promise((resolve, reject) => {
+    const tx = db.transaction(TM_DATA_STORE, 'readonly');
+    const store = tx.objectStore(TM_DATA_STORE);
+    const req = store.getAll();
+    req.onsuccess = () => {
+      const all = req.result || [];
+      if (all.length === 0) return resolve(null);
+      all.sort((a, b) => (b.updatedAt || 0) - (a.updatedAt || 0));
+      resolve(all[0]);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+function buildFamilies(people) {
+  const familyMap = new Map();
+  let famId = 1;
+
+  people.forEach(p => {
+    if (!p.parents || p.parents.length === 0) return;
+    const key = [...p.parents].sort((a, b) => a - b).join('-');
+    if (!familyMap.has(key)) {
+      const parents = p.parents.map(pid => people.find(x => x.id === pid)).filter(Boolean);
+      familyMap.set(key, { id: famId++, parents, children: [] });
+    }
+    familyMap.get(key).children.push(p);
+  });
+
+  const seenPairs = new Set();
+  people.forEach(p => {
+    if (!p.spouseId) return;
+    const pairKey = [p.id, p.spouseId].sort((a, b) => a - b).join('-');
+    if (seenPairs.has(pairKey)) return;
+    seenPairs.add(pairKey);
+    if (!familyMap.has(pairKey)) {
+      const spouse = people.find(x => x.id === p.spouseId);
+      if (spouse) familyMap.set(pairKey, { id: famId++, parents: [p, spouse], children: [] });
+    }
+  });
+
+  const list = [];
+  familyMap.forEach(f => {
+    const husband = f.parents.find(p => p.sex !== 'F') || f.parents[0] || null;
+    const wife = f.parents.find(p => p.sex === 'F') || f.parents.find(p => p !== husband) || null;
+    list.push({ id: f.id, husband, wife, children: f.children });
+  });
+  return list;
+}
+
+function familySortKey(f) {
+  const marriage = f.husband?.marriageDate || f.wife?.marriageDate || '';
+  const firstChild = f.children.slice().sort((a, b) => yearFrom(a.birthDate) - yearFrom(b.birthDate))[0];
+  const earliestChild = firstChild ? firstChild.birthDate : '';
+  const p1 = f.husband || f.wife;
+  const parentBirth = p1 ? p1.birthDate : '';
+  return yearFrom(marriage || earliestChild || parentBirth);
+}
+
+function familyYears(f) {
+  const keys = [];
+  if (f.husband?.birthDate) keys.push(yearFrom(f.husband.birthDate));
+  if (f.wife?.birthDate) keys.push(yearFrom(f.wife.birthDate));
+  f.children.forEach(c => { if (c.birthDate) keys.push(yearFrom(c.birthDate)); });
+  if (!keys.length) return '';
+  const min = Math.min(...keys);
+  const max = Math.max(...keys);
+  return min === max ? String(min) : min + ' — ' + max;
+}
+
+let allFamilies = [];
+let peopleList = [];
+
+function renderFamilies(list) {
+  familyList.innerHTML = '';
+  if (list.length === 0) {
+    familyList.innerHTML = '<div class="no-match">No families match your search.</div>';
+    return;
+  }
+
+  list.forEach(f => {
+    const h = f.husband;
+    const w = f.wife;
+    const names = [h?.name, w?.name].filter(Boolean).join(' & ') || 'Unknown Family';
+    const card = document.createElement('div');
+    card.className = 'family-card';
+    card.dataset.id = f.id;
+
+    let years = familyYears(f);
+    if (h?.years && w?.years) years = [h.years, w.years].join(' | ');
+    else if (h?.years) years = h.years;
+    else if (w?.years) years = w.years;
+
+    card.innerHTML = '\n      <div class="family-header">\n        <div>\n          <div class="names">' + escapeHtml(names) + '</div>\n          ' + (years ? '<div class="years">' + escapeHtml(years) + '</div>' : '') + '\n        </div>\n        <div class="children-badge">' + f.children.length + ' child' + (f.children.length === 1 ? '' : 'ren') + '</div>\n      </div>\n      <div class="family-body">' + renderFamilyBody(f) + '</div>\n    ';
+
+    card.querySelector('.family-header').addEventListener('click', () => {
+      card.classList.toggle('expanded');
+    });
+    familyList.appendChild(card);
+  });
+}
+
+function renderFamilyBody(f) {
+  const h = f.husband;
+  const w = f.wife;
+  let html = '<div class="parents-grid">';
+  if (h) html += renderPersonCard(h, 'Husband/Father');
+  if (w) html += renderPersonCard(w, 'Wife/Mother');
+  if (!h && !w) html += '<div class="parent-card"><div class="label">Parents</div><div class="name">Unknown</div></div>';
+  html += '</div>';
+
+  if (f.children.length > 0) {
+    const sorted = [...f.children].sort((a, b) => yearFrom(a.birthDate) - yearFrom(b.birthDate));
+    html += '<div class="children-section"><div class="children-title">Children (' + sorted.length + ')</div><div class="children-grid">';
+    sorted.forEach(c => {
+      html += '<div class="child-card"><div class="name">' + escapeHtml(c.name) + '</div>' + (c.birthDate ? '<div class="dates">b. ' + escapeHtml(c.birthDate) + '</div>' : '') + '</div>';
+    });
+    html += '</div></div>';
+  }
+  return html;
+}
+
+function renderPersonCard(p, label) {
+  return '\n    <div class="parent-card">\n      <div class="label">' + label + '</div>\n      <div class="name">' + escapeHtml(p.name) + '</div>\n      <div class="dates">' + formatYears(p) + '</div>\n      ' + (p.birthplace ? '<div class="place">' + escapeHtml(p.birthplace) + '</div>' : '') + '\n    </div>\n  ';
+}
+
+function applySort() {
+  const order = sortOrder.value;
+  const filtered = filterFamilies();
+  if (order === 'newest') filtered.sort((a, b) => familySortKey(b) - familySortKey(a));
+  if (order === 'oldest') filtered.sort((a, b) => familySortKey(a) - familySortKey(b));
+  if (order === 'alpha') {
+    filtered.sort((a, b) => {
+      const an = (a.husband || a.wife || {}).name || '';
+      const bn = (b.husband || b.wife || {}).name || '';
+      return an.localeCompare(bn);
+    });
+  }
+  renderFamilies(filtered);
+}
+
+function filterFamilies() {
+  const term = surnameFilter.value.trim().toLowerCase();
+  if (!term) return [...allFamilies];
+  return allFamilies.filter(f => {
+    const h = f.husband?.name || '';
+    const w = f.wife?.name || '';
+    const kids = f.children.map(c => c.name).join(' ');
+    return (h + ' ' + w + ' ' + kids).toLowerCase().includes(term);
+  });
+}
+
+async function init() {
+  try {
+    // Try IndexedDB first, then fallback to localStorage (same logic as data-tree)
+    let data = await loadMostRecentTree();
+    if (!data || !data.people || data.people.length === 0) {
+      const saved = localStorage.getItem('familytree_data_v5');
+      if (saved) {
+        try { data = JSON.parse(saved); } catch (e) {}
+      }
+    }
+    loadingDiv.style.display = 'none';
+    if (!data || !data.people || data.people.length === 0) {
+      emptyState.style.display = 'block';
+      return;
+    }
+    peopleList = data.people;
+    allFamilies = buildFamilies(peopleList);
+    document.getElementById('statFamilies').textContent = allFamilies.length;
+    document.getElementById('statPeople').textContent = peopleList.length;
+    familyList.style.display = 'flex';
+    applySort();
+    // Auto-expand first family
+    const first = document.querySelector('.family-card');
+    if (first) first.classList.add('expanded');
+  } catch (err) {
+    console.error(err);
+    loadingDiv.textContent = 'Could not load family data.';
+  }
+}
+
+surnameFilter.addEventListener('input', applySort);
+sortOrder.addEventListener('change', applySort);
+document.getElementById('expandAll').addEventListener('click', () => {
+  document.querySelectorAll('.family-card').forEach(c => c.classList.add('expanded'));
+});
+document.getElementById('collapseAll').addEventListener('click', () => {
+  document.querySelectorAll('.family-card').forEach(c => c.classList.remove('expanded'));
+});
+
+init();
+</script>
+</body>
+</html>

@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Family Tree — Grid Template</title>
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
+@import url('./fonts.css');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
@@ -1011,16 +1011,18 @@ if (gridOverlay && gridToggle) {
   console.warn('[heritage-poster] gridOverlay or gridToggle not found in DOM; skipping grid features');
 }
 
-// Coordinate readout on hover
+// Coordinate readout on hover (dev-only — element may not exist in production DOM)
 const coordReadout = document.getElementById('coordReadout');
-poster.addEventListener('mousemove', (e) => {
-  const rect = poster.getBoundingClientRect();
-  const x = (e.clientX - rect.left) / scale;
-  const y = (e.clientY - rect.top) / scale;
-  const col = Math.round(x / cellW);
-  const row = Math.round(y / cellH);
-  coordReadout.textContent = `Col: ${col}, Row: ${row} | Pixel: ${Math.round(x)}, ${Math.round(y)}`;
-});
+if (coordReadout) {
+  poster.addEventListener('mousemove', (e) => {
+    const rect = poster.getBoundingClientRect();
+    const x = (e.clientX - rect.left) / scale;
+    const y = (e.clientY - rect.top) / scale;
+    const col = Math.round(x / cellW);
+    const row = Math.round(y / cellH);
+    coordReadout.textContent = `Col: ${col}, Row: ${row} | Pixel: ${Math.round(x)}, ${Math.round(y)}`;
+  });
+}
 
 // Zoom
 let scale = 1;
@@ -1192,6 +1194,11 @@ function openDocDB() {
 }
 
 async function saveDoc(slot, type, base64Image, meta) {
+  // SEC-02: Validate image is a proper data URL before storing
+  if (base64Image && !/^data:image\/(jpeg|png|webp|gif);base64,/.test(base64Image)) {
+    console.warn('[SEC-02] Rejected doc image with invalid format for slot', slot);
+    return null;
+  }
   if (!db) await openDocDB();
   const id = slot + '_' + type + '_' + Date.now();
   const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -1789,12 +1796,39 @@ function showToast(msg, duration) {
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
   setTimeout(() => el.remove(), duration + 500);
 }
+// UX-14: Debug toasts only show when ?debug is in the URL
+const _debugMode = new URLSearchParams(window.location.search).has('debug');
+function debugToast(msg, duration) {
+  if (!_debugMode) return;
+  showToast(msg, duration);
+}
 
 const saveSessionBtn = document.getElementById('saveSessionBtn');
 const loadSessionBtn = document.getElementById('loadSessionBtn');
 const sessionFileInput = document.getElementById('sessionFileInput');
 
 async function exportSession() {
+  // BUG-21 fix: in data-tree mode, export the canonical {people} format
+  // so the main app's loadSession can read it.
+  if (typeof dtModeActive !== 'undefined' && dtModeActive && typeof dtPeopleMap !== 'undefined' && dtPeopleMap && dtPeopleMap.size > 0) {
+    const peopleArr = Array.from(dtPeopleMap.values());
+    const payload = {
+      version: 5,
+      exportedAt: new Date().toISOString(),
+      people: peopleArr,
+      nextId: peopleArr.reduce((mx, p) => Math.max(mx, p.id || 0), 0) + 1,
+      visibleMaxGen: typeof visibleMaxGen !== 'undefined' ? visibleMaxGen : 8
+    };
+    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
+    a.click();
+    URL.revokeObjectURL(url);
+    return;
+  }
+  // Poster-native format (for standalone poster saves)
   const payload = {
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -2473,7 +2507,7 @@ const SPOUSE_MAP = {
 
   certConfirm.addEventListener('click', () => {
   try {
-  showToast('Apply clicked — type will show next');
+  debugToast('Apply clicked — type will show next');
   } catch(e) { console.error('toast err', e); }
   if (!lastTranscription) {
     showToast('No entry selected. Tap a card first.');
@@ -2488,7 +2522,7 @@ const SPOUSE_MAP = {
   showToast('Applying...');
   // DEBUG: show what data we're working with
   const preview = lastTranscription.child?.name || lastTranscription.groom?.name || lastTranscription.deceased?.name || 'no name';
-  showToast('Data: ' + preview.substring(0, 30));
+  debugToast('Data: ' + preview.substring(0, 30));
   const data = lastTranscription;
   const type = data._type || 'unknown';
 
@@ -2791,9 +2825,9 @@ const SPOUSE_MAP = {
   function formatNameplateName(fullName) {
     if (!fullName || fullName === 'Name') return 'Name';
     const parts = fullName.trim().split(/\s+/);
-    if (parts.length < 2) return fullName;
-    const surname = parts.pop();
-    const forename = parts.join(' ');
+    if (parts.length < 2) return escapeHtml(fullName);
+    const surname = escapeHtml(parts.pop());
+    const forename = escapeHtml(parts.join(' '));
     return forename + '<br>' + surname;
   }
 
@@ -2973,7 +3007,7 @@ const SPOUSE_MAP = {
 
     // Try to find the child in the tree
     childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
-    showToast('BC: searching for "' + childName + '" (year=' + (birthYear||'?') + ')');
+    debugToast('BC: searching for "' + childName + '" (year=' + (birthYear||'?') + ')');
     // Surname fallback only if generation makes sense
     if (!childPlate && birthYear) {
       childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
@@ -3002,9 +3036,9 @@ const SPOUSE_MAP = {
       const slot = childPlate.dataset.slot || 'unnamed';
       const gen = childPlate.dataset.gen || '?';
       const existing = childPlate.querySelector('.name')?.textContent || 'empty';
-      showToast('Matched "' + childName + '" to slot ' + slot + ' (gen ' + gen + ', was: ' + existing + ')');
+      debugToast('Matched "' + childName + '" to slot ' + slot + ' (gen ' + gen + ', was: ' + existing + ')');
     } else {
-      showToast('No match for "' + childName + '" — will try generation placement');
+      debugToast('No match for "' + childName + '" — will try generation placement');
     }
     // Also show all candidates in a delayed toast for mobile debugging
     const allCands = window.__lastFindCandidates || [];
@@ -3013,7 +3047,7 @@ const SPOUSE_MAP = {
         const top3 = allCands.slice(0, 3).map(c => {
           return c.slot + '=' + c.name.substring(0, 12) + '(sc' + c.score + ')';
         }).join(', ');
-        showToast('Top matches: ' + top3);
+        debugToast('Top matches: ' + top3);
       }, 1500);
     }
 
@@ -3038,18 +3072,18 @@ const SPOUSE_MAP = {
               addDocBadge(fPlate, 'birth');
               filled++;
               messages.push("BC father → " + pMap.fatherSlot);
-              showToast('Father: ' + bcFather + ' → ' + pMap.fatherSlot);
+              debugToast('Father: ' + bcFather + ' → ' + pMap.fatherSlot);
             } else {
-              showToast('Father slot ' + pMap.fatherSlot + ' blocked by fillPlate');
+              debugToast('Father slot ' + pMap.fatherSlot + ' blocked by fillPlate');
             }
           } else {
-            showToast('Father slot ' + pMap.fatherSlot + ' already has: ' + existing);
+            debugToast('Father slot ' + pMap.fatherSlot + ' already has: ' + existing);
           }
         } else {
-          showToast('Father slot ' + pMap.fatherSlot + ' not found in DOM');
+          debugToast('Father slot ' + pMap.fatherSlot + ' not found in DOM');
         }
       } else {
-        showToast('No pMap or no father data. pMap=' + JSON.stringify(pMap) + ' father=' + (data.father?.name || 'missing'));
+        debugToast('No pMap or no father data. pMap=' + JSON.stringify(pMap) + ' father=' + (data.father?.name || 'missing'));
       }
       if (pMap && pMap.motherSlot && data.mother?.name) {
         const mPlate = findSlot(pMap.motherSlot);
@@ -3062,18 +3096,18 @@ const SPOUSE_MAP = {
               addDocBadge(mPlate, 'birth');
               filled++;
               messages.push("BC mother → " + pMap.motherSlot);
-              showToast('Mother: ' + bcMother + ' → ' + pMap.motherSlot);
+              debugToast('Mother: ' + bcMother + ' → ' + pMap.motherSlot);
             } else {
-              showToast('Mother slot ' + pMap.motherSlot + ' blocked by fillPlate');
+              debugToast('Mother slot ' + pMap.motherSlot + ' blocked by fillPlate');
             }
           } else {
-            showToast('Mother slot ' + pMap.motherSlot + ' already has: ' + existing);
+            debugToast('Mother slot ' + pMap.motherSlot + ' already has: ' + existing);
           }
         } else {
-          showToast('Mother slot ' + pMap.motherSlot + ' not found in DOM');
+          debugToast('Mother slot ' + pMap.motherSlot + ' not found in DOM');
         }
       } else {
-        showToast('No mother data or pMap. mother=' + (data.mother?.name || 'missing'));
+        debugToast('No mother data or pMap. mother=' + (data.mother?.name || 'missing'));
       }
     } else if (childPlate) {
       // Found the child but on a generic nameplate (no slot) — just update
@@ -3347,7 +3381,7 @@ const SPOUSE_MAP = {
         const deathSlot = deathPlate.dataset.slot;
         console.log('[DC DEBUG] deceasedName:', deceasedName, 'deathSlot:', deathSlot);
         console.log('[DC DEBUG] OWN_PARENT_MAP[' + deathSlot + ']:', deathSlot ? OWN_PARENT_MAP[deathSlot] : 'NO SLOT');
-        showToast('DC: ' + deceasedName + ' → slot ' + deathSlot, 4000);
+        debugToast('DC: ' + deceasedName + ' → slot ' + deathSlot, 4000);
         if (deathSlot && OWN_PARENT_MAP[deathSlot]) {
           const pMap = OWN_PARENT_MAP[deathSlot];
           console.log('[DC DEBUG] fatherSlot:', pMap.fatherSlot, 'motherSlot:', pMap.motherSlot);
@@ -3363,7 +3397,7 @@ const SPOUSE_MAP = {
                 addDocBadge(fPlate, 'death');
                 filled++;
                 messages.push('DC father → ' + pMap.fatherSlot);
-                showToast('Father: ' + dcFather + ' → ' + pMap.fatherSlot);
+                debugToast('Father: ' + dcFather + ' → ' + pMap.fatherSlot);
               } else if (existing.toLowerCase().trim() !== dcFather.toLowerCase().trim()) {
                 // Name already there but different — check if it's the same person (partial match)
                 if (normalizeName(existing) === normalizeName(dcFather) || existing.toLowerCase().includes(dcFather.split(' ')[0].toLowerCase())) {
@@ -3380,7 +3414,7 @@ const SPOUSE_MAP = {
                   addDocBadge(fPlate, 'death');
                   filled++;
                   messages.push('DC father corrected ' + pMap.fatherSlot + ': ' + existing + ' → ' + dcFather);
-                  showToast('Corrected: ' + existing + ' → ' + dcFather + ' @ ' + pMap.fatherSlot);
+                  debugToast('Corrected: ' + existing + ' → ' + dcFather + ' @ ' + pMap.fatherSlot);
                 }
               }
             }
@@ -3397,7 +3431,7 @@ const SPOUSE_MAP = {
                 addDocBadge(mPlate, 'death');
                 filled++;
                 messages.push('DC mother → ' + pMap.motherSlot);
-                showToast('Mother: ' + dcMother + (dcMaiden ? ' née ' + dcMaiden : '') + ' → ' + pMap.motherSlot);
+                debugToast('Mother: ' + dcMother + (dcMaiden ? ' née ' + dcMaiden : '') + ' → ' + pMap.motherSlot);
               } else if (existing.toLowerCase().trim() !== dcMother.toLowerCase().trim()) {
                 if (normalizeName(existing) === normalizeName(dcMother) || existing.toLowerCase().includes(dcMother.split(' ')[0].toLowerCase())) {
                   if (dcMother.length > existing.length) {
@@ -3412,7 +3446,7 @@ const SPOUSE_MAP = {
                   addDocBadge(mPlate, 'death');
                   filled++;
                   messages.push('DC mother corrected ' + pMap.motherSlot + ': ' + existing + ' → ' + dcMother);
-                  showToast('Corrected: ' + existing + ' → ' + dcMother + ' @ ' + pMap.motherSlot);
+                  debugToast('Corrected: ' + existing + ' → ' + dcMother + ' @ ' + pMap.motherSlot);
                 }
               }
             }
@@ -3446,16 +3480,16 @@ const SPOUSE_MAP = {
                     addDocBadge(sPlate, 'death');
                     filled++;
                     messages.push('DC spouse corrected ' + spouseSlot + ': ' + existingSpouse + ' → ' + dcSpouseName);
-                    showToast('Corrected spouse: ' + existingSpouse + ' → ' + dcSpouseName);
+                    debugToast('Corrected spouse: ' + existingSpouse + ' → ' + dcSpouseName);
                   }
                 }
               }
             }
           }
         } else if (deathSlot) {
-          showToast('DC matched ' + deceasedName + ' but no OWN_PARENT_MAP entry for slot "' + deathSlot + '"');
+          debugToast('DC matched ' + deceasedName + ' but no OWN_PARENT_MAP entry for slot "' + deathSlot + '"');
         } else {
-          showToast('DC matched ' + deceasedName + ' but no slot assigned');
+          debugToast('DC matched ' + deceasedName + ' but no slot assigned');
         }
       }
     }
@@ -3473,7 +3507,7 @@ const SPOUSE_MAP = {
     const pMap = dSlot ? OWN_PARENT_MAP[dSlot] : null;
     const debugMsg = 'DC: slot=' + dSlot + ' parents=' + (pMap ? pMap.fatherSlot + '/' + pMap.motherSlot : 'NONE') + ' filled=' + filled;
     console.log('[CERT APPLY]', debugMsg);
-    showToast('✓ ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' — ' + debugMsg, 5000);
+    debugToast('✓ ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' — ' + debugMsg, 5000);
   } else {
     showToast('✓ Applied ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' to tree', 4000);
   }
@@ -3960,15 +3994,15 @@ function formatNameplateName(fullName) {
   // Strip parenthetical maiden-name suffix from display name
   const clean = fullName.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
   const parts = clean.split(/\s+/);
-  if (parts.length < 2) return clean;
-  const surname = parts.pop();
-  const forename = parts.join(' ');
+  if (parts.length < 2) return escapeHtml(clean);
+  const surname = escapeHtml(parts.pop());
+  const forename = escapeHtml(parts.join(' '));
   return forename + '<br>' + surname;
 }
 
 // Short name for display (mimics heritage-poster shortName)
 function dtShortName(fullName, gen) {
-  if (gen >= 5) return fullName || 'Name';
+  if (gen >= 5) return escapeHtml(fullName || 'Name');
   return formatNameplateName(fullName);
 }
 
@@ -4060,9 +4094,11 @@ function loadFromDataTree() {
   dtPeopleMap = new Map();
   data.people.forEach(p => dtPeopleMap.set(p.id, p));
 
-  // Find subject: gen 0, or status='you', or first confirmed, or first person
-  const subject = data.people.find(p => p.gen === 0) ||
-                  data.people.find(p => p.status === 'you') ||
+  // Find subject: prefer status='you' (set by focus picker), then gen 0 with parents,
+  // then gen 0, then first confirmed, then first person
+  const subject = data.people.find(p => p.status === 'you') ||
+                  data.people.find(p => p.gen === 0 && p.parents && p.parents.length > 0) ||
+                  data.people.find(p => p.gen === 0) ||
                   data.people.find(p => p.status === 'confirmed') ||
                   data.people[0];
   if (!subject) { console.log('[DT LOAD] no subject found'); return false; }
