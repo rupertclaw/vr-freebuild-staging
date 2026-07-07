@@ -1485,6 +1485,11 @@ function openDocDB() {
   });
 }
 async function saveDocToDB(personId, type, base64Image, meta) {
+  // SEC-02: Validate image is a proper data URL before storing
+  if (base64Image && !/^data:image\/(jpeg|png|webp|gif);base64,/.test(base64Image)) {
+    console.warn('[SEC-02] Rejected doc image with invalid format for person', personId);
+    return null;
+  }
   if (!_docDB) await openDocDB();
   const id = personId + '_' + type + '_' + Date.now();
   const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
@@ -2155,7 +2160,7 @@ function renderTree() {
     else if (dYear) cardYears = 'd. ' + dYear[0];
     else cardYears = person.years || '?';
 
-    let h = '<div class="name">' + (function getDisplayName(p) {
+    let h = '<div class="name">' + escapeHtml((function getDisplayName(p) {
       // If maidenName exists, show birth identity (firstName + maidenName)
       if (p.maidenName) {
         const parts = p.name.split(/\s+/);
@@ -2164,7 +2169,7 @@ function renderTree() {
         return (firstName + ' ' + p.maidenName).trim();
       }
       return p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
-    })(person) + '</div>' + (cardYears ? '<div class="years">' + cardYears + '</div>' : '');
+    })(person)) + '</div>' + (cardYears ? '<div class="years">' + escapeHtml(cardYears) + '</div>' : '');
     // Add CTA on the You card for first-run
     if (person.isYou && person.status === 'blank') {
       h += '<div class="cta">✍️ Tap to add yourself</div>';
@@ -3284,7 +3289,7 @@ function openGemini() {
   var url = 'https://gemini.google.com';
   var opened = false;
   try {
-    var win = window.open(url, '_blank');
+    var win = window.open(url, '_blank', 'noopener');
     if (win) opened = true;
   } catch (e) {}
   if (!opened) {
@@ -3339,7 +3344,7 @@ function openVenice() {
   var url = 'https://venice.ai/chat';
   var opened = false;
   try {
-    var win = window.open(url, '_blank');
+    var win = window.open(url, '_blank', 'noopener');
     if (win) opened = true;
   } catch (e) {}
   if (!opened) {
@@ -3602,7 +3607,7 @@ function openAmbigDialog(entry, type, docImage, targetName, matches, certKey) {
     if (p.status) info.push('status: ' + p.status);
     const btn = document.createElement('button');
     btn.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:8px;border:2px solid #8a7a5a;border-radius:6px;background:#faf6ee;cursor:pointer;font-family:"Cormorant Garamond",serif;font-size:13px;color:#2a1f10;';
-    btn.innerHTML = '<b>' + p.name + '</b> <span style="color:#6b5537;font-size:11px;">' + info.join(' | ') + '</span>';
+    btn.innerHTML = '<b>' + escapeHtml(p.name) + '</b> <span style="color:#6b5537;font-size:11px;">' + escapeHtml(info.join(' | ')) + '</span>';
     btn.addEventListener('click', () => {
       pendingAmbigTarget.resolveId = p.id;
       modal.style.display = 'none';
@@ -5705,7 +5710,7 @@ function openPrintDialog() {
     cleanup();
     localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
     try {
-      const w = window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
+      const w = window.open('heritage-poster.html?_t=' + Date.now(), '_blank', 'noopener');
       if (!w || w.closed || typeof w.closed === 'undefined') {
         // Popup blocked — fallback to same-tab
         location.href = 'heritage-poster.html?_t=' + Date.now();
@@ -5807,6 +5812,8 @@ function openPrintDialog() {
 // ═══════════════════════════════════════════════════════════════
 
 function parseGedcom(text) {
+  // SEC-01: Sanitise GEDCOM field values — strip angle brackets as defence-in-depth
+  function sanitize(s) { return (s || '').replace(/[<>]/g, ''); }
   const lines = text.split(/\r\n|\r|\n/);
   const records = {};
   let current = null;
@@ -5867,7 +5874,7 @@ function parseGedcom(text) {
   for (const [xref, rec] of Object.entries(records)) {
     if (rec.tag === 'INDI') {
       const nameArr = rec.data['NAME'] || [];
-      const name = nameArr[0]?.value || '';
+      const name = sanitize(nameArr[0]?.value || '');
       const surnameMatch = name.match(/\/([^/]*)\//);
       const surname = surnameMatch ? surnameMatch[1] : '';
       const given = name.replace(/\s*\/.*\//, '').trim();
@@ -5881,13 +5888,13 @@ function parseGedcom(text) {
         name: fullName || name,
         givenName: given,
         surname: surname,
-        birthDate: birth?.DATE?.[0]?.value || '',
-        birthPlace: birth?.PLAC?.[0]?.value || '',
-        deathDate: death?.DATE?.[0]?.value || '',
-        deathPlace: death?.PLAC?.[0]?.value || '',
+        birthDate: sanitize(birth?.DATE?.[0]?.value || ''),
+        birthPlace: sanitize(birth?.PLAC?.[0]?.value || ''),
+        deathDate: sanitize(death?.DATE?.[0]?.value || ''),
+        deathPlace: sanitize(death?.PLAC?.[0]?.value || ''),
         famc: famc,
         fams: famsSpouse,
-        sex: rec.data['SEX']?.[0]?.value || ''
+        sex: sanitize(rec.data['SEX']?.[0]?.value || '')
       };
     } else if (rec.tag === 'FAM') {
       const husb = rec.data['HUSB']?.[0]?.pointer;
@@ -5899,7 +5906,7 @@ function parseGedcom(text) {
         husb: husb,
         wife: wife,
         children: children,
-        marriageDate: marr?.DATE?.[0]?.value || ''
+        marriageDate: sanitize(marr?.DATE?.[0]?.value || '')
       };
     }
   }
