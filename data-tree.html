@@ -488,12 +488,17 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .person-card.blank {
   background: #f0ebe0;
   border: 1px dashed #b8a88a;
-  opacity: 0.4;
-  cursor: default;
+  opacity: 0.5;
+  cursor: pointer;
 }
-.person-card.blank:hover { transform: none; box-shadow: none; }
+.person-card.blank:hover { transform: scale(1.03); box-shadow: 0 2px 8px rgba(0,0,0,0.1); opacity: 0.7; }
 .person-card.blank .name,
 .person-card.blank .years { color: #b8a88a; }
+.person-card.blank .name.add-prompt {
+  font-style: italic;
+  font-size: 11px;
+  color: #a09478;
+}
 
 /* Minicard style for progressive expansion rightmost gen */
 .person-card.minicard {
@@ -894,6 +899,7 @@ details.acc .acc-body { padding: 6px 12px; }
         <span id="zoomLevel" aria-label="Zoom level">100%</span>
         <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
         <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom" aria-label="Reset zoom to fit">⟲</button>
+        <button class="header-btn zoom-btn" id="undoBtn" title="Undo last change" aria-label="Undo last change" onclick="undoTree()" disabled>↶</button>
       </div>
     </div>
     <div class="header-actions">
@@ -1563,27 +1569,14 @@ function initDefaultData() {
   const you = createPerson(nextId++, 0, 'You', 'Start your tree', 'blank', {});
   you.isYou = true;
   people.push(you);
-  // Gens 1-8: blank placeholder cards (2^gen each)
-  for (let g = 1; g <= 8; g++) {
-    const count = Math.pow(2, g);
-    for (let i = 0; i < count; i++) {
-      people.push(createPerson(nextId++, g, 'Name', '?', 'blank', {}));
-    }
-  }
-  // Wire parent-child relationships AND spouse relationships
-  for (let g = 0; g < 8; g++) {
-    const gen = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
-    const nextGen = people.filter(p => p.gen === g + 1).sort((a,b) => a.id - b.id);
-    gen.forEach((p, i) => {
-      const father = nextGen[2 * i];
-      const mother = nextGen[2 * i + 1];
-      if (father && mother) {
-        p.parents = [father.id, mother.id];
-        father.spouseId = mother.id;
-        mother.spouseId = father.id;
-      }
-    });
-  }
+  // Gen 1: two blank parent placeholders (father + mother)
+  const father = createPerson(nextId++, 1, '', '', 'blank', {});
+  const mother = createPerson(nextId++, 1, '', '', 'blank', {});
+  father.spouseId = mother.id;
+  mother.spouseId = father.id;
+  you.parents = [father.id, mother.id];
+  people.push(father);
+  people.push(mother);
   rebuildPeopleMaps();
 }
 
@@ -2125,6 +2118,46 @@ let treeWidth = 0, treeHeight = 0;
 let zoom = 0.35;
 let homeZoom = 0.35; // updated by init() — BUG-20: zoomReset uses this instead of hardcoded value
 
+// ─── Undo stack (UX-10): 5-deep snapshot history ───
+const UNDO_MAX = 5;
+let undoStack = [];
+
+function pushUndo() {
+  // Deep copy people + nextId so mutations don't affect the snapshot
+  const snapshot = {
+    people: JSON.parse(JSON.stringify(people)),
+    nextId: nextId,
+    visibleMaxGen: visibleMaxGen
+  };
+  undoStack.push(snapshot);
+  if (undoStack.length > UNDO_MAX) undoStack.shift();
+  updateUndoBtn();
+}
+
+function undoTree() {
+  if (undoStack.length === 0) {
+    showToast('Nothing to undo');
+    return;
+  }
+  const snapshot = undoStack.pop();
+  people = snapshot.people;
+  nextId = snapshot.nextId;
+  visibleMaxGen = snapshot.visibleMaxGen;
+  rebuildPeopleMaps();
+  closeDetail();
+  renderTree();
+  updateUndoBtn();
+  showToast('Undid last change (' + undoStack.length + ' undo' + (undoStack.length === 1 ? '' : 's') + ' left)');
+}
+
+function updateUndoBtn() {
+  const btn = document.getElementById('undoBtn');
+  if (btn) {
+    btn.disabled = undoStack.length === 0;
+    btn.style.opacity = undoStack.length === 0 ? '0.4' : '1';
+  }
+}
+
 function colLeftForGen(g, maxGen, bigTree) {
   let pos = 40;
   const extraGap = bigTree ? 20 : 0;
@@ -2190,16 +2223,23 @@ function renderTree() {
     else if (dYear) cardYears = 'd. ' + dYear[0];
     else cardYears = person.years || '?';
 
-    let h = '<div class="name">' + escapeHtml((function getDisplayName(p) {
-      // If maidenName exists, show birth identity (firstName + maidenName)
-      if (p.maidenName) {
-        const parts = p.name.split(/\s+/);
-        const surname = parts.pop();
-        const firstName = parts.join(' ');
-        return (firstName + ' ' + p.maidenName).trim();
-      }
-      return p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
-    })(person)) + '</div>' + (cardYears ? '<div class="years">' + escapeHtml(cardYears) + '</div>' : '');
+    // Blank placeholder cards show "+ Add" instead of "Name" / "?"
+    const isBlankPlaceholder = person.status === 'blank' && (!person.name || person.name === 'Name' || person.name === '');
+    let h;
+    if (isBlankPlaceholder) {
+      h = '<div class="name add-prompt">+ Add</div>';
+    } else {
+      h = '<div class="name">' + escapeHtml((function getDisplayName(p) {
+        // If maidenName exists, show birth identity (firstName + maidenName)
+        if (p.maidenName) {
+          const parts = p.name.split(/\s+/);
+          const surname = parts.pop();
+          const firstName = parts.join(' ');
+          return (firstName + ' ' + p.maidenName).trim();
+        }
+        return p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
+      })(person)) + '</div>' + (cardYears ? '<div class="years">' + escapeHtml(cardYears) + '</div>' : '');
+    }
     // Add CTA on the You card for first-run
     if (person.isYou && person.status === 'blank') {
       h += '<div class="cta">✍️ Tap to add yourself</div>';
@@ -2569,7 +2609,8 @@ function openDetail(person) {
   selectedPersonId = person.id;
   if (!history.state || history.state.panel !== 'detail') history.pushState({panel: 'detail'}, '');
   detailPanel.classList.add('active');
-  detailTitle.textContent = (person.maidenName ? person.name.replace(person.name.split(/\s+/).pop(), person.maidenName) : person.name);
+  const dispName = person.maidenName ? person.name.replace(person.name.split(/\s+/).pop(), person.maidenName) : person.name;
+  detailTitle.textContent = dispName || 'Add Person';
   detailBody.innerHTML = `
     <details class="acc" open>
       <summary>Identity</summary>
@@ -2851,8 +2892,9 @@ async function showDocImageFromDB(docId, personId, fallbackSrc) {
 
 function saveDetail() {
   if (!selectedPersonId) return;
-  const person = people.find(p => p.id === selectedPersonId);
+  const person = peopleById.get(selectedPersonId) || people.find(p => p.id === selectedPersonId);
   if (!person) return;
+  pushUndo();
   person.fullName = document.getElementById('d_fullName').value;
   person.name = document.getElementById('d_name').value;
   person.birthDate = document.getElementById('d_birthDate').value;
@@ -5111,6 +5153,7 @@ async function loadSession(file) {
     const text = await file.text();
     const data = JSON.parse(text);
     if (!data.people) { showToast('Invalid session file'); return; }
+    pushUndo();
     people = data.people;
     nextId = data.nextId || maxGen(people, p => p.id) + 1;
     gedcomFamilies = null; // loading a .familytree file clears GEDCOM FAM records
@@ -5297,6 +5340,16 @@ document.getElementById('guidancePanel').addEventListener('click', (e) => {
   if (treeMenuBtn) treeMenuBtn.addEventListener('click', () => { treeMenuBtn.setAttribute('aria-expanded', treeMenu.classList.contains('open')); });
   if (moreMenuBtn) moreMenuBtn.addEventListener('click', () => { moreMenuBtn.setAttribute('aria-expanded', moreMenu.classList.contains('open')); });
 
+  // Keyboard shortcut: Ctrl+Z = undo
+  document.addEventListener('keydown', (e) => {
+    if ((e.ctrlKey || e.metaKey) && e.key === 'z' && !e.shiftKey) {
+      const tag = (document.activeElement?.tagName || '').toLowerCase();
+      if (tag === 'input' || tag === 'textarea' || tag === 'select') return; // don't hijack text editing undo
+      e.preventDefault();
+      undoTree();
+    }
+  });
+
   // Dark mode toggle from menu item
   const darkModeLi = document.getElementById('darkModeToggleLi');
   if (darkModeLi) darkModeLi.addEventListener('click', toggleDarkMode);
@@ -5444,9 +5497,10 @@ function addParentsForPerson(person) {
     showToast('This person already has parents');
     return;
   }
+  pushUndo();
   const parentGen = person.gen + 1;
-  const father = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
-  const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+  const father = createPerson(nextId++, parentGen, '', '', 'blank', {});
+  const mother = createPerson(nextId++, parentGen, '', '', 'blank', {});
   father.spouseId = mother.id;
   mother.spouseId = father.id;
   father.spouseName = mother.name;
@@ -5495,13 +5549,14 @@ function addParentsForPerson(person) {
 
 function clearCard() {
   if (!selectedPersonId) return;
-  const person = people.find(p => p.id === selectedPersonId);
+  const person = peopleById.get(selectedPersonId) || people.find(p => p.id === selectedPersonId);
   if (!person) return;
+  pushUndo();
   const oldName = person.name || 'Person';
   // Reset to same defaults as createPerson blank card
-  person.name = 'Name';
+  person.name = '';
   person.fullName = '';
-  person.years = '?';
+  person.years = '';
   person.birthDate = '';
   person.deathDate = '';
   person.ageAtDeath = '';
@@ -6150,6 +6205,7 @@ function setFocusTreeByPerson(focusId) {
   if (!focusId) return;
   const focusPerson = peopleById.get(focusId);
   if (!focusPerson) return;
+  pushUndo();
 
   // Build ancestor-only view: focus person, their parents, grandparents, etc.
   // Their spouse and descendants are NOT included in the tree cards (they appear in family sheets)
@@ -6277,6 +6333,7 @@ function convertGedcomFile(file) {
       // Load directly into the page (same logic as loadSession, minus file parsing)
       try {
         if (!payload.people) { showToast('No people in GEDCOM'); return; }
+        pushUndo();
         people = payload.people;
         nextId = payload.nextId || maxGen(people, p => p.id) + 1;
         gedcomFamilies = result.families || null;
@@ -6449,7 +6506,7 @@ function inferSex(person) {
 
 function exportGedcom() {
   // Filter out blank/placeholder cards
-  const realPeople = people.filter(p => p.name && p.name !== 'Name' && p.status !== 'blank');
+  const realPeople = people.filter(p => p.name && p.name.trim() !== '' && p.name !== 'Name' && p.status !== 'blank');
   if (realPeople.length === 0) {
     showToast('No people to export. Add some names first.');
     return;
