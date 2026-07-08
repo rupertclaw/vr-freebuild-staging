@@ -1569,14 +1569,28 @@ function initDefaultData() {
   const you = createPerson(nextId++, 0, 'You', 'Start your tree', 'blank', {});
   you.isYou = true;
   people.push(you);
-  // Gen 1: two blank parent placeholders (father + mother)
-  const father = createPerson(nextId++, 1, '', '', 'blank', {});
-  const mother = createPerson(nextId++, 1, '', '', 'blank', {});
-  father.spouseId = mother.id;
-  mother.spouseId = father.id;
-  you.parents = [father.id, mother.id];
-  people.push(father);
-  people.push(mother);
+  // Gens 1-4: blank placeholder cards so the tree has visual structure
+  // (2^gen each: 2 + 4 + 8 + 16 = 30 blank ancestors)
+  for (let g = 1; g <= 4; g++) {
+    const count = Math.pow(2, g);
+    for (let i = 0; i < count; i++) {
+      people.push(createPerson(nextId++, g, '', '', 'blank', {}));
+    }
+  }
+  // Wire parent-child relationships AND spouse relationships
+  for (let g = 0; g < 4; g++) {
+    const gen = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
+    const nextGen = people.filter(p => p.gen === g + 1).sort((a,b) => a.id - b.id);
+    gen.forEach((p, i) => {
+      const father = nextGen[2 * i];
+      const mother = nextGen[2 * i + 1];
+      if (father && mother) {
+        p.parents = [father.id, mother.id];
+        father.spouseId = mother.id;
+        mother.spouseId = father.id;
+      }
+    });
+  }
   rebuildPeopleMaps();
 }
 
@@ -1666,7 +1680,7 @@ async function createTree(name) {
     await saveTreeData(currentTreeId, { people, nextId, visibleMaxGen });
   }
   const treeId = 'tree_' + Date.now();
-  initDefaultData(); // resets people, nextId to fresh 511 nodes
+  initDefaultData(); // resets people, nextId to fresh 31 nodes
   visibleMaxGen = 4;
   await saveTreeData(treeId, { people, nextId, visibleMaxGen });
   const meta = { id: treeId, name: name || 'New Tree', createdAt: Date.now(), updatedAt: Date.now() };
@@ -5402,6 +5416,7 @@ async function autoRestore() {
           }
         });
         showToast('Restored ' + people.length + ' people from "' + latest.name + '"');
+        updateTreeManagerUI();
         return true;
       }
     }
@@ -5434,6 +5449,7 @@ async function autoRestore() {
         treesList = [meta];
         localStorage.removeItem('familytree_data_v5');
         showToast('Migrated legacy save to new tree store');
+        updateTreeManagerUI();
         return true;
       }
     } catch (e) {}
@@ -5597,7 +5613,17 @@ function backfillComputedFields() {
   }
 }
 (async function init() {
-  if (!await autoRestore()) initDefaultData();
+  if (!await autoRestore()) {
+    initDefaultData();
+    // Create a default tree entry so the title shows
+    const treeId = 'tree_' + Date.now();
+    currentTreeId = treeId;
+    const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
+    await saveTreeMeta(meta);
+    await saveTreeData(treeId, { people, nextId, visibleMaxGen });
+    treesList = await loadAllTreeMetas();
+    updateTreeManagerUI();
+  }
   rebuildPeopleMaps(); // ensure maps are fresh regardless of which path loaded people
   backfillComputedFields();
   // On desktop, auto-fit zoom to fill viewport; on mobile/touch, stay conservative
