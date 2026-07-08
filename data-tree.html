@@ -6232,9 +6232,8 @@ function parseGedcom(text) {
 
 function setFocusTreeByPerson(focusId) {
   if (!focusId) return;
-  const focusPerson = peopleById.get(focusId);
+  const focusPerson = people.find(p => p.id === focusId);
   if (!focusPerson) return;
-  pushUndo();
 
   // Build ancestor-only view: focus person, their parents, grandparents, etc.
   // Their spouse and descendants are NOT included in the tree cards (they appear in family sheets)
@@ -6245,7 +6244,7 @@ function setFocusTreeByPerson(focusId) {
   for (let d = 0; d < maxDepth && current.length; d++) {
     const next = [];
     for (const id of current) {
-      const p = peopleById.get(id);
+      const p = people.find(pp => pp.id === id);
       if (!p) continue;
       for (const pid of p.parents || []) {
         included.add(pid);
@@ -6262,7 +6261,7 @@ function setFocusTreeByPerson(focusId) {
   for (let d = 0; d < maxDepth && current.length; d++) {
     const next = [];
     for (const id of current) {
-      const p = peopleById.get(id);
+      const p = people.find(pp => pp.id === id);
       if (!p) continue;
       for (const pid of p.parents || []) {
         genMap.set(pid, d + 1);
@@ -6367,6 +6366,7 @@ function convertGedcomFile(file) {
         nextId = payload.nextId || maxGen(people, p => p.id) + 1;
         gedcomFamilies = result.families || null;
         visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
+        rebuildPeopleMaps(); // ensure peopleById is fresh before focus picker uses it
 
         // Focus-tree picker for big/complex imports
         if (result.focusCandidates && result.focusCandidates.length > 0 && (people.length > 80 || result.components.length > 1)) {
