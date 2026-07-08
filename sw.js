@@ -1,16 +1,18 @@
-const CACHE_NAME = 'vaulted-roots-staging-v29';
+const CACHE_NAME = 'vaulted-roots-staging-v34';
 
 // Cache icons for offline use; also cache HTML as offline fallback
 const ASSETS = [
   './data-tree.html',
   './families.html',
   './heritage-poster.html',
+  './branch-tree.html',
   './html2canvas.min.js',
   './fonts.css',
   './fonts/CinzelDecorative-400.ttf',
   './fonts/CinzelDecorative-700.ttf',
   './fonts/CormorantGaramond-400.ttf',
   './fonts/CormorantGaramond-600.ttf',
+  './template-bg-v1.webp',
   './vaulted-roots-shield.png',
   './icon-192.png',
   './icon-512.png',
