@@ -2,7 +2,7 @@
 <html lang="en">
 <head>
 <meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
 <meta http-equiv="Pragma" content="no-cache">
 <meta http-equiv="Expires" content="0">
@@ -361,13 +361,13 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 }
 
 .person-card .name {
-  font-family: 'Cinzel Decorative', serif; font-size: 9px;
+  font-family: 'Cinzel Decorative', serif; font-size: 10px;
   color: #2a1f10; letter-spacing: 0.3px;
   white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
   line-height: 1.3;
 }
 .person-card .years {
-  font-family: 'Cormorant Garamond', serif; font-size: 8px;
+  font-family: 'Cormorant Garamond', serif; font-size: 9px;
   color: #7a6545; margin-top: 1px; font-style: italic;
 }
 .person-card .married {
@@ -889,37 +889,37 @@ details.acc .acc-body { padding: 6px 12px; }
   <div class="header-bottom">
     <div class="header-left-group">
       <div class="zoom-controls">
-        <button class="header-btn zoom-btn" id="backBtn" title="Go back" onclick="window.history.back()">⬅️</button>
-        <button class="header-btn zoom-btn" id="zoomOut" title="Zoom out">−</button>
-        <span id="zoomLevel">100%</span>
-        <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in">+</button>
-        <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom">⟲</button>
+        <button class="header-btn zoom-btn" id="backBtn" title="Go back" aria-label="Go back" onclick="window.history.back()">⬅️</button>
+        <button class="header-btn zoom-btn" id="zoomOut" title="Zoom out" aria-label="Zoom out">−</button>
+        <span id="zoomLevel" aria-label="Zoom level">100%</span>
+        <button class="header-btn zoom-btn" id="zoomIn" title="Zoom in" aria-label="Zoom in">+</button>
+        <button class="header-btn zoom-btn" id="zoomReset" title="Reset zoom" aria-label="Reset zoom to fit">⟲</button>
       </div>
     </div>
     <div class="header-actions">
       <!-- Primary labeled buttons -->
-      <button class="tb-btn primary" id="certToggle" title="Scan certificate" onclick="checkMemberFeature('cert_scanning', toggleCertPanel)">📷 <span>Scan</span></button>
-      <button class="tb-btn" id="nextStepsBtn" title="Next steps" onclick="openGuidancePanel()">📖 <span>Guide</span></button>
-      <button class="tb-btn" id="saveBtn" title="Save session" onclick="saveSession()">💾 <span>Save</span></button>
+      <button class="tb-btn primary" id="certToggle" title="Scan certificate" aria-label="Scan certificate" onclick="checkMemberFeature('cert_scanning', toggleCertPanel)">📷 <span>Scan</span></button>
+      <button class="tb-btn" id="nextStepsBtn" title="Next steps" aria-label="Research guidance" onclick="openGuidancePanel()">📖 <span>Guide</span></button>
+      <button class="tb-btn" id="saveBtn" title="Save session" aria-label="Save session" onclick="saveSession()">💾 <span>Save</span></button>
       <!-- Tree menu -->
-      <button class="tb-btn" id="treeMenuBtn" title="Tree options">🌳 <span>Tree</span> ▾</button>
-      <div class="tb-menu" id="treeMenu">
-        <div class="tb-menu-item" id="treeManagerToggle" onclick="checkMemberFeature('multiple_trees', toggleTreeManager)"><span class="icon">🌳</span> My Trees</div>
-        <div class="tb-menu-item" id="familySheetMenuItem" onclick="checkMemberFeature('family_sheets', function(){document.getElementById('familySheetBtn').click()})"><span class="icon">📋</span> Family Sheets</div>
-        <div class="tb-menu-item" id="viewPosterBtn" onclick="checkMemberFeature('heritage_poster', openPoster)"><span class="icon">🖼️</span> Heritage Poster</div>
-        <div class="tb-menu-item" id="printTreeBtn" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree</div>
-        <div class="tb-menu-item" id="gedcomToggle" onclick="checkMemberFeature('gedcom', function(){ openGuidancePanel(); setTimeout(function(){ var ib=document.getElementById('importBody'); if(ib) ib.style.display='block'; var ig=document.getElementById('importGuide'); if(ig){ var btn=ig.querySelector('button span'); if(btn) btn.style.transform='rotate(180deg)'; } },100); })"><span class="icon">🔄</span> Import & Export GEDCOM</div>
+      <button class="tb-btn" id="treeMenuBtn" title="Tree options" aria-label="Tree options menu" aria-haspopup="true" aria-expanded="false">🌳 <span>Tree</span> ▾</button>
+      <div class="tb-menu" id="treeMenu" role="menu">
+        <div class="tb-menu-item" id="treeManagerToggle" role="menuitem" tabindex="0" onclick="checkMemberFeature('multiple_trees', toggleTreeManager)"><span class="icon">🌳</span> My Trees</div>
+        <div class="tb-menu-item" id="familySheetMenuItem" role="menuitem" tabindex="0" onclick="checkMemberFeature('family_sheets', function(){document.getElementById('familySheetBtn').click()})"><span class="icon">📋</span> Family Sheets</div>
+        <div class="tb-menu-item" id="viewPosterBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('heritage_poster', openPoster)"><span class="icon">🖼️</span> Heritage Poster</div>
+        <div class="tb-menu-item" id="printTreeBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree</div>
+        <div class="tb-menu-item" id="gedcomToggle" role="menuitem" tabindex="0" onclick="checkMemberFeature('gedcom', function(){ openGuidancePanel(); setTimeout(function(){ var ib=document.getElementById('importBody'); if(ib) ib.style.display='block'; var ig=document.getElementById('importGuide'); if(ig){ var btn=ig.querySelector('button span'); if(btn) btn.style.transform='rotate(180deg)'; } },100); })"><span class="icon">🔄</span> Import & Export GEDCOM</div>
       </div>
       <!-- More menu -->
-      <button class="tb-btn" id="moreMenuBtn" title="More options">⋯ <span>More</span> ▾</button>
-      <div class="tb-menu" id="moreMenu">
-        <div class="tb-menu-item" id="shareBtn" onclick="checkMemberFeature('share_tree', shareTree)"><span class="icon">📤</span> Share Tree</div>
-        <div class="tb-menu-item" id="loadBtn"><span class="icon">📂</span> Load Backup</div>
-        <div class="tb-menu-item" id="darkModeToggleLi"><span class="icon" id="darkModeToggle">🌙</span> Dark Mode</div>
-        <div class="tb-menu-item" id="privacyBtn" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
-        <div class="tb-menu-item" id="feedbackBtn" onclick="showFeedbackModal()"><span class="icon">💬</span> Send Feedback</div>
-        <div class="tb-menu-item" id="facebookBtnLi" onclick="window.open('https://www.facebook.com/profile.php?id=61591673636516','_blank','noopener')"><span class="icon">👍</span> Follow on Facebook</div>
-        <div class="tb-menu-item danger" id="resetBtn">🗑️ Reset Tree</div>
+      <button class="tb-btn" id="moreMenuBtn" title="More options" aria-label="More options menu" aria-haspopup="true" aria-expanded="false">⋯ <span>More</span> ▾</button>
+      <div class="tb-menu" id="moreMenu" role="menu">
+        <div class="tb-menu-item" id="shareBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('share_tree', shareTree)"><span class="icon">📤</span> Share Tree</div>
+        <div class="tb-menu-item" id="loadBtn" role="menuitem" tabindex="0"><span class="icon">📂</span> Load Backup</div>
+        <div class="tb-menu-item" id="darkModeToggleLi" role="menuitem" tabindex="0"><span class="icon" id="darkModeToggle">🌙</span> Dark Mode</div>
+        <div class="tb-menu-item" id="privacyBtn" role="menuitem" tabindex="0" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
+        <div class="tb-menu-item" id="feedbackBtn" role="menuitem" tabindex="0" onclick="showFeedbackModal()"><span class="icon">💬</span> Send Feedback</div>
+        <div class="tb-menu-item" id="facebookBtnLi" role="menuitem" tabindex="0" onclick="window.open('https://www.facebook.com/profile.php?id=61591673636516','_blank','noopener')"><span class="icon">👍</span> Follow on Facebook</div>
+        <div class="tb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0">🗑️ Reset Tree</div>
       </div>
       <!-- Hidden anchors preserved for event listeners -->
       <a id="familySheetBtn" href="families.html" target="_blank" style="display:none;">&#128203;</a>
@@ -1425,6 +1425,7 @@ function createPerson(id, gen, name, years, status, opts) {
     years: years,
     birthDate: opts.birthDate || '',
     deathDate: opts.deathDate || '',
+    ageAtDeath: opts.ageAtDeath || '',
     status: status,
     occupation: opts.occupation || '',
     birthplace: opts.birthplace || '',
@@ -1438,13 +1439,40 @@ function createPerson(id, gen, name, years, status, opts) {
     siblings: opts.siblings || [],
     notes: opts.notes || '',
     source: opts.source || '',
-    sex: opts.sex || ''
+    sex: opts.sex || '',
+    focusHidden: opts.focusHidden || false
   };
 }
 
 let people = [];
 let nextId = 1;
 let gedcomFamilies = null; // FAM records from GEDCOM import (for family sheet view)
+
+// PERF-03: Map-based lookups for O(1) access instead of O(n) linear scans
+let peopleById = new Map();   // id -> person
+let peopleByGen = new Map();  // gen -> [persons]
+function rebuildPeopleMaps() {
+  peopleById = new Map();
+  peopleByGen = new Map();
+  for (const p of people) {
+    peopleById.set(p.id, p);
+    if (!peopleByGen.has(p.gen)) peopleByGen.set(p.gen, []);
+    peopleByGen.get(p.gen).push(p);
+  }
+}
+
+// CQ-05: Status constants — single source of truth, prevents string typos
+const STATUS = {
+  BLANK: 'blank',
+  CONFIRMED: 'confirmed',
+  PROBABLE: 'probable',
+  BRICKWALL: 'brickwall',
+  UNKNOWN_PARENT: 'unknown-parent',
+  YOU: 'you'
+};
+
+function isPlaceholder(p) { return !p || p.status === STATUS.BLANK || (p.name === 'Name' && !p.fullName); }
+function isConfirmed(p) { return p && (p.status === STATUS.CONFIRMED || p.status === STATUS.YOU); }
 let pendingDocFile = null;
 let pendingDocImage = null;
 let lastTranscription = null;
@@ -1556,6 +1584,7 @@ function initDefaultData() {
       }
     });
   }
+  rebuildPeopleMaps();
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1695,6 +1724,7 @@ async function switchTree(treeId) {
       if (p.name !== p.fullName) p.fullName = p.name;
     }
   });
+  rebuildPeopleMaps();
   renderTree();
   updateExpandGenBtn();
   updateTreeManagerUI();
@@ -1863,7 +1893,7 @@ function buildFamilySheetList() {
     // Sort parent IDs to create a stable key
     const parentKey = [...p.parents].sort((a,b) => a-b).join('-');
     if (!familyMap.has(parentKey)) {
-      const parents = p.parents.map(pid => people.find(x => x.id === pid)).filter(Boolean);
+      const parents = p.parents.map(pid => peopleById.get(pid)).filter(Boolean);
       familyMap.set(parentKey, {
         id: famId++,
         parents: parents,
@@ -1882,7 +1912,7 @@ function buildFamilySheetList() {
     if (seenPairs.has(pairKey)) return;
     seenPairs.add(pairKey);
     if (!familyMap.has(pairKey)) {
-      const spouse = people.find(x => x.id === p.spouseId);
+      const spouse = peopleById.get(p.spouseId);
       if (spouse) {
         familyMap.set(pairKey, {
           id: famId++,
@@ -2063,7 +2093,7 @@ function buildPersonCard(p, isChild) {
 }
 
 function showPersonDetail(id) {
-  const person = people.find(p => p.id === id);
+  const person = peopleById.get(id);
   if (person) openDetail(person);
 }
 
@@ -4153,7 +4183,7 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
     if (!candidate || !person || !person.parents) return false;
     for (const parentId of person.parents) {
       if (parentId === candidate.id) return true;
-      const parent = people.find(p => p.id === parentId);
+      const parent = peopleById.get(parentId);
       if (parent && isAncestor(candidate, parent)) return true;
     }
     return false;
@@ -5126,6 +5156,7 @@ async function loadSession(file) {
       if (savedFocus) setFocusTreeByPerson(parseInt(savedFocus));
     }
 
+    rebuildPeopleMaps();
     renderTree();
     const btn = document.getElementById('expandGenBtn');
     const actualMax = maxGen(people, p => p.gen);
@@ -5248,6 +5279,23 @@ document.getElementById('guidancePanel').addEventListener('click', (e) => {
     if (!menu) return;
     menu.addEventListener('click', () => menu.classList.remove('open'));
   });
+
+  // Keyboard support: Enter/Space on menu items triggers click
+  [treeMenu, moreMenu].forEach(menu => {
+    if (!menu) return;
+    menu.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') {
+        e.preventDefault();
+        const item = e.target.closest('[role="menuitem"]');
+        if (item) item.click();
+      }
+      if (e.key === 'Escape') menu.classList.remove('open');
+    });
+  });
+
+  // Update aria-expanded on menu toggle
+  if (treeMenuBtn) treeMenuBtn.addEventListener('click', () => { treeMenuBtn.setAttribute('aria-expanded', treeMenu.classList.contains('open')); });
+  if (moreMenuBtn) moreMenuBtn.addEventListener('click', () => { moreMenuBtn.setAttribute('aria-expanded', moreMenu.classList.contains('open')); });
 
   // Dark mode toggle from menu item
   const darkModeLi = document.getElementById('darkModeToggleLi');
@@ -5449,22 +5497,24 @@ function clearCard() {
   if (!selectedPersonId) return;
   const person = people.find(p => p.id === selectedPersonId);
   if (!person) return;
-  // Save old name/gen for toast
   const oldName = person.name || 'Person';
-  // Reset to blank card state
+  // Reset to same defaults as createPerson blank card
   person.name = 'Name';
-  person.fullName = null;
-  person.spouseName = null;
-  person.birthDate = null;
-  person.deathDate = null;
+  person.fullName = '';
   person.years = '?';
-  person.occupation = null;
-  person.birthplace = null;
-  person.maidenName = null;
+  person.birthDate = '';
+  person.deathDate = '';
+  person.ageAtDeath = '';
+  person.occupation = '';
+  person.birthplace = '';
+  person.maidenName = '';
+  person.marriedName = '';
+  person.spouseName = '';
+  person.spouseId = null;
   person.notes = '';
   person.docs = [];
   person.siblings = [];
-  person.status = 'blank';
+  person.status = STATUS.BLANK;
   renderTree();
   closeDetail();
   showToast('Cleared all data from ' + oldName);
@@ -5493,6 +5543,7 @@ function backfillComputedFields() {
 }
 (async function init() {
   if (!await autoRestore()) initDefaultData();
+  rebuildPeopleMaps(); // ensure maps are fresh regardless of which path loaded people
   backfillComputedFields();
   // On desktop, auto-fit zoom to fill viewport; on mobile/touch, stay conservative
   if (window.innerWidth > 768 && !('ontouchstart' in window)) {
@@ -6097,7 +6148,7 @@ function parseGedcom(text) {
 
 function setFocusTreeByPerson(focusId) {
   if (!focusId) return;
-  const focusPerson = people.find(p => p.id === focusId);
+  const focusPerson = peopleById.get(focusId);
   if (!focusPerson) return;
 
   // Build ancestor-only view: focus person, their parents, grandparents, etc.
@@ -6109,7 +6160,7 @@ function setFocusTreeByPerson(focusId) {
   for (let d = 0; d < maxDepth && current.length; d++) {
     const next = [];
     for (const id of current) {
-      const p = people.find(pp => pp.id === id);
+      const p = peopleById.get(id);
       if (!p) continue;
       for (const pid of p.parents || []) {
         included.add(pid);
@@ -6126,7 +6177,7 @@ function setFocusTreeByPerson(focusId) {
   for (let d = 0; d < maxDepth && current.length; d++) {
     const next = [];
     for (const id of current) {
-      const p = people.find(pp => pp.id === id);
+      const p = peopleById.get(id);
       if (!p) continue;
       for (const pid of p.parents || []) {
         genMap.set(pid, d + 1);
@@ -6244,11 +6295,13 @@ function convertGedcomFile(file) {
               // Restore original visibleMaxGen from the GEDCOM payload
               visibleMaxGen = Math.min(4, maxGen(people, p => p.gen));
             }
+            rebuildPeopleMaps();
             renderTree();
             updateExpandGenBtn();
             centerOnGen0();
           });
         } else {
+          rebuildPeopleMaps();
           renderTree();
         }
         const btn = document.getElementById('expandGenBtn');
