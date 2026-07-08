@@ -6232,8 +6232,20 @@ function parseGedcom(text) {
     return { index: idx, size: comp.length, focus: best };
   }).sort((a, b) => b.size - a.size);
 
-  // Store focus candidates on the global result object so the UI can use them
-  const focusCandidates = componentSummaries.map(c => c.focus).filter(Boolean);
+  // Build focus candidates list.
+  // For small trees (< 80 people), list every person so the user can pick their line.
+  // For large trees, list only the best candidate per component (too many to scroll).
+  let focusCandidates;
+  if (people.length <= 80) {
+    // All people, sorted by ancestor count descending (richest tree first)
+    focusCandidates = people.map(per => {
+      const a = ancestors(per.id).size - 1;
+      const d = descendants(per.id).size - 1;
+      return { id: per.id, name: per.name, birth: per.birthDate || per.years || '', total: a + d + 1, ancestors: a, descendants: d };
+    }).sort((x, y) => y.ancestors - x.ancestors || y.descendants - x.descendants);
+  } else {
+    focusCandidates = componentSummaries.map(c => c.focus).filter(Boolean);
+  }
 
   return { people: people, nextId: nextId, families: fams, components: componentSummaries, focusCandidates: focusCandidates };
 }
@@ -6308,13 +6320,13 @@ function showFocusPicker(candidates, components, onSelect) {
   overlay.innerHTML = '';
 
   const box = document.createElement('div');
-  box.style.cssText = 'background:#f5eedc;border:3px solid #8a7a5a;border-radius:10px;max-width:500px;width:100%;padding:20px;margin-top:40px;font-family:Cormorant Garamond,serif;color:#2a1f10;';
+  box.style.cssText = 'background:#f5eedc;border:3px solid #8a7a5a;border-radius:10px;max-width:500px;width:100%;padding:20px;margin-top:40px;font-family:Cormorant Garamond,serif;color:#2a1f10;max-height:80vh;display:flex;flex-direction:column;';
 
   box.innerHTML = '\
     <div style="font-family:Cinzel Decorative,serif;font-size:20px;color:#3e2b1a;margin-bottom:8px;">Choose a focus person</div>\
-    <div style="font-size:13px;color:#6b5537;margin-bottom:16px;line-height:1.5;">This tree has ' + people.length + ' people across ' + components.length + ' family groups. Pick the person whose ancestors you want to explore. Family sheets still list everyone.</div>\
-    <div id="focusList" style="display:flex;flex-direction:column;gap:10px;margin-bottom:16px;"></div>\
-    <button id="focusShowAll" style="width:100%;padding:10px;background:#5c4033;color:#e8dcc8;border:none;border-radius:6px;font-family:Cinzel Decorative,serif;font-size:14px;cursor:pointer;">Show everyone</button>\
+    <div style="font-size:13px;color:#6b5537;margin-bottom:16px;line-height:1.5;">This tree has ' + people.length + ' people. Pick the person whose ancestors you want to explore. Family sheets still list everyone.</div>\
+    <div id="focusList" style="display:flex;flex-direction:column;gap:8px;margin-bottom:16px;overflow-y:auto;flex:1;"></div>\
+    <button id="focusShowAll" style="width:100%;padding:10px;background:#5c4033;color:#e8dcc8;border:none;border-radius:6px;font-family:Cinzel Decorative,serif;font-size:14px;cursor:pointer;flex-shrink:0;">Show everyone</button>\
   ';
   overlay.appendChild(box);
   overlay.style.display = 'flex';
@@ -6376,9 +6388,9 @@ function convertGedcomFile(file) {
         gedcomFamilies = result.families || null;
         visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
 
-        // Focus-tree picker for big/complex imports
-        if (result.focusCandidates && result.focusCandidates.length > 0 && (people.length > 80 || result.components.length > 1)) {
-          showFocusPicker(result.focusCandidates, result.components, (focusId) => {
+        // Focus-tree picker — always show for GEDCOM imports so user can pick their line
+        if (result.focusCandidates && result.focusCandidates.length > 0) {
+          showFocusPicker(result.focusCandidates, result.components || [{label:'single group'}], (focusId) => {
             if (focusId) {
               setFocusTreeByPerson(focusId);
               localStorage.setItem('vr_focusPerson_' + currentTreeId, focusId);
