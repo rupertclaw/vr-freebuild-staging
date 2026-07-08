@@ -915,7 +915,7 @@ details.acc .acc-body { padding: 6px 12px; }
         <div class="tb-menu-item" id="familySheetMenuItem" role="menuitem" tabindex="0" onclick="checkMemberFeature('family_sheets', function(){document.getElementById('familySheetBtn').click()})"><span class="icon">📋</span> Family Sheets</div>
         <div class="tb-menu-item" id="viewPosterBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('heritage_poster', openPoster)"><span class="icon">🖼️</span> Heritage Poster</div>
         <div class="tb-menu-item" id="printTreeBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree</div>
-        <div class="tb-menu-item" id="gedcomToggle" role="menuitem" tabindex="0" onclick="checkMemberFeature('gedcom', function(){ openGuidancePanel(); setTimeout(function(){ var ib=document.getElementById('importBody'); if(ib) ib.style.display='block'; var ig=document.getElementById('importGuide'); if(ig){ var btn=ig.querySelector('button span'); if(btn) btn.style.transform='rotate(180deg)'; } },100); })"><span class="icon">🔄</span> Import & Export GEDCOM</div>
+        <div class="tb-menu-item" id="gedcomToggle" role="menuitem" tabindex="0" onclick="openGuidancePanel();setTimeout(function(){var b=document.getElementById('importGuide').querySelector('button');var body=document.getElementById('importBody');if(body&&b){body.style.display='block';b.querySelector('span').style.transform='rotate(180deg)';document.getElementById('guidanceBody').scrollTop=body.offsetTop-20;}},150);closeAllMenus()"><span class="icon">🔄</span> Import & Export GEDCOM</div>
       </div>
       <!-- More menu -->
       <button class="tb-btn" id="moreMenuBtn" title="More options" aria-label="More options menu" aria-haspopup="true" aria-expanded="false">⋯ <span>More</span> ▾</button>
@@ -2129,6 +2129,7 @@ setInterval(async () => {
 const CARD_W = 130, GAP_Y = 8;
 const GEN_X_GAP = 95; // wider gap since gen 0 is offset right by a full card width
 const MINI_W = 100, MINI_H = 14;
+const TREE_TOP_MARGIN = 70; // push Gen 0/1 below the floating tree title lozenge
 let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
 
 const wrap = document.getElementById('treeWrap');
@@ -2327,7 +2328,7 @@ function renderTree() {
 
   // STEP 1: Place the deepest generation as a neat vertical column.
   // This is the anchor generation — everything else positions relative to it.
-  let y = 10;
+  let y = TREE_TOP_MARGIN;
   if (gens[rightmostFull]) {
     gens[rightmostFull].forEach(p => {
       topMap.set(p.id, y);
@@ -2339,7 +2340,7 @@ function renderTree() {
   // Each card centers itself between its parents (1 or 2) in the next generation.
   for (let g = rightmostFull - 1; g >= 0; g--) {
     if (!gens[g]) continue;
-    let fallbackY = 10;
+    let fallbackY = TREE_TOP_MARGIN;
     gens[g].forEach(p => {
       if (!p.parents || p.parents.length === 0) {
         // No parents — place below the last card at this gen
@@ -2376,7 +2377,7 @@ function renderTree() {
   if (rightmostFull < displayMax) {
     for (let g = rightmostFull + 1; g <= displayMax; g++) {
       if (!gens[g]) continue;
-      let nextY = 10;
+      let nextY = TREE_TOP_MARGIN;
       gens[g].forEach(p => {
         const children = visiblePeople.filter(child =>
           child.parents && child.parents.includes(p.id)
@@ -2408,8 +2409,8 @@ function renderTree() {
   }
 
   // Clamp: ensure no card goes above the padding edge (negative top)
-  const minTop = Math.min(10, ...topMap.values());
-  const topOffset = minTop < 0 ? -minTop + 10 : 0;
+  const minTop = Math.min(TREE_TOP_MARGIN, ...topMap.values());
+  const topOffset = minTop < TREE_TOP_MARGIN ? -minTop + TREE_TOP_MARGIN : 0;
 
   // ─── Collision resolution: spouses and packed generations can overlap.
   // Push any overlapping card down so there is always GAP_Y between them.
@@ -6153,14 +6154,6 @@ function parseGedcom(text) {
     }
   }
 
-  // Normalise: shift so the youngest generation (most negative) is gen 0.
-  // BFS above assigns gen 0 to roots (oldest), children get gen -1, etc.
-  // The data tree and heritage poster both expect gen 0 = the subject (youngest).
-  let minGen = 0;
-  for (const p of people) { if (p.gen < minGen) minGen = p.gen; }
-  const genOffset = -minGen;
-  for (const p of people) { p.gen += genOffset; }
-
   // Build connected components and focus-candidate info (stored for UI)
   const components = [];
   const compVisited = new Set();
@@ -6240,9 +6233,8 @@ function parseGedcom(text) {
 
 function setFocusTreeByPerson(focusId) {
   if (!focusId) return;
-  const focusPerson = peopleById.get(focusId);
+  const focusPerson = people.find(p => p.id === focusId);
   if (!focusPerson) return;
-  pushUndo();
 
   // Build ancestor-only view: focus person, their parents, grandparents, etc.
   // Their spouse and descendants are NOT included in the tree cards (they appear in family sheets)
@@ -6253,7 +6245,7 @@ function setFocusTreeByPerson(focusId) {
   for (let d = 0; d < maxDepth && current.length; d++) {
     const next = [];
     for (const id of current) {
-      const p = peopleById.get(id);
+      const p = people.find(pp => pp.id === id);
       if (!p) continue;
       for (const pid of p.parents || []) {
         included.add(pid);
@@ -6270,7 +6262,7 @@ function setFocusTreeByPerson(focusId) {
   for (let d = 0; d < maxDepth && current.length; d++) {
     const next = [];
     for (const id of current) {
-      const p = peopleById.get(id);
+      const p = people.find(pp => pp.id === id);
       if (!p) continue;
       for (const pid of p.parents || []) {
         genMap.set(pid, d + 1);
@@ -6375,6 +6367,7 @@ function convertGedcomFile(file) {
         nextId = payload.nextId || maxGen(people, p => p.id) + 1;
         gedcomFamilies = result.families || null;
         visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
+        rebuildPeopleMaps(); // ensure peopleById is fresh before focus picker uses it
 
         // Focus-tree picker for big/complex imports
         if (result.focusCandidates && result.focusCandidates.length > 0 && (people.length > 80 || result.components.length > 1)) {
