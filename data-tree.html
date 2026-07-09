@@ -6117,11 +6117,16 @@ function parseGedcom(text) {
   }
 
   // --- Assign generations via BFS from roots ---
-  // Roots = people with no parents. Multiple disconnected sub-trees are fine.
+  // Roots = apex ancestors: people who are NEVER listed as CHIL in any FAM (they have nobody above them).
+  const allChildren = new Set();
+  for (const fam of Object.values(fams)) {
+    for (const cx of fam.children) allChildren.add(cx);
+  }
   const visited = new Set();
   const queue = [];
   for (const p of people) {
-    if (p.parents.length === 0) {
+    const xref = Object.keys(xrefMap).find(k => xrefMap[k] === p.id);
+    if (!allChildren.has(xref)) {
       p.gen = 0;
       visited.add(p.id);
       queue.push(p);
@@ -6131,7 +6136,7 @@ function parseGedcom(text) {
     const p = queue.shift();
     if (p.spouseId && !visited.has(p.spouseId)) {
       const sp = people.find(pp => pp.id === p.spouseId);
-      if (sp && sp.parents.length === 0) {
+      if (sp) {
         sp.gen = p.gen;
         visited.add(sp.id);
         queue.push(sp);
@@ -6141,7 +6146,7 @@ function parseGedcom(text) {
       if (!visited.has(cid)) {
         const child = people.find(pp => pp.id === cid);
         if (child) {
-          child.gen = p.gen - 1;
+          child.gen = p.gen + 1;
           visited.add(cid);
           queue.push(child);
         }
@@ -6153,6 +6158,14 @@ function parseGedcom(text) {
       p.gen = 0;
     }
   }
+
+  // Normalise: shift so the youngest person is gen 0.
+  // BFS above assigns gen 0 to roots (oldest), descendants get gen +1, etc.
+  // The data tree expects gen 0 = the subject (youngest).
+  let maxGen = 0;
+  for (const p of people) { if (p.gen > maxGen) maxGen = p.gen; }
+  const genOffset = maxGen;               // was: -minGen (when children got -1)
+  for (const p of people) { p.gen = maxGen - p.gen; }
 
   // Build connected components and focus-candidate info (stored for UI)
   const components = [];
