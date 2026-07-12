@@ -1065,6 +1065,7 @@ function exportGedcom() {
       } else {
         ged += '1 HUSB @I' + p.id + '@\n';
         if (spouse) ged += '1 WIFE @I' + spouse.id + '@\n';
+      }
       if (p.marriageDate) ged += '1 MARR\n2 DATE ' + p.marriageDate + '\n';
       // Children of this family
       const childrenOfCouple = p.children || [];
