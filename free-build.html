@@ -1215,6 +1215,24 @@ function showToast(msg, duration) {
 // INIT
 (function init() {
   if (!autoRestore()) initDefault();
+
+  // Auto-focus on best candidate if tree is large
+  if (people.length > 30) {
+    let best = null, bestScore = -1;
+    for (const p of people) {
+      if (!p.parents || p.parents.length === 0) continue;
+      const bY = (p.birthDate || '').match(/\d{4}/);
+      const yearScore = bY ? parseInt(bY[0]) : 0;
+      const childCount = (p.children || []).length;
+      const score = yearScore + childCount * 10;
+      if (score > bestScore) { bestScore = score; best = p; }
+    }
+    if (best) {
+      focusPersonId = best.id;
+      document.getElementById('focusBack').classList.add('visible');
+    }
+  }
+
   if (window.innerWidth > 768 && !('ontouchstart' in window)) {
     zoom = 1;
   } else {
