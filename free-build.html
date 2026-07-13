@@ -460,16 +460,29 @@ const COUPLE_GAP = 10;
 
 function getVisiblePeople() {
   if (focusPersonId) {
-    // Focus mode: show the focused person + immediate family (parents, siblings, spouse, children)
     const focus = people.find(p => p.id === focusPersonId);
     if (!focus) return people;
     const visible = new Set([focusPersonId]);
-    // Parents
+
+    // Helper: get person by id
+    function getP(id) { return people.find(p => p.id === id); }
+
+    // Parents (gen+1)
     (focus.parents || []).forEach(pid => visible.add(pid));
+    // Grandparents (gen+2)
+    for (const pid of (focus.parents || [])) {
+      const parent = getP(pid);
+      if (parent) (parent.parents || []).forEach(gpid => visible.add(gpid));
+    }
     // Spouse
     if (focus.spouseId) visible.add(focus.spouseId);
     // Children
     (focus.children || []).forEach(cid => visible.add(cid));
+    // Grandchildren (children of children)
+    for (const cid of (focus.children || [])) {
+      const child = getP(cid);
+      if (child) (child.children || []).forEach(gcid => visible.add(gcid));
+    }
     // Siblings (people sharing at least one parent)
     if (focus.parents && focus.parents.length > 0) {
       for (const p of people) {
@@ -479,15 +492,25 @@ function getVisiblePeople() {
         }
       }
     }
+    // Spouses of siblings
+    for (const id of [...visible]) {
+      const p = getP(id);
+      if (p && p.spouseId && p.id !== focusPersonId) visible.add(p.spouseId);
+    }
     // Parents of spouse (in-laws)
     if (focus.spouseId) {
-      const spouse = people.find(p => p.id === focus.spouseId);
+      const spouse = getP(focus.spouseId);
       if (spouse) (spouse.parents || []).forEach(pid => visible.add(pid));
     }
     // Children of spouse from other relationships
     if (focus.spouseId) {
-      const spouse = people.find(p => p.id === focus.spouseId);
+      const spouse = getP(focus.spouseId);
       if (spouse) (spouse.children || []).forEach(cid => visible.add(cid));
+    }
+    // Spouses of children
+    for (const cid of (focus.children || [])) {
+      const child = getP(cid);
+      if (child && child.spouseId) visible.add(child.spouseId);
     }
     return people.filter(p => visible.has(p.id));
   }
@@ -1219,12 +1242,20 @@ function showToast(msg, duration) {
   // Auto-focus on best candidate if tree is large
   if (people.length > 30) {
     let best = null, bestScore = -1;
+    function countAncestors(id, depth) {
+      if (depth > 4) return 0;
+      const p = people.find(pp => pp.id === id);
+      if (!p || !p.parents || p.parents.length === 0) return 0;
+      return p.parents.length + p.parents.reduce((s, pid) => s + countAncestors(pid, depth+1), 0);
+    }
     for (const p of people) {
       if (!p.parents || p.parents.length === 0) continue;
-      const bY = (p.birthDate || '').match(/\d{4}/);
-      const yearScore = bY ? parseInt(bY[0]) : 0;
+      const ancestors = countAncestors(p.id, 0);
       const childCount = (p.children || []).length;
-      const score = yearScore + childCount * 10;
+      const bY = (p.birthDate || '').match(/\d{4}/);
+      const yearScore = bY ? parseInt(bY[0]) / 100 : 0;
+      // Prefer people with lots of ancestors AND children (3-gen view)
+      const score = ancestors * 5 + childCount * 10 + yearScore;
       if (score > bestScore) { bestScore = score; best = p; }
     }
     if (best) {
