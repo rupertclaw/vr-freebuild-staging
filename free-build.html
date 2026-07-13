@@ -533,97 +533,153 @@ function layoutTree() {
   const viewPeople = getVisiblePeople();
   if (viewPeople.length === 0) return { positions: new Map(), width: 100, height: 100, connections: [] };
 
-  // Group people by generation
-  const genMap = {};
-  for (const p of viewPeople) {
-    if (!genMap[p.gen]) genMap[p.gen] = [];
-    genMap[p.gen].push(p);
-  }
-
-  // Sort generations: highest gen (ancestors) at top, lowest (descendants) at bottom
-  const gens = Object.keys(genMap).map(Number).sort((a, b) => b - a);
-
-  // Assign Y positions: ancestors at top, descendants at bottom
   const positions = new Map();
-  const GEN_HEIGHT = CARD_H + CARD_GAP_Y;
-  let totalWidth = 0;
-  let totalHeight = gens.length * GEN_HEIGHT + 100;
-
-  // First pass: assign Y by generation
-  gens.forEach((gen, gIdx) => {
-    const y = 50 + gIdx * GEN_HEIGHT;
-    const genPeople = genMap[gen];
-
-    // Within a generation, position couples together
-    const placed = new Set();
-    let x = 50;
-    const COUPLE_WIDTH = CARD_W + COUPLE_GAP + CARD_W + CARD_GAP_X;
-
-    for (const p of genPeople) {
-      if (placed.has(p.id)) continue;
-
-      if (p.spouseId && genPeople.find(sp => sp.id === p.spouseId)) {
-        // Place couple side by side
-        const spouse = genPeople.find(sp => sp.id === p.spouseId);
-        positions.set(p.id, { x, y });
-        positions.set(spouse.id, { x: x + CARD_W + COUPLE_GAP, y });
-        placed.add(p.id); placed.add(spouse.id);
-        x += COUPLE_WIDTH;
-      } else {
-        // Single person
-        positions.set(p.id, { x: x + CARD_W / 2, y });
-        placed.add(p.id);
-        x += CARD_W + CARD_GAP_X;
-      }
-    }
-    totalWidth = Math.max(totalWidth, x);
-  });
-
-  // Second pass: build connections
   const connections = [];
+  const viewSet = new Set(viewPeople.map(p => p.id));
+  const placed = new Set();
 
-  // Spouse connections (horizontal lines)
-  for (const p of viewPeople) {
-    if (p.spouseId && positions.has(p.id) && positions.has(p.spouseId)) {
+  // Find roots: people with no parents (in the visible set)
+  const roots = viewPeople.filter(p => !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid)));
+
+  // Recursive layout: layout a person's subtree (ancestors above, descendants below)
+  // Returns { width, centerX, topY, bottomY }
+  let nextX = 50;
+  const GEN_HEIGHT = CARD_H + CARD_GAP_Y;
+
+  function layoutPerson(personId, depth, maxDepth) {
+    if (placed.has(personId)) return { width: 0, centerX: 0, topY: 0, bottomY: 0 };
+    const person = people.find(p => p.id === personId);
+    if (!person || !viewSet.has(personId)) return { width: 0, centerX: 0, topY: 0, bottomY: 0 };
+
+    placed.add(personId);
+    const y = 50 + depth * GEN_HEIGHT;
+
+    // Check if this person has a spouse in the visible set
+    const hasSpouse = person.spouseId && viewSet.has(person.spouseId) && !placed.has(person.spouseId);
+
+    // Layout ancestors (parents) above this person
+    let ancestorWidth = 0;
+    let ancestorLeftX = 0;
+    const parentEntries = (person.parents || []).filter(pid => viewSet.has(pid) && !placed.has(pid));
+
+    if (parentEntries.length > 0 && depth < 20) {
+      // Layout parents as a couple
+      let parentStartX = nextX;
+      for (const pid of parentEntries) {
+        const r = layoutPerson(pid, depth + 1, maxDepth);
+        if (r.width > 0) {
+          ancestorWidth += r.width;
+        }
+      }
+      ancestorLeftX = parentStartX;
+    }
+
+    // Place this person (and spouse if applicable)
+    const myX = nextX;
+    let coupleWidth = CARD_W;
+
+    if (hasSpouse) {
+      placed.add(person.spouseId);
+      const spouse = people.find(p => p.id === person.spouseId);
+      // Place couple side by side
+      positions.set(personId, { x: myX, y });
+      positions.set(person.spouseId, { x: myX + CARD_W + COUPLE_GAP, y: spouse.gen >= person.gen ? y : y });
+      coupleWidth = CARD_W + COUPLE_GAP + CARD_W;
+
+      // Spouse line
       connections.push({
         type: 'spouse',
-        from: p.id, to: p.spouseId,
-        x1: positions.get(p.id).x + (p.gen === Math.max(...gens) ? 0 : 0),
-        y1: positions.get(p.id).y + CARD_H / 2,
-        x2: positions.get(p.spouseId).x,
-        y2: positions.get(p.spouseId).y + CARD_H / 2
+        x1: myX + CARD_W, y1: y + CARD_H / 2,
+        x2: myX + CARD_W + COUPLE_GAP, y2: y + CARD_H / 2
       });
+
+      nextX += coupleWidth + CARD_GAP_X;
+    } else {
+      positions.set(personId, { x: myX, y });
+      nextX += CARD_W + CARD_GAP_X;
     }
-  }
 
-  // Parent-child connections (vertical lines)
-  for (const p of viewPeople) {
-    if (p.parents && p.parents.length > 0) {
-      const parentPositions = p.parents.map(pid => positions.get(pid)).filter(Boolean);
-      if (parentPositions.length === 0) continue;
+    // Layout children below
+    const childEntries = (person.children || []).filter(cid => viewSet.has(cid) && !placed.has(cid));
+    let childStartX = nextX;
+    let childrenWidth = 0;
 
-      // Midpoint between parents (or single parent)
-      let midX;
-      if (parentPositions.length === 2) {
-        midX = (parentPositions[0].x + CARD_W / 2 + parentPositions[1].x + CARD_W / 2) / 2;
-      } else {
-        midX = parentPositions[0].x + CARD_W / 2;
+    if (childEntries.length > 0 && depth > -20) {
+      for (const cid of childEntries) {
+        const r = layoutPerson(cid, depth - 1, maxDepth);
+        if (r.width > 0) childrenWidth += r.width;
       }
-      const parentY = parentPositions[0].y + CARD_H;
-      const childPos = positions.get(p.id);
+    }
+
+    // Draw parent-child connectors
+    if (parentEntries.length > 0) {
+      const parentPositions = parentEntries.map(pid => positions.get(pid)).filter(Boolean);
+      if (parentPositions.length > 0) {
+        let midX;
+        if (parentPositions.length === 2) {
+          midX = (parentPositions[0].x + parentPositions[1].x + CARD_W) / 2;
+        } else {
+          midX = parentPositions[0].x + CARD_W / 2;
+        }
+        const parentY = parentPositions[0].y + CARD_H;
+        const childCenterX = myX + CARD_W / 2;
+        const childY = y;
+        const midY = (parentY + childY) / 2;
+        connections.push({ type: 'parent-child', midX, parentY, childX: childCenterX, childY });
+      }
+    }
+
+    // Draw child connectors for children of this person
+    for (const cid of childEntries) {
+      const childPos = positions.get(cid);
       if (!childPos) continue;
+      let parentMidX = myX + CARD_W / 2;
+      if (hasSpouse) {
+        parentMidX = myX + CARD_W + COUPLE_GAP / 2;
+      }
+      const parentY = y + CARD_H;
       const childX = childPos.x + CARD_W / 2;
       const childY = childPos.y;
+      const midY = (parentY + childY) / 2;
+      connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+    }
 
-      // L-shaped connector: down from midpoint, across to child, down to child
-      connections.push({
-        type: 'parent-child',
-        midX, parentY, childX, childY
-      });
+    return {
+      width: Math.max(coupleWidth + CARD_GAP_X, childrenWidth),
+      centerX: myX + coupleWidth / 2,
+      topY: y,
+      bottomY: y + CARD_H
+    };
+  }
+
+  // Layout all roots
+  for (const root of roots) {
+    if (placed.has(root.id)) continue;
+    layoutPerson(root.id, 0, 30);
+  }
+
+  // Layout any unplaced people (disconnected)
+  for (const p of viewPeople) {
+    if (!placed.has(p.id)) {
+      positions.set(p.id, { x: nextX, y: 50 });
+      nextX += CARD_W + CARD_GAP_X;
     }
   }
 
-  return { positions, width: totalWidth + 200, height: totalHeight, connections };
+  // Calculate bounds
+  let maxX = 0, maxY = 0, minX = Infinity;
+  for (const [id, pos] of positions) {
+    maxX = Math.max(maxX, pos.x + CARD_W);
+    maxY = Math.max(maxY, pos.y + CARD_H);
+    minX = Math.min(minX, pos.x);
+  }
+
+  return {
+    positions,
+    width: Math.max(maxX + 100, 200),
+    height: Math.max(maxY + 100, 200),
+    connections
+  };
 }
 
 function renderFreeBuild() {
