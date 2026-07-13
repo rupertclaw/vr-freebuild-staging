@@ -9,7 +9,7 @@
 <link rel="apple-touch-icon" href="./apple-touch-icon.png">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
 <style>
-@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
+@import url('./fonts.css');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 
@@ -430,7 +430,14 @@ function filterFamilies() {
 
 async function init() {
   try {
-    const data = await loadMostRecentTree();
+    // Try IndexedDB first, then fallback to localStorage (same logic as data-tree)
+    let data = await loadMostRecentTree();
+    if (!data || !data.people || data.people.length === 0) {
+      const saved = localStorage.getItem('familytree_data_v5');
+      if (saved) {
+        try { data = JSON.parse(saved); } catch (e) {}
+      }
+    }
     loadingDiv.style.display = 'none';
     if (!data || !data.people || data.people.length === 0) {
       emptyState.style.display = 'block';
@@ -442,6 +449,9 @@ async function init() {
     document.getElementById('statPeople').textContent = peopleList.length;
     familyList.style.display = 'flex';
     applySort();
+    // Auto-expand first family
+    const first = document.querySelector('.family-card');
+    if (first) first.classList.add('expanded');
   } catch (err) {
     console.error(err);
     loadingDiv.textContent = 'Could not load family data.';

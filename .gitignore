@@ -1,1 +1,12 @@
-.vercel
+# Editor files
+.DS_Store
+*.swp
+*~
+.vscode/
+.idea/
+
+# Node (if ever added)
+node_modules/
+
+# Local dev artifacts
+*.log
