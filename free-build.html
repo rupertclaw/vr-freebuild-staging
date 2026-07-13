@@ -240,7 +240,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="zoom-btn" onclick="setZoom(zoom * 1.2)">+</button>
       <span id="zoomLevel">100%</span>
       <button class="zoom-btn" onclick="setZoom(zoom / 1.2)">−</button>
-      <button class="zoom-btn" onclick="setZoom(0.5)">Reset</button>
+      <button class="zoom-btn" onclick="fitToScreen()">Fit</button>
     </div>
     <button class="header-btn" onclick="exportGedcom()" title="Export GEDCOM">⬇</button>
     <button class="header-btn" onclick="toggleTheme()" title="Theme" id="themeBtn">🌙</button>
@@ -803,6 +803,19 @@ function setZoom(z) {
   renderFreeBuild();
   document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
 }
+function fitToScreen() {
+  const sa = document.getElementById("treeScroll");
+  const wrap = document.getElementById("treeWrap");
+  if (!sa || !wrap) return;
+  const s = Math.min((sa.clientWidth-20)/wrap.offsetWidth, (sa.clientHeight-20)/wrap.offsetHeight, 1);
+  setZoom(Math.max(0.05, Math.min(3, s)));
+  setTimeout(function() {
+    const sx = (wrap.offsetWidth * zoom - sa.clientWidth) / 2;
+    const sy = (wrap.offsetHeight * zoom - sa.clientHeight) / 2;
+    sa.scrollTo({ left: Math.max(0, sx), top: Math.max(0, sy), behavior: "auto" });
+  }, 50);
+}
+
 
 // Pinch zoom
 (function setupPinchZoom() {
