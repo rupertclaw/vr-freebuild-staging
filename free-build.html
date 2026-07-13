@@ -776,6 +776,19 @@ function renderFreeBuild() {
   // Apply zoom
   wrap.style.setProperty('--zoom', zoom);
   wrap.style.transform = 'scale(' + zoom + ')';
+
+  // Auto-scroll to center on focus person
+  setTimeout(() => {
+    const scrollArea = document.getElementById('treeScroll');
+    if (!scrollArea) return;
+    let targetId = focusPersonId || (viewPeople.length > 0 ? viewPeople[0].id : null);
+    if (!targetId) return;
+    const targetPos = positions.get(targetId);
+    if (!targetPos) return;
+    const cx = (targetPos.x + CARD_W / 2) * zoom;
+    const cy = (targetPos.y + CARD_H / 2) * zoom;
+    scrollArea.scrollTo({ left: Math.max(0, cx - scrollArea.clientWidth / 2), top: Math.max(0, cy - scrollArea.clientHeight / 2), behavior: 'auto' });
+  }, 50);
 }
 
 function escapeHtml(s) {
