@@ -1322,6 +1322,14 @@ function showToast(msg, duration) {
   }
   document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
   renderFreeBuild();
+
+  // Auto-center on focus person and fit to screen
+  if (focusPersonId) {
+    setTimeout(function() {
+      fitToScreen();
+      centerOnPerson(focusPersonId);
+    }, 100);
+  }
 })();
 </script>
 </body>
