@@ -425,25 +425,36 @@ function parseGedcom(text) {
   }
 
   // Assign generations via BFS from roots
+  // Roots = apex ancestors: people NEVER listed as CHIL in any FAM
+  const allChildren = new Set();
+  for (const fam of Object.values(fams)) {
+    for (const cx of fam.children) allChildren.add(cx);
+  }
   const visited = new Set();
   const queue = [];
   for (const p of result) {
-    if (p.parents.length === 0) { p.gen = 0; visited.add(p.id); queue.push(p); }
+    const xref = Object.keys(xrefMap).find(k => xrefMap[k] === p.id);
+    if (!allChildren.has(xref)) { p.gen = 0; visited.add(p.id); queue.push(p); }
   }
   while (queue.length > 0) {
     const p = queue.shift();
     if (p.spouseId && !visited.has(p.spouseId)) {
       const sp = result.find(pp => pp.id === p.spouseId);
-      if (sp && sp.parents.length === 0) { sp.gen = p.gen; visited.add(sp.id); queue.push(sp); }
+      if (sp) { sp.gen = p.gen; visited.add(sp.id); queue.push(sp); }
     }
     for (const cid of p.children) {
       if (!visited.has(cid)) {
         const child = result.find(pp => pp.id === cid);
-        if (child) { child.gen = p.gen - 1; visited.add(cid); queue.push(child); }
+        if (child) { child.gen = p.gen + 1; visited.add(cid); queue.push(child); }
       }
     }
   }
   for (const p of result) { if (!visited.has(p.id)) p.gen = 0; }
+
+  // Normalise: shift so the youngest person is gen 0
+  let maxGen = 0;
+  for (const p of result) { if (p.gen > maxGen) maxGen = p.gen; }
+  for (const p of result) { p.gen = maxGen - p.gen; }
 
   return { people: result, nextId: nid, families: fams };
 }
@@ -1288,7 +1299,21 @@ function showToast(msg, duration) {
 
 // INIT
 (function init() {
-  if (!autoRestore()) initDefault();
+  // Check for GEDCOM data passed from data-tree.html
+  const gedcomData = localStorage.getItem('vr_gedcomImport');
+  if (gedcomData) {
+    localStorage.removeItem('vr_gedcomImport');
+    try {
+      const imported = JSON.parse(gedcomData);
+      people = imported.people || [];
+      nextId = imported.nextId || (people.length + 1);
+      showToast('Loaded ' + people.length + ' people from GEDCOM import');
+    } catch (e) {
+      console.error('GEDCOM import pickup error:', e);
+    }
+  }
+
+  if (!autoRestore() && people.length === 0) initDefault();
 
   // Auto-focus on best candidate if tree is large
   if (people.length > 30) {

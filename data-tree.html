@@ -787,6 +787,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="header-btn" id="printTreeBtn" title="Print tree" onclick="checkMemberFeature('print', openPrintDialog)">🖨️</button>
       <button class="header-btn" id="resetBtn" title="Reset tree">🔄</button>
       <a class="header-btn" id="familySheetBtn" href="families.html" target="_blank" title="Family sheets (new tab)" style="text-decoration:none;">&#128203;</a>
+      <a class="header-btn" id="freeBuildBtn" href="free-build.html" target="_blank" title="Free Build (new tab)" style="text-decoration:none;">🌿</a>
     </div>
   </div>
 </div>
@@ -5916,67 +5917,15 @@ function convertGedcomFile(file) {
         showToast('Could not parse GEDCOM file. Check the format.');
         return;
       }
-      const payload = {
-        version: 5,
-        exportedAt: new Date().toISOString(),
+      // Store parsed GEDCOM data for free-build.html to pick up
+      localStorage.setItem('vr_gedcomImport', JSON.stringify({
         people: result.people,
         nextId: result.nextId,
-        visibleMaxGen: Math.max(...result.people.map(p => p.gen)),
-        focusCandidates: result.focusCandidates || [],
-        components: result.components || []
-      };
-      const json = JSON.stringify(payload, null, 2);
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'vaultedroots_import_' + new Date().toISOString().slice(0, 10) + '.familytree';
-      a.click();
-      URL.revokeObjectURL(url);
-      // Load directly into the page (same logic as loadSession, minus file parsing)
-      try {
-        if (!payload.people) { showToast('No people in GEDCOM'); return; }
-        people = payload.people;
-        nextId = payload.nextId || maxGen(people, p => p.id) + 1;
-        gedcomFamilies = result.families || null;
-        visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
-
-        // Focus-tree picker for big/complex imports
-        if (result.focusCandidates && result.focusCandidates.length > 0 && (people.length > 80 || result.components.length > 1)) {
-          showFocusPicker(result.focusCandidates, result.components, (focusId) => {
-            if (focusId) {
-              setFocusTreeByPerson(focusId);
-              localStorage.setItem('vr_focusPerson_' + currentTreeId, focusId);
-            } else {
-              // show all: parsed generations already set, but clear any saved focus
-              localStorage.removeItem('vr_focusPerson_' + currentTreeId);
-              people.forEach(p => { p.focusHidden = false; });
-              visibleMaxGen = maxGen(people, p => p.gen);
-            }
-            renderTree();
-            updateExpandGenBtn();
-            centerOnGen0();
-          });
-        } else {
-          visibleMaxGen = maxGen(people, p => p.gen);
-          renderTree();
-        }
-        const btn = document.getElementById('expandGenBtn');
-        const actualMax = maxGen(people, p => p.gen);
-        if (visibleMaxGen >= actualMax) {
-          btn.textContent = 'All visible — tap any person to add parents';
-          btn.disabled = true;
-        } else {
-          btn.disabled = false;
-          btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
-        }
-        // Save tree to IndexedDB
-        if (currentTreeId) await saveCurrentTreeToDB();
-        showToast('Converted ' + result.people.length + ' people. Tree loaded! A .familytree backup was also downloaded.');
-      } catch (loadErr) {
-        console.error('[GEDCOM] load error:', loadErr);
-        showToast('Converted ' + result.people.length + ' people. A .familytree file was downloaded — tap 📂 Load to import it.');
-      }
+        families: result.families || {},
+        importedAt: new Date().toISOString()
+      }));
+      // Redirect to Free Build page
+      window.location.href = 'free-build.html';
     } catch (err) {
       console.error('[GEDCOM]', err);
       showToast('GEDCOM parse error: ' + err.message);
