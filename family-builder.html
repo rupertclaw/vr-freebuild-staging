@@ -270,9 +270,28 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .help-footer input { margin-right: 6px; cursor: pointer; }
 .help-btn {
   background: var(--bg-btn); color: var(--text-btn); border: 1px solid var(--bg-btn-border);
-  width: 32px; height: 28px; border-radius: 6px; font-size: 16px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  height: 28px; padding: 0 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  display: flex; gap: 5px; align-items: center; font-family: 'Cormorant Garamond', serif;
+  white-space: nowrap; position: relative;
 }
+
+/* Dropdown menus (matching homepage style) */
+.fb-menu {
+  display: none; position: absolute; top: 100%; right: 0; margin-top: 6px;
+  background: #f5eedc; border: 1px solid #c4b89a; border-radius: 8px;
+  width: 240px; padding: 6px; z-index: 10000;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+.fb-menu.open { display: block; }
+.fb-menu-item {
+  display: flex; gap: 10px; align-items: center;
+  padding: 9px 10px; font-size: 13px; border-radius: 6px;
+  color: #3e2b1a; cursor: pointer; font-family: 'Cormorant Garamond', serif;
+}
+.fb-menu-item:hover { background: #efe4c8; }
+.fb-menu-item.danger { color: #8a2a2a; border-top: 1px solid #d8c9a8; margin-top: 4px; padding-top: 11px; }
+.fb-menu-item .icon { font-size: 16px; width: 20px; text-align: center; }
+.fb-menu-wrap { position: relative; }
 
 /* Focus navigator */
 .focus-back {
@@ -301,15 +320,26 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 <div class="header">
     <div class="header-logo">Vaulted Roots</div>
-    <div class="view-toggle">
-      <button onclick="location.href='data-tree.html'">Pedigree</button>
-      <button class="active" onclick="location.href='family-builder.html'">Family Builder</button>
-    </div>
     <div class="header-actions">
-      <label class="gedcom-btn" for="gedcomInput">Import GEDCOM</label>
+      <!-- Tree dropdown -->
+      <div class="fb-menu-wrap">
+        <button class="help-btn" id="treeMenuBtn" title="Tree options">🌳 <span>Tree</span> ▾</button>
+        <div class="fb-menu" id="treeMenu" role="menu">
+          <div class="fb-menu-item" role="menuitem" onclick="location.href='data-tree.html'"><span class="icon">🌲</span> Pedigree Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="location.href='family-builder.html'"><span class="icon">🌿</span> Family Builder</div>
+          <div class="fb-menu-item danger" role="menuitem" onclick="resetTree()"><span class="icon">🗑️</span> Reset Tree</div>
+        </div>
+      </div>
+      <!-- Guide dropdown -->
+      <div class="fb-menu-wrap">
+        <button class="help-btn" id="guideMenuBtn" title="Import, Export & Guide">📖 <span>Guide</span> ▾</button>
+        <div class="fb-menu" id="guideMenu" role="menu">
+          <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('gedcomInput').click()"><span class="icon">📥</span> Import GEDCOM</div>
+          <div class="fb-menu-item" role="menuitem" onclick="exportGedcom()"><span class="icon">📤</span> Export GEDCOM</div>
+          <div class="fb-menu-item" role="menuitem" onclick="toggleHelp()"><span class="icon">📖</span> Guide & Help</div>
+        </div>
+      </div>
       <input type="file" id="gedcomInput" accept=".ged,.gedcom,text/plain" style="display:none">
-      <button class="help-btn" onclick="toggleHelp()" title="Help & Guide">📖</button>
-      <button class="header-btn" onclick="resetTree()" title="Reset">↻</button>
     </div>
 </div>
 
@@ -854,7 +884,14 @@ function layoutTree() {
     const hasSpouse = person.spouseId && viewSet.has(person.spouseId);
     const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
 
-    const childEntries = (person.children || []).filter(cid => viewSet.has(cid));
+    // Only count children from the primary marriage for width calculation
+    const spouseId = person.spouseId;
+    const childEntries = (person.children || []).filter(cid => {
+      if (!viewSet.has(cid)) return false;
+      const child = getP(cid);
+      if (!child || !child.parents) return true;
+      return child.parents.includes(personId) && (spouseId ? child.parents.includes(spouseId) : child.parents.length === 1);
+    });
     let childrenTotal = 0;
     for (const cid of childEntries) {
       childrenTotal += computeWidth(cid) + CARD_GAP_X;
@@ -1813,6 +1850,33 @@ function showToast(msg, duration) {
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
   setTimeout(() => el.remove(), duration + 500);
 }
+
+// DROPDOWN MENUS
+(function() {
+  const treeMenuBtn = document.getElementById('treeMenuBtn');
+  const treeMenu = document.getElementById('treeMenu');
+  const guideMenuBtn = document.getElementById('guideMenuBtn');
+  const guideMenu = document.getElementById('guideMenu');
+
+  function toggleMenu(menu, btn) {
+    const other = menu === treeMenu ? guideMenu : treeMenu;
+    other.classList.remove('open');
+    menu.classList.toggle('open');
+  }
+
+  if (treeMenuBtn) treeMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(treeMenu, treeMenuBtn); });
+  if (guideMenuBtn) guideMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(guideMenu, guideMenuBtn); });
+
+  document.addEventListener('click', (e) => {
+    if (!treeMenu?.contains(e.target) && e.target !== treeMenuBtn) treeMenu?.classList.remove('open');
+    if (!guideMenu?.contains(e.target) && e.target !== guideMenuBtn) guideMenu?.classList.remove('open');
+  });
+
+  [treeMenu, guideMenu].forEach(menu => {
+    if (!menu) return;
+    menu.addEventListener('click', () => menu.classList.remove('open'));
+  });
+})();
 
 // HELP MODAL
 function toggleHelp() {
