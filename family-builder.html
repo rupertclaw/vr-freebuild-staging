@@ -4,7 +4,7 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
 <title>Vaulted Roots — Family Builder</title>
-<meta name="description" content="Build your family tree in any direction. Private, offline, and yours.">
+<meta name="description" content="Build your family tree in any direction. Private, and yours.">
 <link rel="manifest" href="./manifest.json">
 <link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
 <script src="https://d3js.org/d3.v7.min.js"></script>
@@ -349,7 +349,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <!-- Tab 0: Start Here -->
       <div class="help-section active" data-tab="0">
         <h3>Welcome to Family Builder</h3>
-        <p>This is a private, offline family tree builder. Everything runs in your browser — no account, no server, no data sent anywhere.</p>
+        <p>This is a private family tree builder. Everything runs in your browser — no account, no server, no data sent anywhere.</p>
         <p>You can:</p>
         <ul>
           <li><b>Build from scratch</b> — tap a card, add parents, spouses, children</li>
@@ -1008,16 +1008,9 @@ function layoutTree() {
     currentX += w + CARD_GAP_X * 2;
   }
 
-  // Layout any unplaced people (disconnected)
-  for (const p of viewPeople) {
-    if (!visited.has(p.id)) {
-      positions.set(p.id, { x: currentX, y: 50 });
-      visited.add(p.id);
-      currentX += CARD_W + CARD_GAP_X;
-    }
-  }
-
   // ── MULTI-MARRIAGE PASS: place additional spouses and their children ──
+  // Must run BEFORE the disconnected pass so secondary spouses and their
+  // children aren't grabbed as disconnected cards.
   function getRightmostAt(y, excludeId) {
     let max = 0;
     for (const [id, pos] of positions) {
@@ -1088,6 +1081,15 @@ function layoutTree() {
           childLeftX += CARD_W + CARD_GAP_X;
         }
       }
+    }
+  }
+
+  // Layout any unplaced people (disconnected)
+  for (const p of viewPeople) {
+    if (!visited.has(p.id)) {
+      positions.set(p.id, { x: currentX, y: 50 });
+      visited.add(p.id);
+      currentX += CARD_W + CARD_GAP_X;
     }
   }
 
@@ -1870,12 +1872,6 @@ document.getElementById('helpDontShow').addEventListener('change', function() {
       fitToScreen();
       centerOnPerson(focusPersonId);
     }, 100);
-  }
-
-  // Show help on first visit
-  if (!localStorage.getItem('vr_help_seen')) {
-    setTimeout(function() { toggleHelp(); }, 500);
-    localStorage.setItem('vr_help_seen', '1');
   }
 })();
 </script>
