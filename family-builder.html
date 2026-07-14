@@ -308,7 +308,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     <div class="header-actions">
       <label class="gedcom-btn" for="gedcomInput">Import GEDCOM</label>
       <input type="file" id="gedcomInput" accept=".ged,.gedcom,text/plain" style="display:none">
-      <button class="help-btn" onclick="toggleHelp()" title="Help & Guide">?</button>
+      <button class="help-btn" onclick="toggleHelp()" title="Help & Guide">📖</button>
       <button class="header-btn" onclick="resetTree()" title="Reset">↻</button>
     </div>
 </div>
@@ -447,9 +447,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
         <p>Everything stays in your browser's local storage. No data is uploaded to any server. Clearing your browser data will erase your tree — export a GEDCOM to keep a copy.</p>
       </div>
 
-    </div>
-    <div class="help-footer">
-      <label><input type="checkbox" id="helpDontShow"> Don't show this automatically next time</label>
     </div>
   </div>
 </div>
@@ -1026,28 +1023,54 @@ function layoutTree() {
   for (const p of viewPeople) {
     if (!positions.has(p.id) || !p.families || p.families.length <= 1) continue;
 
+    let spouseIndex = 0;
     for (const fam of p.families) {
       const spouseId = fam.spouseId;
       if (!viewSet.has(spouseId) || visited.has(spouseId)) continue;
+      spouseIndex++;
 
       const personPos = positions.get(p.id);
       const spouseY = personPos.y;
 
-      // Place spouse to the right of any cards already at this person's y
-      let spouseX = personPos.x + CARD_W + COUPLE_GAP;
-      const existingRight = getRightmostAt(spouseY, p.id);
-      if (existingRight >= spouseX) {
-        spouseX = existingRight + CARD_GAP_X;
+      // Place secondary spouse on the LEFT side to avoid crossing through primary spouse
+      // Primary spouse (spouseId) is already placed to the right by the main layout
+      let spouseX;
+      // Check if primary spouse is to the right of person
+      const primarySpousePos = positions.get(p.spouseId);
+      if (primarySpousePos && primarySpousePos.x > personPos.x) {
+        // Primary is on right, place secondary on left
+        spouseX = personPos.x - CARD_W - COUPLE_GAP;
+        // Ensure doesn't overlap with anything on the left
+        if (spouseX < 0) {
+          // Shift everything right to make room — but simpler: just use 0 and let it clip
+          // Actually, let's check what's to the left
+          const leftCard = Array.from(positions.values())
+            .filter(pos => Math.abs(pos.y - spouseY) < GEN_HEIGHT / 2 && pos.x < personPos.x)
+            .sort((a, b) => a.x - b.x);
+          if (leftCard.length > 0) {
+            const leftmost = leftCard[0];
+            spouseX = leftmost.x - CARD_W - CARD_GAP_X;
+          }
+        }
+      } else {
+        // Primary is on left (or no primary), place secondary on right
+        spouseX = personPos.x + CARD_W + COUPLE_GAP;
+        const existingRight = getRightmostAt(spouseY, p.id);
+        if (existingRight >= spouseX) {
+          spouseX = existingRight + CARD_GAP_X;
+        }
       }
 
       positions.set(spouseId, { x: spouseX, y: spouseY });
       visited.add(spouseId);
 
       // Spouse line
+      const lineStartX = spouseX < personPos.x ? spouseX + CARD_W : personPos.x + CARD_W;
+      const lineEndX = spouseX < personPos.x ? personPos.x : spouseX;
       connections.push({
         type: 'spouse',
-        x1: personPos.x + CARD_W, y1: spouseY + CARD_H / 2,
-        x2: spouseX, y2: spouseY + CARD_H / 2
+        x1: lineStartX, y1: spouseY + CARD_H / 2,
+        x2: lineEndX, y2: spouseY + CARD_H / 2
       });
 
       // Children below this couple
@@ -1061,8 +1084,8 @@ function layoutTree() {
       if (familyChildren.length > 0) {
         const childY = spouseY + GEN_HEIGHT;
         const totalW = familyChildren.length * CARD_W + (familyChildren.length - 1) * CARD_GAP_X;
-        const coupleCenter = (personPos.x + CARD_W + spouseX) / 2;
-        let childLeftX = Math.max(spouseX, coupleCenter - totalW / 2);
+        const coupleCenter = (Math.min(personPos.x, spouseX) + Math.max(personPos.x, spouseX) + CARD_W) / 2;
+        let childLeftX = coupleCenter - totalW / 2;
 
         // Ensure no overlap with already-placed children at this y level
         const existingChildRight = getRightmostAt(childY);
@@ -1070,7 +1093,7 @@ function layoutTree() {
           childLeftX = existingChildRight + CARD_GAP_X;
         }
 
-        const parentMidX = (personPos.x + CARD_W + spouseX) / 2;
+        const parentMidX = coupleCenter;
         const parentY = spouseY + CARD_H;
 
         for (const cid of familyChildren) {
@@ -1797,15 +1820,6 @@ function switchHelpTab(idx, btn) {
 // Close help when clicking the overlay backdrop
 document.getElementById('helpOverlay').addEventListener('click', function(e) {
   if (e.target === this) toggleHelp();
-});
-
-// Save "don't show" preference
-document.getElementById('helpDontShow').addEventListener('change', function() {
-  if (this.checked) {
-    localStorage.setItem('vr_help_seen', '1');
-  } else {
-    localStorage.removeItem('vr_help_seen');
-  }
 });
 
 // INIT
