@@ -63,16 +63,43 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 .header {
   position: fixed; top: 0; left: 0; right: 0;
+  height: auto;
   background: var(--bg-header); border-bottom: 2px solid var(--bg-header-border);
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 14px; z-index: 300;
+  overflow: visible;
+}
+.header-top {
   display: flex; align-items: center; justify-content: space-between;
-  padding: 0 8px; z-index: 300; height: 48px; gap: 4px;
+  gap: 12px; flex-wrap: wrap;
+}
+.header-brand {
+  display: flex; flex-direction: column;
 }
 .header-logo {
-  font-family: 'Cinzel Decorative', serif; font-size: 14px; color: var(--text-logo);
-  font-weight: 700; line-height: 1; letter-spacing: 0.5px; white-space: nowrap;
-  text-shadow: 0 0 6px rgba(56, 189, 248, 0.30);
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 24px; color: var(--text-logo); font-weight: 700;
+  line-height: 1.1; letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.40), 0 0 20px rgba(56, 189, 248, 0.20);
 }
-.header-tagline { display: none; }
+.header-tagline {
+  font-size: 14px; color: var(--text-tagline); font-weight: 700;
+  letter-spacing: 2px; margin-top: 3px;
+}
+.header-bottom {
+  display: flex; align-items: center; justify-content: flex-end;
+  flex-wrap: wrap;
+  padding-top: 6px; border-top: 1px solid rgba(255,248,225,0.08);
+  margin-top: 4px;
+  gap: 6px;
+}
+.header-actions {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  position: relative;
+}
 
 .view-toggle {
   display: flex; gap: 2px; background: rgba(0,0,0,0.2); border-radius: 6px; padding: 2px;
@@ -110,7 +137,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 /* Tree area */
 .tree-scroll {
-  position: fixed; top: 50px; left: 0; right: 0; bottom: 0;
+  position: fixed; top: 90px; left: 0; right: 0; bottom: 0;
   overflow: auto; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y;
   background: radial-gradient(ellipse at center, var(--bg-tree-start) 0%, var(--bg-tree-end) 100%);
 }
@@ -157,7 +184,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 /* Detail Panel */
 .detail-panel {
-  display: none; position: fixed; top: 120px; right: 0; bottom: 0;
+  display: none; position: fixed; top: 140px; right: 0; bottom: 0;
   width: 360px; max-width: 95vw; background: #f5eedc; z-index: 400;
   border-left: 3px solid #4a3a22; flex-direction: column;
 }
@@ -274,6 +301,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   display: flex; gap: 5px; align-items: center; font-family: 'Cormorant Garamond', serif;
   white-space: nowrap; position: relative;
 }
+.help-btn.guide-btn {
+  background: #5a7a3a; color: #f5eedc; border-color: #4a6a2a;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
 
 /* Dropdown menus (matching homepage style) */
 .fb-menu {
@@ -332,7 +363,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 <body>
 
 <div class="header">
-    <div class="header-logo">Vaulted Roots</div>
+  <div class="header-top">
+    <div class="header-brand">
+      <div class="header-logo">Vaulted Roots</div>
+      <div class="header-tagline">Your legacy. Secure.</div>
+    </div>
     <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
     <div class="header-actions">
       <!-- Tree dropdown -->
@@ -346,7 +381,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </div>
       <!-- Guide dropdown -->
       <div class="fb-menu-wrap">
-        <button class="help-btn" id="guideMenuBtn" title="Import, Export & Guide">📖 <span>Guide</span> ▾</button>
+        <button class="help-btn guide-btn" id="guideMenuBtn" title="Import, Export & Guide">📖 <span>Guide</span> ▾</button>
         <div class="fb-menu" id="guideMenu" role="menu">
           <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('gedcomInput').click()"><span class="icon">🔄</span> Import GEDCOM</div>
           <div class="fb-menu-item" role="menuitem" onclick="exportGedcom()"><span class="icon">📤</span> Export GEDCOM</div>
@@ -355,21 +390,23 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       </div>
       <input type="file" id="gedcomInput" accept=".ged,.gedcom,text/plain" style="display:none">
     </div>
+  </div>
+  <div class="header-bottom">
+    <div class="header-actions">
+      <button class="help-btn" onclick="setZoom(zoom * 1.2)" title="Zoom in">+</button>
+      <span class="help-btn" id="zoomLevel" style="cursor:default;min-width:36px;justify-content:center;">100%</span>
+      <button class="help-btn" onclick="setZoom(zoom / 1.2)" title="Zoom out">−</button>
+      <button class="help-btn" onclick="fitToScreen()" title="Fit to screen">Fit</button>
+      <button class="help-btn" onclick="exportGedcom()" title="Export GEDCOM">⬇</button>
+      <button class="help-btn" onclick="toggleTheme()" title="Theme" id="themeBtn">🌙</button>
+    </div>
+  </div>
 </div>
 
 <div class="tree-scroll" id="treeScroll">
   <div class="tree-wrap" id="treeWrap">
     <svg class="fb-svg" id="fbSvg"></svg>
   </div>
-</div>
-
-<div class="floating-toolbar">
-  <button class="zoom-btn" onclick="setZoom(zoom * 1.2)">+</button>
-  <span id="zoomLevel">100%</span>
-  <button class="zoom-btn" onclick="setZoom(zoom / 1.2)">−</button>
-  <button class="zoom-btn" onclick="fitToScreen()">Fit</button>
-  <button class="zoom-btn" onclick="exportGedcom()" title="Export GEDCOM">⬇</button>
-  <button class="zoom-btn" onclick="toggleTheme()" title="Theme" id="themeBtn">🌙</button>
 </div>
 
 <button class="focus-back" id="focusBack" onclick="resetFocus()">←</button>
@@ -1154,30 +1191,24 @@ function layoutTree() {
         const coupleCenter = (Math.min(personPos.x, spouseX) + Math.max(personPos.x, spouseX) + CARD_W) / 2;
         let childLeftX = Math.round(coupleCenter - totalW / 2);
 
-        // If secondary spouse is on the left, children should go left too
-        // Check for collisions and push in the correct direction
+        // Collision avoidance: direction depends on which side the secondary spouse is
         if (spouseX < personPos.x) {
-          // Secondary family is on the left side — push children left if they collide
-          // Find the rightmost card at childY that is to the LEFT of the primary family's children
-          const rightmostLeft = Array.from(positions.entries())
-            .filter(([id, pos]) => {
-              if (id === p.id || id === spouseId) return false;
-              return Math.abs(pos.y - childY) < GEN_HEIGHT / 2 && pos.x < personPos.x;
-            })
-            .map(([id, pos]) => pos.x + CARD_W)
-            .reduce((max, x) => Math.max(max, x), 0);
-          // If our desired position overlaps with something on the left, shift further left
-          if (rightmostLeft > 0 && childLeftX < rightmostLeft) {
-            // There are cards to the left that overlap — shift our children left of them
-            // Actually we want to be LEFT of those cards, so check if we overlap
-            const ourRight = childLeftX + totalW;
-            if (ourRight > rightmostLeft) {
-              childLeftX = rightmostLeft - totalW - CARD_GAP_X;
-              if (childLeftX < 0) childLeftX = 0;
+          // Secondary family is on the LEFT — place children to the left of everything
+          // Find the leftmost card at this Y level
+          let leftmost = Infinity;
+          for (const [id, pos] of positions) {
+            if (id === p.id || id === spouseId) continue;
+            if (Math.abs(pos.y - childY) < GEN_HEIGHT / 2) {
+              if (pos.x < leftmost) leftmost = pos.x;
             }
           }
+          if (leftmost !== Infinity) {
+            // Place our children to the LEFT of the leftmost existing card
+            childLeftX = Math.min(childLeftX, leftmost - totalW - CARD_GAP_X);
+          }
+          if (childLeftX < 0) childLeftX = 0;
         } else {
-          // Secondary family is on the right side — push children right if they collide
+          // Secondary family is on the RIGHT — place children to the right of everything
           const existingChildRight = getRightmostAt(childY);
           if (existingChildRight >= childLeftX) {
             childLeftX = existingChildRight + CARD_GAP_X;
