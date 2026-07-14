@@ -825,9 +825,19 @@ function layoutTree() {
     }
   }
 
-  // ── MULTI-MARRIAGE PASS: render additional spouses and their children ──
-  // For each placed person with families array, check if any spouse wasn't placed.
-  // If so, place them beside the person and lay out their children below.
+  // ── MULTI-MARRIAGE PASS: place additional spouses and their children ──
+  function getRightmostAt(y, excludeId) {
+    let max = 0;
+    for (const [id, pos] of positions) {
+      if (id === excludeId) continue;
+      if (Math.abs(pos.y - y) < GEN_HEIGHT / 2) {
+        const right = pos.x + CARD_W;
+        if (right > max) max = right;
+      }
+    }
+    return max;
+  }
+
   for (const p of viewPeople) {
     if (!positions.has(p.id) || !p.families || p.families.length <= 1) continue;
 
@@ -835,12 +845,16 @@ function layoutTree() {
       const spouseId = fam.spouseId;
       if (!viewSet.has(spouseId) || visited.has(spouseId)) continue;
 
-      // Place this spouse beside the person
       const personPos = positions.get(p.id);
-      // Find rightmost x at this person's y level to place the new spouse
-      let spouseX = personPos.x + CARD_W + COUPLE_GAP;
-      // Check if that position is occupied; if so, shift right
       const spouseY = personPos.y;
+
+      // Place spouse to the right of any cards already at this person's y
+      let spouseX = personPos.x + CARD_W + COUPLE_GAP;
+      const existingRight = getRightmostAt(spouseY, p.id);
+      if (existingRight >= spouseX) {
+        spouseX = existingRight + CARD_GAP_X;
+      }
+
       positions.set(spouseId, { x: spouseX, y: spouseY });
       visited.add(spouseId);
 
@@ -851,8 +865,7 @@ function layoutTree() {
         x2: spouseX, y2: spouseY + CARD_H / 2
       });
 
-      // Now lay out children of this family below the couple
-      const spouse = getP(spouseId);
+      // Children below this couple
       const familyChildren = (p.children || []).filter(cid => {
         if (!viewSet.has(cid) || visited.has(cid)) return false;
         const child = getP(cid);
@@ -861,9 +874,18 @@ function layoutTree() {
       });
 
       if (familyChildren.length > 0) {
-        let childLeftX = personPos.x;
         const childY = spouseY + GEN_HEIGHT;
-        let parentMidX = personPos.x + CARD_W + COUPLE_GAP / 2;
+        const totalW = familyChildren.length * CARD_W + (familyChildren.length - 1) * CARD_GAP_X;
+        const coupleCenter = (personPos.x + CARD_W + spouseX) / 2;
+        let childLeftX = Math.max(spouseX, coupleCenter - totalW / 2);
+
+        // Ensure no overlap with already-placed children at this y level
+        const existingChildRight = getRightmostAt(childY);
+        if (existingChildRight >= childLeftX) {
+          childLeftX = existingChildRight + CARD_GAP_X;
+        }
+
+        const parentMidX = (personPos.x + CARD_W + spouseX) / 2;
         const parentY = spouseY + CARD_H;
 
         for (const cid of familyChildren) {
