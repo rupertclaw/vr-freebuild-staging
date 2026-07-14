@@ -262,6 +262,18 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 <button class="focus-back" id="focusBack" onclick="resetFocus()">←</button>
 
+<!-- Custom Confirm Dialog (matches data-tree styling) -->
+<div id="confirmDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:320px;width:90%;text-align:center;">
+    <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#991b1b;margin-bottom:12px;">⚠️ Wipe Tree Clean?</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;">This will permanently remove ALL people from your tree.<br><br><b>This cannot be undone.</b><br><br>To keep your data, tap Cancel and export your GEDCOM first.</div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="confirmCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
+      <button id="confirmOk" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#5c2a2a;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Reset</button>
+    </div>
+  </div>
+</div>
+
 <div class="detail-panel" id="detailPanel">
   <div class="detail-header">
     <span id="detailTitle">Person</span>
@@ -1384,12 +1396,19 @@ function autoRestore() {
 }
 
 function resetTree() {
-  if (!confirm('Reset tree? This will clear all people and start fresh.')) return;
-  people = []; nextId = 1; focusPersonId = null; viewHistory = [];
-  localStorage.removeItem(STORAGE_KEY);
-  initDefault();
-  renderFreeBuild();
-  showToast('Tree reset');
+  const dlg = document.getElementById('confirmDialog');
+  dlg.style.display = 'flex';
+  document.getElementById('confirmOk').onclick = () => {
+    dlg.style.display = 'none';
+    people = []; nextId = 1; focusPersonId = null; viewHistory = [];
+    localStorage.removeItem(STORAGE_KEY);
+    initDefault();
+    renderFreeBuild();
+    showToast('Tree reset');
+  };
+  document.getElementById('confirmCancel').onclick = () => {
+    dlg.style.display = 'none';
+  };
 }
 
 function initDefault() {
