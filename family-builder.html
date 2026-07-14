@@ -819,6 +819,58 @@ function layoutTree() {
     }
   }
 
+  // ── MULTI-MARRIAGE PASS: render additional spouses and their children ──
+  // For each placed person with families array, check if any spouse wasn't placed.
+  // If so, place them beside the person and lay out their children below.
+  for (const p of viewPeople) {
+    if (!positions.has(p.id) || !p.families || p.families.length <= 1) continue;
+
+    for (const fam of p.families) {
+      const spouseId = fam.spouseId;
+      if (!viewSet.has(spouseId) || visited.has(spouseId)) continue;
+
+      // Place this spouse beside the person
+      const personPos = positions.get(p.id);
+      // Find rightmost x at this person's y level to place the new spouse
+      let spouseX = personPos.x + CARD_W + COUPLE_GAP;
+      // Check if that position is occupied; if so, shift right
+      const spouseY = personPos.y;
+      positions.set(spouseId, { x: spouseX, y: spouseY });
+      visited.add(spouseId);
+
+      // Spouse line
+      connections.push({
+        type: 'spouse',
+        x1: personPos.x + CARD_W, y1: spouseY + CARD_H / 2,
+        x2: spouseX, y2: spouseY + CARD_H / 2
+      });
+
+      // Now lay out children of this family below the couple
+      const spouse = getP(spouseId);
+      const familyChildren = (p.children || []).filter(cid => {
+        if (!viewSet.has(cid) || visited.has(cid)) return false;
+        const child = getP(cid);
+        if (!child || !child.parents) return false;
+        return child.parents.includes(p.id) && child.parents.includes(spouseId);
+      });
+
+      if (familyChildren.length > 0) {
+        let childLeftX = personPos.x;
+        const childY = spouseY + GEN_HEIGHT;
+        let parentMidX = personPos.x + CARD_W + COUPLE_GAP / 2;
+        const parentY = spouseY + CARD_H;
+
+        for (const cid of familyChildren) {
+          visited.add(cid);
+          positions.set(cid, { x: childLeftX, y: childY });
+          const childX = childLeftX + CARD_W / 2;
+          connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+          childLeftX += CARD_W + CARD_GAP_X;
+        }
+      }
+    }
+  }
+
   // Normalize: shift all y values so minimum y is 50 (no negative offsets)
   let minY = Infinity;
   for (const [id, pos] of positions) {
