@@ -765,10 +765,11 @@ function layoutTree() {
   for (const [id, pos] of positions) {
     if (pos.y < minY) minY = pos.y;
   }
+  let yShift = 0;
   if (minY < 50) {
-    const shift = 50 - minY;
+    yShift = 50 - minY;
     for (const [id, pos] of positions) {
-      pos.y += shift;
+      pos.y += yShift;
     }
   }
 
@@ -781,12 +782,26 @@ function layoutTree() {
   }
 
   // Shift everything right so minX is at least 50
+  let xShift = 0;
   if (minX < 50) {
-    const shift = 50 - minX;
+    xShift = 50 - minX;
     for (const [id, pos] of positions) {
-      pos.x += shift;
+      pos.x += xShift;
     }
-    maxX += shift;
+    maxX += xShift;
+  }
+
+  // Apply the same shifts to connection coordinates
+  if (yShift !== 0 || xShift !== 0) {
+    for (const conn of connections) {
+      if (conn.type === 'spouse') {
+        conn.x1 += xShift; conn.x2 += xShift;
+        conn.y1 += yShift; conn.y2 += yShift;
+      } else if (conn.type === 'parent-child') {
+        conn.midX += xShift; conn.parentY += yShift;
+        conn.childX += xShift; conn.childY += yShift;
+      }
+    }
   }
 
   return {
@@ -1010,6 +1025,11 @@ function openDetail(person) {
     <div class="detail-field"><label>Notes</label><textarea id="d_notes">${escapeHtml(person.notes)}</textarea></div>
 
     <div class="detail-field" style="margin-top:16px;">
+      <label>Focus / Navigate</label>
+      <button class="fb-add-btn" onclick="closeDetail(); focusOnPerson(${person.id});" style="width:100%;background:var(--bg-btn);color:var(--text-logo);">🔍 Focus on this person</button>
+    </div>
+
+    <div class="detail-field" style="margin-top:8px;">
       <label>Add Relatives</label>
       <button class="fb-add-btn" onclick="fbAddParent()">➕ Add Parent</button>
       <button class="fb-add-btn" onclick="fbAddSpouse()">💍 Add Spouse/Partner</button>
