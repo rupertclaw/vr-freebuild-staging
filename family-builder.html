@@ -695,14 +695,20 @@ function layoutTree() {
       });
     }
 
-    // Children: distribute across the width below this couple
-    // Combine children from both partners (they should share children, but just in case)
+    // Children: only those belonging to this specific couple (person + spouseId), not all marriages
+    const spouseId = person.spouseId;
     const allChildren = new Set((person.children || []).filter(cid => viewSet.has(cid)));
-    if (hasSpouse) {
-      const spouse = getP(person.spouseId);
+    if (spouseId) {
+      const spouse = getP(spouseId);
       if (spouse) (spouse.children || []).filter(cid => viewSet.has(cid)).forEach(cid => allChildren.add(cid));
     }
-    const childEntries = [...allChildren].filter(cid => !visited.has(cid));
+    // Only include children whose parents are exactly this couple
+    const childEntries = [...allChildren].filter(cid => {
+      if (visited.has(cid)) return false;
+      const child = getP(cid);
+      if (!child || !child.parents) return true; // fallback: orphan/no-parent child stays with first family
+      return child.parents.includes(personId) && (spouseId ? child.parents.includes(spouseId) : child.parents.length === 1);
+    });
     if (childEntries.length > 0) {
       let childLeftX = leftX;
       for (const cid of childEntries) {
