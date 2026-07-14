@@ -916,7 +916,7 @@ details.acc .acc-body { padding: 6px 12px; }
         <div class="tb-menu-item" id="viewPosterBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('heritage_poster', openPoster)"><span class="icon">🖼️</span> Heritage Poster</div>
         <div class="tb-menu-item" id="printTreeBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree</div>
         <div class="tb-menu-item" id="gedcomToggle" role="menuitem" tabindex="0" onclick="openGuidancePanel();setTimeout(function(){var b=document.getElementById('importGuide').querySelector('button');var body=document.getElementById('importBody');if(body&&b){body.style.display='block';b.querySelector('span').style.transform='rotate(180deg)';document.getElementById('guidanceBody').scrollTop=body.offsetTop-20;}},150);closeAllMenus()"><span class="icon">🔄</span> Import & Export GEDCOM</div>
-        <div class="tb-menu-item" id="freeBuildMenuItem" role="menuitem" tabindex="0" onclick="window.open('free-build.html','_blank');closeAllMenus()"><span class="icon">🌿</span> Free Build</div>
+        <div class="tb-menu-item" id="freeBuildMenuItem" role="menuitem" tabindex="0" onclick="window.open('family-builder.html','_blank');closeAllMenus()"><span class="icon">🌿</span> Family Builder</div>
       </div>
       <!-- More menu -->
       <button class="tb-btn" id="moreMenuBtn" title="More options" aria-label="More options menu" aria-haspopup="true" aria-expanded="false">⋯ <span>More</span> ▾</button>
@@ -6356,15 +6356,15 @@ function convertGedcomFile(file) {
         showToast('Could not parse GEDCOM file. Check the format.');
         return;
       }
-      // Store parsed GEDCOM data for free-build.html to pick up
+      // Store parsed GEDCOM data for family-builder.html to pick up
       localStorage.setItem('vr_gedcomImport', JSON.stringify({
         people: result.people,
         nextId: result.nextId,
         families: result.families || {},
         importedAt: new Date().toISOString()
       }));
-      // Redirect to Free Build page
-      window.location.href = 'free-build.html';
+      // Redirect to Family Builder page
+      window.location.href = 'family-builder.html';
     } catch (err) {
       console.error('[GEDCOM]', err);
       showToast('GEDCOM parse error: ' + err.message);
