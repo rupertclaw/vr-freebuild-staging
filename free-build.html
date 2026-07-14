@@ -64,32 +64,32 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .header {
   position: fixed; top: 0; left: 0; right: 0;
   background: var(--bg-header); border-bottom: 2px solid var(--bg-header-border);
-  display: flex; flex-direction: column; padding: 4px 10px; z-index: 300;
-  max-height: 46px;
+  display: flex; align-items: center; justify-content: space-between;
+  padding: 0 8px; z-index: 300; height: 48px; gap: 4px;
 }
-.header-top { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
 .header-logo {
-  font-family: 'Cinzel Decorative', serif; font-size: 16px; color: var(--text-logo);
-  font-weight: 700; line-height: 1; letter-spacing: 0.5px;
+  font-family: 'Cinzel Decorative', serif; font-size: 14px; color: var(--text-logo);
+  font-weight: 700; line-height: 1; letter-spacing: 0.5px; white-space: nowrap;
   text-shadow: 0 0 6px rgba(56, 189, 248, 0.30);
 }
-.header-tagline { font-size: 12px; color: var(--text-tagline); font-weight: 700; letter-spacing: 2px; margin-top: 2px; }
+.header-tagline { display: none; }
 
 .view-toggle {
-  display: flex; gap: 4px; background: rgba(0,0,0,0.2); border-radius: 6px; padding: 3px;
+  display: flex; gap: 2px; background: rgba(0,0,0,0.2); border-radius: 6px; padding: 2px;
+  flex-shrink: 1;
 }
 .view-toggle button {
-  padding: 6px 14px; border: none; border-radius: 4px; font-family: 'Cinzel Decorative', serif;
-  font-size: 11px; cursor: pointer; background: transparent; color: var(--text-btn);
-  transition: all 0.15s;
+  padding: 5px 10px; border: none; border-radius: 4px; font-family: 'Cinzel Decorative', serif;
+  font-size: 10px; cursor: pointer; background: transparent; color: var(--text-btn);
+  transition: all 0.15s; white-space: nowrap;
 }
 .view-toggle button.active { background: var(--bg-btn); color: var(--text-logo); }
 
-.header-actions { display: flex; align-items: center; gap: 6px; flex-wrap: wrap; }
+.header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
 .header-btn {
-  width: 38px; height: 34px; background: var(--bg-btn); color: var(--text-btn);
-  border: 1px solid var(--bg-btn-border); border-radius: 6px; font-size: 18px; cursor: pointer;
-  display: flex; align-items: center; justify-content: center;
+  width: 32px; height: 30px; background: var(--bg-btn); color: var(--text-btn);
+  border: 1px solid var(--bg-btn-border); border-radius: 6px; font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
 }
 
 .zoom-controls {
@@ -110,7 +110,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 /* Tree area */
 .tree-scroll {
-  position: fixed; top: 52px; left: 0; right: 0; bottom: 0;
+  position: fixed; top: 50px; left: 0; right: 0; bottom: 0;
   overflow: auto; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y;
   background: radial-gradient(ellipse at center, var(--bg-tree-start) 0%, var(--bg-tree-end) 100%);
 }
@@ -203,8 +203,8 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 /* GEDCOM import button */
 .gedcom-btn {
   background: var(--bg-btn); color: var(--text-btn); border: 1px solid var(--bg-btn-border);
-  padding: 8px 14px; border-radius: 6px; font-family: 'Cinzel Decorative', serif;
-  font-size: 11px; cursor: pointer;
+  padding: 6px 10px; border-radius: 6px; font-family: 'Cinzel Decorative', serif;
+  font-size: 10px; cursor: pointer; white-space: nowrap;
 }
 
 /* Focus navigator */
@@ -218,8 +218,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .focus-back.visible { display: flex; }
 
 @media (max-width: 600px) {
-  .header-logo { font-size: 14px; }
-  .header-btn { width: 32px; height: 30px; font-size: 15px; }
+  .header-logo { font-size: 12px; }
+  .view-toggle button { padding: 4px 8px; font-size: 9px; }
+  .gedcom-btn { padding: 5px 8px; font-size: 9px; }
+  .header-btn { width: 30px; height: 28px; font-size: 14px; }
   .fb-card { width: 120px; }
   .fb-card .name { font-size: 9px; }
   .fb-card .years { font-size: 8px; }
@@ -231,10 +233,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 <body>
 
 <div class="header">
-  <div class="header-top">
-    <div>
-      <div class="header-logo">Vaulted Roots</div>
-    </div>
+    <div class="header-logo">Vaulted Roots</div>
     <div class="view-toggle">
       <button onclick="location.href='data-tree.html'">Pedigree</button>
       <button class="active" onclick="location.href='free-build.html'">Free Build</button>
@@ -244,7 +243,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <input type="file" id="gedcomInput" accept=".ged,.gedcom,text/plain" style="display:none">
       <button class="header-btn" onclick="resetTree()" title="Reset">↻</button>
     </div>
-  </div>
 </div>
 
 <div class="tree-scroll" id="treeScroll">
@@ -580,139 +578,181 @@ function layoutTree() {
   const connections = [];
   const viewSet = new Set(viewPeople.map(p => p.id));
   const placed = new Set();
-
-  // Find roots: people with no parents (in the visible set)
-  const roots = viewPeople.filter(p => !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid)));
-
-  // Recursive layout: layout a person's subtree (ancestors above, descendants below)
-  // Returns { width, centerX, topY, bottomY }
-  let nextX = 50;
   const GEN_HEIGHT = CARD_H + CARD_GAP_Y;
 
-  function layoutPerson(personId, depth, maxDepth) {
-    if (placed.has(personId)) return { width: 0, centerX: 0, topY: 0, bottomY: 0 };
-    const person = people.find(p => p.id === personId);
-    if (!person || !viewSet.has(personId)) return { width: 0, centerX: 0, topY: 0, bottomY: 0 };
+  // Helper: get person by id from full people array
+  function getP(id) { return people.find(p => p.id === id); }
 
-    placed.add(personId);
-    const y = 50 + depth * GEN_HEIGHT;
+  // ── PASS 1: compute subtree widths ──
+  // For each person, compute the total width needed for them + their spouse + children subtrees
+  const widthCache = new Map();
 
-    // Check if this person has a spouse in the visible set
-    const hasSpouse = person.spouseId && viewSet.has(person.spouseId) && !placed.has(person.spouseId);
+  function computeWidth(personId) {
+    if (widthCache.has(personId)) return widthCache.get(personId);
+    const person = getP(personId);
+    if (!person || !viewSet.has(personId)) return 0;
 
-    // Layout ancestors (parents) ABOVE this person (depth - 1 = lower y = higher on screen)
-    let ancestorWidth = 0;
-    let ancestorLeftX = 0;
-    const parentEntries = (person.parents || []).filter(pid => viewSet.has(pid) && !placed.has(pid));
+    const hasSpouse = person.spouseId && viewSet.has(person.spouseId);
+    const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
 
-    if (parentEntries.length > 0 && depth > -20) {
-      // Layout parents as a couple
-      let parentStartX = nextX;
-      for (const pid of parentEntries) {
-        const r = layoutPerson(pid, depth - 1, maxDepth);
-        if (r.width > 0) {
-          ancestorWidth += r.width;
-        }
-      }
-      ancestorLeftX = parentStartX;
+    const childEntries = (person.children || []).filter(cid => viewSet.has(cid));
+    let childrenTotal = 0;
+    for (const cid of childEntries) {
+      childrenTotal += computeWidth(cid) + CARD_GAP_X;
     }
+    if (childrenTotal > 0) childrenTotal -= CARD_GAP_X; // remove trailing gap
 
-    // Place this person (and spouse if applicable)
-    const myX = nextX;
-    let coupleWidth = CARD_W;
+    const w = Math.max(coupleWidth, childrenTotal);
+    widthCache.set(personId, w);
+    return w;
+  }
+
+  // ── PASS 2: assign positions (top-down, centered) ──
+  function assignPositions(personId, leftX, depth, visited) {
+    if (visited.has(personId)) return;
+    const person = getP(personId);
+    if (!person || !viewSet.has(personId)) return;
+    visited.add(personId);
+
+    const y = 50 + depth * GEN_HEIGHT;
+    const hasSpouse = person.spouseId && viewSet.has(person.spouseId) && !visited.has(person.spouseId);
+    const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+
+    // Center this couple in its allocated space
+    const myWidth = computeWidth(personId);
+    const centerX = leftX + myWidth / 2;
+    const myX = centerX - coupleWidth / 2;
+
+    positions.set(personId, { x: Math.round(myX), y });
 
     if (hasSpouse) {
-      placed.add(person.spouseId);
-      // Place couple side by side
-      positions.set(personId, { x: myX, y });
-      positions.set(person.spouseId, { x: myX + CARD_W + COUPLE_GAP, y });
-      coupleWidth = CARD_W + COUPLE_GAP + CARD_W;
-
+      visited.add(person.spouseId);
+      positions.set(person.spouseId, { x: Math.round(myX + CARD_W + COUPLE_GAP), y });
       // Spouse line
       connections.push({
         type: 'spouse',
         x1: myX + CARD_W, y1: y + CARD_H / 2,
         x2: myX + CARD_W + COUPLE_GAP, y2: y + CARD_H / 2
       });
-
-      nextX += coupleWidth + CARD_GAP_X;
-    } else {
-      positions.set(personId, { x: myX, y });
-      nextX += CARD_W + CARD_GAP_X;
     }
 
-    // Layout children BELOW this person (depth + 1 = higher y = lower on screen)
-    const childEntries = (person.children || []).filter(cid => viewSet.has(cid) && !placed.has(cid));
-    let childStartX = nextX;
-    let childrenWidth = 0;
-
-    if (childEntries.length > 0 && depth < 20) {
+    // Children: distribute across the width below this couple
+    const childEntries = (person.children || []).filter(cid => viewSet.has(cid) && !visited.has(cid));
+    if (childEntries.length > 0) {
+      let childLeftX = centerX - computeWidth(personId) / 2;
+      // Actually, children should start from leftX and fill the full width
+      childLeftX = leftX;
       for (const cid of childEntries) {
-        const r = layoutPerson(cid, depth + 1, maxDepth);
-        if (r.width > 0) childrenWidth += r.width;
+        const cw = computeWidth(cid);
+        assignPositions(cid, childLeftX, depth + 1, visited);
+        childLeftX += cw + CARD_GAP_X;
       }
-    }
 
-    // Draw parent-child connectors
-    if (parentEntries.length > 0) {
-      const parentPositions = parentEntries.map(pid => positions.get(pid)).filter(Boolean);
-      if (parentPositions.length > 0) {
-        let midX;
-        if (parentPositions.length === 2) {
-          midX = (parentPositions[0].x + parentPositions[1].x + CARD_W) / 2;
-        } else {
-          midX = parentPositions[0].x + CARD_W / 2;
-        }
-        const parentY = parentPositions[0].y + CARD_H;
-        const childCenterX = myX + CARD_W / 2;
-        const childY = y;
-        const midY = (parentY + childY) / 2;
-        connections.push({ type: 'parent-child', midX, parentY, childX: childCenterX, childY });
-      }
-    }
-
-    // Draw child connectors for children of this person
-    for (const cid of childEntries) {
-      const childPos = positions.get(cid);
-      if (!childPos) continue;
-      let parentMidX = myX + CARD_W / 2;
+      // Parent-child connectors
+      let parentMidX = centerX;
       if (hasSpouse) {
         parentMidX = myX + CARD_W + COUPLE_GAP / 2;
+      } else {
+        parentMidX = myX + CARD_W / 2;
       }
       const parentY = y + CARD_H;
-      const childX = childPos.x + CARD_W / 2;
-      const childY = childPos.y;
-      const midY = (parentY + childY) / 2;
-      connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+      for (const cid of childEntries) {
+        const childPos = positions.get(cid);
+        if (!childPos) continue;
+        const childX = childPos.x + CARD_W / 2;
+        const childY = childPos.y;
+        connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+      }
     }
 
-    return {
-      width: Math.max(coupleWidth + CARD_GAP_X, childrenWidth),
-      centerX: myX + coupleWidth / 2,
-      topY: y,
-      bottomY: y + CARD_H
-    };
+    // Parent-child connector (this person -> their parents)
+    const parentEntries = (person.parents || []).filter(pid => viewSet.has(pid) && !visited.has(pid));
+    if (parentEntries.length > 0) {
+      // Parents are at depth - 1, we need to lay them out
+      // But in a top-down layout, parents go above. We handle this separately.
+    }
   }
 
-  // If focus is set, start layout from the focus person (depth 0)
-  // Their parents go to depth -1 (above), children to depth +1 (below)
+  // ── LAYOUT PARENTS (upward from focus/root) ──
+  function assignParents(personId, depth, visited) {
+    const person = getP(personId);
+    if (!person || !viewSet.has(personId)) return;
+
+    const parentEntries = (person.parents || []).filter(pid => viewSet.has(pid) && !visited.has(pid));
+    if (parentEntries.length === 0) return;
+
+    // Lay out parents side by side above this person
+    const myPos = positions.get(personId);
+    if (!myPos) return;
+
+    const parentTotalWidth = parentEntries.length * CARD_W + (parentEntries.length - 1) * CARD_GAP_X;
+    let parentLeftX = myPos.x + CARD_W / 2 - parentTotalWidth / 2;
+
+    for (const pid of parentEntries) {
+      if (visited.has(pid)) continue;
+      visited.add(pid);
+      const parent = getP(pid);
+      if (!parent) continue;
+
+      const parentY = 50 + (depth - 1) * GEN_HEIGHT;
+      positions.set(pid, { x: Math.round(parentLeftX), y: parentY });
+
+      // Check if parent has a spouse that's also a parent
+      const parentSpouseId = parent.spouseId;
+      if (parentSpouseId && viewSet.has(parentSpouseId) && !visited.has(parentSpouseId) && parentEntries.includes(parentSpouseId)) {
+        visited.add(parentSpouseId);
+        positions.set(parentSpouseId, { x: Math.round(parentLeftX + CARD_W + COUPLE_GAP), y: parentY });
+        connections.push({
+          type: 'spouse',
+          x1: parentLeftX + CARD_W, y1: parentY + CARD_H / 2,
+          x2: parentLeftX + CARD_W + COUPLE_GAP, y2: parentY + CARD_H / 2
+        });
+        parentLeftX += CARD_W + COUPLE_GAP + CARD_W + CARD_GAP_X;
+      } else {
+        parentLeftX += CARD_W + CARD_GAP_X;
+      }
+
+      // Parent-child connector
+      const parentMidX = positions.get(pid).x + CARD_W / 2;
+      const parentY2 = parentY + CARD_H;
+      const childX = myPos.x + CARD_W / 2;
+      const childY = myPos.y;
+      connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX, childY });
+
+      // Recurse upward for grandparents
+      assignParents(pid, depth - 1, visited);
+    }
+  }
+
+  // ── MAIN: choose roots and run ──
   let layoutRoots;
   if (focusPersonId && viewSet.has(focusPersonId)) {
-    layoutRoots = [people.find(p => p.id === focusPersonId)];
+    layoutRoots = [focusPersonId];
   } else {
-    layoutRoots = roots;
+    // People with no parents in the visible set
+    layoutRoots = viewPeople
+      .filter(p => !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid)))
+      .map(p => p.id);
   }
 
-  for (const root of layoutRoots) {
-    if (!root || placed.has(root.id)) continue;
-    layoutPerson(root.id, 0, 30);
+  const visited = new Set();
+  let currentX = 50;
+
+  for (const rootId of layoutRoots) {
+    if (visited.has(rootId)) continue;
+    const w = computeWidth(rootId);
+    assignPositions(rootId, currentX, 0, visited);
+    // Also lay out ancestors upward
+    assignParents(rootId, 0, visited);
+    currentX += w + CARD_GAP_X * 2;
   }
 
   // Layout any unplaced people (disconnected)
   for (const p of viewPeople) {
-    if (!placed.has(p.id)) {
-      positions.set(p.id, { x: nextX, y: 50 });
-      nextX += CARD_W + CARD_GAP_X;
+    if (!visited.has(p.id)) {
+      positions.set(p.id, { x: currentX, y: 50 });
+      visited.add(p.id);
+      currentX += CARD_W + CARD_GAP_X;
     }
   }
 
@@ -734,6 +774,15 @@ function layoutTree() {
     maxX = Math.max(maxX, pos.x + CARD_W);
     maxY = Math.max(maxY, pos.y + CARD_H);
     minX = Math.min(minX, pos.x);
+  }
+
+  // Shift everything right so minX is at least 50
+  if (minX < 50) {
+    const shift = 50 - minX;
+    for (const [id, pos] of positions) {
+      pos.x += shift;
+    }
+    maxX += shift;
   }
 
   return {
