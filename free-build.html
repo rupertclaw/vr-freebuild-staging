@@ -637,11 +637,15 @@ function layoutTree() {
     }
 
     // Children: distribute across the width below this couple
-    const childEntries = (person.children || []).filter(cid => viewSet.has(cid) && !visited.has(cid));
+    // Combine children from both partners (they should share children, but just in case)
+    const allChildren = new Set((person.children || []).filter(cid => viewSet.has(cid)));
+    if (hasSpouse) {
+      const spouse = getP(person.spouseId);
+      if (spouse) (spouse.children || []).filter(cid => viewSet.has(cid)).forEach(cid => allChildren.add(cid));
+    }
+    const childEntries = [...allChildren].filter(cid => !visited.has(cid));
     if (childEntries.length > 0) {
-      let childLeftX = centerX - computeWidth(personId) / 2;
-      // Actually, children should start from leftX and fill the full width
-      childLeftX = leftX;
+      let childLeftX = leftX;
       for (const cid of childEntries) {
         const cw = computeWidth(cid);
         assignPositions(cid, childLeftX, depth + 1, visited);
