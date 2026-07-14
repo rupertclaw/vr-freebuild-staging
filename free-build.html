@@ -1354,6 +1354,7 @@ function showToast(msg, duration) {
 
 // INIT
 (function init() {
+  let gedcomLoaded = false;
   // Check for GEDCOM data passed from data-tree.html
   const gedcomData = localStorage.getItem('vr_gedcomImport');
   if (gedcomData) {
@@ -1362,13 +1363,19 @@ function showToast(msg, duration) {
       const imported = JSON.parse(gedcomData);
       people = imported.people || [];
       nextId = imported.nextId || (people.length + 1);
+      gedcomLoaded = true;
       showToast('Loaded ' + people.length + ' people from GEDCOM import');
     } catch (e) {
       console.error('GEDCOM import pickup error:', e);
     }
   }
 
-  if (!autoRestore() && people.length === 0) initDefault();
+  if (gedcomLoaded) {
+    // GEDCOM data takes priority — save it now, skip autoRestore
+    autoSave();
+  } else {
+    if (!autoRestore() && people.length === 0) initDefault();
+  }
 
   // Auto-focus on best candidate if tree is large
   if (people.length > 30) {
