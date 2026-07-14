@@ -293,6 +293,19 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .fb-menu-item .icon { font-size: 16px; width: 20px; text-align: center; }
 .fb-menu-wrap { position: relative; }
 
+/* Centered emblem in header */
+.header-emblem {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  height: 100px; width: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  z-index: 1;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
 /* Focus navigator */
 .focus-back {
   position: fixed; bottom: 20px; left: 20px; z-index: 500;
@@ -320,6 +333,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 <div class="header">
     <div class="header-logo">Vaulted Roots</div>
+    <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
     <div class="header-actions">
       <!-- Tree dropdown -->
       <div class="fb-menu-wrap">
@@ -334,7 +348,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <div class="fb-menu-wrap">
         <button class="help-btn" id="guideMenuBtn" title="Import, Export & Guide">📖 <span>Guide</span> ▾</button>
         <div class="fb-menu" id="guideMenu" role="menu">
-          <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('gedcomInput').click()"><span class="icon">📥</span> Import GEDCOM</div>
+          <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('gedcomInput').click()"><span class="icon">🔄</span> Import GEDCOM</div>
           <div class="fb-menu-item" role="menuitem" onclick="exportGedcom()"><span class="icon">📤</span> Export GEDCOM</div>
           <div class="fb-menu-item" role="menuitem" onclick="toggleHelp()"><span class="icon">📖</span> Guide & Help</div>
         </div>
@@ -427,16 +441,21 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
       <!-- Tab 2: Import GEDCOM -->
       <div class="help-section" data-tab="2">
-        <h3>What is a GEDCOM file?</h3>
-        <p>GEDCOM (`.ged` or `.gedcom`) is the universal family tree file format. Every major genealogy app can export one: MyHeritage, Ancestry, FamilySearch, Gramps, MacFamilyTree, and others.</p>
-        <h3>Importing a GEDCOM</h3>
+        <div style="margin:0 0 10px;padding:6px 8px;background:#fff8e1;border:1px solid #e6a23c;border-radius:4px;font-size:11px;color:#8a6d3b;">
+          ⚠️ <strong>Beta feature:</strong> GEDCOM import is under construction. Some relationships may not be fully preserved. Please review your tree after importing.
+        </div>
+        <p><strong>Moving to or from another genealogy site?</strong> GEDCOM is the universal family tree format. Import from Ancestry, FamilySearch, or MyHeritage, or export your tree to take anywhere.</p>
+        <h3>How to Import</h3>
         <ol>
-          <li>Tap "Import GEDCOM" at the top of the page</li>
-          <li>Choose your `.ged` or `.gedcom` file from your device</li>
-          <li>The tree loads automatically — large trees will auto-focus on the most connected person</li>
-          <li>Tap any card to explore or edit</li>
+          <li><strong>Export as GEDCOM.</strong> On your current site, look for "Export" or "Download" and choose the GEDCOM format.</li>
+          <li><strong>Import here.</strong> Tap the button below, select your <code>.ged</code> file, and your tree loads automatically. Your file never leaves your device.</li>
+          <li><strong>Review.</strong> Large trees auto-focus on the most connected person. Tap any card to explore or edit.</li>
         </ol>
-        <div class="tip">Importing replaces your current tree. If you want to keep what you have, export a GEDCOM first (see Tips & Tools tab).</div>
+        <div style="margin:14px 0;text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          <button onclick="document.getElementById('gedcomInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
+          <button onclick="exportGedcom()" style="padding:10px 16px;border:2px solid #4a5a8a;border-radius:4px;background:#4a5a8a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">📤 Export GEDCOM</button>
+        </div>
+        <p style="font-style:italic;font-size:13px;">Export creates a standard <code>.ged</code> file that any genealogy software can read. Your data never leaves your device.</p>
         <h3>After Import</h3>
         <ul>
           <li>Use the zoom buttons to get the right view</li>
@@ -445,7 +464,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
           <li>Tap the ← button (bottom left) to go back to the previous view</li>
         </ul>
         <h3>Multi-Marriage Support</h3>
-        <p>If a person had multiple marriages, each spouse and their children appear as separate family units. Children are matched to the correct couple based on GEDCOM family records.</p>
+        <p>If a person had multiple marriages, each spouse and their children appear as separate family units. The earliest marriage (by date) is shown as the primary spouse, with later marriages branching to the side.</p>
       </div>
 
       <!-- Tab 3: Tips & Tools -->
@@ -1133,12 +1152,36 @@ function layoutTree() {
         const childY = spouseY + GEN_HEIGHT;
         const totalW = familyChildren.length * CARD_W + (familyChildren.length - 1) * CARD_GAP_X;
         const coupleCenter = (Math.min(personPos.x, spouseX) + Math.max(personPos.x, spouseX) + CARD_W) / 2;
-        let childLeftX = coupleCenter - totalW / 2;
+        let childLeftX = Math.round(coupleCenter - totalW / 2);
 
-        // Ensure no overlap with already-placed children at this y level
-        const existingChildRight = getRightmostAt(childY);
-        if (existingChildRight >= childLeftX) {
-          childLeftX = existingChildRight + CARD_GAP_X;
+        // If secondary spouse is on the left, children should go left too
+        // Check for collisions and push in the correct direction
+        if (spouseX < personPos.x) {
+          // Secondary family is on the left side — push children left if they collide
+          // Find the rightmost card at childY that is to the LEFT of the primary family's children
+          const rightmostLeft = Array.from(positions.entries())
+            .filter(([id, pos]) => {
+              if (id === p.id || id === spouseId) return false;
+              return Math.abs(pos.y - childY) < GEN_HEIGHT / 2 && pos.x < personPos.x;
+            })
+            .map(([id, pos]) => pos.x + CARD_W)
+            .reduce((max, x) => Math.max(max, x), 0);
+          // If our desired position overlaps with something on the left, shift further left
+          if (rightmostLeft > 0 && childLeftX < rightmostLeft) {
+            // There are cards to the left that overlap — shift our children left of them
+            // Actually we want to be LEFT of those cards, so check if we overlap
+            const ourRight = childLeftX + totalW;
+            if (ourRight > rightmostLeft) {
+              childLeftX = rightmostLeft - totalW - CARD_GAP_X;
+              if (childLeftX < 0) childLeftX = 0;
+            }
+          }
+        } else {
+          // Secondary family is on the right side — push children right if they collide
+          const existingChildRight = getRightmostAt(childY);
+          if (existingChildRight >= childLeftX) {
+            childLeftX = existingChildRight + CARD_GAP_X;
+          }
         }
 
         const parentMidX = coupleCenter;
