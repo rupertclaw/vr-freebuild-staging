@@ -395,10 +395,11 @@ function parseGedcom(text) {
     result.push({
       id: id, name: gedIndi.name || 'Unknown', fullName: gedIndi.name || '',
       birthDate: gedIndi.birthDate || '', deathDate: gedIndi.deathDate || '',
-      birthplace: gedIndi.birthPlace || '', marriageDate: '',      maidenName: gedIndi.sex === 'F' ? gedIndi.surname : '', spouseName: '',
+      birthplace: gedIndi.birthPlace || '', marriageDate: '',
+      maidenName: gedIndi.sex === 'F' ? gedIndi.surname : '', spouseName: '',
       occupation: '', sex: gedIndi.sex || '', gen: 0, years: yearsStr,
       status: 'probable', docs: [], parents: [], siblings: [], children: [],
-      spouseId: null, notes: ''
+      spouseId: null, notes: '', families: []
     });
   }
 
@@ -411,13 +412,19 @@ function parseGedcom(text) {
     const husband = fam.husb ? personByXref(fam.husb) : null;
     const wife = fam.wife ? personByXref(fam.wife) : null;
 
+    // Track all marriages for each person
     if (husband && wife) {
-      husband.spouseId = wife.id; husband.spouseName = wife.name;
-      wife.spouseId = husband.id; wife.spouseName = husband.name;
+      // Keep spouseId as the first spouse (for backwards compat)
+      if (!husband.spouseId) { husband.spouseId = wife.id; husband.spouseName = wife.name; }
+      if (!wife.spouseId) { wife.spouseId = husband.id; wife.spouseName = husband.name; }
+      // Record marriage date on first marriage only
       if (fam.marriageDate) {
         if (!husband.marriageDate) husband.marriageDate = fam.marriageDate;
         if (!wife.marriageDate) wife.marriageDate = fam.marriageDate;
       }
+      // Add to families array for each person
+      husband.families.push({ spouseId: wife.id, spouseName: wife.name, marriageDate: fam.marriageDate || '', famId: famXref });
+      wife.families.push({ spouseId: husband.id, spouseName: husband.name, marriageDate: fam.marriageDate || '', famId: famXref });
     }
 
     const parentIds = [];
@@ -427,7 +434,11 @@ function parseGedcom(text) {
     for (const childXref of fam.children) {
       const child = personByXref(childXref);
       if (!child) continue;
-      child.parents = parentIds.slice();
+      // Set parents from this family only if child doesn't already have parents
+      // (first FAMC record wins, matching GEDCOM spec)
+      if (!child.parents || child.parents.length === 0) {
+        child.parents = parentIds.slice();
+      }
       for (const pid of parentIds) {
         const parent = result.find(p => p.id === pid);
         if (parent && !parent.children.includes(child.id)) parent.children.push(child.id);
@@ -504,8 +515,14 @@ function getVisiblePeople() {
       const parent = getP(pid);
       if (parent) (parent.parents || []).forEach(gpid => visible.add(gpid));
     }
-    // Spouse
+    // Spouse (primary)
     if (focus.spouseId) visible.add(focus.spouseId);
+    // ALL spouses from families array (handles multiple marriages)
+    if (focus.families) {
+      for (const fam of focus.families) {
+        visible.add(fam.spouseId);
+      }
+    }
     // Children
     (focus.children || []).forEach(cid => visible.add(cid));
     // Grandchildren (children of children)
@@ -522,10 +539,15 @@ function getVisiblePeople() {
         }
       }
     }
-    // Spouses of siblings
+    // Spouses of siblings and all people in visible set
     for (const id of [...visible]) {
       const p = getP(id);
-      if (p && p.spouseId && p.id !== focusPersonId) visible.add(p.spouseId);
+      if (p && p.id !== focusPersonId) {
+        if (p.spouseId) visible.add(p.spouseId);
+        if (p.families) {
+          for (const fam of p.families) visible.add(fam.spouseId);
+        }
+      }
     }
     // Parents of spouse (in-laws)
     if (focus.spouseId) {
@@ -549,29 +571,54 @@ function getVisiblePeople() {
 
 function buildFamilyUnits(viewPeople) {
   // A family unit = { parents: [id1, id2?], children: [ids], marriageDate: '' }
-  // Each person can be in multiple family units (as child in one, parent in another)
+  // Uses the families array to correctly separate children by marriage.
+  // Falls back to spouseId-based grouping for manually added people without families.
   const units = [];
   const seen = new Set();
+  const viewSet = new Set(viewPeople.map(p => p.id));
 
   for (const p of viewPeople) {
-    if (p.children && p.children.length > 0) {
-      // Group children by co-parent (spouse)
-      const coParent = p.spouseId && viewPeople.find(sp => sp.id === p.spouseId) ? p.spouseId : null;
+    // If person has families array (from GEDCOM), use it to create proper family units
+    if (p.families && p.families.length > 0) {
+      for (const fam of p.families) {
+        const spouseId = fam.spouseId;
+        const bothInView = viewSet.has(spouseId);
+        const unitKey = [Math.min(p.id, spouseId), Math.max(p.id, spouseId)].sort().join('-');
+        if (seen.has(unitKey)) continue;
+        seen.add(unitKey);
+
+        const parents = bothInView ? [p.id, spouseId] : [p.id];
+        // Children that belong to THIS family: child must have both parents in this family
+        const children = (p.children || []).filter(cid => {
+          if (!viewSet.has(cid)) return false;
+          const child = people.find(pp => pp.id === cid);
+          if (!child || !child.parents) return false;
+          // Child belongs to this family if both this person and spouse are in child's parents
+          if (bothInView) {
+            return child.parents.includes(p.id) && child.parents.includes(spouseId);
+          }
+          // If spouse not in view, just check this person is a parent
+          return child.parents.includes(p.id);
+        });
+        if (children.length > 0 || bothInView) {
+          units.push({ parents, children, marriageDate: fam.marriageDate || '' });
+        }
+      }
+    } else if (p.children && p.children.length > 0) {
+      // Fallback for manually added people (no families array)
+      const coParent = p.spouseId && viewSet.has(p.spouseId) ? p.spouseId : null;
       const unitKey = coParent
         ? [Math.min(p.id, coParent), Math.max(p.id, coParent)].sort().join('-')
         : 'solo-' + p.id;
-
       if (!seen.has(unitKey)) {
         seen.add(unitKey);
         const parents = coParent ? [p.id, coParent] : [p.id];
-        // Only include children that are in viewPeople
-        const children = p.children.filter(cid => viewPeople.find(vp => vp.id === cid));
+        const children = p.children.filter(cid => viewSet.has(cid));
         if (coParent) {
-          // Merge children from both parents
           const coParentPerson = viewPeople.find(sp => sp.id === coParent);
           if (coParentPerson && coParentPerson.children) {
             for (const cid of coParentPerson.children) {
-              if (!children.includes(cid) && viewPeople.find(vp => vp.id === cid)) children.push(cid);
+              if (!children.includes(cid) && viewSet.has(cid)) children.push(cid);
             }
           }
         }
