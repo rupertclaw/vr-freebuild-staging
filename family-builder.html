@@ -1628,10 +1628,8 @@ function layoutTree() {
             const cid = familyChildren[i];
             const cw = childWidths[i];
             // Recursively place this child's subtree in the allocated space
-            assignPositions(cid, childLeftX, Math.round(childY / GEN_HEIGHT), visited);
-            // Fix Y in case assignPositions used a different depth calculation
-            const placed = positions.get(cid);
-            if (placed) placed.y = childY;
+            const childDepth = Math.round((childY - 50) / GEN_HEIGHT);
+            assignPositions(cid, childLeftX, childDepth, visited);
             const childX = (positions.get(cid)?.x || childLeftX) + CARD_W / 2;
             connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
             childLeftX += cw + CARD_GAP_X;
@@ -1647,9 +1645,8 @@ function layoutTree() {
           for (let i = 0; i < familyChildren.length; i++) {
             const cid = familyChildren[i];
             const cw = childWidths[i];
-            assignPositions(cid, childLeftX, Math.round(childY / GEN_HEIGHT), visited);
-            const placed = positions.get(cid);
-            if (placed) placed.y = childY;
+            const childDepth = Math.round((childY - 50) / GEN_HEIGHT);
+            assignPositions(cid, childLeftX, childDepth, visited);
             const childX = (positions.get(cid)?.x || childLeftX) + CARD_W / 2;
             connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
             childLeftX += cw + CARD_GAP_X;
