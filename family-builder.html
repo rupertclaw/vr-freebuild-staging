@@ -529,7 +529,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
     <div class="header-actions">
       <!-- Primary labeled buttons -->
-      <button class="help-btn primary" onclick="toggleCertPanel()" title="Scan certificate">📷 <span>Scan</span></button>
+      <button class="help-btn primary" onclick="checkMemberFeature('cert_scanning', toggleCertPanel)" title="Scan certificate">📷 <span>Scan</span></button>
       <button class="help-btn guide-btn" id="guideMenuBtn" title="Import, Export & Guide">📖 <span>Guide</span> ▾</button>
       <button class="help-btn" onclick="saveSession()" title="Save session">💾 <span>Save</span></button>
       <!-- Tree dropdown -->
@@ -738,6 +738,223 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     <button class="detail-close" onclick="closeDetail()">×</button>
   </div>
   <div class="detail-body" id="detailBody"></div>
+</div>
+
+<!-- Cert Panel -->
+<div class="cert-panel" id="certPanel">
+  <div class="cert-header">
+    <button class="cert-close" id="certClose">&times;</button>
+    <div style="font-size:14px;">📄 Scan Certificate</div>
+  </div>
+  <div class="cert-toolbar">
+    <div class="cert-actions" id="certActions">
+      <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
+      <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
+      <button class="cert-clear" id="certClear" style="background:#e8dcc8;color:#4a3a22;">✕ Clear</button>
+    </div>
+  </div>
+  <div class="cert-body" id="certBody">
+    <!-- Method Selection -->
+    <div class="cert-method-select" id="certMethodSelect">
+      <div style="font-size:12px;color:#6b5537;margin-bottom:4px;font-weight:600;text-align:center">Extract data using:</div>
+      <div class="cert-method-row">
+        <button class="cert-method-btn" onclick="selectCertMethod('upload')">
+          <span class="method-icon">📷</span>
+          <span class="method-label">Upload & Scan</span>
+          <span class="method-desc">100% private</span>
+        </button>
+        <button class="cert-method-btn" onclick="checkMemberFeature('ai_venice', function(){selectCertMethod('venice')})">
+          <span class="method-icon">🛡️</span>
+          <span class="method-label">Venice</span>
+          <span class="method-desc">Best for printed text</span>
+        </button>
+        <button class="cert-method-btn" onclick="checkMemberFeature('ai_gemini', function(){selectCertMethod('gemini')})">
+          <span class="method-icon">🤖</span>
+          <span class="method-label">Gemini</span>
+          <span class="method-desc">External scan</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Upload & Scan Section -->
+    <div class="upload-section" id="uploadSection">
+      <div class="gemini-privacy-banner" style="background:#dcfce7;border-color:#166534;">
+        <div class="warn-title" style="color:#166534;">Privacy Notice</div>
+        <div class="warn-text" style="color:#166534;">100% private. Your certificate is processed via Venice AI and is never stored or used to train models.</div>
+      </div>
+
+      <div class="gemini-privacy-banner" style="background:#fef3c7;border-color:#f59e0b;">
+        <div class="warn-title" style="color:#92400e;">⚠️ Handwriting Warning</div>
+        <div class="warn-text" style="color:#92400e;">Venice models read printed or typed text well but struggle with handwritten certificates. For handwriting, use Gemini instead.</div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
+      <div class="cert-type-selector" id="uploadCertType">
+        <button class="cert-type-btn active" data-type="birth" onclick="setUploadCertType('birth', this)">Birth</button>
+        <button class="cert-type-btn" data-type="marriage" onclick="setUploadCertType('marriage', this)">Marriage</button>
+        <button class="cert-type-btn" data-type="death" onclick="setUploadCertType('death', this)">Death</button>
+      </div>
+
+      <div style="display:flex;gap:10px;margin:12px 0;">
+        <button onclick="document.getElementById('certCameraInput').click()" style="flex:1;padding:12px;border:2px solid #8a7a5a;border-radius:8px;background:#faf6ee;font-family:'Cormorant Garamond',serif;color:#4a3a22;cursor:pointer;font-size:13px;">
+          <span style="font-size:24px;display:block;margin-bottom:4px;">📷</span>
+          Camera
+        </button>
+        <button onclick="document.getElementById('certFileInput').click()" style="flex:1;padding:12px;border:2px solid #8a7a5a;border-radius:8px;background:#faf6ee;font-family:'Cormorant Garamond',serif;color:#4a3a22;cursor:pointer;font-size:13px;">
+          <span style="font-size:24px;display:block;margin-bottom:4px;">📁</span>
+          File
+        </button>
+      </div>
+
+      <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
+    </div>
+
+    <!-- Venice Paste Section -->
+    <div class="venice-section" id="veniceSection">
+      <div class="gemini-privacy-banner" style="background:#dcfce7;border-color:#166534;">
+        <div class="warn-title" style="color:#166534;">Privacy Notice</div>
+        <div class="warn-text" style="color:#166534;">Venice AI is 100% private. Your certificate image is processed by Venice and is never stored or used to train models.</div>
+      </div>
+
+      <div class="gemini-privacy-banner" style="background:#fef3c7;border-color:#f59e0b;">
+        <div class="warn-title" style="color:#92400e;">⚠️ Handwriting Warning</div>
+        <div class="warn-text" style="color:#92400e;">Venice models read printed or typed text well but struggle with handwritten certificates. For handwriting, use Gemini instead.</div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
+      <div class="cert-type-selector" id="veniceCertType">
+        <button class="cert-type-btn active" data-type="birth" onclick="setVeniceType('birth')">Birth</button>
+        <button class="cert-type-btn" data-type="marriage" onclick="setVeniceType('marriage')">Marriage</button>
+        <button class="cert-type-btn" data-type="death" onclick="setVeniceType('death')">Death</button>
+      </div>
+
+      <button class="gemini-open-btn" id="veniceCopyBtn" onclick="copyVenicePrompt()">📋 Copy Prompt to Clipboard</button>
+      <button class="gemini-open-btn" style="background:#7c3aed;border-color:#5b21b6;margin-top:8px;" onclick="openVenice()">🛡️ Open Venice</button>
+
+      <div class="gemini-steps" style="background:#f0e8d8;border:1px solid #c4b49a;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:#4a3a22;">
+        <div style="font-weight:600;margin-bottom:6px;font-size:13px;">📱 How this works:</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">1</span>
+            <span>Tap the button above to copy the extraction prompt</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">2</span>
+            <span>Tap <b>Open Venice</b> — or go to <b>venice.ai/chat</b> manually and sign in</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">3</span>
+            <span>Paste the prompt, then upload your certificate photo</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">4</span>
+            <span>Copy Venice's JSON output and paste it in the box below</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gemini-status" id="veniceStatus" style="display:none;font-size:12px;color:#166534;background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;line-height:1.5;">
+        <b>Prompt copied!</b><br>
+        Now tap <b>Open Venice</b> above, or manually go to venice.ai/chat
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <button onclick="toggleVenicePrompt()" style="background:none;border:none;color:#4a3a22;font-size:12px;font-family:'Cormorant Garamond',serif;cursor:pointer;text-decoration:underline;">
+          View the prompt
+        </button>
+        <div id="venicePromptBox" style="display:none;background:#2a1f15;color:#e8dcc8;padding:10px;border-radius:6px;font-size:11px;font-family:'Courier New',monospace;white-space:pre-wrap;max-height:200px;overflow:auto;margin-top:6px;border:1px solid #4a3a22;"></div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;">Paste Venice's JSON response:</div>
+      <textarea class="gemini-paste-box" id="venicePasteBox" placeholder="Paste the JSON output from Venice here..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
+        <button class="gemini-back-btn" style="background:#4a3a22;color:#f5eedc;border-color:#4a3a22;" onclick="parseVeniceResult()">Parse Result</button>
+      </div>
+    </div>
+
+    <!-- Gemini Section -->
+    <div class="gemini-section" id="geminiSection">
+      <div class="gemini-privacy-banner">
+        <div class="warn-title">Privacy Notice</div>
+        <div class="warn-text">By uploading your document to Gemini, Google will receive and may retain a copy. For total privacy, use the Venice option instead.</div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
+      <div class="cert-type-selector" id="geminiCertType">
+        <button class="cert-type-btn active" data-type="birth" onclick="setGeminiType('birth')">Birth</button>
+        <button class="cert-type-btn" data-type="marriage" onclick="setGeminiType('marriage')">Marriage</button>
+        <button class="cert-type-btn" data-type="death" onclick="setGeminiType('death')">Death</button>
+      </div>
+
+      <button class="gemini-open-btn" id="geminiCopyBtn" onclick="copyGeminiPrompt()">📋 Copy Prompt to Clipboard</button>
+      <button class="gemini-open-btn" style="background:#1a73e8;border-color:#1557b0;margin-top:8px;" onclick="openGemini()">🔷 Open Gemini</button>
+
+      <div class="gemini-steps" style="background:#f0e8d8;border:1px solid #c4b49a;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:#4a3a22;">
+        <div style="font-weight:600;margin-bottom:6px;font-size:13px;">📱 How this works:</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">1</span>
+            <span>Tap the button above to copy the extraction prompt</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">2</span>
+            <span>Tap <b>Open Gemini</b> — if it doesn't open, manually go to <b>gemini.google.com</b></span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">3</span>
+            <span>Paste the prompt, then upload your certificate photo</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">4</span>
+            <span>Copy Gemini's JSON output and paste it in the box below</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gemini-status" id="geminiStatus" style="display:none;font-size:12px;color:#166534;background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;line-height:1.5;">
+        <b>Prompt copied!</b><br>
+        Now tap <b>Open Gemini</b> above, or manually go to gemini.google.com
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <button onclick="toggleGeminiPrompt()" style="background:none;border:none;color:#4a3a22;font-size:12px;font-family:'Cormorant Garamond',serif;cursor:pointer;text-decoration:underline;">
+          View the prompt
+        </button>
+        <div id="geminiPromptBox" style="display:none;background:#2a1f15;color:#e8dcc8;padding:10px;border-radius:6px;font-size:11px;font-family:'Courier New',monospace;white-space:pre-wrap;max-height:200px;overflow:auto;margin-top:6px;border:1px solid #4a3a22;"></div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;">Paste Gemini's JSON response:</div>
+      <textarea class="gemini-paste-box" id="geminiPasteBox" placeholder="Paste the JSON output from Gemini here..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
+        <button class="gemini-back-btn" style="background:#4a3a22;color:#f5eedc;border-color:#4a3a22;" onclick="parseGeminiResult()">Parse Result</button>
+      </div>
+    </div>
+
+    <div class="cert-upload-area" id="certUploadArea" style="display:none">
+      <div style="font-size:24px;margin-bottom:8px;">📄</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#4a3a22;">Tap to upload cert</div>
+      <div style="font-size:11px;color:#8a7a5a;margin-top:4px;">Birth, marriage, or death record</div>
+    </div>
+    <input type="file" id="certFileInput" accept="image/*" style="display:none">
+    <input type="file" id="certCameraInput" accept="image/*" capture="environment" style="display:none">
+    <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
+    <div class="cert-status" id="certStatus"></div>
+    <div id="certResults"></div>
+  </div>
+</div>
+
+<!-- Ambiguity Resolution Modal -->
+<div id="ambigModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10002;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;">
+    <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#3e2b1a;margin-bottom:8px;">Multiple Matches Found</div>
+    <div id="ambigQuestion" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:12px;">Which person should receive this certificate?</div>
+    <div id="ambigOptions" style="max-height:260px;overflow-y:auto;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="ambigCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
+    </div>
+  </div>
 </div>
 
 <script>
@@ -2246,11 +2463,1369 @@ function showFeedbackModal() {
   dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.remove(); });
 }
 
-// CERT PANEL STUB (will be filled in by scan panel port)
-function toggleCertPanel() {
-  const panel = document.getElementById('certPanel');
-  if (panel) panel.classList.toggle('active');
+// ═══════════════════════════════════════════════════════════════
+// CERT PANEL — Ported from data-tree.html
+// ═══════════════════════════════════════════════════════════════
+
+// ── Stub/helper functions for cert panel compatibility ──
+function checkMemberFeature(featureKey, callback) {
+  // Simple passthrough — family-builder has no membership gating
+  if (typeof callback === 'function') callback();
 }
+
+function getCountry() { return localStorage.getItem('vaulted_country') || ''; }
+
+function getDebugLogs() { return 'Debug logs not available in family-builder.'; }
+
+function updateExpandGenBtn() { /* No-op in family-builder */ }
+
+// ── IndexedDB Document Storage (simplified for family-builder) ──
+const DOC_DB_NAME = 'VRTDocs';
+const DOC_DB_VERSION = 3;
+const DOC_STORE_NAME = 'documents';
+let _docDB = null;
+let currentTreeId = 'default';
+
+function openDocDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IndexedDB not available')); return; }
+    const req = indexedDB.open(DOC_DB_NAME, DOC_DB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { _docDB = req.result; resolve(_docDB); };
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(DOC_STORE_NAME)) {
+        const store = d.createObjectStore(DOC_STORE_NAME, { keyPath: 'id' });
+        store.createIndex('personId', 'personId', { unique: false });
+        store.createIndex('treeId', 'treeId', { unique: false });
+      }
+    };
+  });
+}
+
+async function saveDocToDB(personId, type, base64Image, meta) {
+  if (base64Image && !/^data:image\/(jpeg|png|webp|gif);base64,/.test(base64Image)) {
+    console.warn('[SEC-02] Rejected doc image with invalid format for person', personId);
+    return null;
+  }
+  try {
+    if (!_docDB) await openDocDB();
+    const id = personId + '_' + type + '_' + Date.now();
+    const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(DOC_STORE_NAME);
+    const treeId = currentTreeId || 'default';
+    await new Promise((resolve, reject) => {
+      const req = store.put({ id, treeId, personId, type, image: base64Image, meta: meta || {}, created: Date.now() });
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+    return id;
+  } catch (e) { console.warn('[saveDocToDB] failed, skipping', e); return null; }
+}
+
+async function getDocsForPerson(personId) {
+  try {
+    if (!_docDB) await openDocDB();
+    const tx = _docDB.transaction(DOC_STORE_NAME, 'readonly');
+    const store = tx.objectStore(DOC_STORE_NAME);
+    const idx = store.index('personId');
+    return new Promise((resolve, reject) => {
+      const req = idx.getAll(personId);
+      req.onsuccess = () => {
+        const treeId = currentTreeId || 'default';
+        resolve((req.result || []).filter(d => d.treeId === treeId));
+      };
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) { return []; }
+}
+
+async function getDocById(docId) {
+  if (!docId) return null;
+  try {
+    if (!_docDB) await openDocDB();
+    const tx = _docDB.transaction(DOC_STORE_NAME, 'readonly');
+    const store = tx.objectStore(DOC_STORE_NAME);
+    return new Promise((resolve, reject) => {
+      const req = store.get(docId);
+      req.onsuccess = () => { resolve(req.result || null); };
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) { return null; }
+}
+
+function extractDocDate(entry, type) {
+  if (!entry) return '';
+  const d = entry.date || entry.deathDate || entry.birthDate || entry.marriageDate || '';
+  if (d) return d;
+  if (type === 'birth') return entry.child?.birthDate || entry.child?.date || '';
+  if (type === 'death') return entry.deathDate || entry.deceased?.deathDate || entry.deceased?.date || '';
+  if (type === 'marriage') return entry.date || entry.marriageDate || entry.groom?.marriageDate || entry.bride?.marriageDate || '';
+  return '';
+}
+
+// ── Cert panel state variables ──
+let pendingDocFile = null;
+let pendingDocImage = null;
+let lastTranscription = null;
+let selectedEntryIndex = 0;
+let pendingDirectAttachId = null;
+let pendingAmbigTarget = null;
+
+const certPanel = document.getElementById('certPanel');
+
+// ── Cert panel toggle & clear ──
+function toggleCertPanel() {
+  const isOpening = !certPanel.classList.contains('active');
+  certPanel.classList.toggle('active');
+  if (isOpening) {
+    clearCertPanel();
+  }
+}
+
+function clearCertPanel() {
+  lastTranscription = null;
+  pendingDocFile = null;
+  pendingDocImage = null;
+  document.getElementById('certPreviewImg').src = '';
+  document.getElementById('certPreviewArea').style.display = 'none';
+  document.getElementById('certStatus').style.display = 'none';
+  document.getElementById('certStatus').textContent = '';
+  document.getElementById('certStatus').className = 'cert-status';
+  document.getElementById('certResults').innerHTML = '';
+  document.getElementById('certMethodSelect').style.display = 'flex';
+  document.getElementById('uploadSection')?.classList.remove('active');
+  document.getElementById('veniceSection')?.classList.remove('active');
+  document.getElementById('venicePasteBox').value = '';
+  document.getElementById('geminiSection').classList.remove('active');
+  document.getElementById('geminiPasteBox').value = '';
+  certPanel.classList.remove('has-results');
+}
+
+// ── Cert panel close button ──
+document.getElementById('certClose').addEventListener('click', () => {
+  certPanel.classList.remove('active');
+  certPanel.classList.remove('has-results');
+  pendingDirectAttachId = null;
+  const headerTitle = certPanel.querySelector('.cert-header div');
+  if (headerTitle) headerTitle.textContent = '📄 Scan Certificate';
+});
+
+// ── File input handlers ──
+document.getElementById('certFileInput')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  pendingDocFile = file;
+  try { await processDocFile(file); } catch (err) {
+    console.error('[UPLOAD ERROR]', err);
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status error'; cs.style.display = 'block';
+    cs.innerHTML = 'Error: ' + escapeHtml(err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    document.getElementById('certRetry').style.display = 'block';
+  }
+});
+
+document.getElementById('certCameraInput')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  pendingDocFile = file;
+  try { await processDocFile(file); } catch (err) {
+    console.error('[CAMERA ERROR]', err);
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status error'; cs.style.display = 'block';
+    cs.innerHTML = 'Error: ' + escapeHtml(err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    document.getElementById('certRetry').style.display = 'block';
+  }
+});
+
+// ── Process uploaded doc file ──
+async function processDocFile(file) {
+  const cs = document.getElementById('certStatus');
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Reading image...';
+  cs.style.display = 'block';
+  document.getElementById('certResults').innerHTML = '';
+  certPanel.classList.remove('has-results');
+
+  let base64 = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = (e) => {
+      pendingDocImage = e.target.result;
+      document.getElementById('certPreviewImg').src = e.target.result;
+      document.getElementById('certPreviewArea').style.display = 'block';
+      document.getElementById('certMethodSelect').style.display = 'none';
+      document.getElementById('uploadSection').style.display = 'none';
+      document.getElementById('certUploadArea').style.display = 'none';
+      resolve(e.target.result);
+    };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+
+  // Compress if large
+  const sizeKB = Math.round(base64.length * 0.75 / 1024);
+  if (sizeKB > 800) {
+    cs.textContent = 'Compressing image for upload...';
+    base64 = await resizeAndCompressImage(file, 1600, 0.90);
+    const kb2 = Math.round(base64.length * 0.75 / 1024);
+    if (kb2 > 800) {
+      base64 = await resizeAndCompressImage(file, 1200, 0.85);
+    }
+  }
+
+  pendingDocImage = base64;
+  await sendToTranscriptionAPI(base64);
+}
+
+// ── Image resize/compress helper ──
+async function resizeAndCompressImage(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+      else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    const r = new FileReader();
+    r.onload = (e) => { img.src = e.target.result; };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+// ── Transcription API ──
+const API_URL = 'https://genealogy-api.vercel.app/api/transcribe';
+
+async function sendToTranscriptionAPI(base64) {
+  const cs = document.getElementById('certStatus');
+
+  // Phase 1: GET connectivity check
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Checking connection (1/3)...';
+  try {
+    const ping = await fetch('https://genealogy-api.vercel.app/api/test', { method: 'GET', cache: 'no-store' });
+    if (!ping.ok) throw new Error('API ping failed: ' + ping.status);
+  } catch (err) {
+    cs.className = 'cert-status error';
+    cs.innerHTML = 'Network error: Cannot reach API server (GET blocked).<br><small>Try: 1) WiFi instead of mobile data, 2) Disable ad blocker/VPN, 3) Retry</small>';
+    certPanel.classList.add('has-results');
+    return;
+  }
+
+  // Phase 2: POST connectivity check
+  cs.textContent = 'Checking connection (2/3)...';
+  try {
+    const postTest = await fetch('https://genealogy-api.vercel.app/api/test-post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test: true })
+    });
+    if (!postTest.ok) throw new Error('API POST test failed: ' + postTest.status);
+  } catch (err) {
+    cs.className = 'cert-status error';
+    cs.innerHTML = 'Network error: POST requests blocked.<br><small>Your network or browser may block uploads. Try: 1) Different WiFi, 2) Chrome/Safari, 3) Disable privacy extensions</small>';
+    certPanel.classList.add('has-results');
+    return;
+  }
+
+  // Phase 3: Send actual image with retries
+  const payloadSize = Math.round(base64.length * 0.75 / 1024);
+  cs.innerHTML = 'Scanning certificate...<br><small>Image: ' + payloadSize + 'KB. Usually 10-25s</small>';
+  document.getElementById('certRetry').style.display = '';
+
+  const payload = JSON.stringify({ image: base64, country: getCountry(), type: uploadCertType });
+
+  const uploadController = new AbortController();
+  const uploadTimeout = setTimeout(() => uploadController.abort(), 90000);
+
+  let lastErr = null;
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    cs.innerHTML = 'Scanning certificate (attempt ' + attempt + '/6)...<br><small>Please wait</small>';
+
+    try {
+      let resp;
+      if (attempt === 1) {
+        resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, signal: uploadController.signal });
+      } else if (attempt === 2) {
+        resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, credentials: 'omit', signal: uploadController.signal });
+      } else {
+        resp = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', API_URL);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.onload = () => resolve({ status: xhr.status, json: () => Promise.resolve(JSON.parse(xhr.responseText)) });
+          xhr.onerror = () => reject(new Error('XHR network error'));
+          xhr.ontimeout = () => reject(new DOMException('XHR timed out', 'AbortError'));
+          xhr.timeout = 90000;
+          uploadController.signal.addEventListener('abort', () => { xhr.abort(); });
+          xhr.send(payload);
+        });
+      }
+
+      const json = await resp.json();
+
+      if (json.error === 'PRIMARY_OVERLOADED' && json.retryable) {
+        const waitSec = attempt <= 3 ? 12 : 8;
+        cs.innerHTML = 'Server is busy (attempt ' + attempt + '/6).<br><small>Waiting ' + waitSec + 's before retry</small>';
+        await new Promise(r => setTimeout(r, waitSec * 1000));
+        continue;
+      }
+
+      if (!json.success) {
+        cs.className = 'cert-status error';
+        cs.innerHTML = 'Scan failed: ' + escapeHtml(json.error || json.message || 'Unknown error') + '<br><small>Tap Retry to try again</small>';
+        certPanel.classList.add('has-results');
+        return;
+      }
+
+      const responseData = { type: json.type, entries: json.entries };
+      lastTranscription = responseData;
+      cs.className = 'cert-status success';
+      const modelLabel = json.model ? ' (' + json.model + ')' : '';
+      cs.textContent = '✓ Cert type: ' + (json.type || 'unknown').toUpperCase() + modelLabel;
+      renderTranscriptionResults(responseData);
+      certPanel.classList.add('has-results');
+      clearTimeout(uploadTimeout);
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (err.name === 'AbortError') { clearTimeout(uploadTimeout); break; }
+      if (attempt < 6) {
+        cs.innerHTML = 'Retrying in 3s (attempt ' + (attempt + 1) + '/6)...';
+        await new Promise(r => setTimeout(r, 3000));
+      }
+    }
+  }
+
+  clearTimeout(uploadTimeout);
+
+  cs.className = 'cert-status error';
+  let msg = lastErr?.name === 'AbortError' ? 'Scan timed out after 90 seconds.' : (lastErr?.message || 'Could not reach server');
+  if (msg.includes('Failed to fetch')) msg = 'Connection failed on image upload. Your network may block large uploads.';
+  cs.innerHTML = 'Network error: ' + escapeHtml(msg) + '<br><small>Try: 1) Different WiFi, 2) Camera not gallery, 3) Clear and retry</small>';
+  certPanel.classList.add('has-results');
+}
+
+// ── Render transcription results ──
+function renderTranscriptionResults(data) {
+  const container = document.getElementById('certResults');
+  container.innerHTML = '';
+  selectedEntryIndex = 0;
+
+  const topWarning = document.createElement('div');
+  topWarning.style.cssText = 'margin-bottom:10px;padding:10px 12px;background:#fee2e2;border:1px solid #ef4444;border-radius:6px;font-size:12px;color:#991b1b;line-height:1.4;font-weight:600;';
+  topWarning.innerHTML = '⚠️ Check every field. AI often misreads names, dates, and places. Compare each value to your certificate before applying.';
+  container.appendChild(topWarning);
+
+  const entries = data.entries || [data];
+  let type = data.type || 'unknown';
+  if (type === 'unknown' && entries.length > 0) {
+    const first = entries[0];
+    if (first.groom?.name || first.bride?.name) type = 'marriage';
+    else if (first.child?.name || first.father?.name || first.mother?.name) type = 'birth';
+    else if (first.deceased?.name) type = 'death';
+  }
+  entries.forEach((entry, idx) => {
+    const card = document.createElement('div');
+    card.className = 'cert-result-card' + (idx === 0 ? ' selected' : '');
+    card.dataset.index = idx;
+    const fields = extractEntryFields(entry, type);
+    let html = '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">' + escapeHtml(entrySummary(entry, type)) + '</div>';
+    fields.forEach((f, fi) => {
+      const fieldId = 'cf_' + idx + '_' + fi;
+      html += '<div class="cert-field-edit"><span class="cert-field-label">' + escapeHtml(f.label) + ':</span><input id="' + fieldId + '" type="text" value="' + (f.value || '').toString().replace(/"/g, '&quot;') + '" data-entry="' + idx + '" data-field="' + escapeHtml(f.key) + '" onfocus="event.stopPropagation()" onclick="event.stopPropagation()"></div>';
+    });
+    card.innerHTML = html;
+    card.addEventListener('click', () => {
+      syncCertEdits();
+      document.querySelectorAll('.cert-result-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected'); selectedEntryIndex = idx;
+    });
+    container.appendChild(card);
+  });
+
+  const disclaimer = document.createElement('div');
+  disclaimer.style.cssText = 'margin-top:10px;padding:8px 10px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:11px;color:#92400e;line-height:1.4;';
+  disclaimer.innerHTML = '⚠️ <strong>Verify before applying.</strong> AI transcription may contain errors. Please check all names, dates, and places against your certificate before adding to your tree.';
+  container.appendChild(disclaimer);
+}
+
+// ── Sync edits back into lastTranscription ──
+function syncCertEdits() {
+  if (!lastTranscription) return;
+  const entries = lastTranscription.entries || [lastTranscription];
+  document.querySelectorAll('#certResults input[data-field]').forEach(input => {
+    const eIdx = parseInt(input.dataset.entry);
+    const field = input.dataset.field;
+    const entry = entries[eIdx];
+    if (!entry) return;
+    const val = input.value;
+    const parts = field.split('.');
+    let obj = entry;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!obj[parts[i]]) obj[parts[i]] = {};
+      obj = obj[parts[i]];
+    }
+    obj[parts[parts.length - 1]] = val;
+  });
+}
+
+// ── Extract entry fields for display ──
+function extractEntryFields(entry, type) {
+  const fields = [];
+  if (type === 'marriage') {
+    if (entry.groom?.name) fields.push({ label: 'Groom', value: entry.groom.name, key: 'groom.name' });
+    if (entry.groom?.age) fields.push({ label: 'Groom Age', value: entry.groom.age, key: 'groom.age' });
+    if (entry.bride?.name) fields.push({ label: 'Bride', value: entry.bride.name, key: 'bride.name' });
+    if (entry.bride?.age) fields.push({ label: 'Bride Age', value: entry.bride.age, key: 'bride.age' });
+    if (entry.groomFather?.name) fields.push({ label: "Groom's Father", value: entry.groomFather.name, key: 'groomFather.name' });
+    if (entry.groomMother?.name) fields.push({ label: "Groom's Mother", value: entry.groomMother.name + (entry.groomMother.maidenName ? ' (m.s. ' + entry.groomMother.maidenName + ')' : ''), key: 'groomMother.name' });
+    if (entry.groomMother?.maidenName) fields.push({ label: "Groom's Mother m.s.", value: entry.groomMother.maidenName, key: 'groomMother.maidenName' });
+    if (entry.brideFather?.name) fields.push({ label: "Bride's Father", value: entry.brideFather.name, key: 'brideFather.name' });
+    if (entry.brideMother?.name) fields.push({ label: "Bride's Mother", value: entry.brideMother.name + (entry.brideMother.maidenName ? ' (m.s. ' + entry.brideMother.maidenName + ')' : ''), key: 'brideMother.name' });
+    if (entry.brideMother?.maidenName) fields.push({ label: "Bride's Mother m.s.", value: entry.brideMother.maidenName, key: 'brideMother.maidenName' });
+    if (entry.date) fields.push({ label: 'Date', value: entry.date, key: 'date' });
+  } else if (type === 'birth') {
+    if (entry.child?.name) fields.push({ label: 'Child', value: entry.child.name, key: 'child.name' });
+    if (entry.child?.birthDate) fields.push({ label: 'Birth Date', value: entry.child.birthDate, key: 'child.birthDate' });
+    if (entry.sex) fields.push({ label: 'Sex', value: entry.sex, key: 'sex' });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, key: 'father.name' });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : entry.mother.maidenSurname ? ' (m.s. ' + entry.mother.maidenSurname + ')' : ''), key: 'mother.name' });
+    if (entry.mother?.maidenName || entry.mother?.maidenSurname) fields.push({ label: 'Mother m.s.', value: entry.mother?.maidenName || entry.mother?.maidenSurname || '', key: 'mother.maidenName' });
+    if (entry.district) fields.push({ label: 'District', value: entry.district, key: 'district' });
+  } else if (type === 'death') {
+    if (entry.deceased?.name) fields.push({ label: 'Deceased', value: entry.deceased.name, key: 'deceased.name' });
+    if (entry.deceased?.age) fields.push({ label: 'Age', value: entry.deceased.age, key: 'deceased.age' });
+    if (entry.deceased?.spouseName) fields.push({ label: 'Spouse', value: entry.deceased.spouseName, key: 'deceased.spouseName' });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, key: 'father.name' });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : ''), key: 'mother.name' });
+    if (entry.mother?.maidenName) fields.push({ label: 'Mother m.s.', value: entry.mother.maidenName, key: 'mother.maidenName' });
+    if (entry.deathDate) fields.push({ label: 'Date', value: entry.deathDate, key: 'deathDate' });
+    if (entry.causeOfDeath) fields.push({ label: 'Cause', value: entry.causeOfDeath, key: 'causeOfDeath' });
+  }
+  return fields;
+}
+
+function entrySummary(entry, type) {
+  const name = escapeHtml(entry.child?.name || entry.groom?.name || entry.bride?.name || entry.deceased?.name || 'Unknown');
+  const date = escapeHtml(entry.child?.birthDate || entry.date || entry.deathDate || '');
+  if (type === 'marriage') return escapeHtml(entry.groom?.name || 'Unknown') + ' & ' + escapeHtml(entry.bride?.name || 'Unknown') + (date ? ' — ' + date : '');
+  if (type === 'birth') return name + (date ? ' — b. ' + date : '');
+  if (type === 'death') return name + (date ? ' — d. ' + date : '');
+  return name;
+}
+
+// ── Cert method selection ──
+let geminiCertType = 'birth';
+let uploadCertType = 'birth';
+let veniceCertType = 'birth';
+
+function selectCertMethod(method) {
+  document.getElementById('certMethodSelect').style.display = 'none';
+  if (method === 'upload') {
+    document.getElementById('uploadSection').classList.add('active');
+  } else if (method === 'venice') {
+    document.getElementById('veniceSection').classList.add('active');
+    updateVenicePrompt();
+  } else if (method === 'gemini') {
+    document.getElementById('geminiSection').classList.add('active');
+    updateGeminiPrompt();
+  }
+}
+
+function showCertMethods() {
+  uploadCertType = 'birth';
+  document.getElementById('certMethodSelect').style.display = 'flex';
+  document.getElementById('uploadSection')?.classList.remove('active');
+  document.getElementById('veniceSection')?.classList.remove('active');
+  document.getElementById('geminiSection').classList.remove('active');
+  document.getElementById('certStatus').style.display = 'none';
+  document.getElementById('certResults').innerHTML = '';
+  lastTranscription = null;
+  certPanel.classList.remove('has-results');
+}
+
+function setGeminiType(type) {
+  geminiCertType = type;
+  document.querySelectorAll('#geminiCertType .cert-type-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+  updateGeminiPrompt();
+}
+
+function setUploadCertType(type, btn) {
+  uploadCertType = type;
+  if (btn) {
+    document.querySelectorAll('#uploadCertType .cert-type-btn').forEach(function(b) {
+      b.classList.toggle('active', b === btn);
+    });
+  } else {
+    document.querySelectorAll('#uploadCertType .cert-type-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.type === type);
+    });
+  }
+}
+
+// ── Gemini prompt helpers ──
+function getGeminiPrompt(type) {
+  var base = 'You are a document transcription assistant. I will upload an image of a ' + type + ' certificate. Extract the following fields and return ONLY a JSON object with these exact keys. No markdown, no explanation, no extra text before or after the JSON.\n\n';
+  if (type === 'birth') {
+    return base + 'Required keys:\n- birth_date\n- child_name\n- sex\n- father_name\n- father_profession\n- mother_name\n- mother_maiden_name\n- district\n- county\n\nIf any field is not visible or unreadable, use an empty string as the value.';
+  } else if (type === 'marriage') {
+    return base + 'Required keys:\n- marriage_date\n- groom_name\n- groom_age\n- groom_profession\n- bride_name\n- bride_age\n- bride_profession\n- groom_father_name\n- groom_mother_name\n- groom_mother_maiden\n- bride_father_name\n- bride_mother_name\n- bride_mother_maiden\n- minister_name\n- district\n\nIf any field is not visible or unreadable, use an empty string as the value.';
+  } else if (type === 'death') {
+    return base + 'Required keys:\n- death_date\n- deceased_name\n- deceased_age\n- deceased_profession\n- deceased_spouse_name\n- father_name\n- mother_name\n- mother_maiden_name\n- cause_of_death\n- district\n- county\n- informant_name\n- informant_relationship\n\nIf any field is not visible or unreadable, use an empty string as the value.';
+  }
+  return base;
+}
+
+function updateGeminiPrompt() {
+  var prompt = getGeminiPrompt(geminiCertType);
+  document.getElementById('geminiCopyBtn').dataset.prompt = prompt;
+}
+
+function copyGeminiPrompt() {
+  var btn = document.getElementById('geminiCopyBtn');
+  var prompt = btn.dataset.prompt || getGeminiPrompt(geminiCertType);
+  var status = document.getElementById('geminiStatus');
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(function() {
+      showToast('Prompt copied to clipboard!');
+    }).catch(function() {
+      showToast('Could not copy automatically. Tap "View the prompt" below.');
+    });
+  } else {
+    var box = document.getElementById('geminiPromptBox');
+    box.textContent = prompt;
+    box.style.display = 'block';
+    showToast('Prompt shown below. Select and copy it.');
+  }
+
+  status.style.display = 'block';
+  document.getElementById('geminiPromptBox').textContent = prompt;
+}
+
+function openGemini() {
+  var url = 'https://gemini.google.com';
+  var opened = false;
+  try {
+    var win = window.open(url, '_blank', 'noopener');
+    if (win) opened = true;
+  } catch (e) {}
+  if (!opened) {
+    showToast('Could not open Gemini automatically. Please open gemini.google.com manually.');
+  }
+}
+
+function toggleGeminiPrompt() {
+  var box = document.getElementById('geminiPromptBox');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+// ── Venice paste flow ──
+function setVeniceType(type) {
+  veniceCertType = type;
+  document.querySelectorAll('#veniceCertType .cert-type-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+  updateVenicePrompt();
+}
+
+function updateVenicePrompt() {
+  var prompt = getGeminiPrompt(veniceCertType);
+  document.getElementById('veniceCopyBtn').dataset.prompt = prompt;
+}
+
+function copyVenicePrompt() {
+  var btn = document.getElementById('veniceCopyBtn');
+  var prompt = btn.dataset.prompt || getGeminiPrompt(veniceCertType);
+  var status = document.getElementById('veniceStatus');
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(function() {
+      showToast('Prompt copied to clipboard!');
+    }).catch(function() {
+      showToast('Could not copy automatically. Tap "View the prompt" below.');
+    });
+  } else {
+    var box = document.getElementById('venicePromptBox');
+    box.textContent = prompt;
+    box.style.display = 'block';
+    showToast('Prompt shown below. Select and copy it.');
+  }
+
+  status.style.display = 'block';
+  document.getElementById('venicePromptBox').textContent = prompt;
+}
+
+function openVenice() {
+  var url = 'https://venice.ai/chat';
+  var opened = false;
+  try {
+    var win = window.open(url, '_blank', 'noopener');
+    if (win) opened = true;
+  } catch (e) {}
+  if (!opened) {
+    showToast('Could not open Venice automatically. Please open venice.ai/chat manually.');
+  }
+}
+
+function toggleVenicePrompt() {
+  var box = document.getElementById('venicePromptBox');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+function parseVeniceResult() {
+  var raw = document.getElementById('venicePasteBox').value.trim();
+  var cs = document.getElementById('certStatus');
+
+  if (!raw) {
+    cs.className = 'cert-status error';
+    cs.textContent = 'Please paste Venice result first.';
+    cs.style.display = 'block';
+    return;
+  }
+
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Parsing...';
+  cs.style.display = 'block';
+
+  var parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    var clean = raw.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    try {
+      parsed = JSON.parse(clean);
+    } catch (e2) {
+      var jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch (e3) {
+          cs.className = 'cert-status error';
+          cs.innerHTML = 'Could not parse JSON. Make sure you copied only the JSON object from Venice.';
+          cs.style.display = 'block';
+          return;
+        }
+      } else {
+        cs.className = 'cert-status error';
+        cs.innerHTML = 'No JSON object found. Please paste the JSON output from Venice.';
+        cs.style.display = 'block';
+        return;
+      }
+    }
+  }
+
+  var entry = transformGeminiToNested(parsed, veniceCertType);
+  lastTranscription = { type: veniceCertType, entries: [entry] };
+
+  cs.className = 'cert-status success';
+  cs.textContent = '\u2713 Parsed ' + veniceCertType + ' certificate';
+  renderTranscriptionResults(lastTranscription);
+  certPanel.classList.add('has-results');
+}
+
+function transformGeminiToNested(flat, type) {
+  if (type === 'marriage') {
+    return {
+      type: 'marriage',
+      date: flat.marriage_date || flat.date || '',
+      groom: { name: flat.groom_name || '', age: flat.groom_age || '', profession: flat.groom_profession || '' },
+      bride: { name: flat.bride_name || '', age: flat.bride_age || '', profession: flat.bride_profession || '' },
+      groomFather: { name: flat.groom_father_name || '' },
+      groomMother: { name: flat.groom_mother_name || '', maidenName: flat.groom_mother_maiden || '' },
+      brideFather: { name: flat.bride_father_name || '' },
+      brideMother: { name: flat.bride_mother_name || '', maidenName: flat.bride_mother_maiden || '' }
+    };
+  } else if (type === 'birth') {
+    return {
+      type: 'birth',
+      child: { name: flat.child_name || '', birthDate: flat.birth_date || flat.child_birthDate || flat.registration_date || flat.date || '' },
+      sex: flat.sex || flat.child_sex || '',
+      father: { name: flat.father_name || '', profession: flat.father_profession || '' },
+      mother: { name: flat.mother_name || '', maidenName: flat.mother_maiden_name || flat.mother_maiden || '' },
+      district: flat.district || ''
+    };
+  } else if (type === 'death') {
+    return {
+      type: 'death',
+      deathDate: flat.death_date || flat.date || '',
+      deceased: { name: flat.deceased_name || '', age: flat.deceased_age || '', profession: flat.deceased_profession || '', spouseName: flat.deceased_spouse_name || flat.spouse_name || '' },
+      father: { name: flat.father_name || '' },
+      mother: { name: flat.mother_name || '', maidenName: flat.mother_maiden_name || flat.mother_maiden || '' },
+      causeOfDeath: flat.cause_of_death || '',
+      district: flat.district || ''
+    };
+  }
+  return flat;
+}
+
+function parseGeminiResult() {
+  var raw = document.getElementById('geminiPasteBox').value.trim();
+  var cs = document.getElementById('certStatus');
+
+  if (!raw) {
+    cs.className = 'cert-status error';
+    cs.textContent = 'Please paste Gemini result first.';
+    cs.style.display = 'block';
+    return;
+  }
+
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Parsing...';
+  cs.style.display = 'block';
+
+  var parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    var clean = raw.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    try {
+      parsed = JSON.parse(clean);
+    } catch (e2) {
+      var jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch (e3) {
+          cs.className = 'cert-status error';
+          cs.innerHTML = 'Could not parse JSON. Make sure you copied only the JSON object from Gemini.';
+          cs.style.display = 'block';
+          return;
+        }
+      } else {
+        cs.className = 'cert-status error';
+        cs.innerHTML = 'No JSON object found. Please paste the JSON output from Gemini.';
+        cs.style.display = 'block';
+        return;
+      }
+    }
+  }
+
+  var entry = transformGeminiToNested(parsed, geminiCertType);
+  lastTranscription = { type: geminiCertType, entries: [entry] };
+
+  cs.className = 'cert-status success';
+  cs.textContent = '\u2713 Parsed ' + geminiCertType + ' certificate';
+  renderTranscriptionResults(lastTranscription);
+  certPanel.classList.add('has-results');
+}
+
+// ── Name matching helpers (ported from data-tree) ──
+function normalizeName(name) {
+  if (!name) return '';
+  let stripped = name.replace(/\s*\([^)]*\)/g, '');
+  stripped = stripped.replace(/\s*[nN][ée]e\s+.*$/, '');
+  const parts = stripped.toLowerCase().trim().split(/\s+/);
+  if (parts.length < 2) return parts[0] || '';
+  return parts[0] + ' ' + parts[parts.length - 1];
+}
+
+function isEffectivelyBlank(name) {
+  if (!name) return true;
+  const n = name.toLowerCase().trim();
+  if (!n || n === 'name' || n === 'unknown' || n === '?' || n === '??' || n === '...') return true;
+  if (n === 'father unknown' || n === 'mother unknown' || n === 'unknown parent' || n === 'parent unknown' || n === 'father' || n === 'mother') return true;
+  if (/^\?+$/.test(n)) return true;
+  return false;
+}
+
+function extractYear(str) {
+  if (!str) return null;
+  const m = String(str).match(/\b(\d{4})\b/);
+  return m ? parseInt(m[1]) : null;
+}
+
+function findPerson(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return null;
+  const searchNorm = normalizeName(name);
+  const searchFull = name.toLowerCase().trim();
+
+  function getBirthYear(p) {
+    const m = (p.years || p.birthDate || '').match(/\d{4}/);
+    return m ? parseInt(m[0]) : null;
+  }
+
+  let candidates = [];
+  for (const p of people) {
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+
+    let score = 0;
+    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
+    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) score = 50;
+
+    if (score > 0) candidates.push({ person: p, score });
+  }
+
+  if (!candidates.length) return null;
+
+  const certYear = opts.certYear;
+  if (certYear && !isNaN(certYear)) {
+    candidates = candidates.filter(({person: p}) => {
+      const by = getBirthYear(p);
+      if (!by) return true;
+      if (opts.certType === 'marriage') return by <= certYear - 16;
+      if (opts.certType === 'death') return by < certYear;
+      return true;
+    });
+  }
+
+  if (!candidates.length) return null;
+  if (candidates.length === 1) return candidates[0].person;
+
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0].person;
+}
+
+function findAllMatches(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return [];
+  const searchNorm = normalizeName(name);
+  const searchFull = name.toLowerCase().trim();
+
+  function getBirthYear(p) {
+    const m = (p.years || p.birthDate || '').match(/\d{4}/);
+    return m ? parseInt(m[0]) : null;
+  }
+
+  let matches = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+
+    let score = 0;
+    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
+    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) score = 50;
+
+    if (score > 0) matches.push({ person: p, score });
+  }
+
+  matches = matches.filter(m => m.score >= 50);
+
+  if (opts.certType && opts.certYear && !isNaN(opts.certYear)) {
+    matches = matches.filter(({person: p}) => {
+      const by = getBirthYear(p);
+      if (!by) return true;
+      if (opts.certType === 'marriage') return by <= opts.certYear - 16;
+      if (opts.certType === 'death') return by < opts.certYear;
+      return true;
+    });
+  }
+
+  matches.sort((a, b) => b.score - a.score);
+  return matches;
+}
+
+function findPersonGenAware(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return null;
+  const searchNorm = normalizeName(name);
+  const searchFull = name.toLowerCase().trim();
+
+  const allMatches = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    const pMaiden = normalizeName(p.maidenName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+    const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
+
+    let score = 0;
+    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
+    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) score = 50;
+
+    if (opts.checkMaiden && pMaiden) {
+      const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
+      const maidenHit = (pMaiden === searchSurname || pMaiden === searchNorm) ? 95
+        : (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden)) ? 75 : 0;
+      if (maidenHit > 0) {
+        score = Math.max(score, maidenHit);
+      }
+    }
+
+    if (score > 0) allMatches.push({ person: p, score });
+  }
+
+  if (allMatches.length === 0) return null;
+  const bestScore = Math.max(...allMatches.map(m => m.score));
+  if (bestScore < 50) return null;
+  if (allMatches.length === 1) return allMatches[0].person;
+
+  allMatches.sort((a, b) => b.score - a.score);
+  return allMatches[0].person;
+}
+
+function findPersonBySurname(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return null;
+  const surname = name.split(/\s+/).pop().toLowerCase();
+  if (!surname) return null;
+
+  let candidates = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank' || isEffectivelyBlank(p.name)) continue;
+    const pName = (p.name || '').toLowerCase();
+    const pFull = (p.fullName || '').toLowerCase();
+    const pMaiden = (p.maidenName || '').toLowerCase();
+    if (pName.includes(surname) || pFull.includes(surname) || pMaiden.includes(surname)) {
+      candidates.push(p);
+    }
+  }
+
+  if (!candidates.length) return null;
+  if (candidates.length === 1) return candidates[0];
+  return candidates[0];
+}
+
+// ── Apply cert data to person ──
+function applyCertToPerson(entry, type, docImage) {
+  if (!entry) return;
+
+  let primaryNames = [];
+  if (type === 'birth' && entry.child?.name) primaryNames.push({ name: entry.child.name, certKey: 'child.name' });
+  if (type === 'marriage') {
+    if (entry.groom?.name) primaryNames.push({ name: entry.groom.name, certKey: 'groom.name' });
+    if (entry.bride?.name) primaryNames.push({ name: entry.bride.name, certKey: 'bride.name' });
+  }
+  if (type === 'death' && entry.deceased?.name) primaryNames.push({ name: entry.deceased.name, certKey: 'deceased.name' });
+
+  for (const pn of primaryNames) {
+    const refYear = type === 'marriage' ? (extractYear(entry.date) ? extractYear(entry.date) - parseInt(entry.groom?.age || entry.bride?.age || 0) : null)
+      : type === 'birth' ? (extractYear(entry.child?.birthDate) || null)
+      : type === 'death' ? (extractYear(entry.deathDate) ? extractYear(entry.deathDate) - parseInt(entry.deceased?.age || 0) : null)
+      : null;
+    const certYear = extractYear(entry.date || entry.deathDate || entry.child?.birthDate);
+    const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
+    if (matches.length >= 2) {
+      const top2ScoreDiff = matches[0].score - matches[1].score;
+      if (top2ScoreDiff < 30 || matches[0].person.status === 'confirmed') {
+        openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
+        return;
+      }
+    }
+  }
+
+  _applyCertToPersonResolved(entry, type, docImage, null, null);
+}
+
+function _applyCertToPersonResolved(entry, type, docImage, resolveName, resolveId) {
+  const changed = [];
+  if (type === 'birth') applyBirthEntry(entry, changed, docImage, resolveId);
+  else if (type === 'marriage') applyMarriageEntry(entry, changed, docImage, resolveName, resolveId);
+  else if (type === 'death') applyDeathEntry(entry, changed, docImage, resolveId);
+  if (changed.length) { renderFreeBuild(); autoSave(); showToast('Applied to ' + changed.length + ' people'); }
+  else { showToast('No matching people found'); }
+}
+
+// ── Ambiguity modal ──
+function openAmbigDialog(entry, type, docImage, targetName, matches, certKey) {
+  pendingAmbigTarget = { entry, type, docImage, resolveName: targetName, resolveId: null };
+  const modal = document.getElementById('ambigModal');
+  const question = document.getElementById('ambigQuestion');
+  const options = document.getElementById('ambigOptions');
+  question.textContent = 'Multiple "' + targetName + '" people found. Which one receives this certificate?';
+  options.innerHTML = '';
+  matches.forEach((m, i) => {
+    const p = m.person;
+    const info = [];
+    info.push('Gen ' + p.gen);
+    if (p.years) info.push(p.years);
+    if (p.birthDate) info.push('b. ' + p.birthDate);
+    if (p.spouseName) info.push('spouse: ' + p.spouseName);
+    if (p.status) info.push('status: ' + p.status);
+    const btn = document.createElement('button');
+    btn.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:8px;border:2px solid #8a7a5a;border-radius:6px;background:#faf6ee;cursor:pointer;font-family:"Cormorant Garamond",serif;font-size:13px;color:#2a1f10;';
+    btn.innerHTML = '<b>' + escapeHtml(p.name) + '</b> <span style="color:#6b5537;font-size:11px;">' + escapeHtml(info.join(' | ')) + '</span>';
+    btn.addEventListener('click', () => {
+      pendingAmbigTarget.resolveId = p.id;
+      modal.style.display = 'none';
+      _applyCertToPersonResolved(pendingAmbigTarget.entry, pendingAmbigTarget.type, pendingAmbigTarget.docImage, pendingAmbigTarget.resolveName, pendingAmbigTarget.resolveId);
+      pendingAmbigTarget = null;
+    });
+    options.appendChild(btn);
+  });
+  modal.style.display = 'flex';
+}
+
+document.getElementById('ambigCancel')?.addEventListener('click', () => {
+  document.getElementById('ambigModal').style.display = 'none';
+  pendingAmbigTarget = null;
+});
+
+// ── Apply birth entry ──
+function applyBirthEntry(entry, changed, docImage, forceChildId) {
+  const childName = entry.child?.name; if (!childName) return;
+  const childNorm = normalizeName(childName);
+
+  const fatherNameRaw = entry.father?.name || '';
+  const isIllegitimate = !fatherNameRaw || fatherNameRaw.toLowerCase().includes('illegitimate');
+  if (isIllegitimate) { entry.father = null; }
+
+  let child = null;
+  if (forceChildId) {
+    child = people.find(p => p.id === forceChildId);
+  }
+
+  if (!child) {
+    const allMatches = [];
+    for (const p of people) {
+      if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
+      if (normalizeName(p.name) === childNorm || normalizeName(p.fullName || '') === childNorm) {
+        allMatches.push(p);
+      }
+    }
+    if (allMatches.length === 1) {
+      child = allMatches[0];
+    } else if (allMatches.length >= 2) {
+      child = allMatches.sort((a, b) => a.gen - b.gen)[0];
+    }
+  }
+
+  if (!child) {
+    child = findPersonGenAware(childName);
+  }
+
+  if (!child) {
+    child = createPerson(nextId++, 0, childName, '?', 'probable', {});
+    people.push(child);
+  }
+
+  if (child.name === 'Name' || child.status === 'blank') {
+    child.name = childName;
+  }
+  child.fullName = childName;
+  if (entry.child?.birthDate) {
+    child.birthDate = entry.child.birthDate;
+    const bYear = extractYear(entry.child.birthDate);
+    const dYear = extractYear(child.deathDate);
+    child.years = dYear ? bYear + ' — ' + dYear : 'b. ' + entry.child.birthDate;
+  }
+  child.status = 'confirmed';
+  child.docs.push({ type: 'bc', date: extractDocDate(entry, 'birth'), docId: null });
+  if (docImage) {
+    saveDocToDB(child.id, 'bc', docImage, { personName: child.name }).then(id => {
+      const lastDoc = child.docs[child.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
+  changed.push(child);
+
+  // Create parents if needed
+  if (!child.parents || child.parents.length < 2) {
+    const parentGen = (child.gen || 0) + 1;
+    const father = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+    const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+    father.spouseId = mother.id;
+    mother.spouseId = father.id;
+    father.spouseName = mother.name;
+    mother.spouseName = father.name;
+    people.push(father);
+    people.push(mother);
+    child.parents = [father.id, mother.id];
+  }
+
+  if (child.parents && child.parents.length >= 2) {
+    const father = people.find(p => p.id === child.parents[0]);
+    const mother = people.find(p => p.id === child.parents[1]);
+
+    if (father && entry.father?.name) {
+      if (father.name === 'Name' || father.status !== 'confirmed') {
+        father.name = entry.father.name;
+        father.fullName = entry.father.name;
+        if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
+        changed.push(father);
+      }
+    }
+
+    if (mother && entry.mother?.name) {
+      if (mother.status !== 'confirmed') {
+        const rawMotherName = entry.mother.name.replace(/\s*\(m\.s\.\s+[^)]+\)/gi, '').trim();
+        const rawParts = rawMotherName.split(' ');
+        const firstName = rawParts[0] || '';
+        const rawSurname = rawParts.slice(1).join(' ');
+        const maiden = entry.mother?.maidenName || entry.mother?.maidenSurname || mother.maidenName || '';
+        if (maiden && firstName) {
+          mother.name = firstName + ' ' + maiden;
+          mother.fullName = firstName + ' ' + maiden;
+        } else {
+          mother.name = rawMotherName;
+          mother.fullName = rawMotherName;
+        }
+        if (maiden) mother.maidenName = maiden;
+        if (rawSurname && rawSurname !== maiden) mother.marriedName = rawSurname;
+        if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
+        changed.push(mother);
+      }
+    }
+
+    if (father && mother && !isIllegitimate) {
+      father.spouseId = mother.id;
+      mother.spouseId = father.id;
+      father.spouseName = mother.name;
+      mother.spouseName = father.name;
+    }
+  }
+}
+
+// ── Apply marriage entry ──
+function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceResolveId) {
+  const groomName = entry.groom?.name, brideName = entry.bride?.name;
+  if (!groomName || !brideName) return;
+
+  const marriageYear = extractYear(entry.date);
+
+  let groom = null;
+  if (forceResolveId && forceResolveName === groomName) {
+    groom = people.find(p => p.id === forceResolveId);
+  }
+  if (!groom) {
+    groom = findPersonGenAware(groomName, { certType: 'marriage', certYear: marriageYear });
+    if (!groom) {
+      groom = findPersonBySurname(groomName, { certType: 'marriage', certYear: marriageYear });
+    }
+  }
+
+  let bride = null;
+  if (forceResolveId && forceResolveName === brideName) {
+    bride = people.find(p => p.id === forceResolveId);
+  }
+  if (!bride && groom && groom.spouseId) {
+    const spouse = people.find(p => p.id === groom.spouseId);
+    if (spouse) {
+      const brideFirst = brideName.split(/\s+/)[0]?.toLowerCase();
+      const spouseFirst = spouse.name.split(/\s+/)[0]?.toLowerCase();
+      if (spouseFirst === brideFirst) {
+        bride = spouse;
+      }
+    }
+  }
+
+  if (!bride) {
+    bride = findPersonGenAware(brideName, { certType: 'marriage', certYear: marriageYear });
+    if (!bride) {
+      bride = findPersonGenAware(brideName, { checkMaiden: true, certType: 'marriage', certYear: marriageYear });
+    }
+  }
+
+  const targetGen = groom ? groom.gen : 0;
+  if (!groom) {
+    groom = createPerson(nextId++, targetGen, groomName, '?', 'probable', {});
+    people.push(groom); changed.push(groom);
+  }
+  if (!bride) {
+    bride = createPerson(nextId++, targetGen, brideName, '?', 'probable', {});
+    people.push(bride); changed.push(bride);
+  }
+
+  groom.spouseId = bride.id;
+  bride.spouseId = groom.id;
+  groom.spouseName = bride.name;
+  bride.spouseName = groom.name;
+  groom.status = 'confirmed'; bride.status = 'confirmed';
+  groom.docs.push({ type: 'mc', date: extractDocDate(entry, 'marriage'), docId: null });
+  bride.docs.push({ type: 'mc', date: extractDocDate(entry, 'marriage'), docId: null });
+  if (docImage) {
+    saveDocToDB(groom.id, 'mc', docImage, { personName: groom.name }).then(id => {
+      const lastDoc = groom.docs[groom.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+    saveDocToDB(bride.id, 'mc', docImage, { personName: bride.name }).then(id => {
+      const lastDoc = bride.docs[bride.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
+  if (entry.date) { groom.marriageDate = entry.date; bride.marriageDate = entry.date; }
+  changed.push(groom); changed.push(bride);
+
+  // Update parents
+  function updateParents(person, fatherName, motherName, motherMaiden) {
+    if (!person) return;
+    if (!person.parents || person.parents.length < 2) {
+      const parentGen = (person.gen || 0) + 1;
+      const father = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+      const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+      father.spouseId = mother.id; mother.spouseId = father.id;
+      people.push(father); people.push(mother);
+      person.parents = [father.id, mother.id];
+    }
+    const father = people.find(p => p.id === person.parents[0]);
+    const mother = people.find(p => p.id === person.parents[1]);
+
+    if (father && fatherName && (father.status === 'blank' || father.status === 'probable' || father.status === 'unknown-parent')) {
+      father.name = fatherName; father.fullName = fatherName;
+      if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
+      changed.push(father);
+    }
+    if (mother && motherName && (mother.status === 'blank' || mother.status === 'probable' || mother.status === 'unknown-parent')) {
+      const rawMName = motherName.replace(/\s*\(m\.s\.\s+[^)]+\)/gi, '').trim();
+      const mParts = rawMName.split(' ');
+      const mFirst = mParts[0] || '';
+      const mRawSurname = mParts.slice(1).join(' ');
+      const mMaiden = motherMaiden || mother.maidenName || '';
+      if (mMaiden && mFirst) {
+        mother.name = mFirst + ' ' + mMaiden; mother.fullName = mFirst + ' ' + mMaiden;
+      } else {
+        mother.name = rawMName; mother.fullName = rawMName;
+      }
+      if (mMaiden) mother.maidenName = mMaiden;
+      if (mRawSurname && mRawSurname !== mMaiden) mother.marriedName = mRawSurname;
+      if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
+      changed.push(mother);
+    }
+    if (father && mother) {
+      father.spouseId = mother.id; mother.spouseId = father.id;
+      father.spouseName = mother.name; mother.spouseName = father.name;
+    }
+  }
+
+  updateParents(groom, entry.groomFather?.name, entry.groomMother?.name, entry.groomMother?.maidenName);
+  updateParents(bride, entry.brideFather?.name, entry.brideMother?.name, entry.brideMother?.maidenName);
+}
+
+// ── Apply death entry ──
+function applyDeathEntry(entry, changed, docImage, forceDecId) {
+  const decName = entry.deceased?.name; if (!decName) return;
+  let dec = null;
+  if (forceDecId) {
+    dec = people.find(p => p.id === forceDecId);
+  }
+  if (!dec) {
+    dec = findPersonGenAware(decName);
+  }
+  if (!dec) {
+    for (const p of people) {
+      if (!p.spouseId || !p.name) continue;
+      const pDisplay = p.name.replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+      const pFirst = pDisplay.split(/\s+/)[0] || '';
+      const pLast = pDisplay.split(/\s+/).pop() || '';
+      const searchFirst = decName.split(/\s+/)[0]?.toLowerCase() || '';
+      const searchLast = decName.split(/\s+/).pop()?.toLowerCase() || '';
+      if (pFirst === searchFirst && pLast === searchLast) { dec = p; break; }
+    }
+  }
+  if (!dec) { dec = createPerson(nextId++, 0, decName, '?', 'probable', {}); people.push(dec); changed.push(dec); }
+  if (entry.deathDate) { dec.deathDate = entry.deathDate; }
+  if (entry.deceased?.age) dec.ageAtDeath = entry.deceased.age;
+  if (entry.deceased?.occupation) dec.occupation = entry.deceased.occupation;
+  if (entry.deceased?.spouseName) dec.spouseName = entry.deceased.spouseName;
+  dec.docs.push({ type: 'dc', date: extractDocDate(entry, 'death'), docId: null });
+  if (docImage) {
+    saveDocToDB(dec.id, 'dc', docImage, { personName: dec.name }).then(id => {
+      const lastDoc = dec.docs[dec.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
+  dec.status = 'confirmed';
+  changed.push(dec);
+
+  if (dec.parents && dec.parents.length >= 2) {
+    const father = people.find(p => p.id === dec.parents[0]);
+    const mother = people.find(p => p.id === dec.parents[1]);
+    if (father && entry.father?.name && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable' || father.status === 'unknown-parent')) {
+      father.name = entry.father.name; father.fullName = entry.father.name;
+      if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
+      changed.push(father);
+    }
+    if (mother && entry.mother?.name && (mother.name === 'Name' || mother.status === 'blank' || mother.status === 'probable' || mother.status === 'unknown-parent')) {
+      mother.name = entry.mother.name; mother.fullName = entry.mother.name;
+      if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
+      if (entry.mother?.maidenName) mother.maidenName = entry.mother?.maidenName;
+      changed.push(mother);
+    }
+    if (father && mother) {
+      father.spouseId = mother.id; mother.spouseId = father.id;
+      father.spouseName = mother.name; mother.spouseName = father.name;
+    }
+  }
+}
+
+// ── Cert action buttons ──
+document.getElementById('certConfirm').addEventListener('click', () => {
+  if (!lastTranscription) return;
+  syncCertEdits();
+  const entries = lastTranscription.entries || [lastTranscription];
+  const entry = entries[selectedEntryIndex || 0];
+  if (!entry) return;
+
+  if (pendingDirectAttachId) {
+    let type = lastTranscription.type || 'unknown';
+    if (type === 'unknown') {
+      if (entry.groom?.name || entry.bride?.name) type = 'marriage';
+      else if (entry.child?.name || entry.father?.name || entry.mother?.name) type = 'birth';
+      else if (entry.deceased?.name) type = 'death';
+    }
+    const changed = [];
+    if (type === 'birth') applyBirthEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
+    else if (type === 'marriage') applyMarriageEntry(entry, changed, pendingDocImage, null, pendingDirectAttachId);
+    else if (type === 'death') applyDeathEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
+    if (changed.length) { renderFreeBuild(); autoSave(); showToast('Document attached to ' + changed[0].name); }
+    pendingDirectAttachId = null;
+    certPanel.classList.remove('active');
+    certPanel.classList.remove('has-results');
+    return;
+  }
+
+  let type = lastTranscription.type || 'unknown';
+  if (type === 'unknown') {
+    if (entry.groom?.name || entry.bride?.name) type = 'marriage';
+    else if (entry.child?.name || entry.father?.name || entry.mother?.name) type = 'birth';
+    else if (entry.deceased?.name) type = 'death';
+  }
+  applyCertToPerson(entry, type, pendingDocImage);
+  certPanel.classList.remove('active');
+  certPanel.classList.remove('has-results');
+});
+
+document.getElementById('certClear').addEventListener('click', () => {
+  pendingDirectAttachId = null;
+  clearCertPanel();
+});
+
+document.getElementById('certRetry').addEventListener('click', () => {
+  if (pendingDocFile || pendingDocImage) {
+    document.getElementById('certResults').innerHTML = '';
+    certPanel.classList.remove('has-results');
+    lastTranscription = null;
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status loading';
+    cs.innerHTML = 'Scanning certificate...<br><small>Please wait</small>';
+    cs.style.display = 'block';
+    if (pendingDocImage) {
+      sendToTranscriptionAPI(pendingDocImage);
+    } else if (pendingDocFile) {
+      processDocFile(pendingDocFile);
+    }
+  } else {
+    clearCertPanel();
+    document.getElementById('certFileInput').value = '';
+    document.getElementById('certFileInput').click();
+  }
+});
 
 // HELP MODAL
 function toggleHelp() {
