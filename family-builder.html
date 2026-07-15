@@ -1056,11 +1056,47 @@ function parseGedcom(text) {
     }
   }
 
+  // Merge duplicate individuals (same name + same birth year)
+  // Ancestry sometimes exports the same person as two INDI records with different xrefs
+  const mergeKey = (ind) => {
+    const bY = (ind.birthDate || '').match(/\d{4}/);
+    return (ind.name || '').toLowerCase().trim() + '|' + (bY ? bY[0] : (ind.birthDate || ''));
+  };
+  const canonicalXref = {};  // dupXref -> canonicalXref
+  const seenByKey = {};      // mergeKey -> canonical xref
+  for (const [xref, ind] of Object.entries(indis)) {
+    const key = mergeKey(ind);
+    if (seenByKey[key]) {
+      const canonXref = seenByKey[key];
+      canonicalXref[xref] = canonXref;
+      const canon = indis[canonXref];
+      // Merge FAMS and FAMC
+      if (ind.famc && !canon.famc) canon.famc = ind.famc;
+      for (const fam of (ind.fams || [])) {
+        if (!canon.fams.includes(fam)) canon.fams.push(fam);
+      }
+      // Fill in missing fields
+      if (!canon.deathDate && ind.deathDate) canon.deathDate = ind.deathDate;
+      if (!canon.deathPlace && ind.deathPlace) canon.deathPlace = ind.deathPlace;
+      if (!canon.sex && ind.sex) canon.sex = ind.sex;
+    } else {
+      seenByKey[key] = xref;
+    }
+  }
+  // Remap FAM pointers to canonical xrefs
+  for (const fam of Object.values(fams)) {
+    if (fam.husb && canonicalXref[fam.husb]) fam.husb = canonicalXref[fam.husb];
+    if (fam.wife && canonicalXref[fam.wife]) fam.wife = canonicalXref[fam.wife];
+    fam.children = fam.children.map(c => canonicalXref[c] || c);
+  }
+
   const result = [];
   let nid = 1;
   const xrefMap = {};
 
   for (const [xref, gedIndi] of Object.entries(indis)) {
+    // Skip duplicates (they've been merged into canonical)
+    if (canonicalXref[xref]) continue;
     const id = nid++; xrefMap[xref] = id;
     let yearsStr = '?';
     const bY = (gedIndi.birthDate || '').match(/\d{4}/);
