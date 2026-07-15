@@ -1410,10 +1410,19 @@ function layoutTree() {
         childLeftX += cw + CARD_GAP_X;
       }
 
-      // Parent-child connectors
+      // Parent-child connectors — route from mother's card center
       let parentMidX = centerX;
       if (hasSpouse) {
-        parentMidX = myX + CARD_W + COUPLE_GAP / 2;
+        // Identify mother: person is F → person's card, spouse is F → spouse's card
+        const motherIsPerson = person.sex === 'F';
+        const motherIsSpouse = !motherIsPerson && getP(person.spouseId)?.sex === 'F';
+        if (motherIsPerson) {
+          parentMidX = myX + CARD_W / 2;
+        } else if (motherIsSpouse) {
+          parentMidX = myX + CARD_W + COUPLE_GAP + CARD_W / 2;
+        } else {
+          parentMidX = myX + CARD_W + COUPLE_GAP / 2; // fallback to couple center
+        }
       } else {
         parentMidX = myX + CARD_W / 2;
       }
@@ -1587,12 +1596,19 @@ function layoutTree() {
 
       if (familyChildren.length > 0) {
         const childY = spouseY + GEN_HEIGHT;
-        const totalW = familyChildren.length * CARD_W + (familyChildren.length - 1) * CARD_GAP_X;
+        // Use computeWidth for each child (accounts for their spouse + descendants)
+        const childWidths = familyChildren.map(cid => computeWidth(cid));
+        const totalW = childWidths.reduce((a, b) => a + b, 0) + CARD_GAP_X * (familyChildren.length - 1);
         const coupleCenter = (Math.min(personPos.x, spouseX) + Math.max(personPos.x, spouseX) + CARD_W) / 2;
+
+        // Connector origin: mother's card center (if we can identify the mother)
+        const motherId = p.sex === 'F' ? p.id : spouseId;
+        const motherPos = positions.get(motherId);
+        const motherX = motherPos ? motherPos.x + CARD_W / 2 : coupleCenter;
+        const parentY = spouseY + CARD_H;
 
         if (spouseX < personPos.x) {
           // Secondary family is on the LEFT — children must go LEFT of all existing cards at this Y
-          // Find the leftmost existing card at childY level
           let leftmost = Infinity;
           for (const [id, pos] of positions) {
             if (id === p.id || id === spouseId) continue;
@@ -1600,7 +1616,6 @@ function layoutTree() {
               if (pos.x < leftmost) leftmost = pos.x;
             }
           }
-          // Place children so their right edge is just before the leftmost existing card
           let childLeftX;
           if (leftmost !== Infinity) {
             childLeftX = leftmost - totalW - CARD_GAP_X;
@@ -1609,14 +1624,17 @@ function layoutTree() {
           }
           if (childLeftX < 0) childLeftX = 0;
 
-          const parentMidX = coupleCenter;
-          const parentY = spouseY + CARD_H;
-          for (const cid of familyChildren) {
-            visited.add(cid);
-            positions.set(cid, { x: childLeftX, y: childY });
-            const childX = childLeftX + CARD_W / 2;
-            connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
-            childLeftX += CARD_W + CARD_GAP_X;
+          for (let i = 0; i < familyChildren.length; i++) {
+            const cid = familyChildren[i];
+            const cw = childWidths[i];
+            // Recursively place this child's subtree in the allocated space
+            assignPositions(cid, childLeftX, Math.round(childY / GEN_HEIGHT), visited);
+            // Fix Y in case assignPositions used a different depth calculation
+            const placed = positions.get(cid);
+            if (placed) placed.y = childY;
+            const childX = (positions.get(cid)?.x || childLeftX) + CARD_W / 2;
+            connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
+            childLeftX += cw + CARD_GAP_X;
           }
         } else {
           // Secondary family is on the RIGHT — children go RIGHT of all existing cards at this Y
@@ -1626,14 +1644,15 @@ function layoutTree() {
             childLeftX = existingChildRight + CARD_GAP_X;
           }
 
-          const parentMidX = coupleCenter;
-          const parentY = spouseY + CARD_H;
-          for (const cid of familyChildren) {
-            visited.add(cid);
-            positions.set(cid, { x: childLeftX, y: childY });
-            const childX = childLeftX + CARD_W / 2;
-            connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
-            childLeftX += CARD_W + CARD_GAP_X;
+          for (let i = 0; i < familyChildren.length; i++) {
+            const cid = familyChildren[i];
+            const cw = childWidths[i];
+            assignPositions(cid, childLeftX, Math.round(childY / GEN_HEIGHT), visited);
+            const placed = positions.get(cid);
+            if (placed) placed.y = childY;
+            const childX = (positions.get(cid)?.x || childLeftX) + CARD_W / 2;
+            connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
+            childLeftX += cw + CARD_GAP_X;
           }
         }
       }
