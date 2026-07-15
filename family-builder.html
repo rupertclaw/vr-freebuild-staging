@@ -376,6 +376,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
         <div class="fb-menu" id="treeMenu" role="menu">
           <div class="fb-menu-item" role="menuitem" onclick="location.href='data-tree.html'"><span class="icon">🌲</span> Pedigree Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="location.href='family-builder.html'"><span class="icon">🌿</span> Family Builder</div>
+          <div class="fb-menu-item" role="menuitem" onclick="saveSession()"><span class="icon">💾</span> Save Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('loadFileInput').click()"><span class="icon">📂</span> Load Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="openPrintDialog()"><span class="icon">🖨️</span> Print Tree</div>
           <div class="fb-menu-item danger" role="menuitem" onclick="resetTree()"><span class="icon">🗑️</span> Reset Tree</div>
         </div>
       </div>
@@ -389,6 +393,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
         </div>
       </div>
       <input type="file" id="gedcomInput" accept=".ged,.gedcom,text/plain" style="display:none">
+      <input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
     </div>
   </div>
   <div class="header-bottom">
@@ -509,28 +514,38 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
         <h3>Navigation</h3>
         <ul>
           <li><b>Pan</b> — drag the tree area with your finger or mouse</li>
-          <li><b>Zoom</b> — use the + and − buttons at the bottom, or pinch on touchscreens</li>
+          <li><b>Zoom</b> — use the + and − buttons in the toolbar, or pinch on touchscreens</li>
           <li><b>Fit to screen</b> — tap "Fit" to see the whole tree at once</li>
           <li><b>Focus on a person</b> — tap any card to select it. Large trees auto-focus on the most connected person</li>
           <li><b>Go back</b> — tap the ← button (bottom left) to return to the previous focus point</li>
         </ul>
-        <h3>Exporting Your Tree</h3>
+        <h3>Saving & Loading Your Tree</h3>
+        <ul>
+          <li><b>💾 Save Tree</b> — tap 🌳 Tree → Save Tree to download a <code>.familytree</code> backup file</li>
+          <li><b>📂 Load Tree</b> — tap 🌳 Tree → Load Tree to restore from a previously saved <code>.familytree</code> file</li>
+          <li><b>📤 Share Tree</b> — tap 🌳 Tree → Share Tree to save and share the file with family</li>
+        </ul>
+        <div class="tip">Save regularly while building. The <code>.familytree</code> file is self-contained and works on any device.</div>
+        <h3>GEDCOM Export</h3>
         <ol>
-          <li>Tap the ⬇ button in the bottom toolbar</li>
-          <li>A `.ged` file downloads to your device</li>
-          <li>Import it into any genealogy app, or keep it as a backup</li>
+          <li>Tap 📖 Guide → Export GEDCOM (or the ⬇ button in the toolbar)</li>
+          <li>A <code>.ged</code> file downloads to your device</li>
+          <li>Import it into any genealogy app (Ancestry, FamilySearch, MyHeritage, etc.)</li>
         </ol>
-        <div class="tip">Export regularly if you're actively building. It's your backup if browser data gets cleared.</div>
+        <h3>Printing</h3>
+        <ul>
+          <li>Tap 🌳 Tree → Print Tree to print the current view</li>
+        </ul>
         <h3>Resetting Your Tree</h3>
         <ul>
-          <li>Tap the ↻ button in the header to wipe everything and start over</li>
+          <li>Tap 🌳 Tree → Reset Tree to wipe everything and start over</li>
           <li>You'll get a confirmation dialog — this cannot be undone</li>
-          <li>Export a GEDCOM first if you want to keep your data</li>
+          <li>Save or export your tree first if you want to keep your data</li>
         </ul>
         <h3>Theme</h3>
-        <p>Tap the 🌙 / ☀ button in the bottom toolbar to toggle between light and dark mode.</p>
+        <p>Tap the 🌙 / ☀ button in the toolbar to toggle between light and dark mode.</p>
         <h3>Privacy</h3>
-        <p>Everything stays in your browser's local storage. No data is uploaded to any server. Clearing your browser data will erase your tree — export a GEDCOM to keep a copy.</p>
+        <p>Everything stays in your browser's local storage. No data is uploaded to any server. Clearing your browser data will erase your tree — save a <code>.familytree</code> backup to keep a copy.</p>
       </div>
 
     </div>
@@ -1851,6 +1866,61 @@ function exportGedcom() {
 // STORAGE
 const STORAGE_KEY = 'vr_freebuild_data_v1';
 
+// SAVE / LOAD / SHARE (matching data-tree.html functionality)
+function saveSession() {
+  const payload = { version: 5, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Session saved');
+}
+
+function loadSession(file) {
+  file.text().then(text => {
+    try {
+      const data = JSON.parse(text);
+      if (!data.people) { showToast('Invalid session file'); return; }
+      people = data.people;
+      nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+      focusPersonId = null; viewHistory = [];
+      autoSave();
+      renderFreeBuild();
+      showToast('Loaded ' + people.length + ' people from file');
+    } catch (e) { showToast('Invalid session file'); }
+  });
+}
+
+function shareTree() {
+  saveSession();
+  showToast('Tree file ready to share');
+}
+
+function openPrintDialog() {
+  closeDetail();
+  const personCount = people.length;
+  const dlg = document.createElement('div');
+  dlg.id = 'printChoiceDlg';
+  dlg.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:20000;display:flex;justify-content:center;align-items:center;';
+  dlg.innerHTML = `
+    <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:10px;padding:22px;max-width:340px;width:90%;text-align:center;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:15px;color:#3e2b1a;margin-bottom:14px;">Print Your Tree</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#6a5a3a;margin-bottom:18px;">
+        ${personCount} people in tree
+      </div>
+      <button id="dlgPrint" style="display:block;width:100%;padding:10px;margin-bottom:10px;border:none;border-radius:6px;background:#3e3225;color:#f0e6d2;font-family:'Cormorant Garamond',serif;font-size:13px;cursor:pointer;">
+        🖨️ Print Current View
+      </button>
+      <button id="dlgCancel" style="padding:6px 16px;border:none;border-radius:4px;background:transparent;color:#7a6a4a;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(dlg);
+  document.getElementById('dlgPrint').addEventListener('click', () => { window.print(); dlg.remove(); });
+  document.getElementById('dlgCancel').addEventListener('click', () => dlg.remove());
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.remove(); });
+}
+
 function autoSave() {
   try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ people, nextId })); }
   catch (e) { console.error('[autoSave] failed', e); }
@@ -1969,6 +2039,14 @@ function switchHelpTab(idx, btn) {
 // Close help when clicking the overlay backdrop
 document.getElementById('helpOverlay').addEventListener('click', function(e) {
   if (e.target === this) toggleHelp();
+});
+
+// LOAD FILE LISTENER
+document.getElementById('loadFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  loadSession(file);
+  e.target.value = '';
 });
 
 // INIT
