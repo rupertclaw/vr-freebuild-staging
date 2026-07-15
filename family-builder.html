@@ -1536,11 +1536,9 @@ function layoutTree() {
   for (const p of viewPeople) {
     if (!positions.has(p.id) || !p.families || p.families.length <= 1) continue;
 
-    console.log('[MULTI-MARRIAGE] Person:', p.name, 'id:', p.id, 'families:', p.families.length, 'spouseId:', p.spouseId, 'sex:', p.sex);
     let spouseIndex = 0;
     for (const fam of p.families) {
       const spouseId = fam.spouseId;
-      console.log('  fam:', fam.spouseName, 'spouseId:', spouseId, 'inViewSet:', viewSet.has(spouseId), 'visited:', visited.has(spouseId));
       if (!viewSet.has(spouseId) || visited.has(spouseId)) continue;
       spouseIndex++;
 
@@ -1601,16 +1599,16 @@ function layoutTree() {
         // Use computeWidth for each child (accounts for their spouse + descendants)
         const childWidths = familyChildren.map(cid => computeWidth(cid));
         const totalW = childWidths.reduce((a, b) => a + b, 0) + CARD_GAP_X * (familyChildren.length - 1);
-        const coupleCenter = (Math.min(personPos.x, spouseX) + Math.max(personPos.x, spouseX) + CARD_W) / 2;
 
         // Connector origin: mother's card center (if we can identify the mother)
         const motherId = p.sex === 'F' ? p.id : spouseId;
         const motherPos = positions.get(motherId);
-        const motherX = motherPos ? motherPos.x + CARD_W / 2 : coupleCenter;
+        const motherX = motherPos ? motherPos.x + CARD_W / 2 : (personPos.x + CARD_W / 2);
         const parentY = spouseY + CARD_H;
 
         if (spouseX < personPos.x) {
-          // Secondary family is on the LEFT — children must go LEFT of all existing cards at this Y
+          // Secondary family is on the LEFT
+          // Find the leftmost existing card at childY level (excluding the parents themselves)
           let leftmost = Infinity;
           for (const [id, pos] of positions) {
             if (id === p.id || id === spouseId) continue;
@@ -1622,32 +1620,32 @@ function layoutTree() {
           if (leftmost !== Infinity) {
             childLeftX = leftmost - totalW - CARD_GAP_X;
           } else {
-            childLeftX = Math.round(coupleCenter - totalW / 2);
+            childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
           }
           if (childLeftX < 0) childLeftX = 0;
 
+          const childDepth = Math.round((childY - 50) / GEN_HEIGHT);
           for (let i = 0; i < familyChildren.length; i++) {
             const cid = familyChildren[i];
             const cw = childWidths[i];
-            // Recursively place this child's subtree in the allocated space
-            const childDepth = Math.round((childY - 50) / GEN_HEIGHT);
             assignPositions(cid, childLeftX, childDepth, visited);
             const childX = (positions.get(cid)?.x || childLeftX) + CARD_W / 2;
             connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
             childLeftX += cw + CARD_GAP_X;
           }
         } else {
-          // Secondary family is on the RIGHT — children go RIGHT of all existing cards at this Y
-          let childLeftX = Math.round(coupleCenter - totalW / 2);
+          // Secondary family is on the RIGHT
+          // Find the rightmost existing card at childY level
           const existingChildRight = getRightmostAt(childY);
+          let childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
           if (existingChildRight >= childLeftX) {
             childLeftX = existingChildRight + CARD_GAP_X;
           }
 
+          const childDepth = Math.round((childY - 50) / GEN_HEIGHT);
           for (let i = 0; i < familyChildren.length; i++) {
             const cid = familyChildren[i];
             const cw = childWidths[i];
-            const childDepth = Math.round((childY - 50) / GEN_HEIGHT);
             assignPositions(cid, childLeftX, childDepth, visited);
             const childX = (positions.get(cid)?.x || childLeftX) + CARD_W / 2;
             connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
