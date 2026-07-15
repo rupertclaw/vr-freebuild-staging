@@ -1971,6 +1971,11 @@ function openDetail(person) {
       <button class="fb-add-btn" onclick="fbAddSibling()">👥 Add Sibling</button>
     </div>
 
+    <div class="detail-field" style="margin-top:8px;">
+      <label>Add Document</label>
+      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);">📷 Scan Certificate</button>
+    </div>
+
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
       <button class="save-btn" onclick="saveDetail()">Save Changes</button>
@@ -2616,6 +2621,14 @@ function toggleCertPanel() {
   if (isOpening) {
     clearCertPanel();
   }
+}
+
+function openCertForPerson(personName) {
+  certPanel.classList.add('active');
+  clearCertPanel();
+  const headerTitle = certPanel.querySelector('.cert-header div');
+  if (headerTitle) headerTitle.textContent = '📷 Scan Certificate — ' + personName;
+  showToast('Select Upload (private), Venice, or Gemini for ' + personName);
 }
 
 function clearCertPanel() {
