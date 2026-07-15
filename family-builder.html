@@ -2010,6 +2010,11 @@ function saveDetail() {
   person.status = document.getElementById('d_status').value;
   person.notes = document.getElementById('d_notes').value;
 
+  // Auto-upgrade from 'blank' to 'probable' when user enters a real name
+  if (person.status === 'blank' && person.name && person.name.trim() !== '' && person.name !== 'Name') {
+    person.status = 'probable';
+  }
+
   // Recompute years display
   const bY = (person.birthDate || '').match(/\d{4}/);
   const dY = (person.deathDate || '').match(/\d{4}/);
