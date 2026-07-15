@@ -292,11 +292,21 @@ async function loadMostRecentTree() {
 }
 
 function buildFamilies(people) {
+  // Filter out blank/empty people (no name or name is just whitespace/Unknown)
+  const realPeople = people.filter(p => {
+    const name = (p.name || '').trim();
+    return name.length > 0 && name !== 'Unknown' && name !== 'Unknown Unknown';
+  });
+  const realIds = new Set(realPeople.map(p => p.id));
+
   const familyMap = new Map();
   let famId = 1;
 
-  people.forEach(p => {
+  realPeople.forEach(p => {
     if (!p.parents || p.parents.length === 0) return;
+    // Only count parents that are real (non-blank) people
+    const parentIds = p.parents.filter(pid => realIds.has(pid));
+    if (parentIds.length === 0) return;
     const key = [...p.parents].sort((a, b) => a - b).join('-');
     if (!familyMap.has(key)) {
       const parents = p.parents.map(pid => people.find(x => x.id === pid)).filter(Boolean);
@@ -306,8 +316,8 @@ function buildFamilies(people) {
   });
 
   const seenPairs = new Set();
-  people.forEach(p => {
-    if (!p.spouseId) return;
+  realPeople.forEach(p => {
+    if (!p.spouseId || !realIds.has(p.spouseId)) return;
     const pairKey = [p.id, p.spouseId].sort((a, b) => a - b).join('-');
     if (seenPairs.has(pairKey)) return;
     seenPairs.add(pairKey);
@@ -438,6 +448,13 @@ async function init() {
         try { data = JSON.parse(saved); } catch (e) {}
       }
     }
+    // Also check family builder's storage key
+    if (!data || !data.people || data.people.length === 0) {
+      const fbSaved = localStorage.getItem('vr_freebuild_data_v1');
+      if (fbSaved) {
+        try { data = JSON.parse(fbSaved); } catch (e) {}
+      }
+    }
     loadingDiv.style.display = 'none';
     if (!data || !data.people || data.people.length === 0) {
       emptyState.style.display = 'block';
@@ -446,7 +463,10 @@ async function init() {
     peopleList = data.people;
     allFamilies = buildFamilies(peopleList);
     document.getElementById('statFamilies').textContent = allFamilies.length;
-    document.getElementById('statPeople').textContent = peopleList.length;
+    document.getElementById('statPeople').textContent = peopleList.filter(p => {
+      const name = (p.name || '').trim();
+      return name.length > 0 && name !== 'Unknown' && name !== 'Unknown Unknown';
+    }).length;
     familyList.style.display = 'flex';
     applySort();
     // Auto-expand first family
