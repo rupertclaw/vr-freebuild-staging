@@ -448,6 +448,13 @@ async function init() {
         try { data = JSON.parse(saved); } catch (e) {}
       }
     }
+    // Also check family builder's storage key
+    if (!data || !data.people || data.people.length === 0) {
+      const fbSaved = localStorage.getItem('vr_freebuild_data_v1');
+      if (fbSaved) {
+        try { data = JSON.parse(fbSaved); } catch (e) {}
+      }
+    }
     loadingDiv.style.display = 'none';
     if (!data || !data.people || data.people.length === 0) {
       emptyState.style.display = 'block';
