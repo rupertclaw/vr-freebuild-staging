@@ -917,6 +917,7 @@ details.acc .acc-body { padding: 6px 12px; }
         <div class="tb-menu-item" id="printTreeBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree</div>
         <div class="tb-menu-item" id="gedcomToggle" role="menuitem" tabindex="0" onclick="openGuidancePanel();setTimeout(function(){var b=document.getElementById('importGuide').querySelector('button');var body=document.getElementById('importBody');if(body&&b){body.style.display='block';b.querySelector('span').style.transform='rotate(180deg)';document.getElementById('guidanceBody').scrollTop=body.offsetTop-20;}},150);closeAllMenus()"><span class="icon">🔄</span> Import & Export GEDCOM</div>
         <div class="tb-menu-item" id="freeBuildMenuItem" role="menuitem" tabindex="0" onclick="location.href='family-builder.html';closeAllMenus()"><span class="icon">🌿</span> Family Builder</div>
+        <div class="tb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0">🗑️ Reset Tree</div>
       </div>
       <!-- More menu -->
       <button class="tb-btn" id="moreMenuBtn" title="More options" aria-label="More options menu" aria-haspopup="true" aria-expanded="false">⋯ <span>More</span> ▾</button>
@@ -927,7 +928,6 @@ details.acc .acc-body { padding: 6px 12px; }
         <div class="tb-menu-item" id="privacyBtn" role="menuitem" tabindex="0" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
         <div class="tb-menu-item" id="feedbackBtn" role="menuitem" tabindex="0" onclick="showFeedbackModal()"><span class="icon">💬</span> Send Feedback</div>
         <div class="tb-menu-item" id="facebookBtnLi" role="menuitem" tabindex="0" onclick="window.open('https://www.facebook.com/profile.php?id=61591673636516','_blank','noopener')"><span class="icon">👍</span> Follow on Facebook</div>
-        <div class="tb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0">🗑️ Reset Tree</div>
       </div>
       <!-- Hidden anchors preserved for event listeners -->
       <a id="familySheetBtn" href="families.html" target="_blank" style="display:none;">&#128203;</a>
