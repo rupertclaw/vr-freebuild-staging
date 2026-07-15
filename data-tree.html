@@ -916,6 +916,8 @@ details.acc .acc-body { padding: 6px 12px; }
         <div class="tb-menu-item" id="viewPosterBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('heritage_poster', openPoster)"><span class="icon">🖼️</span> Heritage Poster</div>
         <div class="tb-menu-item" id="printTreeBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree</div>
         <div class="tb-menu-item" id="gedcomToggle" role="menuitem" tabindex="0" onclick="openGuidancePanel();setTimeout(function(){var b=document.getElementById('importGuide').querySelector('button');var body=document.getElementById('importBody');if(body&&b){body.style.display='block';b.querySelector('span').style.transform='rotate(180deg)';document.getElementById('guidanceBody').scrollTop=body.offsetTop-20;}},150);closeAllMenus()"><span class="icon">🔄</span> Import & Export GEDCOM</div>
+        <div class="tb-menu-item" id="freeBuildMenuItem" role="menuitem" tabindex="0" onclick="location.href='family-builder.html';closeAllMenus()"><span class="icon">🌿</span> Family Builder</div>
+        <div class="tb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0">🗑️ Reset Tree</div>
       </div>
       <!-- More menu -->
       <button class="tb-btn" id="moreMenuBtn" title="More options" aria-label="More options menu" aria-haspopup="true" aria-expanded="false">⋯ <span>More</span> ▾</button>
@@ -926,7 +928,6 @@ details.acc .acc-body { padding: 6px 12px; }
         <div class="tb-menu-item" id="privacyBtn" role="menuitem" tabindex="0" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
         <div class="tb-menu-item" id="feedbackBtn" role="menuitem" tabindex="0" onclick="showFeedbackModal()"><span class="icon">💬</span> Send Feedback</div>
         <div class="tb-menu-item" id="facebookBtnLi" role="menuitem" tabindex="0" onclick="window.open('https://www.facebook.com/profile.php?id=61591673636516','_blank','noopener')"><span class="icon">👍</span> Follow on Facebook</div>
-        <div class="tb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0">🗑️ Reset Tree</div>
       </div>
       <!-- Hidden anchors preserved for event listeners -->
       <a id="familySheetBtn" href="families.html" target="_blank" style="display:none;">&#128203;</a>
@@ -6117,11 +6118,16 @@ function parseGedcom(text) {
   }
 
   // --- Assign generations via BFS from roots ---
-  // Roots = people with no parents. Multiple disconnected sub-trees are fine.
+  // Roots = apex ancestors: people who are NEVER listed as CHIL in any FAM (they have nobody above them).
+  const allChildren = new Set();
+  for (const fam of Object.values(fams)) {
+    for (const cx of fam.children) allChildren.add(cx);
+  }
   const visited = new Set();
   const queue = [];
   for (const p of people) {
-    if (p.parents.length === 0) {
+    const xref = Object.keys(xrefMap).find(k => xrefMap[k] === p.id);
+    if (!allChildren.has(xref)) {
       p.gen = 0;
       visited.add(p.id);
       queue.push(p);
@@ -6131,7 +6137,7 @@ function parseGedcom(text) {
     const p = queue.shift();
     if (p.spouseId && !visited.has(p.spouseId)) {
       const sp = people.find(pp => pp.id === p.spouseId);
-      if (sp && sp.parents.length === 0) {
+      if (sp) {
         sp.gen = p.gen;
         visited.add(sp.id);
         queue.push(sp);
@@ -6141,7 +6147,7 @@ function parseGedcom(text) {
       if (!visited.has(cid)) {
         const child = people.find(pp => pp.id === cid);
         if (child) {
-          child.gen = p.gen - 1;
+          child.gen = p.gen + 1;
           visited.add(cid);
           queue.push(child);
         }
@@ -6153,6 +6159,14 @@ function parseGedcom(text) {
       p.gen = 0;
     }
   }
+
+  // Normalise: shift so the youngest person is gen 0.
+  // BFS above assigns gen 0 to roots (oldest), descendants get gen +1, etc.
+  // The data tree expects gen 0 = the subject (youngest).
+  let maxGen = 0;
+  for (const p of people) { if (p.gen > maxGen) maxGen = p.gen; }
+  const genOffset = maxGen;               // was: -minGen (when children got -1)
+  for (const p of people) { p.gen = maxGen - p.gen; }
 
   // Build connected components and focus-candidate info (stored for UI)
   const components = [];
@@ -6342,71 +6356,15 @@ function convertGedcomFile(file) {
         showToast('Could not parse GEDCOM file. Check the format.');
         return;
       }
-      const payload = {
-        version: 5,
-        exportedAt: new Date().toISOString(),
+      // Store parsed GEDCOM data for family-builder.html to pick up
+      localStorage.setItem('vr_gedcomImport', JSON.stringify({
         people: result.people,
         nextId: result.nextId,
-        visibleMaxGen: Math.max(...result.people.map(p => p.gen)),
-        focusCandidates: result.focusCandidates || [],
-        components: result.components || []
-      };
-      const json = JSON.stringify(payload, null, 2);
-      const blob = new Blob([json], { type: 'application/json' });
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a');
-      a.href = url;
-      a.download = 'vaultedroots_import_' + new Date().toISOString().slice(0, 10) + '.familytree';
-      a.click();
-      URL.revokeObjectURL(url);
-      // Load directly into the page (same logic as loadSession, minus file parsing)
-      try {
-        if (!payload.people) { showToast('No people in GEDCOM'); return; }
-        pushUndo();
-        people = payload.people;
-        nextId = payload.nextId || maxGen(people, p => p.id) + 1;
-        gedcomFamilies = result.families || null;
-        visibleMaxGen = payload.visibleMaxGen !== undefined ? payload.visibleMaxGen : maxGen(people, p => p.gen);
-        rebuildPeopleMaps(); // ensure peopleById is fresh before focus picker uses it
-
-        // Focus-tree picker for big/complex imports
-        if (result.focusCandidates && result.focusCandidates.length > 0 && (people.length > 80 || result.components.length > 1)) {
-          showFocusPicker(result.focusCandidates, result.components, (focusId) => {
-            if (focusId) {
-              setFocusTreeByPerson(focusId);
-              localStorage.setItem('vr_focusPerson_' + currentTreeId, focusId);
-            } else {
-              // show all: parsed generations already set, but clear any saved focus
-              localStorage.removeItem('vr_focusPerson_' + currentTreeId);
-              people.forEach(p => { p.focusHidden = false; });
-              // Restore original visibleMaxGen from the GEDCOM payload
-              visibleMaxGen = Math.min(4, maxGen(people, p => p.gen));
-            }
-            rebuildPeopleMaps();
-            renderTree();
-            updateExpandGenBtn();
-            centerOnGen0();
-          });
-        } else {
-          rebuildPeopleMaps();
-          renderTree();
-        }
-        const btn = document.getElementById('expandGenBtn');
-        const actualMax = maxGen(people, p => p.gen);
-        if (visibleMaxGen >= actualMax) {
-          btn.textContent = 'All visible — tap any person to add parents';
-          btn.disabled = true;
-        } else {
-          btn.disabled = false;
-          btn.textContent = 'Reveal Generation ' + (visibleMaxGen + 1);
-        }
-        // Save tree to IndexedDB
-        await saveCurrentTreeToDB();
-        showToast('Loaded ' + result.people.length + ' people. Tree shows first 5 generations. Tap 📋 for Family Group Sheets to browse all families.');
-      } catch (loadErr) {
-        console.error('[GEDCOM] load error:', loadErr);
-        showToast('Converted ' + result.people.length + ' people. A .familytree file was downloaded — tap 📂 Load to import it.');
-      }
+        families: result.families || {},
+        importedAt: new Date().toISOString()
+      }));
+      // Redirect to Family Builder page
+      window.location.href = 'family-builder.html';
     } catch (err) {
       console.error('[GEDCOM]', err);
       showToast('GEDCOM parse error: ' + err.message);
