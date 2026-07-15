@@ -181,6 +181,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .fb-card.blank:hover { transform: none; box-shadow: none; }
 .fb-card.blank .name, .fb-card.blank .years { color: #b8a88a; }
 .fb-card.selected { box-shadow: 0 0 0 3px #38bdf8, 0 2px 8px rgba(56,189,248,0.3); }
+.fb-card .doc-badges { position: absolute; top: 2px; right: 2px; display: flex; gap: 2px; }
+.fb-card .doc-badge { font-size: 7px; font-family: 'Cinzel Decorative', serif; padding: 1px 3px; border-radius: 3px; font-weight: 600; line-height: 1; }
+.fb-card .doc-badge.bc { background: #dcfce7; color: #166534; }
+.fb-card .doc-badge.mc { background: #dbeafe; color: #1e40af; }
+.fb-card .doc-badge.dc { background: #fee2e2; color: #991b1b; }
 
 /* Detail Panel */
 .detail-panel {
@@ -1835,6 +1840,14 @@ function renderFreeBuild() {
     let h = '<div class="name">' + escapeHtml(displayName) + '</div>';
     if (cardYears) h += '<div class="years">' + escapeHtml(cardYears) + '</div>';
     if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
+    if (person.docs && person.docs.length) {
+      h += '<div class="doc-badges">';
+      person.docs.forEach(d => {
+        const t = (d.type || 'bc').toLowerCase();
+        h += '<span class="doc-badge ' + t + '">' + t.toUpperCase() + '</span>';
+      });
+      h += '</div>';
+    }
 
     el.innerHTML = h;
     el.onclick = () => { focusOnPerson(person.id); openDetail(person); };
@@ -2009,9 +2022,17 @@ function openDetail(person) {
     </div>
 
     <div class="detail-field" style="margin-top:8px;">
-      <label>Add Document</label>
-      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);">📷 Scan Certificate</button>
-    </div>
+      <label>Documents (${person.docs ? person.docs.length : 0})</label>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;">
+        ${(person.docs || []).map(d => {
+          const t = (d.type || 'bc').toUpperCase();
+          const color = d.type === 'bc' ? '#dcfce7' : d.type === 'mc' ? '#dbeafe' : d.type === 'dc' ? '#fee2e2' : '#e5e7eb';
+          const text = d.type === 'bc' ? '#166534' : d.type === 'mc' ? '#1e40af' : d.type === 'dc' ? '#991b1b' : '#374151';
+          return `<span style="font-size:11px;font-family:'Cinzel Decorative',serif;padding:2px 6px;border-radius:4px;background:${color};color:${text};font-weight:600;">${t}</span>`;
+        }).join('')}
+      </div>
+      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
+      <button class="fb-add-btn" onclick="closeDetail(); pendingDirectAttachId=${person.id}; document.getElementById('certFileInput').click();" style="background:var(--bg-btn);color:var(--text-logo);margin-top:4px;">📎 Attach Document</button>
 
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
