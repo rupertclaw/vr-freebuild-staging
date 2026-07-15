@@ -1605,36 +1605,23 @@ function layoutTree() {
         const parentY = spouseY + CARD_H;
         const childDepth = Math.round((childY - 50) / GEN_HEIGHT);
 
-        // Helper: find the leftmost card across ALL Y levels (for collision avoidance)
-        function getLeftmostAnyY(excludeIds) {
-          let min = Infinity;
-          for (const [id, pos] of positions) {
-            if (excludeIds.has(id)) continue;
-            if (pos.x < min) min = pos.x;
-          }
-          return min;
-        }
-
-        // Helper: find the rightmost card at a given Y
-        function getRightmostAtY(y, excludeIds) {
-          let max = 0;
-          for (const [id, pos] of positions) {
-            if (excludeIds && excludeIds.has(id)) continue;
-            if (Math.abs(pos.y - y) < GEN_HEIGHT / 2) {
-              const right = pos.x + CARD_W;
-              if (right > max) max = right;
-            }
-          }
-          return max;
-        }
+        // Separator gap between primary and secondary families' children
+        const SEPARATOR_GAP = CARD_GAP_X * 3; // 90px gap between the two groups
 
         if (spouseX < personPos.x) {
-          // Secondary family on LEFT — place children LEFT of all existing cards
-          const exclude = new Set([p.id, spouseId]);
-          const leftmostAny = getLeftmostAnyY(exclude);
+          // Secondary family on LEFT — children go LEFT of Rose's children
+          // Find leftmost card at childY level (Rose's children)
+          let leftmostAtChildY = Infinity;
+          for (const [id, pos] of positions) {
+            if (id === p.id || id === spouseId) continue;
+            if (Math.abs(pos.y - childY) < GEN_HEIGHT / 2) {
+              if (pos.x < leftmostAtChildY) leftmostAtChildY = pos.x;
+            }
+          }
           let childLeftX;
-          if (leftmostAny !== Infinity) {
-            childLeftX = leftmostAny - totalW - CARD_GAP_X;
+          if (leftmostAtChildY !== Infinity) {
+            // Place so right edge of last child is SEPARATOR_GAP before leftmost existing card
+            childLeftX = leftmostAtChildY - totalW - SEPARATOR_GAP;
           } else {
             childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
           }
@@ -1650,13 +1637,18 @@ function layoutTree() {
             childLeftX += cw + CARD_GAP_X;
           }
         } else {
-          // Secondary family on RIGHT — place children RIGHT of all existing cards
-          const exclude = new Set([p.id, spouseId]);
+          // Secondary family on RIGHT — children go RIGHT of Rose's children
+          let rightmostAtChildY = 0;
+          for (const [id, pos] of positions) {
+            if (id === p.id || id === spouseId) continue;
+            if (Math.abs(pos.y - childY) < GEN_HEIGHT / 2) {
+              const right = pos.x + CARD_W;
+              if (right > rightmostAtChildY) rightmostAtChildY = right;
+            }
+          }
           let childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
-          // Check rightmost at childY AND at all descendant Y levels
-          const existingRight = getRightmostAtY(childY, exclude);
-          if (existingRight >= childLeftX) {
-            childLeftX = existingRight + CARD_GAP_X;
+          if (rightmostAtChildY >= childLeftX) {
+            childLeftX = rightmostAtChildY + SEPARATOR_GAP;
           }
 
           for (let i = 0; i < familyChildren.length; i++) {
