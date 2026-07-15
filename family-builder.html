@@ -1536,9 +1536,11 @@ function layoutTree() {
   for (const p of viewPeople) {
     if (!positions.has(p.id) || !p.families || p.families.length <= 1) continue;
 
+    console.log('[MULTI-MARRIAGE] Person:', p.name, 'id:', p.id, 'families:', p.families.length, 'spouseId:', p.spouseId, 'sex:', p.sex);
     let spouseIndex = 0;
     for (const fam of p.families) {
       const spouseId = fam.spouseId;
+      console.log('  fam:', fam.spouseName, 'spouseId:', spouseId, 'inViewSet:', viewSet.has(spouseId), 'visited:', visited.has(spouseId));
       if (!viewSet.has(spouseId) || visited.has(spouseId)) continue;
       spouseIndex++;
 
