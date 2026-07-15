@@ -1204,12 +1204,10 @@ function layoutTree() {
         const childY = spouseY + GEN_HEIGHT;
         const totalW = familyChildren.length * CARD_W + (familyChildren.length - 1) * CARD_GAP_X;
         const coupleCenter = (Math.min(personPos.x, spouseX) + Math.max(personPos.x, spouseX) + CARD_W) / 2;
-        let childLeftX = Math.round(coupleCenter - totalW / 2);
 
-        // Collision avoidance: direction depends on which side the secondary spouse is
         if (spouseX < personPos.x) {
-          // Secondary family is on the LEFT — place children to the left of everything
-          // Find the leftmost card at this Y level
+          // Secondary family is on the LEFT — children must go LEFT of all existing cards at this Y
+          // Find the leftmost existing card at childY level
           let leftmost = Infinity;
           for (const [id, pos] of positions) {
             if (id === p.id || id === spouseId) continue;
@@ -1217,28 +1215,41 @@ function layoutTree() {
               if (pos.x < leftmost) leftmost = pos.x;
             }
           }
+          // Place children so their right edge is just before the leftmost existing card
+          let childLeftX;
           if (leftmost !== Infinity) {
-            // Place our children to the LEFT of the leftmost existing card
-            childLeftX = Math.min(childLeftX, leftmost - totalW - CARD_GAP_X);
+            childLeftX = leftmost - totalW - CARD_GAP_X;
+          } else {
+            childLeftX = Math.round(coupleCenter - totalW / 2);
           }
           if (childLeftX < 0) childLeftX = 0;
+
+          const parentMidX = coupleCenter;
+          const parentY = spouseY + CARD_H;
+          for (const cid of familyChildren) {
+            visited.add(cid);
+            positions.set(cid, { x: childLeftX, y: childY });
+            const childX = childLeftX + CARD_W / 2;
+            connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+            childLeftX += CARD_W + CARD_GAP_X;
+          }
         } else {
-          // Secondary family is on the RIGHT — place children to the right of everything
+          // Secondary family is on the RIGHT — children go RIGHT of all existing cards at this Y
+          let childLeftX = Math.round(coupleCenter - totalW / 2);
           const existingChildRight = getRightmostAt(childY);
           if (existingChildRight >= childLeftX) {
             childLeftX = existingChildRight + CARD_GAP_X;
           }
-        }
 
-        const parentMidX = coupleCenter;
-        const parentY = spouseY + CARD_H;
-
-        for (const cid of familyChildren) {
-          visited.add(cid);
-          positions.set(cid, { x: childLeftX, y: childY });
-          const childX = childLeftX + CARD_W / 2;
-          connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
-          childLeftX += CARD_W + CARD_GAP_X;
+          const parentMidX = coupleCenter;
+          const parentY = spouseY + CARD_H;
+          for (const cid of familyChildren) {
+            visited.add(cid);
+            positions.set(cid, { x: childLeftX, y: childY });
+            const childX = childLeftX + CARD_W / 2;
+            connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+            childLeftX += CARD_W + CARD_GAP_X;
+          }
         }
       }
     }
