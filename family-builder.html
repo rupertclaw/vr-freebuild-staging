@@ -305,6 +305,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   background: #5a7a3a; color: #f5eedc; border-color: #4a6a2a;
   box-shadow: 0 2px 6px rgba(0,0,0,0.3);
 }
+.help-btn.primary {
+  background: #6b4c35; border-color: #c4a875;
+}
 
 /* Dropdown menus (matching homepage style) */
 .fb-menu {
@@ -335,6 +338,161 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   z-index: 1;
   opacity: 0.35;
   pointer-events: none;
+}
+
+/* ─── Cert panel ─── */
+.cert-panel {
+  display: none; position: fixed; top: 140px; right: 0; bottom: 0;
+  width: 380px; max-width: 95vw;
+  background: #f5eedc; z-index: 400;
+  border-left: 3px solid #4a3a22;
+  flex-direction: column;
+}
+.cert-panel.active { display: flex; animation: certSlideIn 0.25s ease; }
+@keyframes certSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+.cert-header {
+  background: #2a1f15; color: #e8dcc8; padding: 14px 16px;
+  position: relative; font-family: 'Cinzel Decorative', serif;
+  flex-shrink: 0;
+}
+.cert-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
+
+.cert-upload-area {
+  border: 2px dashed #8a7a5a; border-radius: 8px;
+  padding: 20px; text-align: center; cursor: pointer;
+  background: #faf6ee; margin-bottom: 8px;
+}
+.cert-upload-area:hover { border-color: #4a3a22; background: #f0e8d8; }
+.cert-upload-btns { display: flex; gap: 10px; margin-bottom: 12px; }
+.cert-upload-btns button {
+  flex: 1; padding: 14px 10px; border: 2px solid #8a7a5a; border-radius: 8px;
+  background: #faf6ee; cursor: pointer; text-align: center;
+  font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #4a3a22;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cert-upload-btns button:hover { border-color: #4a3a22; background: #f0e8d8; }
+.cert-upload-btns .camera-btn { border-color: #6b5537; }
+.cert-upload-btns .camera-btn span { font-size: 28px; display: block; margin-bottom: 4px; }
+.cert-upload-btns .file-btn span { font-size: 28px; display: block; margin-bottom: 4px; }
+.cert-preview-area { display: none; margin-bottom: 12px; text-align: center; }
+.cert-preview-area img { max-width: 100%; max-height: 200px; border-radius: 4px; border: 2px solid #8a7a5a; }
+
+.cert-status {
+  display: none; padding: 10px; border-radius: 4px;
+  font-family: 'Cormorant Garamond', serif; font-size: 13px;
+  text-align: center; margin-bottom: 10px;
+}
+.cert-status.loading { display: block; background: #fef3c7; color: #92400e; }
+.cert-status.success { display: block; background: #dcfce7; color: #166534; }
+.cert-status.error { display: block; background: #fee2e2; color: #991b1b; }
+
+.cert-result-card {
+  background: #fff; border: 2px solid #8a7a5a; border-radius: 6px;
+  padding: 12px; margin-bottom: 10px; cursor: pointer;
+  font-family: 'Cormorant Garamond', serif; overflow: hidden;
+}
+.cert-result-card.selected { border-color: #4a3a22; background: #f0e8d8; }
+.cert-result-card .field-row {
+  display: flex; justify-content: space-between; padding: 3px 0;
+  border-bottom: 1px solid #e8dcc8; font-size: 12px;
+}
+.cert-result-card .field-row label { color: #6b5537; font-weight: 600; text-transform: uppercase; font-size: 10px; }
+.cert-field-edit {
+  display: flex; align-items: center; gap: 6px;
+  margin: 4px 0; flex-wrap: nowrap;
+}
+.cert-field-edit .cert-field-label {
+  color: #6b5537; font-weight: 600; text-transform: uppercase;
+  font-size: 10px; min-width: 70px; max-width: 80px; flex-shrink: 0;
+}
+.cert-field-edit input {
+  flex: 1; min-width: 0; padding: 4px 6px;
+  border: 1px solid #ccc; border-radius: 3px;
+  font-size: 12px; font-family: 'Cormorant Garamond', serif;
+  background: #fff; color: #2a1f10;
+}
+
+.cert-toolbar { padding: 12px 16px; border-bottom: 2px solid #4a3a22; background: #f5eedc; flex-shrink: 0; }
+
+.cert-body { padding: 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
+
+.cert-actions { display: none; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.cert-panel.has-results .cert-actions { display: flex; }
+.cert-actions button {
+  flex: 1 1 auto; padding: 10px; border: 2px solid #4a3a22; border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif; font-size: 11px; cursor: pointer;
+  min-width: 100px;
+}
+.cert-confirm { background: #4a3a22; color: #f5eedc; }
+.cert-retry { background: #f5eedc; color: #4a3a22; }
+.cert-swap { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
+
+/* ─── Cert method selection ─── */
+.cert-method-select { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.cert-method-row { display:flex; gap:10px; }
+.cert-method-btn {
+  flex:1; padding:16px 10px; border:2px solid #8a7a5a; border-radius:8px;
+  background:#faf6ee; cursor:pointer; text-align:center;
+  font-family:'Cormorant Garamond',serif; color:#4a3a22;
+  transition:border-color 0.15s, background 0.15s;
+}
+.cert-method-btn:hover { border-color:#4a3a22; background:#f0e8d8; }
+.cert-method-btn .method-icon { font-size:28px; display:block; margin-bottom:4px; }
+.cert-method-btn .method-label { font-size:13px; font-weight:600; display:block; }
+.cert-method-btn .method-desc { font-size:11px; color:#8a7a5a; display:block; margin-top:2px; }
+
+/* ─── Gemini section ─── */
+.gemini-section { display:none; }
+.gemini-section.active { display:block; }
+
+/* ─── Venice section ─── */
+.venice-section { display:none; }
+.venice-section.active { display:block; }
+
+/* ─── Upload & Scan section ─── */
+.upload-section { display:none; }
+.upload-section.active { display:block; }
+
+.gemini-privacy-banner {
+  background:#fef3c7; border:2px solid #f59e0b; border-radius:8px;
+  padding:12px; margin-bottom:12px;
+}
+.gemini-privacy-banner .warn-title { color:#92400e; font-weight:600; font-size:13px; margin-bottom:4px; }
+.gemini-privacy-banner .warn-text { color:#92400e; font-size:12px; line-height:1.4; }
+.gemini-paste-box {
+  width:100%; min-height:120px; padding:10px;
+  border:2px solid #8a7a5a; border-radius:6px;
+  font-family:'Courier New',monospace; font-size:11px;
+  background:#fff; margin-bottom:10px; resize:vertical;
+}
+.gemini-open-btn {
+  display:block; width:100%; padding:14px;
+  background:#4a3a22; color:#f5eedc; border:none; border-radius:8px;
+  font-family:'Cinzel Decorative',serif; font-size:14px;
+  cursor:pointer; text-align:center; margin-bottom:12px;
+  text-decoration:none;
+}
+.gemini-open-btn:hover { opacity:0.9; }
+.gemini-back-btn {
+  padding:8px 14px; border:2px solid #8a7a5a; border-radius:4px;
+  background:#faf6ee; color:#4a3a22; cursor:pointer;
+  font-family:'Cormorant Garamond',serif; font-size:12px;
+}
+.cert-type-selector { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.cert-type-btn {
+  padding:6px 12px; border:2px solid #8a7a5a; border-radius:4px;
+  background:#faf6ee; cursor:pointer; font-family:'Cormorant Garamond',serif;
+  font-size:12px; color:#4a3a22;
+}
+.cert-type-btn.active { background:#4a3a22; color:#f5eedc; border-color:#4a3a22; }
+
+/* Scan button in header */
+.scan-btn {
+  background: #6b4c35; color: var(--text-btn); border: 1px solid var(--gold);
+  height: 28px; padding: 0 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  display: flex; gap: 5px; align-items: center; font-family: 'Cormorant Garamond', serif;
+  white-space: nowrap;
 }
 
 /* Focus navigator */
@@ -370,6 +528,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
     </div>
     <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
     <div class="header-actions">
+      <!-- Primary labeled buttons -->
+      <button class="help-btn primary" onclick="toggleCertPanel()" title="Scan certificate">📷 <span>Scan</span></button>
+      <button class="help-btn guide-btn" id="guideMenuBtn" title="Import, Export & Guide">📖 <span>Guide</span> ▾</button>
+      <button class="help-btn" onclick="saveSession()" title="Save session">💾 <span>Save</span></button>
       <!-- Tree dropdown -->
       <div class="fb-menu-wrap">
         <button class="help-btn" id="treeMenuBtn" title="Tree options">🌳 <span>Tree</span> ▾</button>
@@ -377,19 +539,26 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
           <div class="fb-menu-item" role="menuitem" onclick="location.href='data-tree.html'"><span class="icon">🌲</span> Pedigree Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="location.href='family-builder.html'"><span class="icon">🌿</span> Family Builder</div>
           <div class="fb-menu-item" role="menuitem" onclick="saveSession()"><span class="icon">💾</span> Save Tree</div>
-          <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('loadFileInput').click()"><span class="icon">📂</span> Load Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('loadFileInput').click()"><span class="icon">📂</span> Load Backup</div>
           <div class="fb-menu-item" role="menuitem" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="openPrintDialog()"><span class="icon">🖨️</span> Print Tree</div>
           <div class="fb-menu-item danger" role="menuitem" onclick="resetTree()"><span class="icon">🗑️</span> Reset Tree</div>
         </div>
       </div>
       <!-- Guide dropdown -->
+      <div class="fb-menu" id="guideMenu" role="menu">
+        <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('gedcomInput').click()"><span class="icon">🔄</span> Import GEDCOM</div>
+        <div class="fb-menu-item" role="menuitem" onclick="exportGedcom()"><span class="icon">📤</span> Export GEDCOM</div>
+        <div class="fb-menu-item" role="menuitem" onclick="toggleHelp()"><span class="icon">📖</span> Guide & Help</div>
+      </div>
+      <!-- More dropdown -->
       <div class="fb-menu-wrap">
-        <button class="help-btn guide-btn" id="guideMenuBtn" title="Import, Export & Guide">📖 <span>Guide</span> ▾</button>
-        <div class="fb-menu" id="guideMenu" role="menu">
-          <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('gedcomInput').click()"><span class="icon">🔄</span> Import GEDCOM</div>
-          <div class="fb-menu-item" role="menuitem" onclick="exportGedcom()"><span class="icon">📤</span> Export GEDCOM</div>
-          <div class="fb-menu-item" role="menuitem" onclick="toggleHelp()"><span class="icon">📖</span> Guide & Help</div>
+        <button class="help-btn" id="moreMenuBtn" title="More options">⋯ <span>More</span> ▾</button>
+        <div class="fb-menu" id="moreMenu" role="menu">
+          <div class="fb-menu-item" role="menuitem" onclick="toggleTheme()"><span class="icon" id="darkModeToggle">🌙</span> Dark Mode</div>
+          <div class="fb-menu-item" role="menuitem" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
+          <div class="fb-menu-item" role="menuitem" onclick="showFeedbackModal()"><span class="icon">💬</span> Send Feedback</div>
+          <div class="fb-menu-item" role="menuitem" onclick="window.open('https://www.facebook.com/profile.php?id=61591673636516','_blank','noopener')"><span class="icon">👍</span> Follow on Facebook</div>
         </div>
       </div>
       <input type="file" id="gedcomInput" accept=".ged,.gedcom,text/plain" style="display:none">
@@ -403,7 +572,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <button class="help-btn" onclick="setZoom(zoom / 1.2)" title="Zoom out">−</button>
       <button class="help-btn" onclick="fitToScreen()" title="Fit to screen">Fit</button>
       <button class="help-btn" onclick="exportGedcom()" title="Export GEDCOM">⬇</button>
-      <button class="help-btn" onclick="toggleTheme()" title="Theme" id="themeBtn">🌙</button>
     </div>
   </div>
 </div>
@@ -1980,18 +2148,21 @@ function toggleTheme() {
   const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
   if (isDark) {
     document.documentElement.removeAttribute('data-theme');
-    document.getElementById('themeBtn').textContent = '\u{1F319}';
+    const el = document.getElementById('darkModeToggle');
+    if (el) el.textContent = '\u{1F319}';
     localStorage.setItem('vr_theme', 'light');
   } else {
     document.documentElement.setAttribute('data-theme', 'dark');
-    document.getElementById('themeBtn').textContent = '\u2600';
+    const el = document.getElementById('darkModeToggle');
+    if (el) el.textContent = '\u2600';
     localStorage.setItem('vr_theme', 'dark');
   }
 }
 
 if (localStorage.getItem('vr_theme') === 'dark') {
   document.documentElement.setAttribute('data-theme', 'dark');
-  document.getElementById('themeBtn').textContent = '\u2600';
+  const el = document.getElementById('darkModeToggle');
+  if (el) el.textContent = '\u2600';
 }
 
 // TOAST
@@ -2008,30 +2179,78 @@ function showToast(msg, duration) {
 
 // DROPDOWN MENUS
 (function() {
-  const treeMenuBtn = document.getElementById('treeMenuBtn');
-  const treeMenu = document.getElementById('treeMenu');
-  const guideMenuBtn = document.getElementById('guideMenuBtn');
-  const guideMenu = document.getElementById('guideMenu');
+  const menus = [
+    { btn: document.getElementById('treeMenuBtn'), menu: document.getElementById('treeMenu') },
+    { btn: document.getElementById('guideMenuBtn'), menu: document.getElementById('guideMenu') },
+    { btn: document.getElementById('moreMenuBtn'), menu: document.getElementById('moreMenu') }
+  ];
 
-  function toggleMenu(menu, btn) {
-    const other = menu === treeMenu ? guideMenu : treeMenu;
-    other.classList.remove('open');
-    menu.classList.toggle('open');
-  }
+  function closeAll() { menus.forEach(m => m.menu?.classList.remove('open')); }
 
-  if (treeMenuBtn) treeMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(treeMenu, treeMenuBtn); });
-  if (guideMenuBtn) guideMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(guideMenu, guideMenuBtn); });
-
-  document.addEventListener('click', (e) => {
-    if (!treeMenu?.contains(e.target) && e.target !== treeMenuBtn) treeMenu?.classList.remove('open');
-    if (!guideMenu?.contains(e.target) && e.target !== guideMenuBtn) guideMenu?.classList.remove('open');
+  menus.forEach(({ btn, menu }) => {
+    if (!btn || !menu) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = menu.classList.contains('open');
+      closeAll();
+      if (!isOpen) menu.classList.add('open');
+    });
   });
 
-  [treeMenu, guideMenu].forEach(menu => {
+  document.addEventListener('click', (e) => {
+    menus.forEach(({ btn, menu }) => {
+      if (menu && !menu.contains(e.target) && e.target !== btn) menu.classList.remove('open');
+    });
+  });
+
+  menus.forEach(({ menu }) => {
     if (!menu) return;
     menu.addEventListener('click', () => menu.classList.remove('open'));
   });
 })();
+
+// PRIVACY MODAL
+function showPrivacyModal() {
+  const dlg = document.createElement('div');
+  dlg.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:20000;display:flex;justify-content:center;align-items:center;';
+  dlg.innerHTML = `
+    <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:10px;padding:24px;max-width:380px;width:90%;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#3e2b1a;margin-bottom:14px;">🔒 Your Privacy</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;line-height:1.6;margin-bottom:16px;">
+        <p style="margin:0 0 10px;">Your family tree data is stored entirely in your browser's local storage. It never leaves your device.</p>
+        <p style="margin:0 0 10px;"><strong>No accounts.</strong> No server. No tracking.</p>
+        <p style="margin:0;">To protect your data: save a backup file regularly using 💾 Save or 🌳 Tree → Save Tree.</p>
+      </div>
+      <button onclick="this.closest('div[style*=\"fixed\"]').remove()" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;width:100%;">Close</button>
+    </div>
+  `;
+  document.body.appendChild(dlg);
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.remove(); });
+}
+
+// FEEDBACK MODAL
+function showFeedbackModal() {
+  const dlg = document.createElement('div');
+  dlg.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:20000;display:flex;justify-content:center;align-items:center;';
+  dlg.innerHTML = `
+    <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:10px;padding:24px;max-width:380px;width:90%;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#3e2b1a;margin-bottom:14px;">💬 Send Feedback</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;line-height:1.6;margin-bottom:16px;">
+        <p style="margin:0 0 10px;">Found a bug or have a suggestion? We'd love to hear from you.</p>
+        <p style="margin:0;">Email us at: <a href="mailto:hello@vaultedroots.com" style="color:#38bdf8;">hello@vaultedroots.com</a></p>
+      </div>
+      <button onclick="this.closest('div[style*=\"fixed\"]').remove()" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;width:100%;">Close</button>
+    </div>
+  `;
+  document.body.appendChild(dlg);
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.remove(); });
+}
+
+// CERT PANEL STUB (will be filled in by scan panel port)
+function toggleCertPanel() {
+  const panel = document.getElementById('certPanel');
+  if (panel) panel.classList.toggle('active');
+}
 
 // HELP MODAL
 function toggleHelp() {
