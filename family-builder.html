@@ -1,0 +1,4015 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+<title>Vaulted Roots — Family Builder</title>
+<meta name="description" content="Build your family tree in any direction. Private, and yours.">
+<link rel="manifest" href="./manifest.json">
+<link rel="icon" type="image/png" sizes="32x32" href="./favicon-32.png">
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+:root {
+  --bg-page: #f0e2c5;
+  --bg-header: #3e2b1a;
+  --bg-header-border: #5c4033;
+  --bg-tree-start: #f5e6c8;
+  --bg-tree-end: #e8d5b7;
+  --bg-btn: #5c4033;
+  --bg-btn-border: #7a6a4a;
+  --text-logo: #38bdf8;
+  --text-tagline: #7dd3fc;
+  --text-btn: #e8dcc8;
+  --bg-card: rgba(255, 250, 240, 0.97);
+  --border-card: #5c4033;
+  --shadow-card: rgba(90, 60, 30, 0.12);
+  --bg-card-you: rgba(255, 248, 225, 0.98);
+  --bg-card-blank: rgba(250, 244, 230, 0.6);
+  --text-card-blank: #9a8a6a;
+  --line-stroke: #7a6a4a;
+  --bg-detail-actions: #f5eedc;
+  --bg-detail-header: #2a1f15;
+  --text-detail-header: #e8dcc8;
+}
+
+[data-theme="dark"] {
+  --bg-page: #1a1510;
+  --bg-header: #131820;
+  --bg-header-border: #2a3a50;
+  --bg-tree-start: #1a1f2a;
+  --bg-tree-end: #0a0c10;
+  --bg-btn: #1e2a3a;
+  --bg-btn-border: #3a5a7a;
+  --text-logo: #4db8ff;
+  --text-tagline: #5a8aaa;
+  --text-btn: #a8c8e8;
+  --bg-card: rgba(250, 244, 230, 0.94);
+  --border-card: #4a3a22;
+  --shadow-card: rgba(0,0,0,0.25);
+  --bg-card-you: rgba(255,248,225,0.97);
+  --bg-card-blank: rgba(250, 244, 230, 0.45);
+  --text-card-blank: #b8a88a;
+  --line-stroke: #8a7a5a;
+  --bg-detail-actions: #f5eedc;
+  --bg-detail-header: #2a1f15;
+  --text-detail-header: #e8dcc8;
+}
+
+html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-family: 'Cormorant Garamond', serif; }
+
+.header {
+  position: fixed; top: 0; left: 0; right: 0;
+  height: auto;
+  background: var(--bg-header); border-bottom: 2px solid var(--bg-header-border);
+  display: flex; flex-direction: column;
+  justify-content: space-between;
+  padding: 6px 14px; z-index: 300;
+  overflow: visible;
+}
+.header-top {
+  display: flex; align-items: center; justify-content: space-between;
+  gap: 12px; flex-wrap: wrap;
+}
+.header-brand {
+  display: flex; flex-direction: column;
+}
+.header-logo {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 24px; color: var(--text-logo); font-weight: 700;
+  line-height: 1.1; letter-spacing: 1px;
+  text-shadow: 0 0 8px rgba(56, 189, 248, 0.40), 0 0 20px rgba(56, 189, 248, 0.20);
+}
+.header-tagline {
+  font-size: 14px; color: var(--text-tagline); font-weight: 700;
+  letter-spacing: 2px; margin-top: 3px;
+}
+.header-bottom {
+  display: flex; align-items: center; justify-content: flex-end;
+  flex-wrap: wrap;
+  padding-top: 6px; border-top: 1px solid rgba(255,248,225,0.08);
+  margin-top: 4px;
+  gap: 6px;
+}
+.header-actions {
+  display: flex; align-items: center; gap: 6px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  position: relative;
+}
+
+.view-toggle {
+  display: flex; gap: 2px; background: rgba(0,0,0,0.2); border-radius: 6px; padding: 2px;
+  flex-shrink: 1;
+}
+.view-toggle button {
+  padding: 5px 10px; border: none; border-radius: 4px; font-family: 'Cinzel Decorative', serif;
+  font-size: 10px; cursor: pointer; background: transparent; color: var(--text-btn);
+  transition: all 0.15s; white-space: nowrap;
+}
+.view-toggle button.active { background: var(--bg-btn); color: var(--text-logo); }
+
+.header-actions { display: flex; align-items: center; gap: 4px; flex-shrink: 0; }
+.header-btn {
+  width: 32px; height: 30px; background: var(--bg-btn); color: var(--text-btn);
+  border: 1px solid var(--bg-btn-border); border-radius: 6px; font-size: 15px; cursor: pointer;
+  display: flex; align-items: center; justify-content: center; flex-shrink: 0;
+}
+
+.zoom-controls {
+  display: flex; align-items: center; gap: 4px;
+  background: rgba(56, 189, 248, 0.12); padding: 2px 8px; border-radius: 6px;
+}
+.zoom-controls span { font-size: 12px; color: var(--text-logo); min-width: 42px; text-align: center; }
+.zoom-btn { font-size: 16px; padding: 2px 10px; min-width: 32px; background: var(--bg-btn); color: var(--text-btn); border: 1px solid var(--bg-btn-border); border-radius: 4px; cursor: pointer; }
+
+/* Floating toolbar at bottom of tree area */
+.floating-toolbar {
+  position: fixed; bottom: 12px; left: 50%; transform: translateX(-50%);
+  display: flex; align-items: center; gap: 4px; z-index: 400;
+  background: var(--bg-header); border: 1px solid var(--bg-btn-border);
+  border-radius: 22px; padding: 4px 10px;
+}
+.floating-toolbar span { font-size: 11px; color: var(--text-logo); min-width: 36px; text-align: center; }
+
+/* Tree area */
+.tree-scroll {
+  position: fixed; top: 90px; left: 0; right: 0; bottom: 0;
+  overflow: auto; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y;
+  background: radial-gradient(ellipse at center, var(--bg-tree-start) 0%, var(--bg-tree-end) 100%);
+}
+.tree-wrap {
+  position: relative; min-width: 100%; min-height: 100%;
+  transform: scale(var(--zoom, 1)); transform-origin: top left;
+  transition: transform 0.15s ease;
+}
+.tree-wrap.pinch-zooming { transition: none !important; }
+
+/* SVG for connectors */
+.fb-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
+
+/* Free Build cards */
+.fb-card {
+  position: absolute; width: 150px; background: #faf5eb;
+  border: 1px solid #c9b896; border-radius: 4px; padding: 4px 8px;
+  text-align: center; z-index: 2; cursor: pointer;
+  box-shadow: 0 1px 4px var(--shadow-card);
+  min-height: 34px; transition: box-shadow 0.15s;
+}
+.fb-card:hover { box-shadow: 0 2px 8px rgba(90, 60, 30, 0.20); }
+.fb-card .name {
+  font-family: 'Cinzel Decorative', serif; font-size: 10px;
+  color: #2a1f10; letter-spacing: 0.3px; line-height: 1.3;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.fb-card .years {
+  font-family: 'Cormorant Garamond', serif; font-size: 9px;
+  color: #7a6545; margin-top: 1px; font-style: italic;
+}
+.fb-card .married {
+  font-family: 'Cormorant Garamond', serif; font-size: 9px;
+  color: #7a9a6a; margin-top: 1px; font-style: italic;
+}
+.fb-card.confirmed { border-left: 4px solid #22c55e; }
+.fb-card.probable { border-left: 4px solid #f59e0b; }
+.fb-card.brickwall { border-left: 4px dashed #ef4444; }
+.fb-card.you { border: 2px solid #c4a875; background: var(--bg-card-you); }
+.fb-card.blank { background: #f0ebe0; border: 1px dashed #b8a88a; opacity: 0.4; cursor: default; }
+.fb-card.blank:hover { transform: none; box-shadow: none; }
+.fb-card.blank .name, .fb-card.blank .years { color: #b8a88a; }
+.fb-card.selected { box-shadow: 0 0 0 3px #38bdf8, 0 2px 8px rgba(56,189,248,0.3); }
+
+/* Detail Panel */
+.detail-panel {
+  display: none; position: fixed; top: 140px; right: 0; bottom: 0;
+  width: 360px; max-width: 95vw; background: #f5eedc; z-index: 400;
+  border-left: 3px solid #4a3a22; flex-direction: column;
+}
+.detail-panel.active { display: flex; animation: slideIn 0.25s ease; }
+@keyframes slideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+.detail-header {
+  background: var(--bg-detail-header); color: var(--text-detail-header);
+  padding: 14px 16px; position: relative; font-family: 'Cinzel Decorative', serif;
+  flex-shrink: 0;
+}
+.detail-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: var(--text-detail-header); font-size: 24px; cursor: pointer; }
+.detail-body { flex: 1; overflow-y: auto; padding: 14px 16px; }
+.detail-field { margin-bottom: 10px; }
+.detail-field label { display: block; font-family: 'Cinzel Decorative', serif; font-size: 10px; color: #6b5537; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 3px; }
+.detail-field input, .detail-field select, .detail-field textarea {
+  width: 100%; padding: 7px; border: 1px solid #8a7a5a; border-radius: 4px;
+  font-family: 'Cormorant Garamond', serif; font-size: 14px; background: #fff; color: #2a1f10;
+}
+.detail-field textarea { min-height: 60px; resize: vertical; }
+.detail-actions { margin-top: 12px; display: flex; gap: 8px; }
+.detail-actions button {
+  flex: 1; padding: 8px 14px; border-radius: 4px; font-family: 'Cinzel Decorative', serif;
+  font-size: 11px; cursor: pointer; border: 1px solid #8a7a5a;
+}
+.cancel-btn { background: #f0e8d8; color: #4a3a22; }
+.save-btn { background: #4a6b4a; color: #fff; border-color: #3a5a3a; }
+
+.fb-add-btn {
+  width: 100%; background: #faf6ee; border: 2px solid #8a7a5a; color: #4a3a22;
+  padding: 8px 16px; border-radius: 4px; font-family: 'Cinzel Decorative', serif;
+  font-size: 11px; cursor: pointer; margin-bottom: 6px;
+}
+.fb-add-btn:hover { background: #f0e8d8; border-color: #4a3a22; }
+
+/* Toast */
+#toastMsg {
+  position: fixed; bottom: 70px; left: 50%; transform: translateX(-50%);
+  background: #2a1f10; color: #e8dcc8; padding: 8px 20px; border-radius: 6px;
+  font-family: 'Cormorant Garamond', serif; font-size: 14px; z-index: 999;
+  box-shadow: 0 2px 10px rgba(0,0,0,0.3); transition: opacity 0.4s;
+}
+
+/* GEDCOM import button */
+.gedcom-btn {
+  background: var(--bg-btn); color: var(--text-btn); border: 1px solid var(--bg-btn-border);
+  padding: 6px 10px; border-radius: 6px; font-family: 'Cinzel Decorative', serif;
+  font-size: 10px; cursor: pointer; white-space: nowrap;
+}
+
+/* Help modal */
+.help-overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.65); z-index: 9000; justify-content: center; align-items: center;
+}
+.help-overlay.active { display: flex; }
+.help-modal {
+  background: #f5eedc; border: 3px solid #4a3a22; border-radius: 10px;
+  max-width: 480px; width: 92%; max-height: 85vh; display: flex; flex-direction: column;
+  box-shadow: 0 8px 40px rgba(0,0,0,0.4);
+}
+.help-modal-header {
+  background: #2a1f15; color: #e8dcc8; padding: 16px 20px; border-radius: 7px 7px 0 0;
+  font-family: 'Cinzel Decorative', serif; font-size: 16px; position: relative; flex-shrink: 0;
+  display: flex; align-items: center; gap: 10px;
+}
+.help-modal-header .help-icon { font-size: 22px; }
+.help-modal-close {
+  position: absolute; top: 12px; right: 16px; background: none; border: none;
+  color: #e8dcc8; font-size: 24px; cursor: pointer; line-height: 1;
+}
+.help-tabs {
+  display: flex; gap: 0; background: #e8dcc4; padding: 0; flex-shrink: 0;
+  border-bottom: 2px solid #c9b896;
+}
+.help-tab {
+  flex: 1; padding: 10px 8px; text-align: center; font-family: 'Cinzel Decorative', serif;
+  font-size: 11px; color: #6b5537; cursor: pointer; border: none; background: transparent;
+  border-bottom: 3px solid transparent; transition: all 0.15s;
+}
+.help-tab.active { color: #2a1f15; border-bottom-color: #38bdf8; background: #f5eedc; }
+.help-tab:hover:not(.active) { background: rgba(255,250,240,0.5); }
+.help-content { flex: 1; overflow-y: auto; padding: 16px 20px; }
+.help-section { display: none; }
+.help-section.active { display: block; }
+.help-section h3 {
+  font-family: 'Cinzel Decorative', serif; font-size: 13px; color: #4a3a22;
+  margin: 14px 0 6px; letter-spacing: 0.5px;
+}
+.help-section h3:first-child { margin-top: 0; }
+.help-section p, .help-section li {
+  font-family: 'Cormorant Garamond', serif; font-size: 14px; color: #2a1f10;
+  line-height: 1.6; margin-bottom: 6px;
+}
+.help-section ol, .help-section ul { padding-left: 20px; margin-bottom: 10px; }
+.help-section .tip {
+  background: rgba(56,189,248,0.08); border-left: 3px solid #38bdf8;
+  padding: 8px 12px; margin: 10px 0; border-radius: 0 4px 4px 0; font-size: 13px;
+}
+.help-section .warn {
+  background: rgba(239,68,68,0.08); border-left: 3px solid #ef4444;
+  padding: 8px 12px; margin: 10px 0; border-radius: 0 4px 4px 0; font-size: 13px;
+}
+.help-footer {
+  flex-shrink: 0; padding: 10px 20px; border-top: 1px solid #c9b896; text-align: center;
+  background: #e8dcc4; border-radius: 0 0 7px 7px;
+}
+.help-footer label {
+  font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #6b5537; cursor: pointer;
+}
+.help-footer input { margin-right: 6px; cursor: pointer; }
+.help-btn {
+  background: var(--bg-btn); color: var(--text-btn); border: 1px solid var(--bg-btn-border);
+  height: 28px; padding: 0 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  display: flex; gap: 5px; align-items: center; font-family: 'Cormorant Garamond', serif;
+  white-space: nowrap; position: relative;
+}
+.help-btn.guide-btn {
+  background: #5a7a3a; color: #f5eedc; border-color: #4a6a2a;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.help-btn.primary {
+  background: #6b4c35; border-color: #c4a875;
+}
+
+/* Dropdown menus (matching homepage style) */
+.fb-menu {
+  display: none; position: absolute; top: 100%; right: 0; margin-top: 6px;
+  background: #f5eedc; border: 1px solid #c4b89a; border-radius: 8px;
+  width: 240px; padding: 6px; z-index: 10000;
+  box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+}
+.fb-menu.open { display: block; }
+.fb-menu-item {
+  display: flex; gap: 10px; align-items: center;
+  padding: 9px 10px; font-size: 13px; border-radius: 6px;
+  color: #3e2b1a; cursor: pointer; font-family: 'Cormorant Garamond', serif;
+}
+.fb-menu-item:hover { background: #efe4c8; }
+.fb-menu-item.danger { color: #8a2a2a; border-top: 1px solid #d8c9a8; margin-top: 4px; padding-top: 11px; }
+.fb-menu-item .icon { font-size: 16px; width: 20px; text-align: center; }
+.fb-menu-wrap { position: relative; }
+
+/* Centered emblem in header */
+.header-emblem {
+  position: absolute;
+  left: 50%; top: 50%;
+  transform: translate(-50%, -50%);
+  height: 100px; width: 100px;
+  border-radius: 50%;
+  object-fit: cover;
+  z-index: 1;
+  opacity: 0.35;
+  pointer-events: none;
+}
+
+/* ─── Cert panel ─── */
+.cert-panel {
+  display: none; position: fixed; top: 140px; right: 0; bottom: 0;
+  width: 380px; max-width: 95vw;
+  background: #f5eedc; z-index: 400;
+  border-left: 3px solid #4a3a22;
+  flex-direction: column;
+}
+.cert-panel.active { display: flex; animation: certSlideIn 0.25s ease; }
+@keyframes certSlideIn { from { transform: translateX(100%); } to { transform: translateX(0); } }
+
+.cert-header {
+  background: #2a1f15; color: #e8dcc8; padding: 14px 16px;
+  position: relative; font-family: 'Cinzel Decorative', serif;
+  flex-shrink: 0;
+}
+.cert-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
+
+.cert-upload-area {
+  border: 2px dashed #8a7a5a; border-radius: 8px;
+  padding: 20px; text-align: center; cursor: pointer;
+  background: #faf6ee; margin-bottom: 8px;
+}
+.cert-upload-area:hover { border-color: #4a3a22; background: #f0e8d8; }
+.cert-upload-btns { display: flex; gap: 10px; margin-bottom: 12px; }
+.cert-upload-btns button {
+  flex: 1; padding: 14px 10px; border: 2px solid #8a7a5a; border-radius: 8px;
+  background: #faf6ee; cursor: pointer; text-align: center;
+  font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #4a3a22;
+  transition: border-color 0.15s, background 0.15s;
+}
+.cert-upload-btns button:hover { border-color: #4a3a22; background: #f0e8d8; }
+.cert-upload-btns .camera-btn { border-color: #6b5537; }
+.cert-upload-btns .camera-btn span { font-size: 28px; display: block; margin-bottom: 4px; }
+.cert-upload-btns .file-btn span { font-size: 28px; display: block; margin-bottom: 4px; }
+.cert-preview-area { display: none; margin-bottom: 12px; text-align: center; }
+.cert-preview-area img { max-width: 100%; max-height: 200px; border-radius: 4px; border: 2px solid #8a7a5a; }
+
+.cert-status {
+  display: none; padding: 10px; border-radius: 4px;
+  font-family: 'Cormorant Garamond', serif; font-size: 13px;
+  text-align: center; margin-bottom: 10px;
+}
+.cert-status.loading { display: block; background: #fef3c7; color: #92400e; }
+.cert-status.success { display: block; background: #dcfce7; color: #166534; }
+.cert-status.error { display: block; background: #fee2e2; color: #991b1b; }
+
+.cert-result-card {
+  background: #fff; border: 2px solid #8a7a5a; border-radius: 6px;
+  padding: 12px; margin-bottom: 10px; cursor: pointer;
+  font-family: 'Cormorant Garamond', serif; overflow: hidden;
+}
+.cert-result-card.selected { border-color: #4a3a22; background: #f0e8d8; }
+.cert-result-card .field-row {
+  display: flex; justify-content: space-between; padding: 3px 0;
+  border-bottom: 1px solid #e8dcc8; font-size: 12px;
+}
+.cert-result-card .field-row label { color: #6b5537; font-weight: 600; text-transform: uppercase; font-size: 10px; }
+.cert-field-edit {
+  display: flex; align-items: center; gap: 6px;
+  margin: 4px 0; flex-wrap: nowrap;
+}
+.cert-field-edit .cert-field-label {
+  color: #6b5537; font-weight: 600; text-transform: uppercase;
+  font-size: 10px; min-width: 70px; max-width: 80px; flex-shrink: 0;
+}
+.cert-field-edit input {
+  flex: 1; min-width: 0; padding: 4px 6px;
+  border: 1px solid #ccc; border-radius: 3px;
+  font-size: 12px; font-family: 'Cormorant Garamond', serif;
+  background: #fff; color: #2a1f10;
+}
+
+.cert-toolbar { padding: 12px 16px; border-bottom: 2px solid #4a3a22; background: #f5eedc; flex-shrink: 0; }
+
+.cert-body { padding: 16px; overflow-y: auto; -webkit-overflow-scrolling: touch; flex: 1; }
+
+.cert-actions { display: none; flex-wrap: wrap; gap: 8px; margin-top: 8px; }
+.cert-panel.has-results .cert-actions { display: flex; }
+.cert-actions button {
+  flex: 1 1 auto; padding: 10px; border: 2px solid #4a3a22; border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif; font-size: 11px; cursor: pointer;
+  min-width: 100px;
+}
+.cert-confirm { background: #4a3a22; color: #f5eedc; }
+.cert-retry { background: #f5eedc; color: #4a3a22; }
+.cert-swap { background: #fef3c7; color: #92400e; border-color: #f59e0b; }
+
+/* ─── Cert method selection ─── */
+.cert-method-select { display:flex; flex-direction:column; gap:10px; margin-bottom:12px; }
+.cert-method-row { display:flex; gap:10px; }
+.cert-method-btn {
+  flex:1; padding:16px 10px; border:2px solid #8a7a5a; border-radius:8px;
+  background:#faf6ee; cursor:pointer; text-align:center;
+  font-family:'Cormorant Garamond',serif; color:#4a3a22;
+  transition:border-color 0.15s, background 0.15s;
+}
+.cert-method-btn:hover { border-color:#4a3a22; background:#f0e8d8; }
+.cert-method-btn .method-icon { font-size:28px; display:block; margin-bottom:4px; }
+.cert-method-btn .method-label { font-size:13px; font-weight:600; display:block; }
+.cert-method-btn .method-desc { font-size:11px; color:#8a7a5a; display:block; margin-top:2px; }
+
+/* ─── Gemini section ─── */
+.gemini-section { display:none; }
+.gemini-section.active { display:block; }
+
+/* ─── Venice section ─── */
+.venice-section { display:none; }
+.venice-section.active { display:block; }
+
+/* ─── Upload & Scan section ─── */
+.upload-section { display:none; }
+.upload-section.active { display:block; }
+
+.gemini-privacy-banner {
+  background:#fef3c7; border:2px solid #f59e0b; border-radius:8px;
+  padding:12px; margin-bottom:12px;
+}
+.gemini-privacy-banner .warn-title { color:#92400e; font-weight:600; font-size:13px; margin-bottom:4px; }
+.gemini-privacy-banner .warn-text { color:#92400e; font-size:12px; line-height:1.4; }
+.gemini-paste-box {
+  width:100%; min-height:120px; padding:10px;
+  border:2px solid #8a7a5a; border-radius:6px;
+  font-family:'Courier New',monospace; font-size:11px;
+  background:#fff; margin-bottom:10px; resize:vertical;
+}
+.gemini-open-btn {
+  display:block; width:100%; padding:14px;
+  background:#4a3a22; color:#f5eedc; border:none; border-radius:8px;
+  font-family:'Cinzel Decorative',serif; font-size:14px;
+  cursor:pointer; text-align:center; margin-bottom:12px;
+  text-decoration:none;
+}
+.gemini-open-btn:hover { opacity:0.9; }
+.gemini-back-btn {
+  padding:8px 14px; border:2px solid #8a7a5a; border-radius:4px;
+  background:#faf6ee; color:#4a3a22; cursor:pointer;
+  font-family:'Cormorant Garamond',serif; font-size:12px;
+}
+.cert-type-selector { display:flex; gap:6px; margin-bottom:12px; flex-wrap:wrap; }
+.cert-type-btn {
+  padding:6px 12px; border:2px solid #8a7a5a; border-radius:4px;
+  background:#faf6ee; cursor:pointer; font-family:'Cormorant Garamond',serif;
+  font-size:12px; color:#4a3a22;
+}
+.cert-type-btn.active { background:#4a3a22; color:#f5eedc; border-color:#4a3a22; }
+
+/* Scan button in header */
+.scan-btn {
+  background: #6b4c35; color: var(--text-btn); border: 1px solid var(--gold);
+  height: 28px; padding: 0 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  display: flex; gap: 5px; align-items: center; font-family: 'Cormorant Garamond', serif;
+  white-space: nowrap;
+}
+
+/* Focus navigator */
+.focus-back {
+  position: fixed; bottom: 20px; left: 20px; z-index: 500;
+  width: 48px; height: 48px; border-radius: 50%;
+  background: var(--bg-btn); color: var(--text-logo); border: 2px solid var(--bg-btn-border);
+  font-size: 20px; cursor: pointer; display: none;
+  align-items: center; justify-content: center;
+}
+.focus-back.visible { display: flex; }
+
+@media (max-width: 600px) {
+  .header-logo { font-size: 12px; }
+  .view-toggle button { padding: 4px 8px; font-size: 9px; }
+  .gedcom-btn { padding: 5px 8px; font-size: 9px; }
+  .header-btn { width: 30px; height: 28px; font-size: 14px; }
+  .fb-card { width: 120px; }
+  .fb-card .name { font-size: 9px; }
+  .fb-card .years { font-size: 8px; }
+  .floating-toolbar { bottom: 8px; }
+  .floating-toolbar .zoom-btn { font-size: 14px; padding: 2px 8px; min-width: 28px; }
+}
+</style>
+</head>
+<body>
+
+<div class="header">
+  <div class="header-top">
+    <div class="header-brand">
+      <div class="header-logo">Vaulted Roots</div>
+      <div class="header-tagline">Your legacy. Secure.</div>
+    </div>
+    <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
+    <div class="header-actions">
+      <!-- Primary labeled buttons -->
+      <button class="help-btn primary" onclick="checkMemberFeature('cert_scanning', toggleCertPanel)" title="Scan certificate">📷 <span>Scan</span></button>
+      <button class="help-btn guide-btn" id="guideMenuBtn" title="Import, Export & Guide">📖 <span>Guide</span> ▾</button>
+      <button class="help-btn" onclick="saveSession()" title="Save session">💾 <span>Save</span></button>
+      <!-- Tree dropdown -->
+      <div class="fb-menu-wrap">
+        <button class="help-btn" id="treeMenuBtn" title="Tree options">🌳 <span>Tree</span> ▾</button>
+        <div class="fb-menu" id="treeMenu" role="menu">
+          <div class="fb-menu-item" role="menuitem" onclick="location.href='data-tree.html'"><span class="icon">🌲</span> Pedigree Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="location.href='family-builder.html'"><span class="icon">🌿</span> Family Builder</div>
+          <div class="fb-menu-item" role="menuitem" onclick="window.open('families.html','_blank')"><span class="icon">📋</span> Family Sheets</div>
+          <div class="fb-menu-item" role="menuitem" onclick="saveSession()"><span class="icon">💾</span> Save Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('loadFileInput').click()"><span class="icon">📂</span> Load Backup</div>
+          <div class="fb-menu-item" role="menuitem" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="openPrintDialog()"><span class="icon">🖨️</span> Print Tree</div>
+          <div class="fb-menu-item danger" role="menuitem" onclick="resetTree()"><span class="icon">🗑️</span> Reset Tree</div>
+        </div>
+      </div>
+      <!-- Guide dropdown -->
+      <div class="fb-menu" id="guideMenu" role="menu">
+        <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('gedcomInput').click()"><span class="icon">🔄</span> Import GEDCOM</div>
+        <div class="fb-menu-item" role="menuitem" onclick="exportGedcom()"><span class="icon">📤</span> Export GEDCOM</div>
+        <div class="fb-menu-item" role="menuitem" onclick="toggleHelp()"><span class="icon">📖</span> Guide & Help</div>
+      </div>
+      <!-- More dropdown -->
+      <div class="fb-menu-wrap">
+        <button class="help-btn" id="moreMenuBtn" title="More options">⋯ <span>More</span> ▾</button>
+        <div class="fb-menu" id="moreMenu" role="menu">
+          <div class="fb-menu-item" role="menuitem" onclick="toggleTheme()"><span class="icon" id="darkModeToggle">🌙</span> Dark Mode</div>
+          <div class="fb-menu-item" role="menuitem" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
+          <div class="fb-menu-item" role="menuitem" onclick="showFeedbackModal()"><span class="icon">💬</span> Send Feedback</div>
+          <div class="fb-menu-item" role="menuitem" onclick="window.open('https://www.facebook.com/profile.php?id=61591673636516','_blank','noopener')"><span class="icon">👍</span> Follow on Facebook</div>
+        </div>
+      </div>
+      <input type="file" id="gedcomInput" accept=".ged,.gedcom,text/plain" style="display:none">
+      <input type="file" id="loadFileInput" accept=".json,.familytree" style="display:none">
+    </div>
+  </div>
+  <div class="header-bottom">
+    <div class="header-actions">
+      <button class="help-btn" onclick="setZoom(zoom * 1.2)" title="Zoom in">+</button>
+      <span class="help-btn" id="zoomLevel" style="cursor:default;min-width:36px;justify-content:center;">100%</span>
+      <button class="help-btn" onclick="setZoom(zoom / 1.2)" title="Zoom out">−</button>
+      <button class="help-btn" onclick="fitToScreen()" title="Fit to screen">Fit</button>
+      <button class="help-btn" onclick="exportGedcom()" title="Export GEDCOM">⬇</button>
+    </div>
+  </div>
+</div>
+
+<div class="tree-scroll" id="treeScroll">
+  <div class="tree-wrap" id="treeWrap">
+    <svg class="fb-svg" id="fbSvg"></svg>
+  </div>
+</div>
+
+<button class="focus-back" id="focusBack" onclick="resetFocus()">←</button>
+
+<!-- Help / Guidance Modal -->
+<div class="help-overlay" id="helpOverlay">
+  <div class="help-modal">
+    <div class="help-modal-header">
+      <span class="help-icon">📜</span>
+      <span>Vaulted Roots — Guide</span>
+      <button class="help-modal-close" onclick="toggleHelp()">×</button>
+    </div>
+    <div class="help-tabs">
+      <button class="help-tab active" onclick="switchHelpTab(0, this)">Start Here</button>
+      <button class="help-tab" onclick="switchHelpTab(1, this)">Build a Tree</button>
+      <button class="help-tab" onclick="switchHelpTab(2, this)">Import GEDCOM</button>
+      <button class="help-tab" onclick="switchHelpTab(3, this)">Tips & Tools</button>
+    </div>
+    <div class="help-content">
+
+      <!-- Tab 0: Start Here -->
+      <div class="help-section active" data-tab="0">
+        <h3>Welcome to Family Builder</h3>
+        <p>This is a private family tree builder. Everything runs in your browser — no account, no server, no data sent anywhere.</p>
+        <p>You can:</p>
+        <ul>
+          <li><b>Build from scratch</b> — tap a card, add parents, spouses, children</li>
+          <li><b>Import a GEDCOM file</b> — load a tree from MyHeritage, Ancestry, FamilySearch, or any genealogy app</li>
+          <li><b>Export your tree</b> — download a GEDCOM file to back up or move to another tool</li>
+        </ul>
+        <div class="tip">Your tree auto-saves to this browser. It stays here until you clear your browser data or hit Reset.</div>
+        <h3>Quick Start</h3>
+        <ol>
+          <li>If you have a GEDCOM file from another app, tap "Import GEDCOM" at the top</li>
+          <li>If starting fresh, you'll see one card labeled "Me" — tap it to edit your name and dates</li>
+          <li>Use the Add buttons in the detail panel to add parents, a spouse, children, or siblings</li>
+          <li>Tap any card on the tree to select it, then edit or add relatives from there</li>
+        </ol>
+      </div>
+
+      <!-- Tab 1: Build a Tree -->
+      <div class="help-section" data-tab="1">
+        <h3>Building From Scratch</h3>
+        <ol>
+          <li><b>Start with yourself</b> — the default card "Me" is you. Tap it to open the detail panel</li>
+          <li><b>Edit details</b> — fill in your full name, birth date, birthplace, occupation. Tap Save</li>
+          <li><b>Add a parent</b> — tap "➕ Add Parent" in the detail panel. A blank card appears above you. Tap it to fill in their name</li>
+          <li><b>Add a spouse</b> — tap "💍 Add Spouse/Partner". A card appears beside you. Add their details</li>
+          <li><b>Add a child</b> — tap "👶 Add Child". A card appears below. If you have a spouse, the child links to both parents automatically</li>
+          <li><b>Add a sibling</b> — tap "👥 Add Sibling". A card appears beside you at the same level</li>
+          <li><b>Keep going</b> — tap any card to select it, then add relatives from that person. Build up (ancestors) or down (descendants)</li>
+        </ol>
+        <div class="tip">When you add a relative, the detail panel automatically opens for the new person so you can type their name right away.</div>
+        <h3>Editing a Person</h3>
+        <ul>
+          <li>Tap any card to open the detail panel</li>
+          <li>Edit any field: name, dates, places, occupation, notes, sex</li>
+          <li>Tap "Save Changes" to confirm</li>
+          <li>Tap "Cancel" to discard changes</li>
+        </ul>
+        <h3>Deleting a Person</h3>
+        <ul>
+          <li>Tap the card to open the detail panel</li>
+          <li>Scroll down and tap "🗑 Delete Person"</li>
+          <li>Confirm the deletion</li>
+        </ul>
+        <div class="warn">Deleting a person removes them and breaks their links to parents, spouses, and children. Export a GEDCOM backup first if you're unsure.</div>
+      </div>
+
+      <!-- Tab 2: Import GEDCOM -->
+      <div class="help-section" data-tab="2">
+        <div style="margin:0 0 10px;padding:6px 8px;background:#fff8e1;border:1px solid #e6a23c;border-radius:4px;font-size:11px;color:#8a6d3b;">
+          ⚠️ <strong>Beta feature:</strong> GEDCOM import is under construction. Some relationships may not be fully preserved. Please review your tree after importing.
+        </div>
+        <p><strong>Moving to or from another genealogy site?</strong> GEDCOM is the universal family tree format. Import from Ancestry, FamilySearch, or MyHeritage, or export your tree to take anywhere.</p>
+        <h3>How to Import</h3>
+        <ol>
+          <li><strong>Export as GEDCOM.</strong> On your current site, look for "Export" or "Download" and choose the GEDCOM format.</li>
+          <li><strong>Import here.</strong> Tap the button below, select your <code>.ged</code> file, and your tree loads automatically. Your file never leaves your device.</li>
+          <li><strong>Review.</strong> Large trees auto-focus on the most connected person. Tap any card to explore or edit.</li>
+        </ol>
+        <div style="margin:14px 0;text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
+          <button onclick="document.getElementById('gedcomInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
+          <button onclick="exportGedcom()" style="padding:10px 16px;border:2px solid #4a5a8a;border-radius:4px;background:#4a5a8a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">📤 Export GEDCOM</button>
+        </div>
+        <p style="font-style:italic;font-size:13px;">Export creates a standard <code>.ged</code> file that any genealogy software can read. Your data never leaves your device.</p>
+        <h3>After Import</h3>
+        <ul>
+          <li>Use the zoom buttons to get the right view</li>
+          <li>Tap "Fit" to fit the whole tree on screen</li>
+          <li>Tap any card to drill in — the tree refocuses on that person's branch</li>
+          <li>Tap the ← button (bottom left) to go back to the previous view</li>
+        </ul>
+        <h3>Multi-Marriage Support</h3>
+        <p>If a person had multiple marriages, each spouse and their children appear as separate family units. The earliest marriage (by date) is shown as the primary spouse, with later marriages branching to the side.</p>
+      </div>
+
+      <!-- Tab 3: Tips & Tools -->
+      <div class="help-section" data-tab="3">
+        <h3>Navigation</h3>
+        <ul>
+          <li><b>Pan</b> — drag the tree area with your finger or mouse</li>
+          <li><b>Zoom</b> — use the + and − buttons in the toolbar, or pinch on touchscreens</li>
+          <li><b>Fit to screen</b> — tap "Fit" to see the whole tree at once</li>
+          <li><b>Focus on a person</b> — tap any card to select it. Large trees auto-focus on the most connected person</li>
+          <li><b>Go back</b> — tap the ← button (bottom left) to return to the previous focus point</li>
+        </ul>
+        <h3>Saving & Loading Your Tree</h3>
+        <ul>
+          <li><b>💾 Save Tree</b> — tap 🌳 Tree → Save Tree to download a <code>.familytree</code> backup file</li>
+          <li><b>📂 Load Tree</b> — tap 🌳 Tree → Load Tree to restore from a previously saved <code>.familytree</code> file</li>
+          <li><b>📤 Share Tree</b> — tap 🌳 Tree → Share Tree to save and share the file with family</li>
+        </ul>
+        <div class="tip">Save regularly while building. The <code>.familytree</code> file is self-contained and works on any device.</div>
+        <h3>GEDCOM Export</h3>
+        <ol>
+          <li>Tap 📖 Guide → Export GEDCOM (or the ⬇ button in the toolbar)</li>
+          <li>A <code>.ged</code> file downloads to your device</li>
+          <li>Import it into any genealogy app (Ancestry, FamilySearch, MyHeritage, etc.)</li>
+        </ol>
+        <h3>Printing</h3>
+        <ul>
+          <li>Tap 🌳 Tree → Print Tree to print the current view</li>
+        </ul>
+        <h3>Resetting Your Tree</h3>
+        <ul>
+          <li>Tap 🌳 Tree → Reset Tree to wipe everything and start over</li>
+          <li>You'll get a confirmation dialog — this cannot be undone</li>
+          <li>Save or export your tree first if you want to keep your data</li>
+        </ul>
+        <h3>Theme</h3>
+        <p>Tap the 🌙 / ☀ button in the toolbar to toggle between light and dark mode.</p>
+        <h3>Privacy</h3>
+        <p>Everything stays in your browser's local storage. No data is uploaded to any server. Clearing your browser data will erase your tree — save a <code>.familytree</code> backup to keep a copy.</p>
+      </div>
+
+    </div>
+  </div>
+</div>
+
+<!-- Custom Confirm Dialog (matches data-tree styling) -->
+<div id="confirmDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:320px;width:90%;text-align:center;">
+    <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#991b1b;margin-bottom:12px;">⚠️ Wipe Tree Clean?</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:20px;">This will permanently remove ALL people from your tree.<br><br><b>This cannot be undone.</b><br><br>To keep your data, tap Cancel and export your GEDCOM first.</div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="confirmCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
+      <button id="confirmOk" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#5c2a2a;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Reset</button>
+    </div>
+  </div>
+</div>
+
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <span id="detailTitle">Person</span>
+    <button class="detail-close" onclick="closeDetail()">×</button>
+  </div>
+  <div class="detail-body" id="detailBody"></div>
+</div>
+
+<!-- Cert Panel -->
+<div class="cert-panel" id="certPanel">
+  <div class="cert-header">
+    <button class="cert-close" id="certClose">&times;</button>
+    <div style="font-size:14px;">📄 Scan Certificate</div>
+  </div>
+  <div class="cert-toolbar">
+    <div class="cert-actions" id="certActions">
+      <button class="cert-retry" id="certRetry">🔄 Retry Scan</button>
+      <button class="cert-confirm" id="certConfirm">✓ Apply to Tree</button>
+      <button class="cert-clear" id="certClear" style="background:#e8dcc8;color:#4a3a22;">✕ Clear</button>
+    </div>
+  </div>
+  <div class="cert-body" id="certBody">
+    <!-- Method Selection -->
+    <div class="cert-method-select" id="certMethodSelect">
+      <div style="font-size:12px;color:#6b5537;margin-bottom:4px;font-weight:600;text-align:center">Extract data using:</div>
+      <div class="cert-method-row">
+        <button class="cert-method-btn" onclick="selectCertMethod('upload')">
+          <span class="method-icon">📷</span>
+          <span class="method-label">Upload & Scan</span>
+          <span class="method-desc">100% private</span>
+        </button>
+        <button class="cert-method-btn" onclick="checkMemberFeature('ai_venice', function(){selectCertMethod('venice')})">
+          <span class="method-icon">🛡️</span>
+          <span class="method-label">Venice</span>
+          <span class="method-desc">Best for printed text</span>
+        </button>
+        <button class="cert-method-btn" onclick="checkMemberFeature('ai_gemini', function(){selectCertMethod('gemini')})">
+          <span class="method-icon">🤖</span>
+          <span class="method-label">Gemini</span>
+          <span class="method-desc">External scan</span>
+        </button>
+      </div>
+    </div>
+
+    <!-- Upload & Scan Section -->
+    <div class="upload-section" id="uploadSection">
+      <div class="gemini-privacy-banner" style="background:#dcfce7;border-color:#166534;">
+        <div class="warn-title" style="color:#166534;">Privacy Notice</div>
+        <div class="warn-text" style="color:#166534;">100% private. Your certificate is processed via Venice AI and is never stored or used to train models.</div>
+      </div>
+
+      <div class="gemini-privacy-banner" style="background:#fef3c7;border-color:#f59e0b;">
+        <div class="warn-title" style="color:#92400e;">⚠️ Handwriting Warning</div>
+        <div class="warn-text" style="color:#92400e;">Venice models read printed or typed text well but struggle with handwritten certificates. For handwriting, use Gemini instead.</div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
+      <div class="cert-type-selector" id="uploadCertType">
+        <button class="cert-type-btn active" data-type="birth" onclick="setUploadCertType('birth', this)">Birth</button>
+        <button class="cert-type-btn" data-type="marriage" onclick="setUploadCertType('marriage', this)">Marriage</button>
+        <button class="cert-type-btn" data-type="death" onclick="setUploadCertType('death', this)">Death</button>
+      </div>
+
+      <div style="display:flex;gap:10px;margin:12px 0;">
+        <button onclick="document.getElementById('certCameraInput').click()" style="flex:1;padding:12px;border:2px solid #8a7a5a;border-radius:8px;background:#faf6ee;font-family:'Cormorant Garamond',serif;color:#4a3a22;cursor:pointer;font-size:13px;">
+          <span style="font-size:24px;display:block;margin-bottom:4px;">📷</span>
+          Camera
+        </button>
+        <button onclick="document.getElementById('certFileInput').click()" style="flex:1;padding:12px;border:2px solid #8a7a5a;border-radius:8px;background:#faf6ee;font-family:'Cormorant Garamond',serif;color:#4a3a22;cursor:pointer;font-size:13px;">
+          <span style="font-size:24px;display:block;margin-bottom:4px;">📁</span>
+          File
+        </button>
+      </div>
+
+      <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
+    </div>
+
+    <!-- Venice Paste Section -->
+    <div class="venice-section" id="veniceSection">
+      <div class="gemini-privacy-banner" style="background:#dcfce7;border-color:#166534;">
+        <div class="warn-title" style="color:#166534;">Privacy Notice</div>
+        <div class="warn-text" style="color:#166534;">Venice AI is 100% private. Your certificate image is processed by Venice and is never stored or used to train models.</div>
+      </div>
+
+      <div class="gemini-privacy-banner" style="background:#fef3c7;border-color:#f59e0b;">
+        <div class="warn-title" style="color:#92400e;">⚠️ Handwriting Warning</div>
+        <div class="warn-text" style="color:#92400e;">Venice models read printed or typed text well but struggle with handwritten certificates. For handwriting, use Gemini instead.</div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
+      <div class="cert-type-selector" id="veniceCertType">
+        <button class="cert-type-btn active" data-type="birth" onclick="setVeniceType('birth')">Birth</button>
+        <button class="cert-type-btn" data-type="marriage" onclick="setVeniceType('marriage')">Marriage</button>
+        <button class="cert-type-btn" data-type="death" onclick="setVeniceType('death')">Death</button>
+      </div>
+
+      <button class="gemini-open-btn" id="veniceCopyBtn" onclick="copyVenicePrompt()">📋 Copy Prompt to Clipboard</button>
+      <button class="gemini-open-btn" style="background:#7c3aed;border-color:#5b21b6;margin-top:8px;" onclick="openVenice()">🛡️ Open Venice</button>
+
+      <div class="gemini-steps" style="background:#f0e8d8;border:1px solid #c4b49a;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:#4a3a22;">
+        <div style="font-weight:600;margin-bottom:6px;font-size:13px;">📱 How this works:</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">1</span>
+            <span>Tap the button above to copy the extraction prompt</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">2</span>
+            <span>Tap <b>Open Venice</b> — or go to <b>venice.ai/chat</b> manually and sign in</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">3</span>
+            <span>Paste the prompt, then upload your certificate photo</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">4</span>
+            <span>Copy Venice's JSON output and paste it in the box below</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gemini-status" id="veniceStatus" style="display:none;font-size:12px;color:#166534;background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;line-height:1.5;">
+        <b>Prompt copied!</b><br>
+        Now tap <b>Open Venice</b> above, or manually go to venice.ai/chat
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <button onclick="toggleVenicePrompt()" style="background:none;border:none;color:#4a3a22;font-size:12px;font-family:'Cormorant Garamond',serif;cursor:pointer;text-decoration:underline;">
+          View the prompt
+        </button>
+        <div id="venicePromptBox" style="display:none;background:#2a1f15;color:#e8dcc8;padding:10px;border-radius:6px;font-size:11px;font-family:'Courier New',monospace;white-space:pre-wrap;max-height:200px;overflow:auto;margin-top:6px;border:1px solid #4a3a22;"></div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;">Paste Venice's JSON response:</div>
+      <textarea class="gemini-paste-box" id="venicePasteBox" placeholder="Paste the JSON output from Venice here..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
+        <button class="gemini-back-btn" style="background:#4a3a22;color:#f5eedc;border-color:#4a3a22;" onclick="parseVeniceResult()">Parse Result</button>
+      </div>
+    </div>
+
+    <!-- Gemini Section -->
+    <div class="gemini-section" id="geminiSection">
+      <div class="gemini-privacy-banner">
+        <div class="warn-title">Privacy Notice</div>
+        <div class="warn-text">By uploading your document to Gemini, Google will receive and may retain a copy. For total privacy, use the Venice option instead.</div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600">Certificate type:</div>
+      <div class="cert-type-selector" id="geminiCertType">
+        <button class="cert-type-btn active" data-type="birth" onclick="setGeminiType('birth')">Birth</button>
+        <button class="cert-type-btn" data-type="marriage" onclick="setGeminiType('marriage')">Marriage</button>
+        <button class="cert-type-btn" data-type="death" onclick="setGeminiType('death')">Death</button>
+      </div>
+
+      <button class="gemini-open-btn" id="geminiCopyBtn" onclick="copyGeminiPrompt()">📋 Copy Prompt to Clipboard</button>
+      <button class="gemini-open-btn" style="background:#1a73e8;border-color:#1557b0;margin-top:8px;" onclick="openGemini()">🔷 Open Gemini</button>
+
+      <div class="gemini-steps" style="background:#f0e8d8;border:1px solid #c4b49a;border-radius:8px;padding:12px;margin-bottom:12px;font-size:12px;color:#4a3a22;">
+        <div style="font-weight:600;margin-bottom:6px;font-size:13px;">📱 How this works:</div>
+        <div style="display:flex;flex-direction:column;gap:6px;">
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">1</span>
+            <span>Tap the button above to copy the extraction prompt</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">2</span>
+            <span>Tap <b>Open Gemini</b> — if it doesn't open, manually go to <b>gemini.google.com</b></span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">3</span>
+            <span>Paste the prompt, then upload your certificate photo</span>
+          </div>
+          <div style="display:flex;gap:8px;align-items:flex-start;">
+            <span style="font-weight:600;min-width:16px;">4</span>
+            <span>Copy Gemini's JSON output and paste it in the box below</span>
+          </div>
+        </div>
+      </div>
+
+      <div class="gemini-status" id="geminiStatus" style="display:none;font-size:12px;color:#166534;background:#dcfce7;padding:10px;border-radius:6px;margin-bottom:10px;line-height:1.5;">
+        <b>Prompt copied!</b><br>
+        Now tap <b>Open Gemini</b> above, or manually go to gemini.google.com
+      </div>
+
+      <div style="margin-bottom:10px;">
+        <button onclick="toggleGeminiPrompt()" style="background:none;border:none;color:#4a3a22;font-size:12px;font-family:'Cormorant Garamond',serif;cursor:pointer;text-decoration:underline;">
+          View the prompt
+        </button>
+        <div id="geminiPromptBox" style="display:none;background:#2a1f15;color:#e8dcc8;padding:10px;border-radius:6px;font-size:11px;font-family:'Courier New',monospace;white-space:pre-wrap;max-height:200px;overflow:auto;margin-top:6px;border:1px solid #4a3a22;"></div>
+      </div>
+
+      <div style="font-size:12px;color:#6b5537;margin-bottom:6px;font-weight:600;">Paste Gemini's JSON response:</div>
+      <textarea class="gemini-paste-box" id="geminiPasteBox" placeholder="Paste the JSON output from Gemini here..."></textarea>
+      <div style="display:flex;gap:8px;">
+        <button class="gemini-back-btn" onclick="showCertMethods()">← Back</button>
+        <button class="gemini-back-btn" style="background:#4a3a22;color:#f5eedc;border-color:#4a3a22;" onclick="parseGeminiResult()">Parse Result</button>
+      </div>
+    </div>
+
+    <div class="cert-upload-area" id="certUploadArea" style="display:none">
+      <div style="font-size:24px;margin-bottom:8px;">📄</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#4a3a22;">Tap to upload cert</div>
+      <div style="font-size:11px;color:#8a7a5a;margin-top:4px;">Birth, marriage, or death record</div>
+    </div>
+    <input type="file" id="certFileInput" accept="image/*" style="display:none">
+    <input type="file" id="certCameraInput" accept="image/*" capture="environment" style="display:none">
+    <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
+    <div class="cert-status" id="certStatus"></div>
+    <div id="certResults"></div>
+  </div>
+</div>
+
+<!-- Ambiguity Resolution Modal -->
+<div id="ambigModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10002;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;">
+    <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#3e2b1a;margin-bottom:8px;">Multiple Matches Found</div>
+    <div id="ambigQuestion" style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;margin-bottom:12px;">Which person should receive this certificate?</div>
+    <div id="ambigOptions" style="max-height:260px;overflow-y:auto;margin-bottom:16px;"></div>
+    <div style="display:flex;gap:10px;justify-content:center;">
+      <button id="ambigCancel" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#f5eedc;color:#4a3a22;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// DATA MODEL — copied from data-tree.html
+// ═══════════════════════════════════════════════════════════════
+function createPerson(id, gen, name, years, status, opts) {
+  opts = opts || {};
+  return {
+    id: id, gen: gen, name: name, fullName: opts.fullName || name,
+    years: years, birthDate: opts.birthDate || '', deathDate: opts.deathDate || '',
+    status: status, occupation: opts.occupation || '', birthplace: opts.birthplace || '',
+    maidenName: opts.maidenName || '', marriedName: opts.marriedName || '',
+    spouseName: opts.spouseName || '', spouseId: opts.spouseId || null,
+    parents: opts.parents || [], children: opts.children || [],
+    docs: opts.docs || [], siblings: opts.siblings || [], notes: opts.notes || '',
+    source: opts.source || '', sex: opts.sex || ''
+  };
+}
+
+let people = [];
+let nextId = 1;
+let zoom = 0.75;
+let selectedPersonId = null;
+let focusPersonId = null;
+let viewHistory = [];
+
+// ═══════════════════════════════════════════════════════════════
+// GEDCOM PARSER — copied from data-tree.html
+// ═══════════════════════════════════════════════════════════════
+function parseGedcom(text) {
+  const lines = text.split(/\r\n|\r|\n/);
+  const records = {};
+  let current = null, currentLevel0 = null, stack = [];
+
+  for (let raw of lines) {
+    raw = raw.trim();
+    if (!raw) continue;
+    const m = raw.match(/^(\d+)\s+(\S+)(?:\s+(.+))?$/);
+    if (!m) continue;
+    const level = parseInt(m[1]), tag = m[2], value = m[3] || '';
+
+    if (level === 0) {
+      let xref = null;
+      if (tag.startsWith('@') && tag.endsWith('@')) {
+        xref = tag;
+        const vm = value.match(/^(\S+)(?:\s+(.+))?$/);
+        if (!vm) continue;
+        current = { xref: xref, tag: vm[1], data: {} };
+        records[xref] = current;
+        currentLevel0 = current; stack = [current];
+        if (vm[2]) current.data[vm[1]] = vm[2];
+      } else {
+        current = { tag: tag, data: {} };
+        currentLevel0 = current; stack = [current];
+      }
+    } else if (level > 0 && currentLevel0) {
+      while (stack.length > level) stack.pop();
+      const parent = stack[stack.length - 1];
+      if (!parent) continue;
+      let container = parent.data || parent;
+      let child;
+      if (value.startsWith('@') && value.endsWith('@')) {
+        child = { tag: tag, pointer: value, data: {} };
+      } else {
+        child = { tag: tag, value: value, data: {} };
+      }
+      if (!container[tag]) container[tag] = [];
+      container[tag].push(child);
+      stack.push(child);
+    }
+  }
+
+  const indis = {}, fams = {};
+  for (const [xref, rec] of Object.entries(records)) {
+    if (rec.tag === 'INDI') {
+      const nameArr = rec.data['NAME'] || [];
+      const name = nameArr[0]?.value || '';
+      const surnameMatch = name.match(/\/([^/]*)\//);
+      const surname = surnameMatch ? surnameMatch[1] : '';
+      const given = name.replace(/\s*\/.*\//, '').trim();
+      const fullName = given + (surname ? ' ' + surname : '');
+      const birth = rec.data['BIRT']?.[0]?.data;
+      const death = rec.data['DEAT']?.[0]?.data;
+      const famc = rec.data['FAMC']?.[0]?.pointer;
+      const famsSpouse = rec.data['FAMS']?.map(f => f.pointer) || [];
+      indis[xref] = {
+        id: xref, name: fullName || name, givenName: given, surname: surname,
+        birthDate: birth?.DATE?.[0]?.value || '', birthPlace: birth?.PLAC?.[0]?.value || '',
+        deathDate: death?.DATE?.[0]?.value || '', deathPlace: death?.PLAC?.[0]?.value || '',
+        famc: famc, fams: famsSpouse, sex: rec.data['SEX']?.[0]?.value || ''
+      };
+    } else if (rec.tag === 'FAM') {
+      const husb = rec.data['HUSB']?.[0]?.pointer;
+      const wife = rec.data['WIFE']?.[0]?.pointer;
+      const children = (rec.data['CHIL'] || []).map(c => c.pointer);
+      const marr = rec.data['MARR']?.[0]?.data;
+      fams[xref] = { id: xref, husb: husb, wife: wife, children: children, marriageDate: marr?.DATE?.[0]?.value || '' };
+    }
+  }
+
+  // Merge duplicate individuals (same name + same birth year)
+  // Ancestry sometimes exports the same person as two INDI records with different xrefs
+  const mergeKey = (ind) => {
+    const bY = (ind.birthDate || '').match(/\d{4}/);
+    return (ind.name || '').toLowerCase().trim() + '|' + (bY ? bY[0] : (ind.birthDate || ''));
+  };
+  const canonicalXref = {};  // dupXref -> canonicalXref
+  const seenByKey = {};      // mergeKey -> canonical xref
+  for (const [xref, ind] of Object.entries(indis)) {
+    const key = mergeKey(ind);
+    if (seenByKey[key]) {
+      const canonXref = seenByKey[key];
+      canonicalXref[xref] = canonXref;
+      const canon = indis[canonXref];
+      // Merge FAMS and FAMC
+      if (ind.famc && !canon.famc) canon.famc = ind.famc;
+      for (const fam of (ind.fams || [])) {
+        if (!canon.fams.includes(fam)) canon.fams.push(fam);
+      }
+      // Fill in missing fields
+      if (!canon.deathDate && ind.deathDate) canon.deathDate = ind.deathDate;
+      if (!canon.deathPlace && ind.deathPlace) canon.deathPlace = ind.deathPlace;
+      if (!canon.sex && ind.sex) canon.sex = ind.sex;
+    } else {
+      seenByKey[key] = xref;
+    }
+  }
+  // Remap FAM pointers to canonical xrefs
+  for (const fam of Object.values(fams)) {
+    if (fam.husb && canonicalXref[fam.husb]) fam.husb = canonicalXref[fam.husb];
+    if (fam.wife && canonicalXref[fam.wife]) fam.wife = canonicalXref[fam.wife];
+    fam.children = fam.children.map(c => canonicalXref[c] || c);
+  }
+
+  const result = [];
+  let nid = 1;
+  const xrefMap = {};
+
+  for (const [xref, gedIndi] of Object.entries(indis)) {
+    // Skip duplicates (they've been merged into canonical)
+    if (canonicalXref[xref]) continue;
+    const id = nid++; xrefMap[xref] = id;
+    let yearsStr = '?';
+    const bY = (gedIndi.birthDate || '').match(/\d{4}/);
+    const dY = (gedIndi.deathDate || '').match(/\d{4}/);
+    if (bY && dY) yearsStr = bY[0] + ' \u2014 ' + dY[0];
+    else if (bY) yearsStr = 'b. ' + bY[0];
+    result.push({
+      id: id, name: gedIndi.name || 'Unknown', fullName: gedIndi.name || '',
+      birthDate: gedIndi.birthDate || '', deathDate: gedIndi.deathDate || '',
+      birthplace: gedIndi.birthPlace || '', marriageDate: '',
+      maidenName: gedIndi.sex === 'F' ? gedIndi.surname : '', spouseName: '',
+      occupation: '', sex: gedIndi.sex || '', gen: 0, years: yearsStr,
+      status: 'probable', docs: [], parents: [], siblings: [], children: [],
+      spouseId: null, notes: '', families: []
+    });
+  }
+
+  function personByXref(xref) {
+    const id = xrefMap[xref];
+    return id ? result.find(p => p.id === id) : undefined;
+  }
+
+  for (const [famXref, fam] of Object.entries(fams)) {
+    const husband = fam.husb ? personByXref(fam.husb) : null;
+    const wife = fam.wife ? personByXref(fam.wife) : null;
+
+    // Track all marriages for each person
+    if (husband && wife) {
+      // Add to families array for each person
+      husband.families.push({ spouseId: wife.id, spouseName: wife.name, marriageDate: fam.marriageDate || '', famId: famXref });
+      wife.families.push({ spouseId: husband.id, spouseName: husband.name, marriageDate: fam.marriageDate || '', famId: famXref });
+    }
+
+    const parentIds = [];
+    if (husband) parentIds.push(husband.id);
+    if (wife) parentIds.push(wife.id);
+
+    for (const childXref of fam.children) {
+      const child = personByXref(childXref);
+      if (!child) continue;
+      // Set parents from this family only if child doesn't already have parents
+      // (first FAMC record wins, matching GEDCOM spec)
+      if (!child.parents || child.parents.length === 0) {
+        child.parents = parentIds.slice();
+      }
+      for (const pid of parentIds) {
+        const parent = result.find(p => p.id === pid);
+        if (parent && !parent.children.includes(child.id)) parent.children.push(child.id);
+      }
+      for (const sibXref of fam.children) {
+        if (sibXref === childXref) continue;
+        const sib = personByXref(sibXref);
+        if (sib) {
+          const sibName = sib.name || 'Unknown';
+          if (!child.siblings.includes(sibName)) child.siblings.push(sibName);
+        }
+      }
+    }
+  }
+
+  // After all FAMs processed: sort families by marriage date and set primary spouse
+  for (const p of result) {
+    if (p.families.length === 0) continue;
+    // Sort by marriageDate ascending (earliest marriage = primary spouse)
+    p.families.sort((a, b) => {
+      const aYear = (a.marriageDate || '').match(/\d{4}/);
+      const bYear = (b.marriageDate || '').match(/\d{4}/);
+      if (aYear && bYear) return parseInt(aYear[0]) - parseInt(bYear[0]);
+      if (aYear) return -1;  // dated marriage comes before undated
+      if (bYear) return 1;
+      return 0;  // both undated, keep file order
+    });
+    // Set spouseId and marriageDate from earliest marriage
+    const earliest = p.families[0];
+    p.spouseId = earliest.spouseId;
+    p.spouseName = earliest.spouseName;
+    p.marriageDate = earliest.marriageDate;
+  }
+
+  // Assign generations via BFS from roots
+  // Roots = apex ancestors: people NEVER listed as CHIL in any FAM
+  const allChildren = new Set();
+  for (const fam of Object.values(fams)) {
+    for (const cx of fam.children) allChildren.add(cx);
+  }
+  const visited = new Set();
+  const queue = [];
+  for (const p of result) {
+    const xref = Object.keys(xrefMap).find(k => xrefMap[k] === p.id);
+    if (!allChildren.has(xref)) { p.gen = 0; visited.add(p.id); queue.push(p); }
+  }
+  while (queue.length > 0) {
+    const p = queue.shift();
+    if (p.spouseId && !visited.has(p.spouseId)) {
+      const sp = result.find(pp => pp.id === p.spouseId);
+      if (sp) { sp.gen = p.gen; visited.add(sp.id); queue.push(sp); }
+    }
+    for (const cid of p.children) {
+      if (!visited.has(cid)) {
+        const child = result.find(pp => pp.id === cid);
+        if (child) { child.gen = p.gen + 1; visited.add(cid); queue.push(child); }
+      }
+    }
+  }
+  for (const p of result) { if (!visited.has(p.id)) p.gen = 0; }
+
+  // Normalise: shift so the youngest person is gen 0
+  let maxGen = 0;
+  for (const p of result) { if (p.gen > maxGen) maxGen = p.gen; }
+  for (const p of result) { p.gen = maxGen - p.gen; }
+
+  return { people: result, nextId: nid, families: fams };
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FREE BUILD LAYOUT ENGINE
+// ═══════════════════════════════════════════════════════════════
+
+const CARD_W = 150;
+const CARD_H = 40;
+const CARD_GAP_X = 30;
+const CARD_GAP_Y = 80;
+const COUPLE_GAP = 10;
+
+function getVisiblePeople() {
+  if (focusPersonId) {
+    const focus = people.find(p => p.id === focusPersonId);
+    if (!focus) return people;
+    const visible = new Set([focusPersonId]);
+
+    // Helper: get person by id
+    function getP(id) { return people.find(p => p.id === id); }
+
+    // Parents (gen+1)
+    (focus.parents || []).forEach(pid => visible.add(pid));
+    // Grandparents (gen+2)
+    for (const pid of (focus.parents || [])) {
+      const parent = getP(pid);
+      if (parent) (parent.parents || []).forEach(gpid => visible.add(gpid));
+    }
+    // Spouse (primary)
+    if (focus.spouseId) visible.add(focus.spouseId);
+    // ALL spouses from families array (handles multiple marriages)
+    if (focus.families) {
+      for (const fam of focus.families) {
+        visible.add(fam.spouseId);
+      }
+    }
+    // Children
+    (focus.children || []).forEach(cid => visible.add(cid));
+    // Grandchildren (children of children)
+    for (const cid of (focus.children || [])) {
+      const child = getP(cid);
+      if (child) (child.children || []).forEach(gcid => visible.add(gcid));
+    }
+    // Siblings (people sharing at least one parent)
+    if (focus.parents && focus.parents.length > 0) {
+      for (const p of people) {
+        if (p.id === focusPersonId) continue;
+        if (p.parents && p.parents.some(pid => focus.parents.includes(pid))) {
+          visible.add(p.id);
+        }
+      }
+    }
+    // Spouses of siblings and all people in visible set
+    for (const id of [...visible]) {
+      const p = getP(id);
+      if (p && p.id !== focusPersonId) {
+        if (p.spouseId) visible.add(p.spouseId);
+        if (p.families) {
+          for (const fam of p.families) visible.add(fam.spouseId);
+        }
+      }
+    }
+    // Parents of spouse (in-laws)
+    if (focus.spouseId) {
+      const spouse = getP(focus.spouseId);
+      if (spouse) (spouse.parents || []).forEach(pid => visible.add(pid));
+    }
+    // Children of spouse from other relationships
+    if (focus.spouseId) {
+      const spouse = getP(focus.spouseId);
+      if (spouse) (spouse.children || []).forEach(cid => visible.add(cid));
+    }
+    // Spouses of children
+    for (const cid of (focus.children || [])) {
+      const child = getP(cid);
+      if (child && child.spouseId) visible.add(child.spouseId);
+    }
+    return people.filter(p => visible.has(p.id));
+  }
+  return people;
+}
+
+function buildFamilyUnits(viewPeople) {
+  // A family unit = { parents: [id1, id2?], children: [ids], marriageDate: '' }
+  // Uses the families array to correctly separate children by marriage.
+  // Falls back to spouseId-based grouping for manually added people without families.
+  const units = [];
+  const seen = new Set();
+  const viewSet = new Set(viewPeople.map(p => p.id));
+
+  for (const p of viewPeople) {
+    // If person has families array (from GEDCOM), use it to create proper family units
+    if (p.families && p.families.length > 0) {
+      for (const fam of p.families) {
+        const spouseId = fam.spouseId;
+        const bothInView = viewSet.has(spouseId);
+        const unitKey = [Math.min(p.id, spouseId), Math.max(p.id, spouseId)].sort().join('-');
+        if (seen.has(unitKey)) continue;
+        seen.add(unitKey);
+
+        const parents = bothInView ? [p.id, spouseId] : [p.id];
+        // Children that belong to THIS family: child must have both parents in this family
+        const children = (p.children || []).filter(cid => {
+          if (!viewSet.has(cid)) return false;
+          const child = people.find(pp => pp.id === cid);
+          if (!child || !child.parents) return false;
+          // Child belongs to this family if both this person and spouse are in child's parents
+          if (bothInView) {
+            return child.parents.includes(p.id) && child.parents.includes(spouseId);
+          }
+          // If spouse not in view, just check this person is a parent
+          return child.parents.includes(p.id);
+        });
+        if (children.length > 0 || bothInView) {
+          units.push({ parents, children, marriageDate: fam.marriageDate || '' });
+        }
+      }
+    } else if (p.children && p.children.length > 0) {
+      // Fallback for manually added people (no families array)
+      const coParent = p.spouseId && viewSet.has(p.spouseId) ? p.spouseId : null;
+      const unitKey = coParent
+        ? [Math.min(p.id, coParent), Math.max(p.id, coParent)].sort().join('-')
+        : 'solo-' + p.id;
+      if (!seen.has(unitKey)) {
+        seen.add(unitKey);
+        const parents = coParent ? [p.id, coParent] : [p.id];
+        const children = p.children.filter(cid => viewSet.has(cid));
+        if (coParent) {
+          const coParentPerson = viewPeople.find(sp => sp.id === coParent);
+          if (coParentPerson && coParentPerson.children) {
+            for (const cid of coParentPerson.children) {
+              if (!children.includes(cid) && viewSet.has(cid)) children.push(cid);
+            }
+          }
+        }
+        units.push({ parents, children, marriageDate: p.marriageDate || '' });
+      }
+    }
+  }
+  return units;
+}
+
+function layoutTree() {
+  const viewPeople = getVisiblePeople();
+  if (viewPeople.length === 0) return { positions: new Map(), width: 100, height: 100, connections: [] };
+
+  const positions = new Map();
+  const connections = [];
+  const viewSet = new Set(viewPeople.map(p => p.id));
+  const placed = new Set();
+  const GEN_HEIGHT = CARD_H + CARD_GAP_Y;
+
+  // Helper: get person by id from full people array
+  function getP(id) { return people.find(p => p.id === id); }
+
+  // ── PASS 1: compute subtree widths ──
+  // For each person, compute the total width needed for them + their spouse + children subtrees
+  const widthCache = new Map();
+
+  function computeWidth(personId) {
+    if (widthCache.has(personId)) return widthCache.get(personId);
+    const person = getP(personId);
+    if (!person || !viewSet.has(personId)) return 0;
+
+    const hasSpouse = person.spouseId && viewSet.has(person.spouseId);
+    const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+
+    // Only count children from the primary marriage for width calculation
+    const spouseId = person.spouseId;
+    const childEntries = (person.children || []).filter(cid => {
+      if (!viewSet.has(cid)) return false;
+      const child = getP(cid);
+      if (!child || !child.parents) return true;
+      return child.parents.includes(personId) && (spouseId ? child.parents.includes(spouseId) : child.parents.length === 1);
+    });
+    let childrenTotal = 0;
+    for (const cid of childEntries) {
+      childrenTotal += computeWidth(cid) + CARD_GAP_X;
+    }
+    if (childrenTotal > 0) childrenTotal -= CARD_GAP_X; // remove trailing gap
+
+    const w = Math.max(coupleWidth, childrenTotal);
+    widthCache.set(personId, w);
+    return w;
+  }
+
+  // ── PASS 2: assign positions (top-down, centered) ──
+  function assignPositions(personId, leftX, depth, visited) {
+    if (visited.has(personId)) return;
+    const person = getP(personId);
+    if (!person || !viewSet.has(personId)) return;
+    visited.add(personId);
+
+    const y = 50 + depth * GEN_HEIGHT;
+    const hasSpouse = person.spouseId && viewSet.has(person.spouseId) && !visited.has(person.spouseId);
+    const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+
+    // Center this couple in its allocated space
+    const myWidth = computeWidth(personId);
+    const centerX = leftX + myWidth / 2;
+    const myX = centerX - coupleWidth / 2;
+
+    positions.set(personId, { x: Math.round(myX), y });
+
+    if (hasSpouse) {
+      visited.add(person.spouseId);
+      positions.set(person.spouseId, { x: Math.round(myX + CARD_W + COUPLE_GAP), y });
+      // Spouse line
+      connections.push({
+        type: 'spouse',
+        x1: myX + CARD_W, y1: y + CARD_H / 2,
+        x2: myX + CARD_W + COUPLE_GAP, y2: y + CARD_H / 2
+      });
+    }
+
+    // Children: only those belonging to this specific couple (person + spouseId), not all marriages
+    const spouseId = person.spouseId;
+    const allChildren = new Set((person.children || []).filter(cid => viewSet.has(cid)));
+    if (spouseId) {
+      const spouse = getP(spouseId);
+      if (spouse) (spouse.children || []).filter(cid => viewSet.has(cid)).forEach(cid => allChildren.add(cid));
+    }
+    // Only include children whose parents are exactly this couple
+    const childEntries = [...allChildren].filter(cid => {
+      if (visited.has(cid)) return false;
+      const child = getP(cid);
+      if (!child || !child.parents) return true; // fallback: orphan/no-parent child stays with first family
+      return child.parents.includes(personId) && (spouseId ? child.parents.includes(spouseId) : child.parents.length === 1);
+    });
+    if (childEntries.length > 0) {
+      let childLeftX = leftX;
+      for (const cid of childEntries) {
+        const cw = computeWidth(cid);
+        assignPositions(cid, childLeftX, depth + 1, visited);
+        childLeftX += cw + CARD_GAP_X;
+      }
+
+      // Parent-child connectors — route from mother's card center
+      let parentMidX = centerX;
+      if (hasSpouse) {
+        // Identify mother: person is F → person's card, spouse is F → spouse's card
+        const motherIsPerson = person.sex === 'F';
+        const motherIsSpouse = !motherIsPerson && getP(person.spouseId)?.sex === 'F';
+        if (motherIsPerson) {
+          parentMidX = myX + CARD_W / 2;
+        } else if (motherIsSpouse) {
+          parentMidX = myX + CARD_W + COUPLE_GAP + CARD_W / 2;
+        } else {
+          parentMidX = myX + CARD_W + COUPLE_GAP / 2; // fallback to couple center
+        }
+      } else {
+        parentMidX = myX + CARD_W / 2;
+      }
+      const parentY = y + CARD_H;
+      for (const cid of childEntries) {
+        const childPos = positions.get(cid);
+        if (!childPos) continue;
+        const childX = childPos.x + CARD_W / 2;
+        const childY = childPos.y;
+        connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+      }
+    }
+
+    // Parent-child connector (this person -> their parents)
+    const parentEntries = (person.parents || []).filter(pid => viewSet.has(pid) && !visited.has(pid));
+    if (parentEntries.length > 0) {
+      // Parents are at depth - 1, we need to lay them out
+      // But in a top-down layout, parents go above. We handle this separately.
+    }
+  }
+
+  // ── LAYOUT PARENTS (upward from focus/root) ──
+  function assignParents(personId, depth, visited) {
+    const person = getP(personId);
+    if (!person || !viewSet.has(personId)) return;
+
+    const parentEntries = (person.parents || []).filter(pid => viewSet.has(pid) && !visited.has(pid));
+    if (parentEntries.length === 0) return;
+
+    // Lay out parents side by side above this person
+    const myPos = positions.get(personId);
+    if (!myPos) return;
+
+    const parentTotalWidth = parentEntries.length * CARD_W + (parentEntries.length - 1) * CARD_GAP_X;
+    let parentLeftX = myPos.x + CARD_W / 2 - parentTotalWidth / 2;
+
+    for (const pid of parentEntries) {
+      if (visited.has(pid)) continue;
+      visited.add(pid);
+      const parent = getP(pid);
+      if (!parent) continue;
+
+      const parentY = 50 + (depth - 1) * GEN_HEIGHT;
+      positions.set(pid, { x: Math.round(parentLeftX), y: parentY });
+
+      // Check if parent has a spouse that's also a parent
+      const parentSpouseId = parent.spouseId;
+      if (parentSpouseId && viewSet.has(parentSpouseId) && !visited.has(parentSpouseId) && parentEntries.includes(parentSpouseId)) {
+        visited.add(parentSpouseId);
+        positions.set(parentSpouseId, { x: Math.round(parentLeftX + CARD_W + COUPLE_GAP), y: parentY });
+        connections.push({
+          type: 'spouse',
+          x1: parentLeftX + CARD_W, y1: parentY + CARD_H / 2,
+          x2: parentLeftX + CARD_W + COUPLE_GAP, y2: parentY + CARD_H / 2
+        });
+        parentLeftX += CARD_W + COUPLE_GAP + CARD_W + CARD_GAP_X;
+      } else {
+        parentLeftX += CARD_W + CARD_GAP_X;
+      }
+
+      // Parent-child connector
+      const parentMidX = positions.get(pid).x + CARD_W / 2;
+      const parentY2 = parentY + CARD_H;
+      const childX = myPos.x + CARD_W / 2;
+      const childY = myPos.y;
+      connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX, childY });
+
+      // Recurse upward for grandparents
+      assignParents(pid, depth - 1, visited);
+    }
+  }
+
+  // ── MAIN: choose roots and run ──
+  let layoutRoots;
+  if (focusPersonId && viewSet.has(focusPersonId)) {
+    layoutRoots = [focusPersonId];
+  } else {
+    // People with no parents in the visible set
+    layoutRoots = viewPeople
+      .filter(p => !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid)))
+      .map(p => p.id);
+  }
+
+  const visited = new Set();
+  let currentX = 50;
+
+  for (const rootId of layoutRoots) {
+    if (visited.has(rootId)) continue;
+    const w = computeWidth(rootId);
+    assignPositions(rootId, currentX, 0, visited);
+    // Also lay out ancestors upward
+    assignParents(rootId, 0, visited);
+    currentX += w + CARD_GAP_X * 2;
+  }
+
+  // ── MULTI-MARRIAGE PASS: place additional spouses and their children ──
+  // Must run BEFORE the disconnected pass so secondary spouses and their
+  // children aren't grabbed as disconnected cards.
+  function getRightmostAt(y, excludeId) {
+    let max = 0;
+    for (const [id, pos] of positions) {
+      if (id === excludeId) continue;
+      if (Math.abs(pos.y - y) < GEN_HEIGHT / 2) {
+        const right = pos.x + CARD_W;
+        if (right > max) max = right;
+      }
+    }
+    return max;
+  }
+
+  for (const p of viewPeople) {
+    if (!positions.has(p.id) || !p.families || p.families.length <= 1) continue;
+
+    let spouseIndex = 0;
+    for (const fam of p.families) {
+      const spouseId = fam.spouseId;
+      if (!viewSet.has(spouseId) || visited.has(spouseId)) continue;
+      spouseIndex++;
+
+      const personPos = positions.get(p.id);
+      const spouseY = personPos.y;
+
+      // Place secondary spouse on the LEFT side to avoid crossing through primary spouse
+      // Primary spouse (spouseId) is already placed to the right by the main layout
+      let spouseX;
+      // Check if primary spouse is to the right of person
+      const primarySpousePos = positions.get(p.spouseId);
+      if (primarySpousePos && primarySpousePos.x > personPos.x) {
+        // Primary is on right, place secondary on left
+        spouseX = personPos.x - CARD_W - COUPLE_GAP;
+        // Ensure doesn't overlap with anything on the left
+        if (spouseX < 0) {
+          // Shift everything right to make room — but simpler: just use 0 and let it clip
+          // Actually, let's check what's to the left
+          const leftCard = Array.from(positions.values())
+            .filter(pos => Math.abs(pos.y - spouseY) < GEN_HEIGHT / 2 && pos.x < personPos.x)
+            .sort((a, b) => a.x - b.x);
+          if (leftCard.length > 0) {
+            const leftmost = leftCard[0];
+            spouseX = leftmost.x - CARD_W - CARD_GAP_X;
+          }
+        }
+      } else {
+        // Primary is on left (or no primary), place secondary on right
+        spouseX = personPos.x + CARD_W + COUPLE_GAP;
+        const existingRight = getRightmostAt(spouseY, p.id);
+        if (existingRight >= spouseX) {
+          spouseX = existingRight + CARD_GAP_X;
+        }
+      }
+
+      positions.set(spouseId, { x: spouseX, y: spouseY });
+      visited.add(spouseId);
+
+      // Spouse line
+      const lineStartX = spouseX < personPos.x ? spouseX + CARD_W : personPos.x + CARD_W;
+      const lineEndX = spouseX < personPos.x ? personPos.x : spouseX;
+      connections.push({
+        type: 'spouse',
+        x1: lineStartX, y1: spouseY + CARD_H / 2,
+        x2: lineEndX, y2: spouseY + CARD_H / 2
+      });
+
+      // Children below this couple
+      const familyChildren = (p.children || []).filter(cid => {
+        if (!viewSet.has(cid) || visited.has(cid)) return false;
+        const child = getP(cid);
+        if (!child || !child.parents) return false;
+        return child.parents.includes(p.id) && child.parents.includes(spouseId);
+      });
+
+      if (familyChildren.length > 0) {
+        const childY = spouseY + GEN_HEIGHT;
+        const childWidths = familyChildren.map(cid => computeWidth(cid));
+        const totalW = childWidths.reduce((a, b) => a + b, 0) + CARD_GAP_X * (familyChildren.length - 1);
+
+        const motherId = p.sex === 'F' ? p.id : spouseId;
+        const motherPos = positions.get(motherId);
+        const motherX = motherPos ? motherPos.x + CARD_W / 2 : (personPos.x + CARD_W / 2);
+        const parentY = spouseY + CARD_H;
+        const childDepth = Math.round((childY - 50) / GEN_HEIGHT);
+
+        // Separator gap between primary and secondary families' children
+        const SEPARATOR_GAP = CARD_GAP_X * 3; // 90px gap between the two groups
+
+        if (spouseX < personPos.x) {
+          // Secondary family on LEFT — children go LEFT of Rose's children
+          let leftmostAtChildY = Infinity;
+          for (const [id, pos] of positions) {
+            if (id === p.id || id === spouseId) continue;
+            if (Math.abs(pos.y - childY) < GEN_HEIGHT / 2) {
+              if (pos.x < leftmostAtChildY) leftmostAtChildY = pos.x;
+            }
+          }
+          let childLeftX;
+          if (leftmostAtChildY !== Infinity) {
+            childLeftX = leftmostAtChildY - totalW - SEPARATOR_GAP;
+          } else {
+            childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
+          }
+          // DON'T clamp to 0 — let cards go negative X; normalize step at end shifts everything right
+
+          for (let i = 0; i < familyChildren.length; i++) {
+            const cid = familyChildren[i];
+            const cw = childWidths[i];
+            const child = getP(cid);
+            // Calculate the assignPositions leftX so the child CARD lands at childLeftX
+            // assignPositions does: myX = (leftX + myWidth/2) - coupleWidth/2
+            // We want: myX = childLeftX
+            // So: leftX = childLeftX + coupleWidth/2 - myWidth/2
+            const childHasSpouse = child?.spouseId && viewSet.has(child.spouseId);
+            const childCoupleW = childHasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+            const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
+            assignPositions(cid, adjustedLeftX, childDepth, visited);
+            const placed = positions.get(cid);
+            const childX = (placed?.x || childLeftX) + CARD_W / 2;
+            connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
+            childLeftX += cw + CARD_GAP_X;
+          }
+        } else {
+          // Secondary family on RIGHT — children go RIGHT of Rose's children
+          let rightmostAtChildY = 0;
+          for (const [id, pos] of positions) {
+            if (id === p.id || id === spouseId) continue;
+            if (Math.abs(pos.y - childY) < GEN_HEIGHT / 2) {
+              const right = pos.x + CARD_W;
+              if (right > rightmostAtChildY) rightmostAtChildY = right;
+            }
+          }
+          let childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
+          if (rightmostAtChildY >= childLeftX) {
+            childLeftX = rightmostAtChildY + SEPARATOR_GAP;
+          }
+
+          for (let i = 0; i < familyChildren.length; i++) {
+            const cid = familyChildren[i];
+            const cw = childWidths[i];
+            const child = getP(cid);
+            const childHasSpouse = child?.spouseId && viewSet.has(child.spouseId);
+            const childCoupleW = childHasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+            const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
+            assignPositions(cid, adjustedLeftX, childDepth, visited);
+            const placed = positions.get(cid);
+            const childX = (placed?.x || childLeftX) + CARD_W / 2;
+            connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
+            childLeftX += cw + CARD_GAP_X;
+          }
+        }
+      }
+    }
+  }
+
+  // Layout any unplaced people (disconnected)
+  for (const p of viewPeople) {
+    if (!visited.has(p.id)) {
+      positions.set(p.id, { x: currentX, y: 50 });
+      visited.add(p.id);
+      currentX += CARD_W + CARD_GAP_X;
+    }
+  }
+
+  // Normalize: shift all y values so minimum y is 50 (no negative offsets)
+  let minY = Infinity;
+  for (const [id, pos] of positions) {
+    if (pos.y < minY) minY = pos.y;
+  }
+  let yShift = 0;
+  if (minY < 50) {
+    yShift = 50 - minY;
+    for (const [id, pos] of positions) {
+      pos.y += yShift;
+    }
+  }
+
+  // Calculate bounds
+  let maxX = 0, maxY = 0, minX = Infinity;
+  for (const [id, pos] of positions) {
+    maxX = Math.max(maxX, pos.x + CARD_W);
+    maxY = Math.max(maxY, pos.y + CARD_H);
+    minX = Math.min(minX, pos.x);
+  }
+
+  // Shift everything right so minX is at least 50
+  let xShift = 0;
+  if (minX < 50) {
+    xShift = 50 - minX;
+    for (const [id, pos] of positions) {
+      pos.x += xShift;
+    }
+    maxX += xShift;
+  }
+
+  // Apply the same shifts to connection coordinates
+  if (yShift !== 0 || xShift !== 0) {
+    for (const conn of connections) {
+      if (conn.type === 'spouse') {
+        conn.x1 += xShift; conn.x2 += xShift;
+        conn.y1 += yShift; conn.y2 += yShift;
+      } else if (conn.type === 'parent-child') {
+        conn.midX += xShift; conn.parentY += yShift;
+        conn.childX += xShift; conn.childY += yShift;
+      }
+    }
+  }
+
+  return {
+    positions,
+    width: Math.max(maxX + 100, 200),
+    height: Math.max(maxY + 100, 200),
+    connections
+  };
+}
+
+function renderFreeBuild() {
+  const { positions, width, height, connections } = layoutTree();
+  const wrap = document.getElementById('treeWrap');
+  const svg = document.getElementById('fbSvg');
+
+  // Remove existing cards
+  wrap.querySelectorAll('.fb-card').forEach(el => el.remove());
+
+  // Set SVG size
+  svg.setAttribute('width', width);
+  svg.setAttribute('height', height);
+  wrap.style.width = width + 'px';
+  wrap.style.height = height + 'px';
+
+  // Draw connections
+  let svgContent = '';
+  for (const conn of connections) {
+    if (conn.type === 'spouse') {
+      svgContent += `<line x1="${conn.x1}" y1="${conn.y1}" x2="${conn.x2}" y2="${conn.y2}"
+                    stroke="var(--line-stroke)" stroke-width="2" />`;
+    } else if (conn.type === 'parent-child') {
+      // L-shaped: vertical down from midpoint, horizontal to child, vertical down to child top
+      const midY = (conn.parentY + conn.childY) / 2;
+      svgContent += `<path d="M ${conn.midX} ${conn.parentY} L ${conn.midX} ${midY} L ${conn.childX} ${midY} L ${conn.childX} ${conn.childY}"
+                    fill="none" stroke="var(--line-stroke)" stroke-width="1.5" />`;
+    }
+  }
+  svg.innerHTML = svgContent;
+
+  // Draw cards
+  const viewPeople = getVisiblePeople();
+  for (const person of viewPeople) {
+    const pos = positions.get(person.id);
+    if (!pos) continue;
+
+    const el = document.createElement('div');
+    el.className = 'fb-card ' + person.status + (person.id === selectedPersonId ? ' selected' : '');
+    el.dataset.id = person.id;
+    el.style.left = pos.x + 'px';
+    el.style.top = pos.y + 'px';
+
+    const bYear = (person.birthDate || person.years || '').match(/\d{4}/);
+    const dYear = (person.deathDate || '').match(/\d{4}/);
+    const mYear = (person.marriageDate || '').match(/\d{4}/);
+    let cardYears = '';
+    if (bYear && dYear) cardYears = bYear[0] + ' — ' + dYear[0];
+    else if (bYear) cardYears = 'b. ' + bYear[0];
+    else if (dYear) cardYears = 'd. ' + dYear[0];
+    else cardYears = person.years || '?';
+
+    let displayName = person.name;
+    if (person.maidenName) {
+      const parts = person.name.split(/\s+/);
+      const surname = parts.pop();
+      const firstName = parts.join(' ');
+      displayName = (firstName + ' ' + person.maidenName).trim();
+    }
+    displayName = displayName.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
+
+    let h = '<div class="name">' + escapeHtml(displayName) + '</div>';
+    if (cardYears) h += '<div class="years">' + escapeHtml(cardYears) + '</div>';
+    if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
+
+    el.innerHTML = h;
+    el.onclick = () => { focusOnPerson(person.id); openDetail(person); };
+    wrap.appendChild(el);
+  }
+
+  // Apply zoom
+  wrap.style.setProperty('--zoom', zoom);
+  wrap.style.transform = 'scale(' + zoom + ')';
+
+  // Auto-scroll to center on focus person
+  setTimeout(() => {
+    const scrollArea = document.getElementById('treeScroll');
+    if (!scrollArea) return;
+    let targetId = focusPersonId || (viewPeople.length > 0 ? viewPeople[0].id : null);
+    if (!targetId) return;
+    const targetPos = positions.get(targetId);
+    if (!targetPos) return;
+    const cx = (targetPos.x + CARD_W / 2) * zoom;
+    const cy = (targetPos.y + CARD_H / 2) * zoom;
+    scrollArea.scrollTo({ left: Math.max(0, cx - scrollArea.clientWidth / 2), top: Math.max(0, cy - scrollArea.clientHeight / 2), behavior: 'auto' });
+  }, 50);
+}
+
+function escapeHtml(s) {
+  return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ZOOM
+// ═══════════════════════════════════════════════════════════════
+function setZoom(z) {
+  zoom = Math.max(0.05, Math.min(3, z));
+  renderFreeBuild();
+  document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+}
+function fitToScreen() {
+  const sa = document.getElementById("treeScroll");
+  const wrap = document.getElementById("treeWrap");
+  if (!sa || !wrap) return;
+  const s = Math.min((sa.clientWidth-20)/wrap.offsetWidth, (sa.clientHeight-20)/wrap.offsetHeight, 1);
+  setZoom(Math.max(0.05, Math.min(3, s)));
+  setTimeout(function() {
+    const sx = (wrap.offsetWidth * zoom - sa.clientWidth) / 2;
+    const sy = (wrap.offsetHeight * zoom - sa.clientHeight) / 2;
+    sa.scrollTo({ left: Math.max(0, sx), top: Math.max(0, sy), behavior: "auto" });
+  }, 50);
+}
+
+function centerOnPerson(personId) {
+  const scrollArea = document.getElementById('treeScroll');
+  if (!scrollArea) return;
+  const target = people.find(p => p.id === personId);
+  if (!target) return;
+  const { positions } = layoutTree();
+  const targetPos = positions.get(personId);
+  if (!targetPos) return;
+  const cx = (targetPos.x + CARD_W / 2) * zoom;
+  const cy = (targetPos.y + CARD_H / 2) * zoom;
+  setTimeout(function() {
+    scrollArea.scrollTo({
+      left: Math.max(0, cx - scrollArea.clientWidth / 2),
+      top: Math.max(0, cy - scrollArea.clientHeight / 2),
+      behavior: 'auto'
+    });
+  }, 50);
+}
+
+
+// Pinch zoom
+(function setupPinchZoom() {
+  const scrollArea = document.getElementById('treeScroll');
+  const treeWrap = document.getElementById('treeWrap');
+  let initialDistance = 0, initialZoom = zoom, activePinchZoom = zoom, isPinching = false;
+
+  function getDistance(touches) {
+    const dx = touches[0].clientX - touches[1].clientX;
+    const dy = touches[0].clientY - touches[1].clientY;
+    return Math.sqrt(dx * dx + dy * dy);
+  }
+
+  scrollArea.addEventListener('touchstart', (e) => {
+    if (e.touches.length === 2) {
+      isPinching = true; initialDistance = getDistance(e.touches);
+      initialZoom = zoom; activePinchZoom = zoom;
+      treeWrap.classList.add('pinch-zooming');
+    }
+  }, { passive: true });
+
+  scrollArea.addEventListener('touchmove', (e) => {
+    if (isPinching && e.touches.length === 2) {
+      e.preventDefault();
+      const scale = getDistance(e.touches) / initialDistance;
+      activePinchZoom = Math.max(0.05, Math.min(3, initialZoom * scale));
+      treeWrap.style.setProperty('--zoom', activePinchZoom);
+      treeWrap.style.transform = 'scale(' + activePinchZoom + ')';
+      document.getElementById('zoomLevel').textContent = Math.round(activePinchZoom * 100) + '%';
+    }
+  }, { passive: false });
+
+  function endPinch() {
+    if (isPinching) {
+      isPinching = false; treeWrap.classList.remove('pinch-zooming');
+      treeWrap.style.transform = '';
+      setZoom(activePinchZoom);
+    }
+  }
+  scrollArea.addEventListener('touchend', endPinch);
+  scrollArea.addEventListener('touchcancel', endPinch);
+})();
+
+document.addEventListener('touchmove', function(e) {
+  if (e.touches.length > 1) e.preventDefault();
+}, { passive: false });
+
+// Mouse wheel zoom — scroll up to zoom in, scroll down to zoom out
+document.getElementById('treeScroll').addEventListener('wheel', function(e) {
+  e.preventDefault();
+  if (e.deltaY < 0) {
+    setZoom(zoom * 1.15);
+  } else {
+    setZoom(zoom / 1.15);
+  }
+}, { passive: false });
+
+// ═══════════════════════════════════════════════════════════════
+// DETAIL PANEL
+// ═══════════════════════════════════════════════════════════════
+const detailPanel = document.getElementById('detailPanel');
+const detailBody = document.getElementById('detailBody');
+const detailTitle = document.getElementById('detailTitle');
+
+function openDetail(person) {
+  selectedPersonId = person.id;
+  const displayName = person.maidenName
+    ? person.name.replace(person.name.split(/\s+/).pop(), person.maidenName)
+    : person.name;
+
+  detailTitle.textContent = displayName;
+  detailBody.innerHTML = `
+    <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${escapeHtml(person.fullName || person.name)}"></div>
+    <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${escapeHtml(person.name)}"></div>
+    <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${escapeHtml(person.birthDate)}"></div>
+    <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${escapeHtml(person.deathDate || '')}"></div>
+    <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${escapeHtml(person.marriageDate || '')}"></div>
+    <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${escapeHtml(person.maidenName)}"></div>
+    <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${escapeHtml(person.spouseName)}"></div>
+    <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${escapeHtml(person.occupation)}"></div>
+    <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${escapeHtml(person.birthplace)}"></div>
+    <div class="detail-field"><label>Status</label>
+      <select id="d_status">
+        <option value="confirmed" ${person.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
+        <option value="probable" ${person.status === 'probable' ? 'selected' : ''}>Probable</option>
+        <option value="brickwall" ${person.status === 'brickwall' ? 'selected' : ''}>Brick Wall</option>
+        <option value="blank" ${person.status === 'blank' ? 'selected' : ''}>Blank</option>
+        <option value="you" ${person.status === 'you' ? 'selected' : ''}>You</option>
+      </select>
+    </div>
+    <div class="detail-field"><label>Notes</label><textarea id="d_notes">${escapeHtml(person.notes)}</textarea></div>
+
+    <div class="detail-field" style="margin-top:16px;">
+      <label>Focus / Navigate</label>
+      <button class="fb-add-btn" onclick="closeDetail(); focusOnPerson(${person.id});" style="width:100%;background:var(--bg-btn);color:var(--text-logo);">🔍 Focus on this person</button>
+    </div>
+
+    <div class="detail-field" style="margin-top:8px;">
+      <label>Add Relatives</label>
+      <button class="fb-add-btn" onclick="fbAddParent()">➕ Add Parent</button>
+      <button class="fb-add-btn" onclick="fbAddSpouse()">💍 Add Spouse/Partner</button>
+      <button class="fb-add-btn" onclick="fbAddChild()">👶 Add Child</button>
+      <button class="fb-add-btn" onclick="fbAddSibling()">👥 Add Sibling</button>
+    </div>
+
+    <div class="detail-field" style="margin-top:8px;">
+      <label>Add Document</label>
+      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);">📷 Scan Certificate</button>
+    </div>
+
+    <div class="detail-actions">
+      <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
+      <button class="save-btn" onclick="saveDetail()">Save Changes</button>
+    </div>
+    <div style="margin-top:8px;text-align:center;">
+      <button onclick="fbDeletePerson()" style="background:transparent;border:1px solid #5c2a2a;color:#5c2a2a;padding:6px 16px;border-radius:4px;font-family:'Cinzel Decorative',serif;font-size:11px;cursor:pointer;width:100%;">🗑 Delete Person</button>
+    </div>
+  `;
+  detailPanel.classList.add('active');
+  renderFreeBuild(); // re-render to show selection highlight
+}
+
+function closeDetail() {
+  detailPanel.classList.remove('active');
+  selectedPersonId = null;
+  renderFreeBuild();
+}
+
+function saveDetail() {
+  if (!selectedPersonId) return;
+  const person = people.find(p => p.id === selectedPersonId);
+  if (!person) return;
+  person.fullName = document.getElementById('d_fullName').value;
+  person.name = document.getElementById('d_name').value;
+  person.birthDate = document.getElementById('d_birthDate').value;
+  person.deathDate = document.getElementById('d_deathDate').value;
+  person.marriageDate = document.getElementById('d_marriageDate').value;
+  person.maidenName = document.getElementById('d_maidenName').value;
+  person.spouseName = document.getElementById('d_spouseName').value;
+  person.occupation = document.getElementById('d_occupation').value;
+  person.birthplace = document.getElementById('d_birthplace').value;
+  person.status = document.getElementById('d_status').value;
+  person.notes = document.getElementById('d_notes').value;
+
+  // Auto-upgrade from 'blank' to 'probable' when user enters a real name
+  if (person.status === 'blank' && person.name && person.name.trim() !== '' && person.name !== 'Name') {
+    person.status = 'probable';
+  }
+
+  // Recompute years display
+  const bY = (person.birthDate || '').match(/\d{4}/);
+  const dY = (person.deathDate || '').match(/\d{4}/);
+  if (bY && dY) person.years = bY[0] + ' \u2014 ' + dY[0];
+  else if (bY) person.years = 'b. ' + bY[0];
+  else if (dY) person.years = 'd. ' + dY[0];
+  else person.years = '?';
+
+  autoSave();
+  renderFreeBuild();
+  closeDetail();
+  showToast('Saved: ' + person.name);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ADD RELATIVES — Free Build core feature
+// ═══════════════════════════════════════════════════════════════
+
+function fbAddParent() {
+  if (!selectedPersonId) return;
+  const person = people.find(p => p.id === selectedPersonId);
+  if (!person) return;
+  if (person.parents && person.parents.length >= 2) {
+    showToast('This person already has two parents');
+    return;
+  }
+  const parentGen = person.gen + 1;
+  const newParent = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+  people.push(newParent);
+
+  if (!person.parents) person.parents = [];
+  person.parents.push(newParent.id);
+
+  autoSave();
+  closeDetail();
+  renderFreeBuild();
+  setTimeout(() => openDetail(newParent), 100);
+  showToast('Added parent for ' + person.name);
+}
+
+function fbAddSpouse() {
+  if (!selectedPersonId) return;
+  const person = people.find(p => p.id === selectedPersonId);
+  if (!person) return;
+  if (person.spouseId) {
+    showToast('This person already has a spouse');
+    return;
+  }
+  const newSpouse = createPerson(nextId++, person.gen, 'Name', '?', 'blank', {});
+  newSpouse.spouseId = person.id;
+  newSpouse.spouseName = person.name;
+  people.push(newSpouse);
+
+  person.spouseId = newSpouse.id;
+  person.spouseName = 'Name'; // will be updated when spouse is edited
+
+  autoSave();
+  closeDetail();
+  renderFreeBuild();
+  setTimeout(() => openDetail(newSpouse), 100);
+  showToast('Added spouse for ' + person.name);
+}
+
+function fbAddChild() {
+  if (!selectedPersonId) return;
+  const person = people.find(p => p.id === selectedPersonId);
+  if (!person) return;
+  const childGen = person.gen - 1;
+  const newChild = createPerson(nextId++, childGen, 'Name', '?', 'blank', {});
+  people.push(newChild);
+
+  if (!person.children) person.children = [];
+  person.children.push(newChild.id);
+
+  if (!newChild.parents) newChild.parents = [];
+  newChild.parents.push(person.id);
+
+  // If person has a spouse, add spouse as parent too
+  if (person.spouseId) {
+    const spouse = people.find(p => p.id === person.spouseId);
+    if (spouse) {
+      newChild.parents.push(spouse.id);
+      if (!spouse.children) spouse.children = [];
+      spouse.children.push(newChild.id);
+    }
+  }
+
+  autoSave();
+  closeDetail();
+  renderFreeBuild();
+  setTimeout(() => openDetail(newChild), 100);
+  showToast('Added child for ' + person.name);
+}
+
+function fbAddSibling() {
+  if (!selectedPersonId) return;
+  const person = people.find(p => p.id === selectedPersonId);
+  if (!person) return;
+  const newSib = createPerson(nextId++, person.gen, 'Name', '?', 'blank', {});
+
+  // Share the same parents
+  if (person.parents && person.parents.length > 0) {
+    newSib.parents = person.parents.slice();
+    // Add this sibling to each parent's children array
+    for (const pid of person.parents) {
+      const parent = people.find(p => p.id === pid);
+      if (parent) {
+        if (!parent.children) parent.children = [];
+        parent.children.push(newSib.id);
+      }
+    }
+  }
+
+  // Add sibling names
+  if (!newSib.siblings) newSib.siblings = [];
+  newSib.siblings.push(person.name);
+  if (!person.siblings) person.siblings = [];
+  person.siblings.push('Name');
+
+  people.push(newSib);
+
+  autoSave();
+  closeDetail();
+  renderFreeBuild();
+  setTimeout(() => openDetail(newSib), 100);
+  showToast('Added sibling for ' + person.name);
+}
+
+function fbDeletePerson() {
+  if (!selectedPersonId) return;
+  const person = people.find(p => p.id === selectedPersonId);
+  if (!person) return;
+
+  // Remove from parents' children arrays
+  if (person.parents) {
+    for (const pid of person.parents) {
+      const parent = people.find(p => p.id === pid);
+      if (parent && parent.children) {
+        parent.children = parent.children.filter(cid => cid !== person.id);
+      }
+    }
+  }
+  // Remove from children's parents arrays
+  if (person.children) {
+    for (const cid of person.children) {
+      const child = people.find(p => p.id === cid);
+      if (child && child.parents) {
+        child.parents = child.parents.filter(pid => pid !== person.id);
+      }
+    }
+  }
+  // Clear spouse links
+  if (person.spouseId) {
+    const spouse = people.find(p => p.id === person.spouseId);
+    if (spouse) { spouse.spouseId = null; spouse.spouseName = ''; }
+  }
+
+  people = people.filter(p => p.id !== person.id);
+  autoSave();
+  closeDetail();
+  renderFreeBuild();
+  showToast('Deleted: ' + person.name);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// FOCUS MODE
+// ═══════════════════════════════════════════════════════════════
+function focusOnPerson(id) {
+  if (focusPersonId) viewHistory.push(focusPersonId);
+  focusPersonId = id;
+  document.getElementById('focusBack').classList.add('visible');
+  renderFreeBuild();
+}
+
+function resetFocus() {
+  if (viewHistory.length > 0) {
+    focusPersonId = viewHistory.pop();
+    renderFreeBuild();
+    if (focusPersonId) {
+      setTimeout(function() { fitToScreen(); centerOnPerson(focusPersonId); }, 100);
+    }
+  } else {
+    focusPersonId = null;
+    document.getElementById('focusBack').classList.remove('visible');
+    renderFreeBuild();
+    setTimeout(function() { fitToScreen(); }, 100);
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
+// GEDCOM IMPORT
+// ═══════════════════════════════════════════════════════════════
+document.getElementById('gedcomInput').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  showToast('Importing GEDCOM...');
+  const text = await file.text();
+  const result = parseGedcom(text);
+  people = result.people;
+  nextId = result.nextId;
+
+  // Auto-focus on best candidate
+  if (people.length > 30) {
+    let best = null, bestScore = -1;
+    function countAncestors(id, depth) {
+      if (depth > 4) return 0;
+      const p = people.find(pp => pp.id === id);
+      if (!p || !p.parents || p.parents.length === 0) return 0;
+      return p.parents.length + p.parents.reduce((s, pid) => s + countAncestors(pid, depth+1), 0);
+    }
+    for (const p of people) {
+      if (!p.parents || p.parents.length === 0) continue;
+      const ancestors = countAncestors(p.id, 0);
+      const childCount = (p.children || []).length;
+      const bY = (p.birthDate || '').match(/\d{4}/);
+      const yearScore = bY ? parseInt(bY[0]) / 100 : 0;
+      const score = ancestors * 5 + childCount * 10 + yearScore;
+      if (score > bestScore) { bestScore = score; best = p; }
+    }
+    if (best) {
+      focusPersonId = best.id;
+      document.getElementById('focusBack').classList.add('visible');
+    }
+  }
+
+  autoSave();
+  renderFreeBuild();
+  showToast('Imported ' + people.length + ' people');
+
+  // Auto-fit and center on focus person
+  if (focusPersonId) {
+    setTimeout(function() {
+      fitToScreen();
+      centerOnPerson(focusPersonId);
+    }, 200);
+  }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// GEDCOM EXPORT
+// ═══════════════════════════════════════════════════════════════
+function exportGedcom() {
+  let ged = '0 HEAD\n1 CHAR UTF-8\n1 GEDC\n2 VERS 5.5.1\n';
+  for (const p of people) {
+    ged += '0 @I' + p.id + '@ INDI\n';
+    ged += '1 NAME ' + (p.name || 'Unknown').replace(/\s+/g, ' ').replace(/ ([^ ]+)$/, ' /$1/') + '\n';
+    if (p.birthDate) ged += '1 BIRT\n2 DATE ' + p.birthDate + '\n';
+    if (p.birthplace) ged += '2 PLAC ' + p.birthplace + '\n';
+    if (p.deathDate) ged += '1 DEAT\n2 DATE ' + p.deathDate + '\n';
+    if (p.sex) ged += '1 SEX ' + p.sex + '\n';
+    // FAMS links
+    if (p.spouseId) ged += '1 FAMS @F' + Math.min(p.id, p.spouseId) + '@\n';
+  }
+  // Families
+  const famSeen = new Set();
+  for (const p of people) {
+    if (p.spouseId) {
+      const famId = 'F' + Math.min(p.id, p.spouseId);
+      if (famSeen.has(famId)) continue;
+      famSeen.add(famId);
+      const spouse = people.find(sp => sp.id === p.spouseId);
+      ged += '0 @' + famId + '@ FAM\n';
+      if (p.sex === 'F') {
+        ged += '1 WIFE @I' + p.id + '@\n';
+        if (spouse) ged += '1 HUSB @I' + spouse.id + '@\n';
+      } else {
+        ged += '1 HUSB @I' + p.id + '@\n';
+        if (spouse) ged += '1 WIFE @I' + spouse.id + '@\n';
+      }
+      if (p.marriageDate) ged += '1 MARR\n2 DATE ' + p.marriageDate + '\n';
+      // Children of this family
+      const childrenOfCouple = p.children || [];
+      for (const cid of childrenOfCouple) {
+        ged += '1 CHIL @I' + cid + '@\n';
+      }
+    }
+  }
+  ged += '0 TRLR\n';
+
+  // Download
+  const blob = new Blob([ged], { type: 'text/plain' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'family-tree.ged';
+  a.click();
+  URL.revokeObjectURL(url);
+  showToast('Exported GEDCOM (' + people.length + ' people)');
+}
+
+// STORAGE
+const STORAGE_KEY = 'vr_freebuild_data_v1';
+
+// SAVE / LOAD / SHARE (matching data-tree.html functionality)
+function saveSession() {
+  const payload = { version: 5, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url; a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
+  a.click(); URL.revokeObjectURL(url);
+  showToast('Session saved');
+}
+
+function loadSession(file) {
+  file.text().then(text => {
+    try {
+      const data = JSON.parse(text);
+      if (!data.people) { showToast('Invalid session file'); return; }
+      people = data.people;
+      nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+      focusPersonId = null; viewHistory = [];
+      autoSave();
+      renderFreeBuild();
+      showToast('Loaded ' + people.length + ' people from file');
+    } catch (e) { showToast('Invalid session file'); }
+  });
+}
+
+function shareTree() {
+  saveSession();
+  showToast('Tree file ready to share');
+}
+
+function openPrintDialog() {
+  closeDetail();
+  const personCount = people.length;
+  const dlg = document.createElement('div');
+  dlg.id = 'printChoiceDlg';
+  dlg.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:20000;display:flex;justify-content:center;align-items:center;';
+  dlg.innerHTML = `
+    <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:10px;padding:22px;max-width:340px;width:90%;text-align:center;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:15px;color:#3e2b1a;margin-bottom:14px;">Print Your Tree</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:12px;color:#6a5a3a;margin-bottom:18px;">
+        ${personCount} people in tree
+      </div>
+      <button id="dlgPrint" style="display:block;width:100%;padding:10px;margin-bottom:10px;border:none;border-radius:6px;background:#3e3225;color:#f0e6d2;font-family:'Cormorant Garamond',serif;font-size:13px;cursor:pointer;">
+        🖨️ Print Current View
+      </button>
+      <button id="dlgCancel" style="padding:6px 16px;border:none;border-radius:4px;background:transparent;color:#7a6a4a;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Cancel</button>
+    </div>
+  `;
+  document.body.appendChild(dlg);
+  document.getElementById('dlgPrint').addEventListener('click', () => { window.print(); dlg.remove(); });
+  document.getElementById('dlgCancel').addEventListener('click', () => dlg.remove());
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.remove(); });
+}
+
+function autoSave() {
+  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ people, nextId })); }
+  catch (e) { console.error('[autoSave] failed', e); }
+}
+
+function autoRestore() {
+  try {
+    const saved = localStorage.getItem(STORAGE_KEY);
+    if (saved) {
+      const data = JSON.parse(saved);
+      if (data.people && data.people.length > 0) {
+        people = data.people;
+        nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+        return true;
+      }
+    }
+  } catch (e) { console.error('[autoRestore] failed', e); }
+  return false;
+}
+
+function resetTree() {
+  const dlg = document.getElementById('confirmDialog');
+  dlg.style.display = 'flex';
+  document.getElementById('confirmOk').onclick = () => {
+    dlg.style.display = 'none';
+    people = []; nextId = 1; focusPersonId = null; viewHistory = [];
+    localStorage.removeItem(STORAGE_KEY);
+    initDefault();
+    renderFreeBuild();
+    showToast('Tree reset');
+  };
+  document.getElementById('confirmCancel').onclick = () => {
+    dlg.style.display = 'none';
+  };
+}
+
+function initDefault() {
+  people = []; nextId = 1;
+  const me = createPerson(nextId++, 0, 'Me', '?', 'blank', { status: 'you' });
+  people.push(me);
+  autoSave();
+}
+
+// THEME
+function toggleTheme() {
+  const isDark = document.documentElement.getAttribute('data-theme') === 'dark';
+  if (isDark) {
+    document.documentElement.removeAttribute('data-theme');
+    const el = document.getElementById('darkModeToggle');
+    if (el) el.textContent = '\u{1F319}';
+    localStorage.setItem('vr_theme', 'light');
+  } else {
+    document.documentElement.setAttribute('data-theme', 'dark');
+    const el = document.getElementById('darkModeToggle');
+    if (el) el.textContent = '\u2600';
+    localStorage.setItem('vr_theme', 'dark');
+  }
+}
+
+if (localStorage.getItem('vr_theme') === 'dark') {
+  document.documentElement.setAttribute('data-theme', 'dark');
+  const el = document.getElementById('darkModeToggle');
+  if (el) el.textContent = '\u2600';
+}
+
+// TOAST
+function showToast(msg, duration) {
+  duration = duration || 2500;
+  const existing = document.getElementById('toastMsg');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'toastMsg'; el.textContent = msg;
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
+  setTimeout(() => el.remove(), duration + 500);
+}
+
+// DROPDOWN MENUS
+(function() {
+  const menus = [
+    { btn: document.getElementById('treeMenuBtn'), menu: document.getElementById('treeMenu') },
+    { btn: document.getElementById('guideMenuBtn'), menu: document.getElementById('guideMenu') },
+    { btn: document.getElementById('moreMenuBtn'), menu: document.getElementById('moreMenu') }
+  ];
+
+  function closeAll() { menus.forEach(m => m.menu?.classList.remove('open')); }
+
+  menus.forEach(({ btn, menu }) => {
+    if (!btn || !menu) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = menu.classList.contains('open');
+      closeAll();
+      if (!isOpen) menu.classList.add('open');
+    });
+  });
+
+  document.addEventListener('click', (e) => {
+    menus.forEach(({ btn, menu }) => {
+      if (menu && !menu.contains(e.target) && e.target !== btn) menu.classList.remove('open');
+    });
+  });
+
+  menus.forEach(({ menu }) => {
+    if (!menu) return;
+    menu.addEventListener('click', () => menu.classList.remove('open'));
+  });
+})();
+
+// PRIVACY MODAL
+function showPrivacyModal() {
+  const dlg = document.createElement('div');
+  dlg.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:20000;display:flex;justify-content:center;align-items:center;';
+  dlg.innerHTML = `
+    <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:10px;padding:24px;max-width:380px;width:90%;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#3e2b1a;margin-bottom:14px;">🔒 Your Privacy</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;line-height:1.6;margin-bottom:16px;">
+        <p style="margin:0 0 10px;">Your family tree data is stored entirely in your browser's local storage. It never leaves your device.</p>
+        <p style="margin:0 0 10px;"><strong>No accounts.</strong> No server. No tracking.</p>
+        <p style="margin:0;">To protect your data: save a backup file regularly using 💾 Save or 🌳 Tree → Save Tree.</p>
+      </div>
+      <button onclick="this.closest('div[style*=\"fixed\"]').remove()" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;width:100%;">Close</button>
+    </div>
+  `;
+  document.body.appendChild(dlg);
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.remove(); });
+}
+
+// FEEDBACK MODAL
+function showFeedbackModal() {
+  const dlg = document.createElement('div');
+  dlg.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:20000;display:flex;justify-content:center;align-items:center;';
+  dlg.innerHTML = `
+    <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:10px;padding:24px;max-width:380px;width:90%;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#3e2b1a;margin-bottom:14px;">💬 Send Feedback</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;line-height:1.6;margin-bottom:16px;">
+        <p style="margin:0 0 10px;">Found a bug or have a suggestion? We'd love to hear from you.</p>
+        <p style="margin:0;">Email us at: <a href="mailto:hello@vaultedroots.com" style="color:#38bdf8;">hello@vaultedroots.com</a></p>
+      </div>
+      <button onclick="this.closest('div[style*=\"fixed\"]').remove()" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;width:100%;">Close</button>
+    </div>
+  `;
+  document.body.appendChild(dlg);
+  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.remove(); });
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CERT PANEL — Ported from data-tree.html
+// ═══════════════════════════════════════════════════════════════
+
+// ── Stub/helper functions for cert panel compatibility ──
+function checkMemberFeature(featureKey, callback) {
+  // Simple passthrough — family-builder has no membership gating
+  if (typeof callback === 'function') callback();
+}
+
+function getCountry() { return localStorage.getItem('vaulted_country') || ''; }
+
+function getDebugLogs() { return 'Debug logs not available in family-builder.'; }
+
+function updateExpandGenBtn() { /* No-op in family-builder */ }
+
+// ── IndexedDB Document Storage (simplified for family-builder) ──
+const DOC_DB_NAME = 'VRTDocs';
+const DOC_DB_VERSION = 3;
+const DOC_STORE_NAME = 'documents';
+let _docDB = null;
+let currentTreeId = 'default';
+
+function openDocDB() {
+  return new Promise((resolve, reject) => {
+    if (!window.indexedDB) { reject(new Error('IndexedDB not available')); return; }
+    const req = indexedDB.open(DOC_DB_NAME, DOC_DB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { _docDB = req.result; resolve(_docDB); };
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(DOC_STORE_NAME)) {
+        const store = d.createObjectStore(DOC_STORE_NAME, { keyPath: 'id' });
+        store.createIndex('personId', 'personId', { unique: false });
+        store.createIndex('treeId', 'treeId', { unique: false });
+      }
+    };
+  });
+}
+
+async function saveDocToDB(personId, type, base64Image, meta) {
+  if (base64Image && !/^data:image\/(jpeg|png|webp|gif);base64,/.test(base64Image)) {
+    console.warn('[SEC-02] Rejected doc image with invalid format for person', personId);
+    return null;
+  }
+  try {
+    if (!_docDB) await openDocDB();
+    const id = personId + '_' + type + '_' + Date.now();
+    const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
+    const store = tx.objectStore(DOC_STORE_NAME);
+    const treeId = currentTreeId || 'default';
+    await new Promise((resolve, reject) => {
+      const req = store.put({ id, treeId, personId, type, image: base64Image, meta: meta || {}, created: Date.now() });
+      req.onsuccess = () => resolve();
+      req.onerror = () => reject(req.error);
+    });
+    return id;
+  } catch (e) { console.warn('[saveDocToDB] failed, skipping', e); return null; }
+}
+
+async function getDocsForPerson(personId) {
+  try {
+    if (!_docDB) await openDocDB();
+    const tx = _docDB.transaction(DOC_STORE_NAME, 'readonly');
+    const store = tx.objectStore(DOC_STORE_NAME);
+    const idx = store.index('personId');
+    return new Promise((resolve, reject) => {
+      const req = idx.getAll(personId);
+      req.onsuccess = () => {
+        const treeId = currentTreeId || 'default';
+        resolve((req.result || []).filter(d => d.treeId === treeId));
+      };
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) { return []; }
+}
+
+async function getDocById(docId) {
+  if (!docId) return null;
+  try {
+    if (!_docDB) await openDocDB();
+    const tx = _docDB.transaction(DOC_STORE_NAME, 'readonly');
+    const store = tx.objectStore(DOC_STORE_NAME);
+    return new Promise((resolve, reject) => {
+      const req = store.get(docId);
+      req.onsuccess = () => { resolve(req.result || null); };
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) { return null; }
+}
+
+function extractDocDate(entry, type) {
+  if (!entry) return '';
+  const d = entry.date || entry.deathDate || entry.birthDate || entry.marriageDate || '';
+  if (d) return d;
+  if (type === 'birth') return entry.child?.birthDate || entry.child?.date || '';
+  if (type === 'death') return entry.deathDate || entry.deceased?.deathDate || entry.deceased?.date || '';
+  if (type === 'marriage') return entry.date || entry.marriageDate || entry.groom?.marriageDate || entry.bride?.marriageDate || '';
+  return '';
+}
+
+// ── Cert panel state variables ──
+let pendingDocFile = null;
+let pendingDocImage = null;
+let lastTranscription = null;
+let selectedEntryIndex = 0;
+let pendingDirectAttachId = null;
+let pendingAmbigTarget = null;
+
+const certPanel = document.getElementById('certPanel');
+
+// ── Cert panel toggle & clear ──
+function toggleCertPanel() {
+  const isOpening = !certPanel.classList.contains('active');
+  certPanel.classList.toggle('active');
+  if (isOpening) {
+    clearCertPanel();
+  }
+}
+
+function openCertForPerson(personName) {
+  certPanel.classList.add('active');
+  clearCertPanel();
+  const headerTitle = certPanel.querySelector('.cert-header div');
+  if (headerTitle) headerTitle.textContent = '📷 Scan Certificate — ' + personName;
+  showToast('Select Upload (private), Venice, or Gemini for ' + personName);
+}
+
+function clearCertPanel() {
+  lastTranscription = null;
+  pendingDocFile = null;
+  pendingDocImage = null;
+  document.getElementById('certPreviewImg').src = '';
+  document.getElementById('certPreviewArea').style.display = 'none';
+  document.getElementById('certStatus').style.display = 'none';
+  document.getElementById('certStatus').textContent = '';
+  document.getElementById('certStatus').className = 'cert-status';
+  document.getElementById('certResults').innerHTML = '';
+  document.getElementById('certMethodSelect').style.display = 'flex';
+  document.getElementById('uploadSection')?.classList.remove('active');
+  document.getElementById('veniceSection')?.classList.remove('active');
+  document.getElementById('venicePasteBox').value = '';
+  document.getElementById('geminiSection').classList.remove('active');
+  document.getElementById('geminiPasteBox').value = '';
+  certPanel.classList.remove('has-results');
+}
+
+// ── Cert panel close button ──
+document.getElementById('certClose').addEventListener('click', () => {
+  certPanel.classList.remove('active');
+  certPanel.classList.remove('has-results');
+  pendingDirectAttachId = null;
+  const headerTitle = certPanel.querySelector('.cert-header div');
+  if (headerTitle) headerTitle.textContent = '📄 Scan Certificate';
+});
+
+// ── File input handlers ──
+document.getElementById('certFileInput')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  pendingDocFile = file;
+  try { await processDocFile(file); } catch (err) {
+    console.error('[UPLOAD ERROR]', err);
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status error'; cs.style.display = 'block';
+    cs.innerHTML = 'Error: ' + escapeHtml(err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    document.getElementById('certRetry').style.display = 'block';
+  }
+});
+
+document.getElementById('certCameraInput')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0]; if (!file) return;
+  pendingDocFile = file;
+  try { await processDocFile(file); } catch (err) {
+    console.error('[CAMERA ERROR]', err);
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status error'; cs.style.display = 'block';
+    cs.innerHTML = 'Error: ' + escapeHtml(err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
+    document.getElementById('certRetry').style.display = 'block';
+  }
+});
+
+// ── Process uploaded doc file ──
+async function processDocFile(file) {
+  const cs = document.getElementById('certStatus');
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Reading image...';
+  cs.style.display = 'block';
+  document.getElementById('certResults').innerHTML = '';
+  certPanel.classList.remove('has-results');
+
+  let base64 = await new Promise((resolve, reject) => {
+    const r = new FileReader();
+    r.onload = (e) => {
+      pendingDocImage = e.target.result;
+      document.getElementById('certPreviewImg').src = e.target.result;
+      document.getElementById('certPreviewArea').style.display = 'block';
+      document.getElementById('certMethodSelect').style.display = 'none';
+      document.getElementById('uploadSection').style.display = 'none';
+      document.getElementById('certUploadArea').style.display = 'none';
+      resolve(e.target.result);
+    };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+
+  // Compress if large
+  const sizeKB = Math.round(base64.length * 0.75 / 1024);
+  if (sizeKB > 800) {
+    cs.textContent = 'Compressing image for upload...';
+    base64 = await resizeAndCompressImage(file, 1600, 0.90);
+    const kb2 = Math.round(base64.length * 0.75 / 1024);
+    if (kb2 > 800) {
+      base64 = await resizeAndCompressImage(file, 1200, 0.85);
+    }
+  }
+
+  pendingDocImage = base64;
+  await sendToTranscriptionAPI(base64);
+}
+
+// ── Image resize/compress helper ──
+async function resizeAndCompressImage(file, maxDim, quality) {
+  return new Promise((resolve, reject) => {
+    const img = new Image();
+    img.onload = () => {
+      let w = img.width, h = img.height;
+      if (w > h && w > maxDim) { h = Math.round(h * maxDim / w); w = maxDim; }
+      else if (h > maxDim) { w = Math.round(w * maxDim / h); h = maxDim; }
+      const canvas = document.createElement('canvas');
+      canvas.width = w; canvas.height = h;
+      const ctx = canvas.getContext('2d');
+      ctx.drawImage(img, 0, 0, w, h);
+      resolve(canvas.toDataURL('image/jpeg', quality));
+    };
+    img.onerror = reject;
+    const r = new FileReader();
+    r.onload = (e) => { img.src = e.target.result; };
+    r.onerror = reject;
+    r.readAsDataURL(file);
+  });
+}
+
+// ── Transcription API ──
+const API_URL = 'https://genealogy-api.vercel.app/api/transcribe';
+
+async function sendToTranscriptionAPI(base64) {
+  const cs = document.getElementById('certStatus');
+
+  // Phase 1: GET connectivity check
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Checking connection (1/3)...';
+  try {
+    const ping = await fetch('https://genealogy-api.vercel.app/api/test', { method: 'GET', cache: 'no-store' });
+    if (!ping.ok) throw new Error('API ping failed: ' + ping.status);
+  } catch (err) {
+    cs.className = 'cert-status error';
+    cs.innerHTML = 'Network error: Cannot reach API server (GET blocked).<br><small>Try: 1) WiFi instead of mobile data, 2) Disable ad blocker/VPN, 3) Retry</small>';
+    certPanel.classList.add('has-results');
+    return;
+  }
+
+  // Phase 2: POST connectivity check
+  cs.textContent = 'Checking connection (2/3)...';
+  try {
+    const postTest = await fetch('https://genealogy-api.vercel.app/api/test-post', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ test: true })
+    });
+    if (!postTest.ok) throw new Error('API POST test failed: ' + postTest.status);
+  } catch (err) {
+    cs.className = 'cert-status error';
+    cs.innerHTML = 'Network error: POST requests blocked.<br><small>Your network or browser may block uploads. Try: 1) Different WiFi, 2) Chrome/Safari, 3) Disable privacy extensions</small>';
+    certPanel.classList.add('has-results');
+    return;
+  }
+
+  // Phase 3: Send actual image with retries
+  const payloadSize = Math.round(base64.length * 0.75 / 1024);
+  cs.innerHTML = 'Scanning certificate...<br><small>Image: ' + payloadSize + 'KB. Usually 10-25s</small>';
+  document.getElementById('certRetry').style.display = '';
+
+  const payload = JSON.stringify({ image: base64, country: getCountry(), type: uploadCertType });
+
+  const uploadController = new AbortController();
+  const uploadTimeout = setTimeout(() => uploadController.abort(), 90000);
+
+  let lastErr = null;
+  for (let attempt = 1; attempt <= 6; attempt++) {
+    cs.innerHTML = 'Scanning certificate (attempt ' + attempt + '/6)...<br><small>Please wait</small>';
+
+    try {
+      let resp;
+      if (attempt === 1) {
+        resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, signal: uploadController.signal });
+      } else if (attempt === 2) {
+        resp = await fetch(API_URL, { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: payload, credentials: 'omit', signal: uploadController.signal });
+      } else {
+        resp = await new Promise((resolve, reject) => {
+          const xhr = new XMLHttpRequest();
+          xhr.open('POST', API_URL);
+          xhr.setRequestHeader('Content-Type', 'application/json');
+          xhr.onload = () => resolve({ status: xhr.status, json: () => Promise.resolve(JSON.parse(xhr.responseText)) });
+          xhr.onerror = () => reject(new Error('XHR network error'));
+          xhr.ontimeout = () => reject(new DOMException('XHR timed out', 'AbortError'));
+          xhr.timeout = 90000;
+          uploadController.signal.addEventListener('abort', () => { xhr.abort(); });
+          xhr.send(payload);
+        });
+      }
+
+      const json = await resp.json();
+
+      if (json.error === 'PRIMARY_OVERLOADED' && json.retryable) {
+        const waitSec = attempt <= 3 ? 12 : 8;
+        cs.innerHTML = 'Server is busy (attempt ' + attempt + '/6).<br><small>Waiting ' + waitSec + 's before retry</small>';
+        await new Promise(r => setTimeout(r, waitSec * 1000));
+        continue;
+      }
+
+      if (!json.success) {
+        cs.className = 'cert-status error';
+        cs.innerHTML = 'Scan failed: ' + escapeHtml(json.error || json.message || 'Unknown error') + '<br><small>Tap Retry to try again</small>';
+        certPanel.classList.add('has-results');
+        return;
+      }
+
+      const responseData = { type: json.type, entries: json.entries };
+      lastTranscription = responseData;
+      cs.className = 'cert-status success';
+      const modelLabel = json.model ? ' (' + json.model + ')' : '';
+      cs.textContent = '✓ Cert type: ' + (json.type || 'unknown').toUpperCase() + modelLabel;
+      renderTranscriptionResults(responseData);
+      certPanel.classList.add('has-results');
+      clearTimeout(uploadTimeout);
+      return;
+    } catch (err) {
+      lastErr = err;
+      if (err.name === 'AbortError') { clearTimeout(uploadTimeout); break; }
+      if (attempt < 6) {
+        cs.innerHTML = 'Retrying in 3s (attempt ' + (attempt + 1) + '/6)...';
+        await new Promise(r => setTimeout(r, 3000));
+      }
+    }
+  }
+
+  clearTimeout(uploadTimeout);
+
+  cs.className = 'cert-status error';
+  let msg = lastErr?.name === 'AbortError' ? 'Scan timed out after 90 seconds.' : (lastErr?.message || 'Could not reach server');
+  if (msg.includes('Failed to fetch')) msg = 'Connection failed on image upload. Your network may block large uploads.';
+  cs.innerHTML = 'Network error: ' + escapeHtml(msg) + '<br><small>Try: 1) Different WiFi, 2) Camera not gallery, 3) Clear and retry</small>';
+  certPanel.classList.add('has-results');
+}
+
+// ── Render transcription results ──
+function renderTranscriptionResults(data) {
+  const container = document.getElementById('certResults');
+  container.innerHTML = '';
+  selectedEntryIndex = 0;
+
+  const topWarning = document.createElement('div');
+  topWarning.style.cssText = 'margin-bottom:10px;padding:10px 12px;background:#fee2e2;border:1px solid #ef4444;border-radius:6px;font-size:12px;color:#991b1b;line-height:1.4;font-weight:600;';
+  topWarning.innerHTML = '⚠️ Check every field. AI often misreads names, dates, and places. Compare each value to your certificate before applying.';
+  container.appendChild(topWarning);
+
+  const entries = data.entries || [data];
+  let type = data.type || 'unknown';
+  if (type === 'unknown' && entries.length > 0) {
+    const first = entries[0];
+    if (first.groom?.name || first.bride?.name) type = 'marriage';
+    else if (first.child?.name || first.father?.name || first.mother?.name) type = 'birth';
+    else if (first.deceased?.name) type = 'death';
+  }
+  entries.forEach((entry, idx) => {
+    const card = document.createElement('div');
+    card.className = 'cert-result-card' + (idx === 0 ? ' selected' : '');
+    card.dataset.index = idx;
+    const fields = extractEntryFields(entry, type);
+    let html = '<div style="font-weight:600;font-size:13px;margin-bottom:6px;">' + escapeHtml(entrySummary(entry, type)) + '</div>';
+    fields.forEach((f, fi) => {
+      const fieldId = 'cf_' + idx + '_' + fi;
+      html += '<div class="cert-field-edit"><span class="cert-field-label">' + escapeHtml(f.label) + ':</span><input id="' + fieldId + '" type="text" value="' + (f.value || '').toString().replace(/"/g, '&quot;') + '" data-entry="' + idx + '" data-field="' + escapeHtml(f.key) + '" onfocus="event.stopPropagation()" onclick="event.stopPropagation()"></div>';
+    });
+    card.innerHTML = html;
+    card.addEventListener('click', () => {
+      syncCertEdits();
+      document.querySelectorAll('.cert-result-card').forEach(c => c.classList.remove('selected'));
+      card.classList.add('selected'); selectedEntryIndex = idx;
+    });
+    container.appendChild(card);
+  });
+
+  const disclaimer = document.createElement('div');
+  disclaimer.style.cssText = 'margin-top:10px;padding:8px 10px;background:#fef3c7;border:1px solid #f59e0b;border-radius:6px;font-size:11px;color:#92400e;line-height:1.4;';
+  disclaimer.innerHTML = '⚠️ <strong>Verify before applying.</strong> AI transcription may contain errors. Please check all names, dates, and places against your certificate before adding to your tree.';
+  container.appendChild(disclaimer);
+}
+
+// ── Sync edits back into lastTranscription ──
+function syncCertEdits() {
+  if (!lastTranscription) return;
+  const entries = lastTranscription.entries || [lastTranscription];
+  document.querySelectorAll('#certResults input[data-field]').forEach(input => {
+    const eIdx = parseInt(input.dataset.entry);
+    const field = input.dataset.field;
+    const entry = entries[eIdx];
+    if (!entry) return;
+    const val = input.value;
+    const parts = field.split('.');
+    let obj = entry;
+    for (let i = 0; i < parts.length - 1; i++) {
+      if (!obj[parts[i]]) obj[parts[i]] = {};
+      obj = obj[parts[i]];
+    }
+    obj[parts[parts.length - 1]] = val;
+  });
+}
+
+// ── Extract entry fields for display ──
+function extractEntryFields(entry, type) {
+  const fields = [];
+  if (type === 'marriage') {
+    if (entry.groom?.name) fields.push({ label: 'Groom', value: entry.groom.name, key: 'groom.name' });
+    if (entry.groom?.age) fields.push({ label: 'Groom Age', value: entry.groom.age, key: 'groom.age' });
+    if (entry.bride?.name) fields.push({ label: 'Bride', value: entry.bride.name, key: 'bride.name' });
+    if (entry.bride?.age) fields.push({ label: 'Bride Age', value: entry.bride.age, key: 'bride.age' });
+    if (entry.groomFather?.name) fields.push({ label: "Groom's Father", value: entry.groomFather.name, key: 'groomFather.name' });
+    if (entry.groomMother?.name) fields.push({ label: "Groom's Mother", value: entry.groomMother.name + (entry.groomMother.maidenName ? ' (m.s. ' + entry.groomMother.maidenName + ')' : ''), key: 'groomMother.name' });
+    if (entry.groomMother?.maidenName) fields.push({ label: "Groom's Mother m.s.", value: entry.groomMother.maidenName, key: 'groomMother.maidenName' });
+    if (entry.brideFather?.name) fields.push({ label: "Bride's Father", value: entry.brideFather.name, key: 'brideFather.name' });
+    if (entry.brideMother?.name) fields.push({ label: "Bride's Mother", value: entry.brideMother.name + (entry.brideMother.maidenName ? ' (m.s. ' + entry.brideMother.maidenName + ')' : ''), key: 'brideMother.name' });
+    if (entry.brideMother?.maidenName) fields.push({ label: "Bride's Mother m.s.", value: entry.brideMother.maidenName, key: 'brideMother.maidenName' });
+    if (entry.date) fields.push({ label: 'Date', value: entry.date, key: 'date' });
+  } else if (type === 'birth') {
+    if (entry.child?.name) fields.push({ label: 'Child', value: entry.child.name, key: 'child.name' });
+    if (entry.child?.birthDate) fields.push({ label: 'Birth Date', value: entry.child.birthDate, key: 'child.birthDate' });
+    if (entry.sex) fields.push({ label: 'Sex', value: entry.sex, key: 'sex' });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, key: 'father.name' });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : entry.mother.maidenSurname ? ' (m.s. ' + entry.mother.maidenSurname + ')' : ''), key: 'mother.name' });
+    if (entry.mother?.maidenName || entry.mother?.maidenSurname) fields.push({ label: 'Mother m.s.', value: entry.mother?.maidenName || entry.mother?.maidenSurname || '', key: 'mother.maidenName' });
+    if (entry.district) fields.push({ label: 'District', value: entry.district, key: 'district' });
+  } else if (type === 'death') {
+    if (entry.deceased?.name) fields.push({ label: 'Deceased', value: entry.deceased.name, key: 'deceased.name' });
+    if (entry.deceased?.age) fields.push({ label: 'Age', value: entry.deceased.age, key: 'deceased.age' });
+    if (entry.deceased?.spouseName) fields.push({ label: 'Spouse', value: entry.deceased.spouseName, key: 'deceased.spouseName' });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, key: 'father.name' });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name + (entry.mother.maidenName ? ' (m.s. ' + entry.mother.maidenName + ')' : ''), key: 'mother.name' });
+    if (entry.mother?.maidenName) fields.push({ label: 'Mother m.s.', value: entry.mother.maidenName, key: 'mother.maidenName' });
+    if (entry.deathDate) fields.push({ label: 'Date', value: entry.deathDate, key: 'deathDate' });
+    if (entry.causeOfDeath) fields.push({ label: 'Cause', value: entry.causeOfDeath, key: 'causeOfDeath' });
+  }
+  return fields;
+}
+
+function entrySummary(entry, type) {
+  const name = escapeHtml(entry.child?.name || entry.groom?.name || entry.bride?.name || entry.deceased?.name || 'Unknown');
+  const date = escapeHtml(entry.child?.birthDate || entry.date || entry.deathDate || '');
+  if (type === 'marriage') return escapeHtml(entry.groom?.name || 'Unknown') + ' & ' + escapeHtml(entry.bride?.name || 'Unknown') + (date ? ' — ' + date : '');
+  if (type === 'birth') return name + (date ? ' — b. ' + date : '');
+  if (type === 'death') return name + (date ? ' — d. ' + date : '');
+  return name;
+}
+
+// ── Cert method selection ──
+let geminiCertType = 'birth';
+let uploadCertType = 'birth';
+let veniceCertType = 'birth';
+
+function selectCertMethod(method) {
+  document.getElementById('certMethodSelect').style.display = 'none';
+  if (method === 'upload') {
+    document.getElementById('uploadSection').classList.add('active');
+  } else if (method === 'venice') {
+    document.getElementById('veniceSection').classList.add('active');
+    updateVenicePrompt();
+  } else if (method === 'gemini') {
+    document.getElementById('geminiSection').classList.add('active');
+    updateGeminiPrompt();
+  }
+}
+
+function showCertMethods() {
+  uploadCertType = 'birth';
+  document.getElementById('certMethodSelect').style.display = 'flex';
+  document.getElementById('uploadSection')?.classList.remove('active');
+  document.getElementById('veniceSection')?.classList.remove('active');
+  document.getElementById('geminiSection').classList.remove('active');
+  document.getElementById('certStatus').style.display = 'none';
+  document.getElementById('certResults').innerHTML = '';
+  lastTranscription = null;
+  certPanel.classList.remove('has-results');
+}
+
+function setGeminiType(type) {
+  geminiCertType = type;
+  document.querySelectorAll('#geminiCertType .cert-type-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+  updateGeminiPrompt();
+}
+
+function setUploadCertType(type, btn) {
+  uploadCertType = type;
+  if (btn) {
+    document.querySelectorAll('#uploadCertType .cert-type-btn').forEach(function(b) {
+      b.classList.toggle('active', b === btn);
+    });
+  } else {
+    document.querySelectorAll('#uploadCertType .cert-type-btn').forEach(function(b) {
+      b.classList.toggle('active', b.dataset.type === type);
+    });
+  }
+}
+
+// ── Gemini prompt helpers ──
+function getGeminiPrompt(type) {
+  var base = 'You are a document transcription assistant. I will upload an image of a ' + type + ' certificate. Extract the following fields and return ONLY a JSON object with these exact keys. No markdown, no explanation, no extra text before or after the JSON.\n\n';
+  if (type === 'birth') {
+    return base + 'Required keys:\n- birth_date\n- child_name\n- sex\n- father_name\n- father_profession\n- mother_name\n- mother_maiden_name\n- district\n- county\n\nIf any field is not visible or unreadable, use an empty string as the value.';
+  } else if (type === 'marriage') {
+    return base + 'Required keys:\n- marriage_date\n- groom_name\n- groom_age\n- groom_profession\n- bride_name\n- bride_age\n- bride_profession\n- groom_father_name\n- groom_mother_name\n- groom_mother_maiden\n- bride_father_name\n- bride_mother_name\n- bride_mother_maiden\n- minister_name\n- district\n\nIf any field is not visible or unreadable, use an empty string as the value.';
+  } else if (type === 'death') {
+    return base + 'Required keys:\n- death_date\n- deceased_name\n- deceased_age\n- deceased_profession\n- deceased_spouse_name\n- father_name\n- mother_name\n- mother_maiden_name\n- cause_of_death\n- district\n- county\n- informant_name\n- informant_relationship\n\nIf any field is not visible or unreadable, use an empty string as the value.';
+  }
+  return base;
+}
+
+function updateGeminiPrompt() {
+  var prompt = getGeminiPrompt(geminiCertType);
+  document.getElementById('geminiCopyBtn').dataset.prompt = prompt;
+}
+
+function copyGeminiPrompt() {
+  var btn = document.getElementById('geminiCopyBtn');
+  var prompt = btn.dataset.prompt || getGeminiPrompt(geminiCertType);
+  var status = document.getElementById('geminiStatus');
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(function() {
+      showToast('Prompt copied to clipboard!');
+    }).catch(function() {
+      showToast('Could not copy automatically. Tap "View the prompt" below.');
+    });
+  } else {
+    var box = document.getElementById('geminiPromptBox');
+    box.textContent = prompt;
+    box.style.display = 'block';
+    showToast('Prompt shown below. Select and copy it.');
+  }
+
+  status.style.display = 'block';
+  document.getElementById('geminiPromptBox').textContent = prompt;
+}
+
+function openGemini() {
+  var url = 'https://gemini.google.com';
+  var opened = false;
+  try {
+    var win = window.open(url, '_blank', 'noopener');
+    if (win) opened = true;
+  } catch (e) {}
+  if (!opened) {
+    showToast('Could not open Gemini automatically. Please open gemini.google.com manually.');
+  }
+}
+
+function toggleGeminiPrompt() {
+  var box = document.getElementById('geminiPromptBox');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+// ── Venice paste flow ──
+function setVeniceType(type) {
+  veniceCertType = type;
+  document.querySelectorAll('#veniceCertType .cert-type-btn').forEach(function(btn) {
+    btn.classList.toggle('active', btn.dataset.type === type);
+  });
+  updateVenicePrompt();
+}
+
+function updateVenicePrompt() {
+  var prompt = getGeminiPrompt(veniceCertType);
+  document.getElementById('veniceCopyBtn').dataset.prompt = prompt;
+}
+
+function copyVenicePrompt() {
+  var btn = document.getElementById('veniceCopyBtn');
+  var prompt = btn.dataset.prompt || getGeminiPrompt(veniceCertType);
+  var status = document.getElementById('veniceStatus');
+
+  if (navigator.clipboard && navigator.clipboard.writeText) {
+    navigator.clipboard.writeText(prompt).then(function() {
+      showToast('Prompt copied to clipboard!');
+    }).catch(function() {
+      showToast('Could not copy automatically. Tap "View the prompt" below.');
+    });
+  } else {
+    var box = document.getElementById('venicePromptBox');
+    box.textContent = prompt;
+    box.style.display = 'block';
+    showToast('Prompt shown below. Select and copy it.');
+  }
+
+  status.style.display = 'block';
+  document.getElementById('venicePromptBox').textContent = prompt;
+}
+
+function openVenice() {
+  var url = 'https://venice.ai/chat';
+  var opened = false;
+  try {
+    var win = window.open(url, '_blank', 'noopener');
+    if (win) opened = true;
+  } catch (e) {}
+  if (!opened) {
+    showToast('Could not open Venice automatically. Please open venice.ai/chat manually.');
+  }
+}
+
+function toggleVenicePrompt() {
+  var box = document.getElementById('venicePromptBox');
+  box.style.display = box.style.display === 'none' ? 'block' : 'none';
+}
+
+function parseVeniceResult() {
+  var raw = document.getElementById('venicePasteBox').value.trim();
+  var cs = document.getElementById('certStatus');
+
+  if (!raw) {
+    cs.className = 'cert-status error';
+    cs.textContent = 'Please paste Venice result first.';
+    cs.style.display = 'block';
+    return;
+  }
+
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Parsing...';
+  cs.style.display = 'block';
+
+  var parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    var clean = raw.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    try {
+      parsed = JSON.parse(clean);
+    } catch (e2) {
+      var jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch (e3) {
+          cs.className = 'cert-status error';
+          cs.innerHTML = 'Could not parse JSON. Make sure you copied only the JSON object from Venice.';
+          cs.style.display = 'block';
+          return;
+        }
+      } else {
+        cs.className = 'cert-status error';
+        cs.innerHTML = 'No JSON object found. Please paste the JSON output from Venice.';
+        cs.style.display = 'block';
+        return;
+      }
+    }
+  }
+
+  var entry = transformGeminiToNested(parsed, veniceCertType);
+  lastTranscription = { type: veniceCertType, entries: [entry] };
+
+  cs.className = 'cert-status success';
+  cs.textContent = '\u2713 Parsed ' + veniceCertType + ' certificate';
+  renderTranscriptionResults(lastTranscription);
+  certPanel.classList.add('has-results');
+}
+
+function transformGeminiToNested(flat, type) {
+  if (type === 'marriage') {
+    return {
+      type: 'marriage',
+      date: flat.marriage_date || flat.date || '',
+      groom: { name: flat.groom_name || '', age: flat.groom_age || '', profession: flat.groom_profession || '' },
+      bride: { name: flat.bride_name || '', age: flat.bride_age || '', profession: flat.bride_profession || '' },
+      groomFather: { name: flat.groom_father_name || '' },
+      groomMother: { name: flat.groom_mother_name || '', maidenName: flat.groom_mother_maiden || '' },
+      brideFather: { name: flat.bride_father_name || '' },
+      brideMother: { name: flat.bride_mother_name || '', maidenName: flat.bride_mother_maiden || '' }
+    };
+  } else if (type === 'birth') {
+    return {
+      type: 'birth',
+      child: { name: flat.child_name || '', birthDate: flat.birth_date || flat.child_birthDate || flat.registration_date || flat.date || '' },
+      sex: flat.sex || flat.child_sex || '',
+      father: { name: flat.father_name || '', profession: flat.father_profession || '' },
+      mother: { name: flat.mother_name || '', maidenName: flat.mother_maiden_name || flat.mother_maiden || '' },
+      district: flat.district || ''
+    };
+  } else if (type === 'death') {
+    return {
+      type: 'death',
+      deathDate: flat.death_date || flat.date || '',
+      deceased: { name: flat.deceased_name || '', age: flat.deceased_age || '', profession: flat.deceased_profession || '', spouseName: flat.deceased_spouse_name || flat.spouse_name || '' },
+      father: { name: flat.father_name || '' },
+      mother: { name: flat.mother_name || '', maidenName: flat.mother_maiden_name || flat.mother_maiden || '' },
+      causeOfDeath: flat.cause_of_death || '',
+      district: flat.district || ''
+    };
+  }
+  return flat;
+}
+
+function parseGeminiResult() {
+  var raw = document.getElementById('geminiPasteBox').value.trim();
+  var cs = document.getElementById('certStatus');
+
+  if (!raw) {
+    cs.className = 'cert-status error';
+    cs.textContent = 'Please paste Gemini result first.';
+    cs.style.display = 'block';
+    return;
+  }
+
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Parsing...';
+  cs.style.display = 'block';
+
+  var parsed;
+  try {
+    parsed = JSON.parse(raw);
+  } catch (e) {
+    var clean = raw.replace(/^```(?:json)?\s*\n?/i, '').replace(/\n?```\s*$/i, '').trim();
+    try {
+      parsed = JSON.parse(clean);
+    } catch (e2) {
+      var jsonMatch = clean.match(/\{[\s\S]*\}/);
+      if (jsonMatch) {
+        try {
+          parsed = JSON.parse(jsonMatch[0]);
+        } catch (e3) {
+          cs.className = 'cert-status error';
+          cs.innerHTML = 'Could not parse JSON. Make sure you copied only the JSON object from Gemini.';
+          cs.style.display = 'block';
+          return;
+        }
+      } else {
+        cs.className = 'cert-status error';
+        cs.innerHTML = 'No JSON object found. Please paste the JSON output from Gemini.';
+        cs.style.display = 'block';
+        return;
+      }
+    }
+  }
+
+  var entry = transformGeminiToNested(parsed, geminiCertType);
+  lastTranscription = { type: geminiCertType, entries: [entry] };
+
+  cs.className = 'cert-status success';
+  cs.textContent = '\u2713 Parsed ' + geminiCertType + ' certificate';
+  renderTranscriptionResults(lastTranscription);
+  certPanel.classList.add('has-results');
+}
+
+// ── Name matching helpers (ported from data-tree) ──
+function normalizeName(name) {
+  if (!name) return '';
+  let stripped = name.replace(/\s*\([^)]*\)/g, '');
+  stripped = stripped.replace(/\s*[nN][ée]e\s+.*$/, '');
+  const parts = stripped.toLowerCase().trim().split(/\s+/);
+  if (parts.length < 2) return parts[0] || '';
+  return parts[0] + ' ' + parts[parts.length - 1];
+}
+
+function isEffectivelyBlank(name) {
+  if (!name) return true;
+  const n = name.toLowerCase().trim();
+  if (!n || n === 'name' || n === 'unknown' || n === '?' || n === '??' || n === '...') return true;
+  if (n === 'father unknown' || n === 'mother unknown' || n === 'unknown parent' || n === 'parent unknown' || n === 'father' || n === 'mother') return true;
+  if (/^\?+$/.test(n)) return true;
+  return false;
+}
+
+function extractYear(str) {
+  if (!str) return null;
+  const m = String(str).match(/\b(\d{4})\b/);
+  return m ? parseInt(m[1]) : null;
+}
+
+function findPerson(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return null;
+  const searchNorm = normalizeName(name);
+  const searchFull = name.toLowerCase().trim();
+
+  function getBirthYear(p) {
+    const m = (p.years || p.birthDate || '').match(/\d{4}/);
+    return m ? parseInt(m[0]) : null;
+  }
+
+  let candidates = [];
+  for (const p of people) {
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+
+    let score = 0;
+    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
+    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) score = 50;
+
+    if (score > 0) candidates.push({ person: p, score });
+  }
+
+  if (!candidates.length) return null;
+
+  const certYear = opts.certYear;
+  if (certYear && !isNaN(certYear)) {
+    candidates = candidates.filter(({person: p}) => {
+      const by = getBirthYear(p);
+      if (!by) return true;
+      if (opts.certType === 'marriage') return by <= certYear - 16;
+      if (opts.certType === 'death') return by < certYear;
+      return true;
+    });
+  }
+
+  if (!candidates.length) return null;
+  if (candidates.length === 1) return candidates[0].person;
+
+  candidates.sort((a, b) => b.score - a.score);
+  return candidates[0].person;
+}
+
+function findAllMatches(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return [];
+  const searchNorm = normalizeName(name);
+  const searchFull = name.toLowerCase().trim();
+
+  function getBirthYear(p) {
+    const m = (p.years || p.birthDate || '').match(/\d{4}/);
+    return m ? parseInt(m[0]) : null;
+  }
+
+  let matches = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+
+    let score = 0;
+    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
+    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) score = 50;
+
+    if (score > 0) matches.push({ person: p, score });
+  }
+
+  matches = matches.filter(m => m.score >= 50);
+
+  if (opts.certType && opts.certYear && !isNaN(opts.certYear)) {
+    matches = matches.filter(({person: p}) => {
+      const by = getBirthYear(p);
+      if (!by) return true;
+      if (opts.certType === 'marriage') return by <= opts.certYear - 16;
+      if (opts.certType === 'death') return by < opts.certYear;
+      return true;
+    });
+  }
+
+  matches.sort((a, b) => b.score - a.score);
+  return matches;
+}
+
+function findPersonGenAware(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return null;
+  const searchNorm = normalizeName(name);
+  const searchFull = name.toLowerCase().trim();
+
+  const allMatches = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
+    const pNorm = normalizeName(p.name);
+    const pFull = normalizeName(p.fullName || '');
+    const pMaiden = normalizeName(p.maidenName || '');
+    const pNameLower = (p.name || '').toLowerCase().trim();
+    const pFullLower = (p.fullName || '').toLowerCase().trim();
+    const pMaidenLower = (p.maidenName || '').toLowerCase().trim();
+
+    let score = 0;
+    if (pNorm === searchNorm || pFull === searchNorm) score = 100;
+    else if (pNameLower === searchFull || pFullLower === searchFull || pMaidenLower === searchFull) score = 100;
+    else if (searchFull.includes(pFullLower) || pFullLower.includes(searchFull)) score = 80;
+    else if (searchFull.includes(pNameLower) || pNameLower.includes(searchFull)) score = 75;
+    else if (searchNorm.includes(pNorm) || pNorm.includes(searchNorm)) score = 50;
+
+    if (opts.checkMaiden && pMaiden) {
+      const searchSurname = name.split(/\s+/).pop()?.toLowerCase() || '';
+      const maidenHit = (pMaiden === searchSurname || pMaiden === searchNorm) ? 95
+        : (pMaiden.includes(searchSurname) || searchSurname.includes(pMaiden)) ? 75 : 0;
+      if (maidenHit > 0) {
+        score = Math.max(score, maidenHit);
+      }
+    }
+
+    if (score > 0) allMatches.push({ person: p, score });
+  }
+
+  if (allMatches.length === 0) return null;
+  const bestScore = Math.max(...allMatches.map(m => m.score));
+  if (bestScore < 50) return null;
+  if (allMatches.length === 1) return allMatches[0].person;
+
+  allMatches.sort((a, b) => b.score - a.score);
+  return allMatches[0].person;
+}
+
+function findPersonBySurname(name, opts) {
+  opts = opts || {};
+  if (!name || isEffectivelyBlank(name)) return null;
+  const surname = name.split(/\s+/).pop().toLowerCase();
+  if (!surname) return null;
+
+  let candidates = [];
+  for (const p of people) {
+    if (p.name === 'Name' || p.status === 'blank' || isEffectivelyBlank(p.name)) continue;
+    const pName = (p.name || '').toLowerCase();
+    const pFull = (p.fullName || '').toLowerCase();
+    const pMaiden = (p.maidenName || '').toLowerCase();
+    if (pName.includes(surname) || pFull.includes(surname) || pMaiden.includes(surname)) {
+      candidates.push(p);
+    }
+  }
+
+  if (!candidates.length) return null;
+  if (candidates.length === 1) return candidates[0];
+  return candidates[0];
+}
+
+// ── Apply cert data to person ──
+function applyCertToPerson(entry, type, docImage) {
+  if (!entry) return;
+
+  let primaryNames = [];
+  if (type === 'birth' && entry.child?.name) primaryNames.push({ name: entry.child.name, certKey: 'child.name' });
+  if (type === 'marriage') {
+    if (entry.groom?.name) primaryNames.push({ name: entry.groom.name, certKey: 'groom.name' });
+    if (entry.bride?.name) primaryNames.push({ name: entry.bride.name, certKey: 'bride.name' });
+  }
+  if (type === 'death' && entry.deceased?.name) primaryNames.push({ name: entry.deceased.name, certKey: 'deceased.name' });
+
+  for (const pn of primaryNames) {
+    const refYear = type === 'marriage' ? (extractYear(entry.date) ? extractYear(entry.date) - parseInt(entry.groom?.age || entry.bride?.age || 0) : null)
+      : type === 'birth' ? (extractYear(entry.child?.birthDate) || null)
+      : type === 'death' ? (extractYear(entry.deathDate) ? extractYear(entry.deathDate) - parseInt(entry.deceased?.age || 0) : null)
+      : null;
+    const certYear = extractYear(entry.date || entry.deathDate || entry.child?.birthDate);
+    const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
+    if (matches.length >= 2) {
+      const top2ScoreDiff = matches[0].score - matches[1].score;
+      if (top2ScoreDiff < 30 || matches[0].person.status === 'confirmed') {
+        openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
+        return;
+      }
+    }
+  }
+
+  _applyCertToPersonResolved(entry, type, docImage, null, null);
+}
+
+function _applyCertToPersonResolved(entry, type, docImage, resolveName, resolveId) {
+  const changed = [];
+  if (type === 'birth') applyBirthEntry(entry, changed, docImage, resolveId);
+  else if (type === 'marriage') applyMarriageEntry(entry, changed, docImage, resolveName, resolveId);
+  else if (type === 'death') applyDeathEntry(entry, changed, docImage, resolveId);
+  if (changed.length) { renderFreeBuild(); autoSave(); showToast('Applied to ' + changed.length + ' people'); }
+  else { showToast('No matching people found'); }
+}
+
+// ── Ambiguity modal ──
+function openAmbigDialog(entry, type, docImage, targetName, matches, certKey) {
+  pendingAmbigTarget = { entry, type, docImage, resolveName: targetName, resolveId: null };
+  const modal = document.getElementById('ambigModal');
+  const question = document.getElementById('ambigQuestion');
+  const options = document.getElementById('ambigOptions');
+  question.textContent = 'Multiple "' + targetName + '" people found. Which one receives this certificate?';
+  options.innerHTML = '';
+  matches.forEach((m, i) => {
+    const p = m.person;
+    const info = [];
+    info.push('Gen ' + p.gen);
+    if (p.years) info.push(p.years);
+    if (p.birthDate) info.push('b. ' + p.birthDate);
+    if (p.spouseName) info.push('spouse: ' + p.spouseName);
+    if (p.status) info.push('status: ' + p.status);
+    const btn = document.createElement('button');
+    btn.style.cssText = 'display:block;width:100%;text-align:left;padding:10px 12px;margin-bottom:8px;border:2px solid #8a7a5a;border-radius:6px;background:#faf6ee;cursor:pointer;font-family:"Cormorant Garamond",serif;font-size:13px;color:#2a1f10;';
+    btn.innerHTML = '<b>' + escapeHtml(p.name) + '</b> <span style="color:#6b5537;font-size:11px;">' + escapeHtml(info.join(' | ')) + '</span>';
+    btn.addEventListener('click', () => {
+      pendingAmbigTarget.resolveId = p.id;
+      modal.style.display = 'none';
+      _applyCertToPersonResolved(pendingAmbigTarget.entry, pendingAmbigTarget.type, pendingAmbigTarget.docImage, pendingAmbigTarget.resolveName, pendingAmbigTarget.resolveId);
+      pendingAmbigTarget = null;
+    });
+    options.appendChild(btn);
+  });
+  modal.style.display = 'flex';
+}
+
+document.getElementById('ambigCancel')?.addEventListener('click', () => {
+  document.getElementById('ambigModal').style.display = 'none';
+  pendingAmbigTarget = null;
+});
+
+// ── Apply birth entry ──
+function applyBirthEntry(entry, changed, docImage, forceChildId) {
+  const childName = entry.child?.name; if (!childName) return;
+  const childNorm = normalizeName(childName);
+
+  const fatherNameRaw = entry.father?.name || '';
+  const isIllegitimate = !fatherNameRaw || fatherNameRaw.toLowerCase().includes('illegitimate');
+  if (isIllegitimate) { entry.father = null; }
+
+  let child = null;
+  if (forceChildId) {
+    child = people.find(p => p.id === forceChildId);
+  }
+
+  if (!child) {
+    const allMatches = [];
+    for (const p of people) {
+      if (p.name === 'Name' || p.status === 'blank' || p.status === 'unknown-parent') continue;
+      if (normalizeName(p.name) === childNorm || normalizeName(p.fullName || '') === childNorm) {
+        allMatches.push(p);
+      }
+    }
+    if (allMatches.length === 1) {
+      child = allMatches[0];
+    } else if (allMatches.length >= 2) {
+      child = allMatches.sort((a, b) => a.gen - b.gen)[0];
+    }
+  }
+
+  if (!child) {
+    child = findPersonGenAware(childName);
+  }
+
+  if (!child) {
+    child = createPerson(nextId++, 0, childName, '?', 'probable', {});
+    people.push(child);
+  }
+
+  if (child.name === 'Name' || child.status === 'blank') {
+    child.name = childName;
+  }
+  child.fullName = childName;
+  if (entry.child?.birthDate) {
+    child.birthDate = entry.child.birthDate;
+    const bYear = extractYear(entry.child.birthDate);
+    const dYear = extractYear(child.deathDate);
+    child.years = dYear ? bYear + ' — ' + dYear : 'b. ' + entry.child.birthDate;
+  }
+  child.status = 'confirmed';
+  child.docs.push({ type: 'bc', date: extractDocDate(entry, 'birth'), docId: null });
+  if (docImage) {
+    saveDocToDB(child.id, 'bc', docImage, { personName: child.name }).then(id => {
+      const lastDoc = child.docs[child.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
+  changed.push(child);
+
+  // Create parents if needed
+  if (!child.parents || child.parents.length < 2) {
+    const parentGen = (child.gen || 0) + 1;
+    const father = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+    const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+    father.spouseId = mother.id;
+    mother.spouseId = father.id;
+    father.spouseName = mother.name;
+    mother.spouseName = father.name;
+    people.push(father);
+    people.push(mother);
+    child.parents = [father.id, mother.id];
+  }
+
+  if (child.parents && child.parents.length >= 2) {
+    const father = people.find(p => p.id === child.parents[0]);
+    const mother = people.find(p => p.id === child.parents[1]);
+
+    if (father && entry.father?.name) {
+      if (father.name === 'Name' || father.status !== 'confirmed') {
+        father.name = entry.father.name;
+        father.fullName = entry.father.name;
+        if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
+        changed.push(father);
+      }
+    }
+
+    if (mother && entry.mother?.name) {
+      if (mother.status !== 'confirmed') {
+        const rawMotherName = entry.mother.name.replace(/\s*\(m\.s\.\s+[^)]+\)/gi, '').trim();
+        const rawParts = rawMotherName.split(' ');
+        const firstName = rawParts[0] || '';
+        const rawSurname = rawParts.slice(1).join(' ');
+        const maiden = entry.mother?.maidenName || entry.mother?.maidenSurname || mother.maidenName || '';
+        if (maiden && firstName) {
+          mother.name = firstName + ' ' + maiden;
+          mother.fullName = firstName + ' ' + maiden;
+        } else {
+          mother.name = rawMotherName;
+          mother.fullName = rawMotherName;
+        }
+        if (maiden) mother.maidenName = maiden;
+        if (rawSurname && rawSurname !== maiden) mother.marriedName = rawSurname;
+        if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
+        changed.push(mother);
+      }
+    }
+
+    if (father && mother && !isIllegitimate) {
+      father.spouseId = mother.id;
+      mother.spouseId = father.id;
+      father.spouseName = mother.name;
+      mother.spouseName = father.name;
+    }
+  }
+}
+
+// ── Apply marriage entry ──
+function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceResolveId) {
+  const groomName = entry.groom?.name, brideName = entry.bride?.name;
+  if (!groomName || !brideName) return;
+
+  const marriageYear = extractYear(entry.date);
+
+  let groom = null;
+  if (forceResolveId && forceResolveName === groomName) {
+    groom = people.find(p => p.id === forceResolveId);
+  }
+  if (!groom) {
+    groom = findPersonGenAware(groomName, { certType: 'marriage', certYear: marriageYear });
+    if (!groom) {
+      groom = findPersonBySurname(groomName, { certType: 'marriage', certYear: marriageYear });
+    }
+  }
+
+  let bride = null;
+  if (forceResolveId && forceResolveName === brideName) {
+    bride = people.find(p => p.id === forceResolveId);
+  }
+  if (!bride && groom && groom.spouseId) {
+    const spouse = people.find(p => p.id === groom.spouseId);
+    if (spouse) {
+      const brideFirst = brideName.split(/\s+/)[0]?.toLowerCase();
+      const spouseFirst = spouse.name.split(/\s+/)[0]?.toLowerCase();
+      if (spouseFirst === brideFirst) {
+        bride = spouse;
+      }
+    }
+  }
+
+  if (!bride) {
+    bride = findPersonGenAware(brideName, { certType: 'marriage', certYear: marriageYear });
+    if (!bride) {
+      bride = findPersonGenAware(brideName, { checkMaiden: true, certType: 'marriage', certYear: marriageYear });
+    }
+  }
+
+  const targetGen = groom ? groom.gen : 0;
+  if (!groom) {
+    groom = createPerson(nextId++, targetGen, groomName, '?', 'probable', {});
+    people.push(groom); changed.push(groom);
+  }
+  if (!bride) {
+    bride = createPerson(nextId++, targetGen, brideName, '?', 'probable', {});
+    people.push(bride); changed.push(bride);
+  }
+
+  groom.spouseId = bride.id;
+  bride.spouseId = groom.id;
+  groom.spouseName = bride.name;
+  bride.spouseName = groom.name;
+  groom.status = 'confirmed'; bride.status = 'confirmed';
+  groom.docs.push({ type: 'mc', date: extractDocDate(entry, 'marriage'), docId: null });
+  bride.docs.push({ type: 'mc', date: extractDocDate(entry, 'marriage'), docId: null });
+  if (docImage) {
+    saveDocToDB(groom.id, 'mc', docImage, { personName: groom.name }).then(id => {
+      const lastDoc = groom.docs[groom.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+    saveDocToDB(bride.id, 'mc', docImage, { personName: bride.name }).then(id => {
+      const lastDoc = bride.docs[bride.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
+  if (entry.date) { groom.marriageDate = entry.date; bride.marriageDate = entry.date; }
+  changed.push(groom); changed.push(bride);
+
+  // Update parents
+  function updateParents(person, fatherName, motherName, motherMaiden) {
+    if (!person) return;
+    if (!person.parents || person.parents.length < 2) {
+      const parentGen = (person.gen || 0) + 1;
+      const father = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+      const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+      father.spouseId = mother.id; mother.spouseId = father.id;
+      people.push(father); people.push(mother);
+      person.parents = [father.id, mother.id];
+    }
+    const father = people.find(p => p.id === person.parents[0]);
+    const mother = people.find(p => p.id === person.parents[1]);
+
+    if (father && fatherName && (father.status === 'blank' || father.status === 'probable' || father.status === 'unknown-parent')) {
+      father.name = fatherName; father.fullName = fatherName;
+      if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
+      changed.push(father);
+    }
+    if (mother && motherName && (mother.status === 'blank' || mother.status === 'probable' || mother.status === 'unknown-parent')) {
+      const rawMName = motherName.replace(/\s*\(m\.s\.\s+[^)]+\)/gi, '').trim();
+      const mParts = rawMName.split(' ');
+      const mFirst = mParts[0] || '';
+      const mRawSurname = mParts.slice(1).join(' ');
+      const mMaiden = motherMaiden || mother.maidenName || '';
+      if (mMaiden && mFirst) {
+        mother.name = mFirst + ' ' + mMaiden; mother.fullName = mFirst + ' ' + mMaiden;
+      } else {
+        mother.name = rawMName; mother.fullName = rawMName;
+      }
+      if (mMaiden) mother.maidenName = mMaiden;
+      if (mRawSurname && mRawSurname !== mMaiden) mother.marriedName = mRawSurname;
+      if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
+      changed.push(mother);
+    }
+    if (father && mother) {
+      father.spouseId = mother.id; mother.spouseId = father.id;
+      father.spouseName = mother.name; mother.spouseName = father.name;
+    }
+  }
+
+  updateParents(groom, entry.groomFather?.name, entry.groomMother?.name, entry.groomMother?.maidenName);
+  updateParents(bride, entry.brideFather?.name, entry.brideMother?.name, entry.brideMother?.maidenName);
+}
+
+// ── Apply death entry ──
+function applyDeathEntry(entry, changed, docImage, forceDecId) {
+  const decName = entry.deceased?.name; if (!decName) return;
+  let dec = null;
+  if (forceDecId) {
+    dec = people.find(p => p.id === forceDecId);
+  }
+  if (!dec) {
+    dec = findPersonGenAware(decName);
+  }
+  if (!dec) {
+    for (const p of people) {
+      if (!p.spouseId || !p.name) continue;
+      const pDisplay = p.name.replace(/\s*\([^)]*\)/g, '').trim().toLowerCase();
+      const pFirst = pDisplay.split(/\s+/)[0] || '';
+      const pLast = pDisplay.split(/\s+/).pop() || '';
+      const searchFirst = decName.split(/\s+/)[0]?.toLowerCase() || '';
+      const searchLast = decName.split(/\s+/).pop()?.toLowerCase() || '';
+      if (pFirst === searchFirst && pLast === searchLast) { dec = p; break; }
+    }
+  }
+  if (!dec) { dec = createPerson(nextId++, 0, decName, '?', 'probable', {}); people.push(dec); changed.push(dec); }
+  if (entry.deathDate) { dec.deathDate = entry.deathDate; }
+  if (entry.deceased?.age) dec.ageAtDeath = entry.deceased.age;
+  if (entry.deceased?.occupation) dec.occupation = entry.deceased.occupation;
+  if (entry.deceased?.spouseName) dec.spouseName = entry.deceased.spouseName;
+  dec.docs.push({ type: 'dc', date: extractDocDate(entry, 'death'), docId: null });
+  if (docImage) {
+    saveDocToDB(dec.id, 'dc', docImage, { personName: dec.name }).then(id => {
+      const lastDoc = dec.docs[dec.docs.length - 1];
+      if (lastDoc) lastDoc.docId = id;
+    }).catch(() => {});
+  }
+  dec.status = 'confirmed';
+  changed.push(dec);
+
+  if (dec.parents && dec.parents.length >= 2) {
+    const father = people.find(p => p.id === dec.parents[0]);
+    const mother = people.find(p => p.id === dec.parents[1]);
+    if (father && entry.father?.name && (father.name === 'Name' || father.status === 'blank' || father.status === 'probable' || father.status === 'unknown-parent')) {
+      father.name = entry.father.name; father.fullName = entry.father.name;
+      if (father.status === 'blank' || father.status === 'unknown-parent') father.status = 'probable';
+      changed.push(father);
+    }
+    if (mother && entry.mother?.name && (mother.name === 'Name' || mother.status === 'blank' || mother.status === 'probable' || mother.status === 'unknown-parent')) {
+      mother.name = entry.mother.name; mother.fullName = entry.mother.name;
+      if (mother.status === 'blank' || mother.status === 'unknown-parent') mother.status = 'probable';
+      if (entry.mother?.maidenName) mother.maidenName = entry.mother?.maidenName;
+      changed.push(mother);
+    }
+    if (father && mother) {
+      father.spouseId = mother.id; mother.spouseId = father.id;
+      father.spouseName = mother.name; mother.spouseName = father.name;
+    }
+  }
+}
+
+// ── Cert action buttons ──
+document.getElementById('certConfirm').addEventListener('click', () => {
+  if (!lastTranscription) return;
+  syncCertEdits();
+  const entries = lastTranscription.entries || [lastTranscription];
+  const entry = entries[selectedEntryIndex || 0];
+  if (!entry) return;
+
+  if (pendingDirectAttachId) {
+    let type = lastTranscription.type || 'unknown';
+    if (type === 'unknown') {
+      if (entry.groom?.name || entry.bride?.name) type = 'marriage';
+      else if (entry.child?.name || entry.father?.name || entry.mother?.name) type = 'birth';
+      else if (entry.deceased?.name) type = 'death';
+    }
+    const changed = [];
+    if (type === 'birth') applyBirthEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
+    else if (type === 'marriage') applyMarriageEntry(entry, changed, pendingDocImage, null, pendingDirectAttachId);
+    else if (type === 'death') applyDeathEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
+    if (changed.length) { renderFreeBuild(); autoSave(); showToast('Document attached to ' + changed[0].name); }
+    pendingDirectAttachId = null;
+    certPanel.classList.remove('active');
+    certPanel.classList.remove('has-results');
+    return;
+  }
+
+  let type = lastTranscription.type || 'unknown';
+  if (type === 'unknown') {
+    if (entry.groom?.name || entry.bride?.name) type = 'marriage';
+    else if (entry.child?.name || entry.father?.name || entry.mother?.name) type = 'birth';
+    else if (entry.deceased?.name) type = 'death';
+  }
+  applyCertToPerson(entry, type, pendingDocImage);
+  certPanel.classList.remove('active');
+  certPanel.classList.remove('has-results');
+});
+
+document.getElementById('certClear').addEventListener('click', () => {
+  pendingDirectAttachId = null;
+  clearCertPanel();
+});
+
+document.getElementById('certRetry').addEventListener('click', () => {
+  if (pendingDocFile || pendingDocImage) {
+    document.getElementById('certResults').innerHTML = '';
+    certPanel.classList.remove('has-results');
+    lastTranscription = null;
+    const cs = document.getElementById('certStatus');
+    cs.className = 'cert-status loading';
+    cs.innerHTML = 'Scanning certificate...<br><small>Please wait</small>';
+    cs.style.display = 'block';
+    if (pendingDocImage) {
+      sendToTranscriptionAPI(pendingDocImage);
+    } else if (pendingDocFile) {
+      processDocFile(pendingDocFile);
+    }
+  } else {
+    clearCertPanel();
+    document.getElementById('certFileInput').value = '';
+    document.getElementById('certFileInput').click();
+  }
+});
+
+// HELP MODAL
+function toggleHelp() {
+  const overlay = document.getElementById('helpOverlay');
+  overlay.classList.toggle('active');
+}
+
+function switchHelpTab(idx, btn) {
+  document.querySelectorAll('.help-tab').forEach(t => t.classList.remove('active'));
+  document.querySelectorAll('.help-section').forEach(s => s.classList.remove('active'));
+  btn.classList.add('active');
+  const section = document.querySelector('.help-section[data-tab="' + idx + '"]');
+  if (section) section.classList.add('active');
+}
+
+// Close help when clicking the overlay backdrop
+document.getElementById('helpOverlay').addEventListener('click', function(e) {
+  if (e.target === this) toggleHelp();
+});
+
+// LOAD FILE LISTENER
+document.getElementById('loadFileInput').addEventListener('change', (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  loadSession(file);
+  e.target.value = '';
+});
+
+// INIT
+(function init() {
+  let gedcomLoaded = false;
+  // Check for GEDCOM data passed from data-tree.html
+  const gedcomData = localStorage.getItem('vr_gedcomImport');
+  if (gedcomData) {
+    localStorage.removeItem('vr_gedcomImport');
+    try {
+      const imported = JSON.parse(gedcomData);
+      people = imported.people || [];
+      nextId = imported.nextId || (people.length + 1);
+      gedcomLoaded = true;
+      showToast('Loaded ' + people.length + ' people from GEDCOM import');
+    } catch (e) {
+      console.error('GEDCOM import pickup error:', e);
+    }
+  }
+
+  if (gedcomLoaded) {
+    // GEDCOM data takes priority — save it now, skip autoRestore
+    autoSave();
+  } else {
+    if (!autoRestore() && people.length === 0) initDefault();
+  }
+
+  // Auto-focus on best candidate if tree is large
+  if (people.length > 30) {
+    let best = null, bestScore = -1;
+    function countAncestors(id, depth) {
+      if (depth > 4) return 0;
+      const p = people.find(pp => pp.id === id);
+      if (!p || !p.parents || p.parents.length === 0) return 0;
+      return p.parents.length + p.parents.reduce((s, pid) => s + countAncestors(pid, depth+1), 0);
+    }
+    for (const p of people) {
+      if (!p.parents || p.parents.length === 0) continue;
+      const ancestors = countAncestors(p.id, 0);
+      const childCount = (p.children || []).length;
+      const bY = (p.birthDate || '').match(/\d{4}/);
+      const yearScore = bY ? parseInt(bY[0]) / 100 : 0;
+      // Prefer people with lots of ancestors AND children (3-gen view)
+      const score = ancestors * 5 + childCount * 10 + yearScore;
+      if (score > bestScore) { bestScore = score; best = p; }
+    }
+    if (best) {
+      focusPersonId = best.id;
+      document.getElementById('focusBack').classList.add('visible');
+    }
+  }
+
+  if (window.innerWidth > 768 && !('ontouchstart' in window)) {
+    zoom = 1;
+  } else {
+    zoom = 0.75;
+  }
+  document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+  renderFreeBuild();
+
+  // Auto-center on focus person and fit to screen
+  if (focusPersonId) {
+    setTimeout(function() {
+      fitToScreen();
+      centerOnPerson(focusPersonId);
+    }, 100);
+  }
+})();
+</script>
+</body>
+</html>
