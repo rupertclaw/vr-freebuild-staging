@@ -1610,7 +1610,6 @@ function layoutTree() {
 
         if (spouseX < personPos.x) {
           // Secondary family on LEFT — children go LEFT of Rose's children
-          // Find leftmost card at childY level (Rose's children)
           let leftmostAtChildY = Infinity;
           for (const [id, pos] of positions) {
             if (id === p.id || id === spouseId) continue;
@@ -1620,7 +1619,6 @@ function layoutTree() {
           }
           let childLeftX;
           if (leftmostAtChildY !== Infinity) {
-            // Place so right edge of last child is SEPARATOR_GAP before leftmost existing card
             childLeftX = leftmostAtChildY - totalW - SEPARATOR_GAP;
           } else {
             childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
@@ -1630,7 +1628,15 @@ function layoutTree() {
           for (let i = 0; i < familyChildren.length; i++) {
             const cid = familyChildren[i];
             const cw = childWidths[i];
-            assignPositions(cid, childLeftX, childDepth, visited);
+            const child = getP(cid);
+            // Calculate the assignPositions leftX so the child CARD lands at childLeftX
+            // assignPositions does: myX = (leftX + myWidth/2) - coupleWidth/2
+            // We want: myX = childLeftX
+            // So: leftX = childLeftX + coupleWidth/2 - myWidth/2
+            const childHasSpouse = child?.spouseId && viewSet.has(child.spouseId);
+            const childCoupleW = childHasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+            const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
+            assignPositions(cid, adjustedLeftX, childDepth, visited);
             const placed = positions.get(cid);
             const childX = (placed?.x || childLeftX) + CARD_W / 2;
             connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
@@ -1654,7 +1660,11 @@ function layoutTree() {
           for (let i = 0; i < familyChildren.length; i++) {
             const cid = familyChildren[i];
             const cw = childWidths[i];
-            assignPositions(cid, childLeftX, childDepth, visited);
+            const child = getP(cid);
+            const childHasSpouse = child?.spouseId && viewSet.has(child.spouseId);
+            const childCoupleW = childHasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+            const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
+            assignPositions(cid, adjustedLeftX, childDepth, visited);
             const placed = positions.get(cid);
             const childX = (placed?.x || childLeftX) + CARD_W / 2;
             connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
