@@ -1623,7 +1623,7 @@ function layoutTree() {
           } else {
             childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
           }
-          if (childLeftX < 0) childLeftX = 0;
+          // DON'T clamp to 0 — let cards go negative X; normalize step at end shifts everything right
 
           for (let i = 0; i < familyChildren.length; i++) {
             const cid = familyChildren[i];
