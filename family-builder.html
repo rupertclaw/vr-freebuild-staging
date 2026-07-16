@@ -1982,14 +1982,18 @@ document.addEventListener('touchmove', function(e) {
 }, { passive: false });
 
 // Mouse wheel zoom — scroll up to zoom in, scroll down to zoom out
-document.getElementById('treeScroll').addEventListener('wheel', function(e) {
-  e.preventDefault();
-  if (e.deltaY < 0) {
-    setZoom(zoom * 1.15);
-  } else {
-    setZoom(zoom / 1.15);
-  }
-}, { passive: false });
+(function setupWheelZoom() {
+  const scrollEl = document.getElementById('treeScroll');
+  if (!scrollEl) return;
+  scrollEl.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      setZoom(zoom * 1.15);
+    } else {
+      setZoom(zoom / 1.15);
+    }
+  }, { passive: false });
+})();
 
 // ═══════════════════════════════════════════════════════════════
 // DETAIL PANEL
