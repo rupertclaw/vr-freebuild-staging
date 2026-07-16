@@ -912,7 +912,7 @@ details.acc .acc-body { padding: 6px 12px; }
       <button class="tb-btn" id="treeMenuBtn" title="Tree options" aria-label="Tree options menu" aria-haspopup="true" aria-expanded="false">🌳 <span>Tree</span> ▾</button>
       <div class="tb-menu" id="treeMenu" role="menu">
         <div class="tb-menu-item" role="menuitem" tabindex="0" onclick="location.href='data-tree.html';closeAllMenus()"><span class="icon">🌲</span> Pedigree Tree</div>
-        <div class="tb-menu-item" id="freeBuildMenuItem" role="menuitem" tabindex="0" onclick="saveTreeToStorage(); location.href='family-builder.html';closeAllMenus()"><span class="icon">🌿</span> Family Builder</div>
+        <div class="tb-menu-item" id="freeBuildMenuItem" role="menuitem" tabindex="0" onclick="saveTreeToStorage(); location.href='family-builder.html?from=dt';closeAllMenus()"><span class="icon">🌿</span> Family Builder</div>
         <div class="tb-menu-item" id="familySheetMenuItem" role="menuitem" tabindex="0" onclick="document.getElementById('familySheetBtn').click()"><span class="icon">📋</span> Family Sheets</div>
         <div class="tb-menu-item" id="viewPosterBtn" role="menuitem" tabindex="0" onclick="openPoster()"><span class="icon">🖼️</span> Heritage Poster</div>
         <div class="tb-menu-item" id="gedcomToggle" role="menuitem" tabindex="0" onclick="openGuidancePanel();setTimeout(function(){var b=document.getElementById('importGuide').querySelector('button');var body=document.getElementById('importBody');if(body&&b){body.style.display='block';b.querySelector('span').style.transform='rotate(180deg)';document.getElementById('guidanceBody').scrollTop=body.offsetTop-20;}},150);closeAllMenus()"><span class="icon">🔄</span> Import & Export GEDCOM</div>
@@ -5400,6 +5400,33 @@ document.getElementById('guidancePanel').addEventListener('click', (e) => {
 
 // (Duplicate auto-save interval removed — see single interval above, BUG-13 fix)
 async function autoRestore() {
+  // Check if we're arriving from family builder — prioritize localStorage in that case
+  const fromFB = new URLSearchParams(window.location.search).get('from') === 'fb';
+  
+  if (fromFB) {
+    // Coming from family builder: check localStorage first (skip stale IndexedDB)
+    const fbSaved = localStorage.getItem('vr_freebuild_data_v1') || localStorage.getItem('familytree_data_v5');
+    if (fbSaved) {
+      try {
+        const data = JSON.parse(fbSaved);
+        if (data.people && data.people.length > 0) {
+          people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
+          visibleMaxGen = maxGen(people, p => p.gen);
+          // Save to IndexedDB so it persists for future visits
+          const treeId = 'tree_' + Date.now();
+          currentTreeId = treeId;
+          await saveTreeData(treeId, { people, nextId, visibleMaxGen });
+          const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
+          await saveTreeMeta(meta);
+          treesList = [meta];
+          showToast('Loaded ' + people.length + ' people from Family Builder');
+          updateTreeManagerUI();
+          return true;
+        }
+      } catch (e) { console.error('[autoRestore fromFB]', e); }
+    }
+  }
+  
   // First try IndexedDB multi-tree store
   treesList = await loadAllTreeMetas();
   if (treesList.length > 0) {

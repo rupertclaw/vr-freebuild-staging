@@ -541,7 +541,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <div class="fb-menu-wrap">
         <button class="help-btn" id="treeMenuBtn" title="Tree options">🌳 <span>Tree</span> ▾</button>
         <div class="fb-menu" id="treeMenu" role="menu">
-          <div class="fb-menu-item" role="menuitem" onclick="autoSave(); location.href='data-tree.html'"><span class="icon">🌲</span> Pedigree Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="autoSave(); location.href='data-tree.html?from=fb'"><span class="icon">🌲</span> Pedigree Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="location.href='family-builder.html'"><span class="icon">🌿</span> Family Builder</div>
           <div class="fb-menu-item" role="menuitem" onclick="window.open('families.html','_blank')"><span class="icon">📋</span> Family Sheets</div>
           <div class="fb-menu-item" role="menuitem" onclick="openPoster()"><span class="icon">🖼️</span> Heritage Poster</div>
@@ -2447,12 +2447,21 @@ function autoSave() {
 
 function autoRestore() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    // Check if arriving from data-tree (pedigree) — use familytree_data_v5 in that case
+    const fromDT = new URLSearchParams(window.location.search).get('from') === 'dt';
+    let saved = null;
+    if (fromDT) {
+      // Coming from data-tree: prefer the shared key
+      saved = localStorage.getItem('familytree_data_v5') || localStorage.getItem(STORAGE_KEY);
+    } else {
+      saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('familytree_data_v5');
+    }
     if (saved) {
       const data = JSON.parse(saved);
       if (data.people && data.people.length > 0) {
         people = data.people;
         nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+        if (fromDT) showToast('Loaded ' + people.length + ' people from Pedigree Tree');
         return true;
       }
     }
