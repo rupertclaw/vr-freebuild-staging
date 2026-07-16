@@ -2421,7 +2421,12 @@ function openPrintDialog() {
 }
 
 function autoSave() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ people, nextId })); }
+  try {
+    const data = JSON.stringify({ people, nextId });
+    localStorage.setItem(STORAGE_KEY, data);
+    // Also write to legacy key so data-tree (pedigree) can pick it up
+    localStorage.setItem('familytree_data_v5', data);
+  }
   catch (e) { console.error('[autoSave] failed', e); }
 }
 
