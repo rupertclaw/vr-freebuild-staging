@@ -2,7 +2,7 @@
   "name": "Vaulted Roots",
   "short_name": "VaultedRoots",
   "description": "Build your family tree. Private, offline, yours.",
-  "start_url": "./data-tree.html",
+  "start_url": "./",
   "display": "standalone",
   "orientation": "any",
   "background_color": "#3e2b1a",
