@@ -937,7 +937,7 @@ details.acc .acc-body { padding: 6px 12px; }
   </div>
 </div>
 
-<button id="expandGenBtn" class="expand-gen-btn" title="Reveal next generation" onclick="checkMemberFeature('expand_generation', expandNextGen)">Reveal Next Generation</button>
+<button id="expandGenBtn" class="expand-gen-btn" title="Reveal next generation" onclick="expandNextGen()">Reveal Next Generation</button>
 
 
 <div id="treeTitleContainer" style="position:fixed; top:175px; left:12px; z-index:100; background:rgba(62,43,26,0.88); border:1px solid #c4a875; border-radius:6px; padding:6px 14px; font-family:'Cinzel Decorative',serif; font-size:13px; color:#d4b896; max-width:300px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,0.25); display:none;"><span id="treeTitle"></span></div>
@@ -5208,7 +5208,7 @@ async function loadSession(file) {
     const btn = document.getElementById('expandGenBtn');
     const actualMax = maxGen(people, p => p.gen);
     if (visibleMaxGen >= actualMax) {
-      btn.textContent = 'All visible — tap any person to add parents';
+      btn.textContent = 'Click a name to add a parent';
       btn.disabled = true;
     } else {
       btn.disabled = false;
@@ -5278,7 +5278,7 @@ function expandNextGen() {
   renderTree();
   const btn = document.getElementById('expandGenBtn');
   if (visibleMaxGen >= actualMax) {
-    btn.textContent = 'All visible — tap any person to add parents';
+    btn.textContent = 'Click a name to add a parent';
     btn.disabled = true;
   } else {
     btn.textContent = 'Reveal Next Generation';
@@ -5579,7 +5579,7 @@ function addParentsForPerson(person) {
   if (btn) {
     const actualMax = maxGen(people, p => p.gen);
     if (visibleMaxGen >= actualMax) {
-      btn.textContent = 'All visible — tap any person to add parents';
+      btn.textContent = 'Click a name to add a parent';
       btn.disabled = true;
     } else {
       btn.disabled = false;
@@ -5684,10 +5684,18 @@ function backfillComputedFields() {
     const btn = document.getElementById('expandGenBtn');
     const actualMax = maxGen(people, p => p.gen);
     if (visibleMaxGen >= actualMax) {
-      btn.textContent = 'All visible — tap any person to add parents';
+      btn.textContent = 'Click a name to add a parent';
       btn.disabled = true;
     } else {
       btn.textContent = 'Reveal Next Generation';
+    }
+  })();
+
+  // Toast: prompt to reveal more generations if available
+  (function promptReveal() {
+    const actualMax = maxGen(people, p => p.gen);
+    if (visibleMaxGen < actualMax) {
+      setTimeout(() => showToast('More generations available — tap "Reveal Next Generation" below'), 800);
     }
   })();
 
