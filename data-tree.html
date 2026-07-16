@@ -197,20 +197,20 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   justify-content: flex-end;
   position: relative;
 }
-/* New labeled toolbar buttons */
-.tb-btn {
-  height: 38px; padding: 0 12px;
-  background: var(--bg-btn); color: var(--text-btn);
-  border: 1px solid var(--bg-btn-border); border-radius: 8px;
-  font-size: 12px; cursor: pointer;
-  display: flex; gap: 5px; align-items: center;
-  font-family: 'Cormorant Garamond', serif;
-  white-space: nowrap;
-  position: relative;
+/* Labeled toolbar buttons (matching family-builder) */
+.help-btn {
+  background: var(--bg-btn); color: var(--text-btn); border: 1px solid var(--bg-btn-border);
+  height: 28px; padding: 0 10px; border-radius: 6px; font-size: 12px; cursor: pointer;
+  display: flex; gap: 5px; align-items: center; font-family: 'Cormorant Garamond', serif;
+  white-space: nowrap; position: relative;
 }
-.tb-btn.primary { background: #6b4c35; border-color: var(--gold); }
-.tb-btn small { opacity: 0.65; font-size: 9px; }
-.tb-btn .m {
+.help-btn.guide-btn {
+  background: #5a7a3a; color: #f5eedc; border-color: #4a6a2a;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.3);
+}
+.help-btn.primary { background: #6b4c35; border-color: #c4a875; }
+.help-btn small { opacity: 0.65; font-size: 9px; }
+.help-btn .m {
   position: absolute; top: -4px; right: -4px;
   width: 15px; height: 15px; border-radius: 50%;
   background: linear-gradient(135deg, #d4af37, #f4d03f);
@@ -218,29 +218,30 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   display: flex; align-items: center; justify-content: center;
   font-family: sans-serif;
 }
-/* Dropdown menu */
-.tb-menu {
+/* Dropdown menus (matching family-builder) */
+.fb-menu {
   display: none; position: absolute; top: 100%; right: 0; margin-top: 6px;
   background: #f5eedc; border: 1px solid #c4b89a; border-radius: 8px;
   width: 240px; padding: 6px; z-index: 10000;
   box-shadow: 0 6px 18px rgba(0,0,0,0.25);
 }
-.tb-menu.open { display: block; }
-.tb-menu-item {
+.fb-menu.open { display: block; }
+.fb-menu-item {
   display: flex; gap: 10px; align-items: center;
   padding: 9px 10px; font-size: 13px; border-radius: 6px;
   color: #3e2b1a; cursor: pointer; font-family: 'Cormorant Garamond', serif;
 }
-.tb-menu-item:hover { background: #efe4c8; }
-.tb-menu-item.danger { color: #8a2a2a; border-top: 1px solid #d8c9a8; margin-top: 4px; padding-top: 11px; }
-.tb-menu-item .m {
+.fb-menu-item:hover { background: #efe4c8; }
+.fb-menu-item.danger { color: #8a2a2a; border-top: 1px solid #d8c9a8; margin-top: 4px; padding-top: 11px; }
+.fb-menu-item .m {
   width: 15px; height: 15px; border-radius: 50%;
   background: linear-gradient(135deg, #d4af37, #f4d03f);
   color: #3a2a10; font-size: 9px; font-weight: 800;
   display: flex; align-items: center; justify-content: center;
   font-family: sans-serif; margin-left: auto;
 }
-.tb-menu-item .icon { font-size: 16px; width: 20px; text-align: center; }
+.fb-menu-item .icon { font-size: 16px; width: 20px; text-align: center; }
+.fb-menu-wrap { position: relative; }
 .header-emblem {
   position: absolute;
   left: 50%; top: 50%;
@@ -275,21 +276,21 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .tree-scroll { top: 180px; }
   .header-bottom { flex-direction: column; align-items: stretch; }
   .zoom-controls span { font-size: 11px; min-width: 36px; }
-  .tb-btn { height: 34px; padding: 0 8px; font-size: 11px; }
-  .tb-btn small { display: none; }
-  .tb-menu { width: 200px; right: 0; }
+  .help-btn { height: 26px; padding: 0 8px; font-size: 11px; }
+  .help-btn small { display: none; }
+  .fb-menu { width: 200px; right: 0; }
   #treeTitleContainer { top: 185px !important; }
 }
 @media (max-width: 340px) {
   .header-btn { width: 26px; height: 26px; font-size: 13px; }
   .header-actions { gap: 2px; }
   .header-left-group { gap: 2px; }
-  .tb-btn { height: 32px; padding: 0 6px; font-size: 10px; }
+  .help-btn { height: 24px; padding: 0 6px; font-size: 10px; }
 }
 @media (max-width: 600px) and (min-width: 381px) {
   .header-btn { width: 34px; height: 34px; font-size: 17px; }
   .header-emblem { height: 130px; width: 130px; opacity: 0.25; }
-  .tb-btn { height: 36px; padding: 0 10px; }
+  .help-btn { height: 28px; padding: 0 10px; }
 }
 .header-btn {
   width: 42px; height: 36px; background: var(--bg-btn); color: var(--text-btn);
@@ -780,11 +781,6 @@ details.acc .acc-body { padding: 6px 12px; }
 }
 .guidance-empty .icon { font-size: 48px; margin-bottom: 12px; }
 
-/* Next Steps button */
-#nextStepsBtn {
-  background: #5a7a3a; color: #f5eedc; box-shadow: 0 2px 6px rgba(0,0,0,0.3);
-}
-
 /* Toast */
 #toastMsg {
   position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
@@ -905,31 +901,41 @@ details.acc .acc-body { padding: 6px 12px; }
     </div>
     <div class="header-actions">
       <!-- Primary labeled buttons -->
-      <button class="tb-btn primary" id="certToggle" title="Scan certificate" aria-label="Scan certificate" onclick="checkMemberFeature('cert_scanning', toggleCertPanel)">📷 <span>Scan</span></button>
-      <button class="tb-btn" id="nextStepsBtn" title="Next steps" aria-label="Research guidance" onclick="openGuidancePanel()">📖 <span>Guide</span></button>
-      <button class="tb-btn" id="saveBtn" title="Save session" aria-label="Save session" onclick="saveSession()">💾 <span>Save</span></button>
-      <!-- Tree menu -->
-      <button class="tb-btn" id="treeMenuBtn" title="Tree options" aria-label="Tree options menu" aria-haspopup="true" aria-expanded="false">🌳 <span>Tree</span> ▾</button>
-      <div class="tb-menu" id="treeMenu" role="menu">
-        <div class="tb-menu-item" role="menuitem" tabindex="0" onclick="location.href='data-tree.html';closeAllMenus()"><span class="icon">🌲</span> Pedigree Tree</div>
-        <div class="tb-menu-item" id="freeBuildMenuItem" role="menuitem" tabindex="0" onclick="saveTreeToStorage(); location.href='family-builder.html?from=dt';closeAllMenus()"><span class="icon">🌿</span> Family Builder</div>
-        <div class="tb-menu-item" id="familySheetMenuItem" role="menuitem" tabindex="0" onclick="document.getElementById('familySheetBtn').click()"><span class="icon">📋</span> Family Sheets</div>
-        <div class="tb-menu-item" id="viewPosterBtn" role="menuitem" tabindex="0" onclick="openPoster()"><span class="icon">🖼️</span> Heritage Poster</div>
-        <div class="tb-menu-item" id="gedcomToggle" role="menuitem" tabindex="0" onclick="openGuidancePanel();setTimeout(function(){var b=document.getElementById('importGuide').querySelector('button');var body=document.getElementById('importBody');if(body&&b){body.style.display='block';b.querySelector('span').style.transform='rotate(180deg)';document.getElementById('guidanceBody').scrollTop=body.offsetTop-20;}},150);closeAllMenus()"><span class="icon">🔄</span> Import & Export GEDCOM</div>
-        <div class="tb-menu-item" role="menuitem" tabindex="0" onclick="saveTreeToStorage()"><span class="icon">💾</span> Save Tree</div>
-        <div class="tb-menu-item" id="loadBtn" role="menuitem" tabindex="0"><span class="icon">📂</span> Load Backup</div>
-        <div class="tb-menu-item" id="shareBtn" role="menuitem" tabindex="0" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
-        <div class="tb-menu-item" role="menuitem" tabindex="0" onclick="openPrintDialog()"><span class="icon">🖨️</span> Print Tree</div>
-        <div class="tb-menu-item" id="treeManagerToggle" role="menuitem" tabindex="0" onclick="toggleTreeManager()"><span class="icon">🌳</span> My Trees</div>
-        <div class="tb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0">🗑️ Reset Tree</div>
+      <button class="help-btn primary" id="certToggle" title="Scan certificate" aria-label="Scan certificate" onclick="checkMemberFeature('cert_scanning', toggleCertPanel)">📷 <span>Scan</span></button>
+      <button class="help-btn guide-btn" id="guideMenuBtn" title="Import, Export & Guide" aria-haspopup="true" aria-expanded="false">📖 <span>Guide</span> ▾</button>
+      <button class="help-btn" id="saveBtn" title="Save session" aria-label="Save session" onclick="saveSession()">💾 <span>Save</span></button>
+      <!-- Tree dropdown -->
+      <div class="fb-menu-wrap">
+        <button class="help-btn" id="treeMenuBtn" title="Tree options" aria-label="Tree options menu" aria-haspopup="true" aria-expanded="false">🌳 <span>Tree</span> ▾</button>
+        <div class="fb-menu" id="treeMenu" role="menu">
+          <div class="fb-menu-item" role="menuitem" tabindex="0" onclick="location.href='data-tree.html';closeAllMenus()"><span class="icon">🌲</span> Pedigree Tree</div>
+          <div class="fb-menu-item" id="freeBuildMenuItem" role="menuitem" tabindex="0" onclick="saveTreeToStorage(); location.href='family-builder.html?from=dt';closeAllMenus()"><span class="icon">🌿</span> Family Builder</div>
+          <div class="fb-menu-item" id="familySheetMenuItem" role="menuitem" tabindex="0" onclick="document.getElementById('familySheetBtn').click()"><span class="icon">📋</span> Family Sheets</div>
+          <div class="fb-menu-item" id="viewPosterBtn" role="menuitem" tabindex="0" onclick="openPoster()"><span class="icon">🖼️</span> Heritage Poster</div>
+          <div class="fb-menu-item" role="menuitem" tabindex="0" onclick="openGuidancePanel();setTimeout(function(){var b=document.getElementById('importGuide').querySelector('button');var body=document.getElementById('importBody');if(body&&b){body.style.display='block';b.querySelector('span').style.transform='rotate(180deg)';document.getElementById('guidanceBody').scrollTop=body.offsetTop-20;}},150);closeAllMenus()"><span class="icon">🔄</span> Import & Export GEDCOM</div>
+          <div class="fb-menu-item" role="menuitem" tabindex="0" onclick="saveTreeToStorage()"><span class="icon">💾</span> Save Tree</div>
+          <div class="fb-menu-item" id="loadBtn" role="menuitem" tabindex="0"><span class="icon">📂</span> Load Backup</div>
+          <div class="fb-menu-item" id="shareBtn" role="menuitem" tabindex="0" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
+          <div class="fb-menu-item" role="menuitem" tabindex="0" onclick="openPrintDialog()"><span class="icon">🖨️</span> Print Tree</div>
+          <div class="fb-menu-item" id="treeManagerToggle" role="menuitem" tabindex="0" onclick="toggleTreeManager()"><span class="icon">🌳</span> My Trees</div>
+          <div class="fb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0">🗑️ Reset Tree</div>
+        </div>
       </div>
-      <!-- More menu -->
-      <button class="tb-btn" id="moreMenuBtn" title="More options" aria-label="More options menu" aria-haspopup="true" aria-expanded="false">⋯ <span>More</span> ▾</button>
-      <div class="tb-menu" id="moreMenu" role="menu">
-        <div class="tb-menu-item" id="darkModeToggleLi" role="menuitem" tabindex="0"><span class="icon" id="darkModeToggle">🌙</span> Dark Mode</div>
-        <div class="tb-menu-item" id="privacyBtn" role="menuitem" tabindex="0" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
-        <div class="tb-menu-item" id="feedbackBtn" role="menuitem" tabindex="0" onclick="showFeedbackModal()"><span class="icon">💬</span> Send Feedback</div>
-        <div class="tb-menu-item" id="facebookBtnLi" role="menuitem" tabindex="0" onclick="window.open('https://www.facebook.com/profile.php?id=61591673636516','_blank','noopener')"><span class="icon">👍</span> Follow on Facebook</div>
+      <!-- Guide dropdown -->
+      <div class="fb-menu" id="guideMenu" role="menu">
+        <div class="fb-menu-item" role="menuitem" tabindex="0" onclick="checkMemberFeature('gedcom', function(){document.getElementById('gedcomFileInput').click()});closeAllMenus()"><span class="icon">🔄</span> Import GEDCOM</div>
+        <div class="fb-menu-item" role="menuitem" tabindex="0" onclick="checkMemberFeature('gedcom', exportGedcom);closeAllMenus()"><span class="icon">📤</span> Export GEDCOM</div>
+        <div class="fb-menu-item" role="menuitem" tabindex="0" onclick="openGuidancePanel();closeAllMenus()"><span class="icon">📖</span> Guide & Help</div>
+      </div>
+      <!-- More dropdown -->
+      <div class="fb-menu-wrap">
+        <button class="help-btn" id="moreMenuBtn" title="More options" aria-label="More options menu" aria-haspopup="true" aria-expanded="false">⋯ <span>More</span> ▾</button>
+        <div class="fb-menu" id="moreMenu" role="menu">
+          <div class="fb-menu-item" id="darkModeToggleLi" role="menuitem" tabindex="0"><span class="icon" id="darkModeToggle">🌙</span> Dark Mode</div>
+          <div class="fb-menu-item" id="privacyBtn" role="menuitem" tabindex="0" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
+          <div class="fb-menu-item" id="feedbackBtn" role="menuitem" tabindex="0" onclick="showFeedbackModal()"><span class="icon">💬</span> Send Feedback</div>
+          <div class="fb-menu-item" id="facebookBtnLi" role="menuitem" tabindex="0" onclick="window.open('https://www.facebook.com/profile.php?id=61591673636516','_blank','noopener')"><span class="icon">👍</span> Follow on Facebook</div>
+        </div>
       </div>
       <!-- Hidden anchors preserved for event listeners -->
       <a id="familySheetBtn" href="families.html" target="_blank" style="display:none;">&#128203;</a>
@@ -5299,36 +5305,44 @@ document.getElementById('guidancePanel').addEventListener('click', (e) => {
 });
 
 // ─── Toolbar dropdown menus ───
+function closeAllMenus() {
+  document.querySelectorAll('.fb-menu.open').forEach(m => m.classList.remove('open'));
+}
 (function() {
-  const treeMenuBtn = document.getElementById('treeMenuBtn');
-  const treeMenu = document.getElementById('treeMenu');
-  const moreMenuBtn = document.getElementById('moreMenuBtn');
-  const moreMenu = document.getElementById('moreMenu');
+  const menus = [
+    { btn: document.getElementById('treeMenuBtn'), menu: document.getElementById('treeMenu') },
+    { btn: document.getElementById('guideMenuBtn'), menu: document.getElementById('guideMenu') },
+    { btn: document.getElementById('moreMenuBtn'), menu: document.getElementById('moreMenu') }
+  ];
 
-  function toggleMenu(menu, btn) {
-    // Close the other menu
-    const other = menu === treeMenu ? moreMenu : treeMenu;
-    other.classList.remove('open');
-    menu.classList.toggle('open');
-  }
+  function closeAll() { menus.forEach(m => m.menu?.classList.remove('open')); }
 
-  if (treeMenuBtn) treeMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(treeMenu, treeMenuBtn); });
-  if (moreMenuBtn) moreMenuBtn.addEventListener('click', (e) => { e.stopPropagation(); toggleMenu(moreMenu, moreMenuBtn); });
+  menus.forEach(({ btn, menu }) => {
+    if (!btn || !menu) return;
+    btn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const isOpen = menu.classList.contains('open');
+      closeAll();
+      if (!isOpen) menu.classList.add('open');
+      btn.setAttribute('aria-expanded', !isOpen);
+    });
+  });
 
   // Close menus on outside click
   document.addEventListener('click', (e) => {
-    if (!treeMenu?.contains(e.target) && e.target !== treeMenuBtn) treeMenu?.classList.remove('open');
-    if (!moreMenu?.contains(e.target) && e.target !== moreMenuBtn) moreMenu?.classList.remove('open');
+    menus.forEach(({ btn, menu }) => {
+      if (menu && !menu.contains(e.target) && e.target !== btn) menu.classList.remove('open');
+    });
   });
 
   // Close menu when any menu item is clicked
-  [treeMenu, moreMenu].forEach(menu => {
+  menus.forEach(({ menu }) => {
     if (!menu) return;
     menu.addEventListener('click', () => menu.classList.remove('open'));
   });
 
   // Keyboard support: Enter/Space on menu items triggers click
-  [treeMenu, moreMenu].forEach(menu => {
+  menus.forEach(({ menu }) => {
     if (!menu) return;
     menu.addEventListener('keydown', (e) => {
       if (e.key === 'Enter' || e.key === ' ') {
@@ -5339,10 +5353,6 @@ document.getElementById('guidancePanel').addEventListener('click', (e) => {
       if (e.key === 'Escape') menu.classList.remove('open');
     });
   });
-
-  // Update aria-expanded on menu toggle
-  if (treeMenuBtn) treeMenuBtn.addEventListener('click', () => { treeMenuBtn.setAttribute('aria-expanded', treeMenu.classList.contains('open')); });
-  if (moreMenuBtn) moreMenuBtn.addEventListener('click', () => { moreMenuBtn.setAttribute('aria-expanded', moreMenu.classList.contains('open')); });
 
   // Keyboard shortcut: Ctrl+Z = undo
   document.addEventListener('keydown', (e) => {
@@ -7066,7 +7076,7 @@ function closeMemberModal() {
     shareBtn:          { action: 'share_tree',      category: 'tree' },
     treeManagerToggle: { action: 'toggle_tree_mgr',  category: 'tree' },
     privacyBtn:        { action: 'privacy_info',     category: 'ui' },
-    nextStepsBtn:      { action: 'open_guidance',    category: 'ui' },
+    guideMenuBtn:     { action: 'open_guidance',    category: 'ui' },
     feedbackBtn:       { action: 'feedback_open',    category: 'ui' },
     viewPosterBtn:     { action: 'open_poster',     category: 'tree' },
     certToggle:        { action: 'scan_certificate',category: 'docs' },
