@@ -5444,12 +5444,12 @@ async function autoRestore() {
         if (data.visibleMaxGen !== undefined) visibleMaxGen = data.visibleMaxGen;
         // Migrate stale bracketed names
         people.forEach(p => {
-          if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
-            const m = p.name.match(/(.+?)\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/);
+          if (typeof p.name === 'string' && /\s*[\(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^\)\]]+)[\)\]]/.test(p.name)) {
+            const m = p.name.match(/(.+?)\s*[\(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^\)\]]+)[\)\]]/);
             if (m) { /* same migration */ }
           }
           if (typeof p.name === 'string') {
-            p.name = p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
+            p.name = p.name.replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '').trim();
             if (p.name !== p.fullName) p.fullName = p.name;
           }
         });
@@ -5462,6 +5462,29 @@ async function autoRestore() {
         treesList = [meta];
         localStorage.removeItem('familytree_data_v5');
         showToast('Migrated legacy save to new tree store');
+        updateTreeManagerUI();
+        return true;
+      }
+    } catch (e) {}
+  }
+  // Fallback: family builder storage (cross-page data sharing)
+  const fbSaved = localStorage.getItem('vr_freebuild_data_v1');
+  if (fbSaved) {
+    try {
+      const data = JSON.parse(fbSaved);
+      if (data.people && data.people.length > 0) {
+        people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
+        // Family builder uses gen 0 = youngest, pedigree uses gen 0 = root (oldest)
+        // The parser already normalises, so just use as-is
+        visibleMaxGen = maxGen(people, p => p.gen);
+        // Migrate to IndexedDB tree store
+        const treeId = 'tree_' + Date.now();
+        await saveTreeData(treeId, { people, nextId, visibleMaxGen });
+        const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
+        await saveTreeMeta(meta);
+        currentTreeId = treeId;
+        treesList = [meta];
+        showToast('Loaded ' + people.length + ' people from Family Builder');
         updateTreeManagerUI();
         return true;
       }
