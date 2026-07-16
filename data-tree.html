@@ -911,19 +911,21 @@ details.acc .acc-body { padding: 6px 12px; }
       <!-- Tree menu -->
       <button class="tb-btn" id="treeMenuBtn" title="Tree options" aria-label="Tree options menu" aria-haspopup="true" aria-expanded="false">🌳 <span>Tree</span> ▾</button>
       <div class="tb-menu" id="treeMenu" role="menu">
-        <div class="tb-menu-item" id="treeManagerToggle" role="menuitem" tabindex="0" onclick="checkMemberFeature('multiple_trees', toggleTreeManager)"><span class="icon">🌳</span> My Trees</div>
-        <div class="tb-menu-item" id="familySheetMenuItem" role="menuitem" tabindex="0" onclick="checkMemberFeature('family_sheets', function(){document.getElementById('familySheetBtn').click()})"><span class="icon">📋</span> Family Sheets</div>
-        <div class="tb-menu-item" id="viewPosterBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('heritage_poster', openPoster)"><span class="icon">🖼️</span> Heritage Poster</div>
-        <div class="tb-menu-item" id="printTreeBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('print', openPrintDialog)"><span class="icon">🖨️</span> Print Tree</div>
+        <div class="tb-menu-item" role="menuitem" tabindex="0" onclick="location.href='data-tree.html';closeAllMenus()"><span class="icon">🌲</span> Pedigree Tree</div>
+        <div class="tb-menu-item" id="freeBuildMenuItem" role="menuitem" tabindex="0" onclick="saveTreeToStorage(); location.href='family-builder.html?from=dt';closeAllMenus()"><span class="icon">🌿</span> Family Builder</div>
+        <div class="tb-menu-item" id="familySheetMenuItem" role="menuitem" tabindex="0" onclick="document.getElementById('familySheetBtn').click()"><span class="icon">📋</span> Family Sheets</div>
+        <div class="tb-menu-item" id="viewPosterBtn" role="menuitem" tabindex="0" onclick="openPoster()"><span class="icon">🖼️</span> Heritage Poster</div>
         <div class="tb-menu-item" id="gedcomToggle" role="menuitem" tabindex="0" onclick="openGuidancePanel();setTimeout(function(){var b=document.getElementById('importGuide').querySelector('button');var body=document.getElementById('importBody');if(body&&b){body.style.display='block';b.querySelector('span').style.transform='rotate(180deg)';document.getElementById('guidanceBody').scrollTop=body.offsetTop-20;}},150);closeAllMenus()"><span class="icon">🔄</span> Import & Export GEDCOM</div>
-        <div class="tb-menu-item" id="freeBuildMenuItem" role="menuitem" tabindex="0" onclick="location.href='family-builder.html';closeAllMenus()"><span class="icon">🌿</span> Family Builder</div>
+        <div class="tb-menu-item" role="menuitem" tabindex="0" onclick="saveTreeToStorage()"><span class="icon">💾</span> Save Tree</div>
+        <div class="tb-menu-item" id="loadBtn" role="menuitem" tabindex="0"><span class="icon">📂</span> Load Backup</div>
+        <div class="tb-menu-item" id="shareBtn" role="menuitem" tabindex="0" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
+        <div class="tb-menu-item" role="menuitem" tabindex="0" onclick="openPrintDialog()"><span class="icon">🖨️</span> Print Tree</div>
+        <div class="tb-menu-item" id="treeManagerToggle" role="menuitem" tabindex="0" onclick="toggleTreeManager()"><span class="icon">🌳</span> My Trees</div>
         <div class="tb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0">🗑️ Reset Tree</div>
       </div>
       <!-- More menu -->
       <button class="tb-btn" id="moreMenuBtn" title="More options" aria-label="More options menu" aria-haspopup="true" aria-expanded="false">⋯ <span>More</span> ▾</button>
       <div class="tb-menu" id="moreMenu" role="menu">
-        <div class="tb-menu-item" id="shareBtn" role="menuitem" tabindex="0" onclick="checkMemberFeature('share_tree', shareTree)"><span class="icon">📤</span> Share Tree</div>
-        <div class="tb-menu-item" id="loadBtn" role="menuitem" tabindex="0"><span class="icon">📂</span> Load Backup</div>
         <div class="tb-menu-item" id="darkModeToggleLi" role="menuitem" tabindex="0"><span class="icon" id="darkModeToggle">🌙</span> Dark Mode</div>
         <div class="tb-menu-item" id="privacyBtn" role="menuitem" tabindex="0" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
         <div class="tb-menu-item" id="feedbackBtn" role="menuitem" tabindex="0" onclick="showFeedbackModal()"><span class="icon">💬</span> Send Feedback</div>
@@ -4922,20 +4924,6 @@ function attachGedcomListener() {
       e.target.value = '';
     });
   }
-  // Attach suggestion gate listener
-  const overlay = document.getElementById('suggestionOverlay');
-  if (overlay && !overlay._gateListening) {
-    overlay._gateListening = true;
-    overlay.addEventListener('click', function() {
-      checkMemberFeature('guidance_suggestions', function() {
-        const gate = document.getElementById('suggestionGate');
-        if (gate) {
-          const ov = document.getElementById('suggestionOverlay');
-          if (ov) ov.remove();
-        }
-      });
-    });
-  }
 }
 
 function renderGuidanceResults({ suggestions, stats }) {
@@ -4962,16 +4950,8 @@ function renderGuidanceResults({ suggestions, stats }) {
     return;
   }
 
-  html += '<div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#2a1f10;margin-bottom:8px;">Top Priority Suggestions <span class="member-badge-guidance">M</span></div>';
+  html += '<div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#2a1f10;margin-bottom:8px;">Top Priority Suggestions</div>';
   const icons = { BC: '📜', MC: '💍', DC: '⚰️' };
-
-  // Check if member popup for suggestions has been shown
-  var suggestionsGated = !localStorage.getItem('vr_member_shown_guidance_suggestions');
-  if (suggestionsGated) {
-    // Show suggestions but wrap in a click handler
-    html += '<div id="suggestionGate" style="position:relative;">';
-    html += '<div id="suggestionOverlay" style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(245,238,220,0.92);z-index:5;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:8px;"><div style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:6px;">🧭</div><div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#3a2a10;">Tap to view suggestions</div><div style="font-size:11px;color:#8a6a3a;margin-top:4px;">Members feature — free during early access</div></div></div>';
-  }
 
   for (const s of suggestions) {
     const cls = s.priority === 'high' ? 'high' : (s.priority === 'med' ? 'med' : 'low');
@@ -4989,9 +4969,6 @@ function renderGuidanceResults({ suggestions, stats }) {
     html += '<a href="' + safeSourceUrl + '" target="_blank" rel="noopener" class="source-link">🔍 Search ' + safeSourceName + '</a>';
     html += '<span class="cost-note">🛒 ' + s.type + ' cert: ' + safeCost + '</span>';
     html += '</div></div>';
-  }
-  if (suggestionsGated) {
-    html += '</div>'; // close suggestionGate
   }
   html += '<div style="border-top:2px solid #c4b89a;margin-top:16px;padding-top:12px;">';
   html += '<button onclick="showPrivacyModal()" style="width:100%;text-align:left;background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;padding:10px 12px;font-family:\'Cinzel Decorative\',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">';
@@ -5398,6 +5375,33 @@ document.getElementById('guidancePanel').addEventListener('click', (e) => {
 
 // (Duplicate auto-save interval removed — see single interval above, BUG-13 fix)
 async function autoRestore() {
+  // Check if we're arriving from family builder — prioritize localStorage in that case
+  const fromFB = new URLSearchParams(window.location.search).get('from') === 'fb';
+  
+  if (fromFB) {
+    // Coming from family builder: check localStorage first (skip stale IndexedDB)
+    const fbSaved = localStorage.getItem('vr_freebuild_data_v1') || localStorage.getItem('familytree_data_v5');
+    if (fbSaved) {
+      try {
+        const data = JSON.parse(fbSaved);
+        if (data.people && data.people.length > 0) {
+          people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
+          visibleMaxGen = maxGen(people, p => p.gen);
+          // Save to IndexedDB so it persists for future visits
+          const treeId = 'tree_' + Date.now();
+          currentTreeId = treeId;
+          await saveTreeData(treeId, { people, nextId, visibleMaxGen });
+          const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
+          await saveTreeMeta(meta);
+          treesList = [meta];
+          showToast('Loaded ' + people.length + ' people from Family Builder');
+          updateTreeManagerUI();
+          return true;
+        }
+      } catch (e) { console.error('[autoRestore fromFB]', e); }
+    }
+  }
+  
   // First try IndexedDB multi-tree store
   treesList = await loadAllTreeMetas();
   if (treesList.length > 0) {
@@ -5444,12 +5448,12 @@ async function autoRestore() {
         if (data.visibleMaxGen !== undefined) visibleMaxGen = data.visibleMaxGen;
         // Migrate stale bracketed names
         people.forEach(p => {
-          if (typeof p.name === 'string' && /\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/.test(p.name)) {
-            const m = p.name.match(/(.+?)\s*[(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^)\]]+)[)\]]/);
+          if (typeof p.name === 'string' && /\s*[\(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^\)\]]+)[\)\]]/.test(p.name)) {
+            const m = p.name.match(/(.+?)\s*[\(\[]\s*[Mm][\.\s]*[Ss][\.\s]*\s*([^\)\]]+)[\)\]]/);
             if (m) { /* same migration */ }
           }
           if (typeof p.name === 'string') {
-            p.name = p.name.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
+            p.name = p.name.replace(/\s*[\(\[][^\)\]]*[\)\]]/g, '').trim();
             if (p.name !== p.fullName) p.fullName = p.name;
           }
         });
@@ -5462,6 +5466,29 @@ async function autoRestore() {
         treesList = [meta];
         localStorage.removeItem('familytree_data_v5');
         showToast('Migrated legacy save to new tree store');
+        updateTreeManagerUI();
+        return true;
+      }
+    } catch (e) {}
+  }
+  // Fallback: family builder storage (cross-page data sharing)
+  const fbSaved = localStorage.getItem('vr_freebuild_data_v1');
+  if (fbSaved) {
+    try {
+      const data = JSON.parse(fbSaved);
+      if (data.people && data.people.length > 0) {
+        people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
+        // Family builder uses gen 0 = youngest, pedigree uses gen 0 = root (oldest)
+        // The parser already normalises, so just use as-is
+        visibleMaxGen = maxGen(people, p => p.gen);
+        // Migrate to IndexedDB tree store
+        const treeId = 'tree_' + Date.now();
+        await saveTreeData(treeId, { people, nextId, visibleMaxGen });
+        const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
+        await saveTreeMeta(meta);
+        currentTreeId = treeId;
+        treesList = [meta];
+        showToast('Loaded ' + people.length + ' people from Family Builder');
         updateTreeManagerUI();
         return true;
       }
@@ -5768,6 +5795,15 @@ function toggleDarkMode() {
   if (saved === 'dark' && btn) btn.textContent = '☀️';
   else if (saved === 'light' && btn) btn.textContent = '🌙';
 })();
+
+// Save tree to localStorage (for Tree menu Save button)
+function saveTreeToStorage() {
+  localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
+  // Also write to family builder key for cross-page sync
+  localStorage.setItem('vr_freebuild_data_v1', JSON.stringify({people: people, nextId: nextId}));
+  if (currentTreeId) saveTreeData(currentTreeId, { people, nextId, visibleMaxGen });
+  showToast('Tree saved');
+}
 
 // View as Poster button — opens heritage poster with current tree data
 // Explicitly save to localStorage before opening to avoid sync lag
