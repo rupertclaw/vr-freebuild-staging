@@ -1,0 +1,522 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Vaulted Roots — Document Attachment Demo</title>
+<link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600;700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg-page: #e8e0cc;
+  --bg-header: #3e2b1a;
+  --bg-header-border: #5a3a22;
+  --text-logo: #c4a875;
+  --text-tagline: #a08a5a;
+  --bg-btn: #4a3a22;
+  --bg-btn-border: #6b5537;
+  --text-btn: #e8dcc8;
+  --bg-card: #f5eedc;
+  --bg-tree-start: #e6dec8;
+  --bg-tree-end: #d4c8a8;
+  --bg-zoom: #f5eedc;
+  --text-zoom: #4a3a22;
+  --bg-person-unknown: #e8e0cc;
+  --text-person-unknown: #7a6a4a;
+  --bg-card-you: #f0e8d0;
+}
+
+* { margin: 0; padding: 0; box-sizing: border-box; }
+
+html, body {
+  height: 100%;
+  background: var(--bg-page);
+  font-family: 'Cormorant Garamond', serif;
+  overflow: hidden;
+}
+
+/* ═══════ HEADER ═══════ */
+.header {
+  position: fixed; top: 0; left: 0; right: 0; height: 124px;
+  background: var(--bg-header); border-bottom: 2px solid var(--bg-header-border);
+  display: flex; flex-direction: column; align-items: center; justify-content: center;
+  z-index: 100;
+}
+.header-logo { font-family: 'Cinzel Decorative', serif; font-size: 24px; color: var(--text-logo); font-weight: 700; }
+.header-tagline { font-size: 14px; color: var(--text-tagline); font-weight: 700; margin-top: 2px; }
+
+/* ═══════ DEMO AREA ═══════ */
+.demo-wrap {
+  position: fixed; top: 124px; left: 0; right: 0; bottom: 0;
+  display: flex; align-items: center; justify-content: center;
+  background: radial-gradient(ellipse at center, var(--bg-tree-start) 0%, var(--bg-tree-end) 100%);
+  padding: 20px;
+}
+
+.demo-instruction {
+  position: fixed; top: 134px; left: 50%; transform: translateX(-50%);
+  background: rgba(62,43,26,0.9); color: #e8dcc8;
+  padding: 8px 16px; border-radius: 4px; font-size: 13px; z-index: 50;
+  font-family: 'Cormorant Garamond', serif; pointer-events: none;
+}
+
+/* ═══════ PERSON CARD (mini version for demo) ═══════ */
+.person-card {
+  width: 180px; background: var(--bg-card); border: 2px solid #8a7a5a;
+  border-radius: 8px; padding: 10px; text-align: center; cursor: pointer;
+  transition: transform 0.15s, box-shadow 0.15s;
+  position: relative;
+}
+.person-card:hover { transform: translateY(-3px); box-shadow: 0 6px 20px rgba(0,0,0,0.25); }
+.person-card .name { font-family: 'Cinzel Decorative', serif; font-size: 13px; color: #2a1f10; margin-bottom: 4px; }
+.person-card .years { font-size: 11px; color: #6b5537; }
+.person-card .doc-badges {
+  display: flex; gap: 3px; justify-content: center; margin-top: 6px; flex-wrap: wrap;
+}
+.person-card .doc-badge {
+  font-size: 10px; padding: 2px 6px; border-radius: 3px;
+  font-family: 'Cormorant Garamond', serif; font-weight: 600;
+}
+.doc-badge.bc { background: #dcfce7; color: #166534; }
+.doc-badge.mc { background: #dbeafe; color: #1e40af; }
+.doc-badge.dc { background: #fee2e2; color: #991b1b; }
+.doc-badge.photo { background: #fef3c7; color: #92400e; }
+.doc-badge.article { background: #f3e8ff; color: #6b21a8; }
+.doc-badge.misc { background: #e5e7eb; color: #374151; }
+
+/* ═══════ DETAIL PANEL ═══════ */
+.detail-panel {
+  display: none; position: fixed; top: 124px; right: 0;
+  width: 400px; max-width: 95vw; height: calc(100vh - 124px);
+  background: #f5eedc; z-index: 400; overflow-y: auto;
+  border-left: 3px solid #4a3a22;
+}
+.detail-panel.active { display: block; animation: slideIn 0.25s ease; }
+.detail-header { background: #2a1f15; color: #e8dcc8; padding: 14px 16px; position: relative; }
+.detail-close { position: absolute; top: 10px; right: 14px; background: none; border: none; color: #e8dcc8; font-size: 24px; cursor: pointer; }
+.detail-body { padding: 16px 16px 80px 16px; }
+
+.detail-section { margin-bottom: 20px; }
+.detail-section-title {
+  font-family: 'Cinzel Decorative', serif; font-size: 12px; color: #4a3a22;
+  text-transform: uppercase; letter-spacing: 1px;
+  margin-bottom: 10px; padding-bottom: 6px; border-bottom: 1px solid #c4b89a;
+}
+
+/* ═══════ DOCUMENT GALLERY ═══════ */
+.doc-gallery {
+  display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px;
+}
+.doc-item {
+  background: #fff; border: 2px solid #8a7a5a; border-radius: 6px;
+  padding: 10px; cursor: pointer; transition: border-color 0.15s;
+  position: relative;
+}
+.doc-item:hover { border-color: #4a3a22; }
+.doc-item .doc-thumb {
+  width: 100%; height: 80px; background: #f0e8d8; border-radius: 4px;
+  display: flex; align-items: center; justify-content: center; font-size: 28px;
+  margin-bottom: 6px; overflow: hidden;
+}
+.doc-item .doc-thumb img { width: 100%; height: 100%; object-fit: cover; }
+.doc-item .doc-title { font-size: 11px; color: #2a1f10; font-weight: 600; margin-bottom: 2px; }
+.doc-item .doc-meta { font-size: 10px; color: #6b5537; }
+.doc-item .doc-verified {
+  position: absolute; top: 6px; right: 6px; font-size: 12px;
+}
+
+/* ═══════ ADD DOCUMENT BUTTONS ═══════ */
+.add-doc-options {
+  display: flex; flex-direction: column; gap: 8px;
+}
+.add-doc-btn {
+  display: flex; align-items: center; gap: 10px;
+  padding: 12px; border: 2px dashed #8a7a5a; border-radius: 6px;
+  background: transparent; cursor: pointer; text-align: left;
+  transition: all 0.15s; font-family: 'Cormorant Garamond', serif;
+}
+.add-doc-btn:hover { border-color: #4a3a22; background: #f0e8d8; }
+.add-doc-btn .icon { font-size: 22px; flex-shrink: 0; }
+.add-doc-btn .lbl { font-size: 13px; color: #2a1f10; font-weight: 600; }
+.add-doc-btn .sub { font-size: 11px; color: #6b5537; }
+
+/* ═══════ DOCUMENT FORM (for manual entry / OCR result) ═══════ */
+.doc-form {
+  background: #fff; border: 2px solid #8a7a5a; border-radius: 6px; padding: 14px;
+}
+.detail-field { margin-bottom: 12px; }
+.detail-field label { display: block; font-size: 10px; color: #6b5537; text-transform: uppercase; margin-bottom: 3px; font-weight: 600; }
+.detail-field input, .detail-field textarea, .detail-field select {
+  width: 100%; padding: 8px; border: 1px solid #8a7a5a; border-radius: 4px;
+  background: #fff; font-family: 'Cormorant Garamond', serif; font-size: 13px; color: #2a1f10;
+}
+.detail-field textarea { min-height: 60px; resize: vertical; }
+
+.compression-badge {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 4px 10px; border-radius: 4px; font-size: 11px;
+}
+.compression-badge.good { background: #dcfce7; color: #166534; }
+.compression-badge.warn { background: #fef3c7; color: #92400e; }
+
+/* ═══════ ACTION BAR ═══════ */
+.detail-actions {
+  display: flex; gap: 10px; margin-top: 16px;
+  padding: 12px 0 16px 0; border-top: 1px solid #c4b89a;
+  position: sticky; bottom: 0; background: #f5eedc; z-index: 10;
+}
+.detail-actions .cancel-btn {
+  flex: 1; padding: 10px; border: 1px solid #8a7a5a; border-radius: 4px;
+  background: #e8dcc8; color: #4a3a22; font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; cursor: pointer;
+}
+.detail-actions .save-btn {
+  flex: 1; padding: 10px; border: none; border-radius: 4px;
+  background: #3e3225; color: #f0e6d2; font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; cursor: pointer;
+}
+
+/* ═══════ MODAL OVERLAYS ═══════ */
+.modal-overlay {
+  display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+  background: rgba(0,0,0,0.6); z-index: 500; justify-content: center; align-items: center;
+}
+.modal-overlay.active { display: flex; }
+.modal-box {
+  background: #f5eedc; border: 3px solid #4a3a22; border-radius: 8px;
+  padding: 20px; max-width: 360px; width: 90%;
+}
+.modal-title { font-family: 'Cinzel Decorative', serif; font-size: 14px; color: #3e2b1a; margin-bottom: 12px; text-align: center; }
+
+/* ═══════ STORAGE METER ═══════ */
+.storage-meter {
+  background: #e8dcc8; border-radius: 4px; height: 8px; overflow: hidden; margin-top: 4px;
+}
+.storage-meter .fill { height: 100%; background: #5a7a3a; transition: width 0.3s; }
+.storage-meter .fill.warn { background: #f59e0b; }
+.storage-meter .fill.danger { background: #ef4444; }
+
+@keyframes slideIn {
+  from { transform: translateX(100%); opacity: 0; }
+  to { transform: translateX(0); opacity: 1; }
+}
+
+@media (max-width: 480px) {
+  .detail-panel { width: 100%; max-width: 100vw; }
+  .doc-gallery { grid-template-columns: 1fr; }
+}
+</style>
+</head>
+<body>
+
+<!-- Header -->
+<div class="header">
+  <div class="header-logo">Vaulted Roots</div>
+  <div class="header-tagline">Document Attachment Demo</div>
+</div>
+
+<div class="demo-instruction">Tap the person card to open details and documents</div>
+
+<!-- Demo area with sample person -->
+<div class="demo-wrap" id="demoWrap">
+  <div class="person-card" id="sampleCard" onclick="openDetail()">
+    <div class="name">Joseph Lynch</div>
+    <div class="years">1912 – 1968</div>
+    <div class="doc-badges">
+      <span class="doc-badge bc">BC</span>
+      <span class="doc-badge mc">MC</span>
+      <span class="doc-badge dc">DC</span>
+      <span class="doc-badge photo">📷</span>
+    </div>
+  </div>
+</div>
+
+<!-- Detail Panel -->
+<div class="detail-panel" id="detailPanel">
+  <div class="detail-header">
+    <button class="detail-close" onclick="closeDetail()">&times;</button>
+    <div style="font-size:14px;">Joseph Lynch</div>
+    <div style="font-size:11px;opacity:0.7;">1912 – 1968</div>
+  </div>
+  <div class="detail-body" id="detailBody">
+
+    <!-- Basic Info Section -->
+    <div class="detail-section">
+      <div class="detail-section-title">Basic Information</div>
+      <div class="detail-field">
+        <label>Full Name</label>
+        <input type="text" value="Joseph Lynch">
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:10px;">
+        <div class="detail-field">
+          <label>Birth Year</label>
+          <input type="text" value="1912">
+        </div>
+        <div class="detail-field">
+          <label>Death Year</label>
+          <input type="text" value="1968">
+        </div>
+      </div>
+      <div class="detail-field">
+        <label>Location</label>
+        <input type="text" value="Dublin, Ireland">
+      </div>
+    </div>
+
+    <!-- Documents Section -->
+    <div class="detail-section">
+      <div class="detail-section-title">Documents (4)</div>
+
+      <!-- Document Gallery -->
+      <div class="doc-gallery" id="docGallery">
+        <div class="doc-item" onclick="viewDoc('bc')">
+          <div class="doc-thumb">📄</div>
+          <div class="doc-title">Birth Certificate</div>
+          <div class="doc-meta">15 Mar 1912 · GRO Dublin</div>
+          <div class="doc-verified">✓</div>
+        </div>
+        <div class="doc-item" onclick="viewDoc('mc')">
+          <div class="doc-thumb">💍</div>
+          <div class="doc-title">Marriage Certificate</div>
+          <div class="doc-meta">3 Jun 1938 · Galway</div>
+          <div class="doc-verified">✓</div>
+        </div>
+        <div class="doc-item" onclick="viewDoc('dc')">
+          <div class="doc-thumb">⚰️</div>
+          <div class="doc-title">Death Certificate</div>
+          <div class="doc-meta">7 Nov 1968 · Dublin</div>
+          <div class="doc-verified">✓</div>
+        </div>
+        <div class="doc-item" onclick="viewDoc('photo')">
+          <div class="doc-thumb">📷</div>
+          <div class="doc-title">Family Photo</div>
+          <div class="doc-meta">~1950 · 124 KB</div>
+          <div class="doc-verified">✓</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Add Document Section -->
+    <div class="detail-section">
+      <div class="detail-section-title">Add Document</div>
+      <div class="add-doc-options" id="addDocOptions">
+        <button class="add-doc-btn" onclick="showUploadForm()">
+          <span class="icon">📤</span>
+          <div>
+            <div class="lbl">Upload File</div>
+            <div class="sub">Photo, article, or scanned document</div>
+          </div>
+        </button>
+        <button class="add-doc-btn" onclick="showScanForm()">
+          <span class="icon">📷</span>
+          <div>
+            <div class="lbl">Scan Certificate</div>
+            <div class="sub">OCR transcription to populate fields</div>
+          </div>
+        </button>
+        <button class="add-doc-btn" onclick="showManualForm()">
+          <span class="icon">⌨️</span>
+          <div>
+            <div class="lbl">Type Manually</div>
+            <div class="sub">Enter certificate details yourself</div>
+          </div>
+        </button>
+      </div>
+
+      <!-- Hidden forms -->
+      <div id="uploadForm" style="display:none;margin-top:14px;">
+        <div class="doc-form">
+          <div class="detail-field">
+            <label>Select File</label>
+            <input type="file" id="fileInput" accept="image/*,.pdf" onchange="onFileSelected(this)">
+          </div>
+          <div id="filePreview" style="display:none;margin-bottom:12px;">
+            <div class="doc-thumb" style="height:120px;"><img id="previewImg" src="" alt="Preview"></div>
+            <div style="display:flex;justify-content:space-between;align-items:center;margin-top:8px;font-size:12px;color:#6b5537;">
+              <span id="fileName">photo.jpg</span>
+              <span id="fileSizes">4.2 MB → 180 KB</span>
+            </div>
+            <div class="compression-badge good" id="compressionBadge">
+              <span>✓</span> Compressed 96% · Stored locally
+            </div>
+          </div>
+          <div class="detail-field">
+            <label>Document Type</label>
+            <select>
+              <option value="photo">Photo</option>
+              <option value="article">News Article</option>
+              <option value="birth_certificate">Birth Certificate</option>
+              <option value="marriage_certificate">Marriage Certificate</option>
+              <option value="death_certificate">Death Certificate</option>
+              <option value="other">Other Document</option>
+            </select>
+          </div>
+          <div class="detail-field">
+            <label>Title (optional)</label>
+            <input type="text" placeholder="e.g. Wedding Day">
+          </div>
+          <div class="detail-actions">
+            <button class="cancel-btn" onclick="hideForms()">Cancel</button>
+            <button class="save-btn" onclick="saveDoc()">Attach Document</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="scanForm" style="display:none;margin-top:14px;">
+        <div class="doc-form">
+          <div class="detail-field">
+            <label>Certificate Type</label>
+            <select id="scanType">
+              <option value="birth">Birth Certificate</option>
+              <option value="marriage">Marriage Certificate</option>
+              <option value="death">Death Certificate</option>
+            </select>
+          </div>
+          <div class="detail-field">
+            <label>Take Photo or Choose File</label>
+            <input type="file" accept="image/*" capture="environment">
+          </div>
+          <div style="background:#fef3c7;border:1px solid #f59e0b;border-radius:4px;padding:10px;margin-bottom:12px;font-size:12px;color:#92400e;">
+            <strong>OCR Preview:</strong> Tap scan to extract text. You can correct it before saving.
+          </div>
+          <div class="detail-field">
+            <label>Transcription</label>
+            <textarea placeholder="Extracted text appears here... Edit as needed."></textarea>
+          </div>
+          <div class="detail-field">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox" checked> Also update person card fields
+            </label>
+          </div>
+          <div class="detail-actions">
+            <button class="cancel-btn" onclick="hideForms()">Cancel</button>
+            <button class="save-btn" onclick="saveDoc()">Save & Apply</button>
+          </div>
+        </div>
+      </div>
+
+      <div id="manualForm" style="display:none;margin-top:14px;">
+        <div class="doc-form">
+          <div class="detail-field">
+            <label>Document Type</label>
+            <select>
+              <option value="birth_certificate">Birth Certificate</option>
+              <option value="marriage_certificate">Marriage Certificate</option>
+              <option value="death_certificate">Death Certificate</option>
+              <option value="photo">Photo</option>
+              <option value="article">News Article</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="detail-field">
+            <label>Title</label>
+            <input type="text" placeholder="e.g. Birth of Joseph Lynch">
+          </div>
+          <div class="detail-field">
+            <label>Date (if known)</label>
+            <input type="text" placeholder="1912-03-15">
+          </div>
+          <div class="detail-field">
+            <label>Source / Location</label>
+            <input type="text" placeholder="e.g. GRO Dublin">
+          </div>
+          <div class="detail-field">
+            <label>Details / Transcription</label>
+            <textarea placeholder="Enter any details, transcription, or notes..."></textarea>
+          </div>
+          <div class="detail-field">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;">
+              <input type="checkbox"> Also update person card fields from this data
+            </label>
+          </div>
+          <div class="detail-actions">
+            <button class="cancel-btn" onclick="hideForms()">Cancel</button>
+            <button class="save-btn" onclick="saveDoc()">Save Document</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Storage Info -->
+    <div class="detail-section">
+      <div class="detail-section-title">Storage</div>
+      <div style="font-size:12px;color:#6b5537;margin-bottom:4px;">
+        Using 3.2 MB of ~50 MB
+      </div>
+      <div class="storage-meter">
+        <div class="fill" style="width:6%"></div>
+      </div>
+      <div style="font-size:11px;color:#6b5537;margin-top:6px;">
+        All data stays on this device. Export to back up.
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<!-- Toast -->
+<div id="toast" style="display:none;position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(30,25,20,0.92);color:#f0e6d2;padding:14px 24px;border-radius:8px;z-index:9999;font-size:15px;text-align:center;">
+  Document attached
+</div>
+
+<script>
+function openDetail() {
+  document.getElementById('detailPanel').classList.add('active');
+}
+
+function closeDetail() {
+  document.getElementById('detailPanel').classList.remove('active');
+  hideForms();
+}
+
+function hideForms() {
+  document.getElementById('uploadForm').style.display = 'none';
+  document.getElementById('scanForm').style.display = 'none';
+  document.getElementById('manualForm').style.display = 'none';
+  document.getElementById('addDocOptions').style.display = 'flex';
+}
+
+function showUploadForm() {
+  document.getElementById('addDocOptions').style.display = 'none';
+  document.getElementById('uploadForm').style.display = 'block';
+}
+
+function showScanForm() {
+  document.getElementById('addDocOptions').style.display = 'none';
+  document.getElementById('scanForm').style.display = 'block';
+}
+
+function showManualForm() {
+  document.getElementById('addDocOptions').style.display = 'none';
+  document.getElementById('manualForm').style.display = 'block';
+}
+
+function onFileSelected(input) {
+  if (input.files && input.files[0]) {
+    const file = input.files[0];
+    const reader = new FileReader();
+    reader.onload = function(e) {
+      document.getElementById('previewImg').src = e.target.result;
+      document.getElementById('filePreview').style.display = 'block';
+      document.getElementById('fileName').textContent = file.name;
+      const origMB = (file.size / 1024 / 1024).toFixed(1);
+      document.getElementById('fileSizes').textContent = origMB + ' MB → ~180 KB (compressed)';
+    };
+    reader.readAsDataURL(file);
+  }
+}
+
+function saveDoc() {
+  hideForms();
+  const toast = document.getElementById('toast');
+  toast.style.display = 'block';
+  setTimeout(() => toast.style.display = 'none', 1500);
+}
+
+function viewDoc(type) {
+  const names = { bc: 'Birth Certificate', mc: 'Marriage Certificate', dc: 'Death Certificate', photo: 'Family Photo' };
+  alert('Opens ' + names[type] + ' in full view / editor');
+}
+</script>
+
+</body>
+</html>

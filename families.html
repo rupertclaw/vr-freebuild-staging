@@ -191,7 +191,32 @@ html, body { min-height: 100%; background: var(--bg-page); font-family: 'Cormora
   .family-header { flex-direction: column; align-items: flex-start; }
 }
 </style>
+<script>
+// Register Service Worker with auto-update
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .then(function(reg) {
+      console.log('[SW] Registered', reg.scope);
+      reg.addEventListener('updatefound', function() {
+        var newSW = reg.installing;
+        if (newSW) {
+          newSW.addEventListener('statechange', function() {
+            if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
+              console.log('[SW] New version activated — reloading');
+              location.reload();
+            }
+          });
+        }
+      });
+    })
+    .catch(function(err) { console.error('[SW] Failed', err); });
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    location.reload();
+  });
+}
+</script>
 </head>
+
 <body>
 
 <div class="header">
@@ -292,11 +317,21 @@ async function loadMostRecentTree() {
 }
 
 function buildFamilies(people) {
+  // Filter out blank/empty people (no name or name is just whitespace/Unknown)
+  const realPeople = people.filter(p => {
+    const name = (p.name || '').trim();
+    return name.length > 0 && name !== 'Unknown' && name !== 'Unknown Unknown';
+  });
+  const realIds = new Set(realPeople.map(p => p.id));
+
   const familyMap = new Map();
   let famId = 1;
 
-  people.forEach(p => {
+  realPeople.forEach(p => {
     if (!p.parents || p.parents.length === 0) return;
+    // Only count parents that are real (non-blank) people
+    const parentIds = p.parents.filter(pid => realIds.has(pid));
+    if (parentIds.length === 0) return;
     const key = [...p.parents].sort((a, b) => a - b).join('-');
     if (!familyMap.has(key)) {
       const parents = p.parents.map(pid => people.find(x => x.id === pid)).filter(Boolean);
@@ -306,8 +341,8 @@ function buildFamilies(people) {
   });
 
   const seenPairs = new Set();
-  people.forEach(p => {
-    if (!p.spouseId) return;
+  realPeople.forEach(p => {
+    if (!p.spouseId || !realIds.has(p.spouseId)) return;
     const pairKey = [p.id, p.spouseId].sort((a, b) => a - b).join('-');
     if (seenPairs.has(pairKey)) return;
     seenPairs.add(pairKey);
@@ -438,6 +473,13 @@ async function init() {
         try { data = JSON.parse(saved); } catch (e) {}
       }
     }
+    // Also check family builder's storage key
+    if (!data || !data.people || data.people.length === 0) {
+      const fbSaved = localStorage.getItem('vr_freebuild_data_v1');
+      if (fbSaved) {
+        try { data = JSON.parse(fbSaved); } catch (e) {}
+      }
+    }
     loadingDiv.style.display = 'none';
     if (!data || !data.people || data.people.length === 0) {
       emptyState.style.display = 'block';
@@ -446,7 +488,10 @@ async function init() {
     peopleList = data.people;
     allFamilies = buildFamilies(peopleList);
     document.getElementById('statFamilies').textContent = allFamilies.length;
-    document.getElementById('statPeople').textContent = peopleList.length;
+    document.getElementById('statPeople').textContent = peopleList.filter(p => {
+      const name = (p.name || '').trim();
+      return name.length > 0 && name !== 'Unknown' && name !== 'Unknown Unknown';
+    }).length;
     familyList.style.display = 'flex';
     applySort();
     // Auto-expand first family
@@ -468,6 +513,70 @@ document.getElementById('collapseAll').addEventListener('click', () => {
 });
 
 init();
+
+function showPrivacyModal() {
+  const modal = document.getElementById('privacyModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  updateExpandGenBtn();
+}
+function showFeedbackModal() {
+  const modal = document.getElementById('feedbackModal');
+  if (!modal) return;
+  // Reset to feedback defaults in case founding form changed them
+  const title = modal.querySelector('[style*="font-size:18px"]');
+  if (title) title.textContent = 'Send Feedback';
+  const subtitle = modal.querySelector('[style*="font-size:13px"]');
+  if (subtitle) subtitle.textContent = "We'd love to hear your thoughts";
+  const subjectInput = document.getElementById('feedbackSubject');
+  if (subjectInput) subjectInput.value = 'New Vaulted Roots feedback';
+  const msgLabel = modal.querySelector('label[for="feedbackMessage"]');
+  if (msgLabel) msgLabel.textContent = 'Message';
+  const msgArea = modal.querySelector('textarea[name="message"]');
+  if (msgArea) msgArea.placeholder = "What's on your mind?";
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Send Feedback';
+  modal.style.display = 'flex';
+}
+
+function openFoundingForm() {
+  // Close member modal first
+  document.getElementById('memberModal').classList.remove('active');
+  // Open feedback modal repurposed as founding intent form
+  const modal = document.getElementById('feedbackModal');
+  if (!modal) return;
+  const title = modal.querySelector('[style*="font-size:18px"]');
+  if (title) title.textContent = 'Founding Member';
+  const subtitle = modal.querySelector('[style*="font-size:13px"]');
+  if (subtitle) subtitle.textContent = 'Be first in line when spots open';
+  const subjectInput = document.getElementById('feedbackSubject');
+  if (subjectInput) subjectInput.value = 'VR Founding Member Intent';
+  const msgArea = modal.querySelector('textarea[name="message"]');
+  if (msgArea) msgArea.placeholder = 'I want early access to founding membership ($19.99, first 100).';
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Join the list';
+  modal.style.display = 'flex';
+}
+document.getElementById('privacyModalOk').addEventListener('click', () => {
+  document.getElementById('privacyModal').style.display = 'none';
+  updateExpandGenBtn();
+});
+document.getElementById('privacyModalDismissForever').addEventListener('click', () => {
+  document.getElementById('privacyModal').style.display = 'none';
+  localStorage.setItem('vaultedRootsPrivacySeen', '1');
+  updateExpandGenBtn();
+});
+if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => showPrivacyModal());
+  } else {
+    showPrivacyModal();
+  }
+}
 </script>
+<div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:48px;margin-bottom:8px;">🔒</div>
 </body>
 </html>

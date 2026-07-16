@@ -1,0 +1,4294 @@
+0 HEAD
+1 CHAR UTF-8
+1 GEDC
+2 VERS 5.5.1
+0 @I1@ INDI
+1 NAME Joseph /Mooney/
+1 BIRT
+2 DATE 1 aug 1879
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 17 jan 1957
+1 SEX M
+1 FAMS @F1@
+0 @I2@ INDI
+1 NAME Isabella /Farrell/
+1 BIRT
+2 DATE 12 Jun 1864
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I3@ INDI
+1 NAME Selina /Fullerton/
+1 BIRT
+2 DATE 1833
+2 PLAC ,,,Ireland
+1 SEX F
+1 FAMS @F3@
+0 @I4@ INDI
+1 NAME Mary /Steven/
+1 BIRT
+2 DATE 1886
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 10 Apr 1936
+1 SEX F
+0 @I5@ INDI
+1 NAME Catherine /McAdam/
+1 SEX F
+1 FAMS @F5@
+0 @I6@ INDI
+1 NAME Alice /Lynch/
+1 BIRT
+2 DATE 26 Apr 1865
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 4 Apr 1890
+1 SEX F
+0 @I7@ INDI
+1 NAME Mary /Whyte/
+1 SEX F
+1 FAMS @F7@
+0 @I8@ INDI
+1 NAME Nancy (Agnes) /Mooney/
+1 BIRT
+2 DATE 1836
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 2 Jun 1893
+1 SEX F
+0 @I9@ INDI
+1 NAME James /Barnes/
+1 BIRT
+2 DATE 23 dec 1872
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 20 Jan 1963
+1 SEX M
+0 @I10@ INDI
+1 NAME John /Rogers/
+1 SEX M
+1 FAMS @F10@
+0 @I11@ INDI
+1 NAME Charles /Shanks/
+1 SEX M
+1 FAMS @F11@
+0 @I12@ INDI
+1 NAME John /Smith/
+1 BIRT
+2 DATE 1887
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX M
+0 @I13@ INDI
+1 NAME Mary /Shepherd/
+1 BIRT
+2 DATE 1838
+2 PLAC Balmreino,,Fifeshire,,scotland
+1 DEAT
+2 DATE 9 jul 1901
+1 SEX F
+1 FAMS @F13@
+0 @I14@ INDI
+1 NAME Ann /Welsh/
+1 BIRT
+2 DATE 1826
+1 DEAT
+2 DATE 23 Jul 1887
+1 SEX F
+0 @I15@ INDI
+1 NAME James /Graham/
+1 BIRT
+2 DATE 17 Mar 1871
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1 apr 1905
+1 SEX M
+1 FAMS @F15@
+0 @I16@ INDI
+1 NAME John (Jackie) /Moonie/
+1 BIRT
+2 DATE 21 Nov 1936
+2 PLAC methhill,,Fife,,scotland
+1 DEAT
+2 DATE 16 Dec 2016
+1 SEX M
+0 @I17@ INDI
+1 NAME Thomas Smith or /Weir/
+1 BIRT
+2 DATE 19 Oct 1903
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1 Jun 1973
+1 SEX M
+0 @I18@ INDI
+1 NAME James /Smith/
+1 BIRT
+2 DATE 1876
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX M
+0 @I19@ INDI
+1 NAME James /McCormick/
+1 BIRT
+2 DATE 1826
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I20@ INDI
+1 NAME George /Bett/
+1 BIRT
+2 DATE 1983
+1 SEX M
+0 @I21@ INDI
+1 NAME Mary /Lynch/
+1 BIRT
+2 DATE 10 Jun 1891
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I22@ INDI
+1 NAME Margaret Campbell /Barnes/
+1 BIRT
+2 DATE 11 Jan 1890
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I23@ INDI
+1 NAME Samuel /McCullock/
+1 BIRT
+2 DATE 25 Oct 1864
+1 SEX M
+1 FAMS @F23@
+0 @I24@ INDI
+1 NAME Annie /Farrell/
+1 BIRT
+2 DATE 1898
+1 SEX F
+0 @I25@ INDI
+1 NAME Ann /Stevenson/
+1 BIRT
+2 DATE 1823
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 5 Apr 1873
+1 SEX F
+1 FAMS @F25@
+0 @I26@ INDI
+1 NAME John /Sanderson/
+1 SEX M
+1 FAMS @F26@
+0 @I27@ INDI
+1 NAME Catherine /Connelly/
+1 BIRT
+2 DATE 1835
+1 SEX F
+1 FAMS @F27@
+0 @I28@ INDI
+1 NAME Elizabeth /Mooney/
+1 BIRT
+2 DATE 15 Dec 1881
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 18 feb 1883
+1 SEX F
+0 @I29@ INDI
+1 NAME Wilhelmina E /Farrell/
+1 BIRT
+2 DATE 15 Sep 1890
+1 SEX M
+0 @I30@ INDI
+1 NAME David SmIth or /Weir/
+1 BIRT
+2 DATE 10 Mar 1909
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 DEAT
+2 DATE 5 July 1991
+1 SEX M
+0 @I31@ INDI
+1 NAME Thomas /Knox/
+1 SEX M
+1 FAMS @F31@
+0 @I32@ INDI
+1 NAME Margaret /Keiller/
+1 SEX F
+1 FAMS @F32@
+0 @I33@ INDI
+1 NAME James /McDonald/
+1 SEX M
+1 FAMS @F5@
+0 @I34@ INDI
+1 NAME Susan /Smith/
+1 BIRT
+2 DATE 1884
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX F
+0 @I35@ INDI
+1 NAME Joseph /Lynch/
+1 BIRT
+2 DATE 18 may 1858
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 28 may 1858
+1 SEX M
+0 @I36@ INDI
+1 NAME John /Gardner/
+1 BIRT
+2 DATE 1853
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 30 April 1903
+1 SEX M
+1 FAMS @F36@
+0 @I37@ INDI
+1 NAME Ellen /Barnes/
+1 BIRT
+2 DATE 1852
+1 SEX F
+0 @I38@ INDI
+1 NAME robert /McCullock/
+1 BIRT
+2 DATE 1 Mar 1870
+1 SEX M
+0 @I39@ INDI
+1 NAME Francis /Gillon/
+1 SEX M
+1 FAMS @F39@
+0 @I40@ INDI
+1 NAME Margaret /Mooney/
+1 BIRT
+2 DATE 27 Jun 1872
+1 SEX F
+0 @I41@ INDI
+1 NAME Margaret /Steven/
+1 BIRT
+2 DATE 1888
+2 PLAC Anstruther,,Fife,Scotland,United Kingdom
+1 SEX F
+0 @I42@ INDI
+1 NAME Isabella /Shepherd/
+1 BIRT
+2 DATE 12 apr 1866
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 11 dec 1914
+1 SEX F
+1 FAMS @F42@
+0 @I43@ INDI
+1 NAME Hannah Foot /Millar/
+1 BIRT
+2 DATE abt 1877
+1 SEX F
+1 FAMS @F43@
+0 @I44@ INDI
+1 NAME Jessie Agnes /Weir/
+1 BIRT
+2 DATE 20 jun 1894
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 DEAT
+2 DATE 22 Dec 1969
+1 SEX F
+1 FAMS @F44@
+0 @I45@ INDI
+1 NAME William /Mooney/
+1 BIRT
+2 DATE 1885
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I46@ INDI
+1 NAME Michael /Mooney/
+1 BIRT
+2 DATE 1801
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 23 Mar 1875
+1 SEX M
+1 FAMS @F46@
+0 @I47@ INDI
+1 NAME Cathrine
+1 BIRT
+2 DATE 1821
+1 SEX F
+1 FAMS @F47@
+0 @I48@ INDI
+1 NAME Edward /Collins/
+1 BIRT
+2 DATE 25 Feb 1865
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 30 jun 1919
+1 SEX M
+0 @I49@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 1853
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 21 jan 1924
+1 SEX M
+1 FAMS @F49@
+0 @I50@ INDI
+1 NAME George /Colquhoun/
+1 BIRT
+2 DATE 12 Jun 1877
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 25 Sep 1915
+1 SEX M
+1 FAMS @F50@
+0 @I51@ INDI
+1 NAME Francis
+1 BIRT
+2 DATE 11 Jan 1872
+1 SEX F
+1 FAMS @F51@
+0 @I52@ INDI
+1 NAME Owen /Lynch/
+1 BIRT
+2 DATE 1894
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I53@ INDI
+1 NAME Christopher /Young/
+1 SEX M
+0 @I54@ INDI
+1 NAME Patrick /Quin/
+1 SEX M
+1 FAMS @F54@
+0 @I55@ INDI
+1 NAME William /Mooney/
+1 BIRT
+2 DATE 28 Jun 1829
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX M
+0 @I56@ INDI
+1 NAME Rose /McDonald/
+1 BIRT
+2 DATE 24 Sep 1867
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1868
+1 SEX F
+0 @I57@ INDI
+1 NAME Sarah Jane /Mallon/
+1 BIRT
+2 DATE 1860
+2 PLAC ,,,Ireland
+1 SEX F
+0 @I58@ INDI
+1 NAME Thomas Joshua /Cooper/
+1 BIRT
+2 DATE 19 Dec 1943
+2 PLAC San Francisco,,San Francisco County,California,United States
+1 SEX M
+1 FAMS @F58@
+0 @I59@ INDI
+1 NAME  /Traynor/
+1 SEX M
+1 FAMS @F59@
+0 @I60@ INDI
+1 NAME Ninian /Weir/
+1 BIRT
+2 DATE 18 Aug 1872
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 DEAT
+2 DATE 21 May 1931
+1 SEX M
+1 FAMS @F60@
+0 @I61@ INDI
+1 NAME Elizabeth /Thomson/
+1 BIRT
+2 DATE 19 Dec 1891
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 27 Sep 1951
+1 SEX F
+1 FAMS @F61@
+0 @I62@ INDI
+1 NAME Catherine /Welsh/
+1 BIRT
+2 DATE 1820
+1 DEAT
+2 DATE 17 Jan 1899
+1 SEX F
+1 FAMS @F62@
+0 @I63@ INDI
+1 NAME Andrew /Welsh/
+1 BIRT
+2 DATE 1824
+1 SEX M
+1 FAMS @F63@
+0 @I64@ INDI
+1 NAME Jean /Caithness/
+1 SEX F
+1 FAMS @F64@
+0 @I65@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 1778
+2 PLAC Newtown,Kildare,Leinster,Ireland
+1 DEAT
+2 DATE 1864
+1 SEX M
+1 FAMS @F65@
+0 @I66@ INDI
+1 NAME Sophie Alice /Cooper/
+1 BIRT
+2 DATE 1 Nov 1997
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX F
+0 @I67@ INDI
+1 NAME Lisa /Whiteside/
+1 BIRT
+2 DATE 25 Sep 1986
+1 SEX F
+0 @I68@ INDI
+1 NAME Bridget /Welsh/
+1 SEX F
+1 FAMS @F54@
+0 @I69@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 1883
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I70@ INDI
+1 NAME Isabella
+1 BIRT
+2 DATE 1786
+1 SEX F
+1 FAMS @F70@
+0 @I71@ INDI
+1 NAME Matilda /Norrie/
+1 BIRT
+2 DATE 21 Apr 1812
+2 PLAC Monikie,,Angus,,United Kingdom
+1 DEAT
+2 DATE 12 Jul 1857
+1 SEX F
+1 FAMS @F71@
+0 @I72@ INDI
+1 NAME Ann Jane /Weir/
+1 BIRT
+2 DATE 1875
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX F
+0 @I73@ INDI
+1 NAME Elizabeth /High/
+1 BIRT
+2 DATE 1854
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX M
+0 @I74@ INDI
+1 NAME Francis /Lynch/
+1 BIRT
+2 DATE 17 August 1891
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 12 Dec 1892
+1 SEX M
+0 @I75@ INDI
+1 NAME Charles /Crichton/
+1 BIRT
+2 DATE 12 Apr 1879
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 30 Apr 1937
+1 SEX M
+1 FAMS @F43@
+0 @I76@ INDI
+1 NAME Jessie /Mooney/
+1 BIRT
+2 DATE 1853
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX F
+0 @I77@ INDI
+1 NAME Michael /Young/
+1 SEX M
+0 @I78@ INDI
+1 NAME Margaret /Gardner/
+1 BIRT
+2 DATE 1883
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I79@ INDI
+1 NAME Christina /Mooney/
+1 BIRT
+2 DATE 3 Apr 1876
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I80@ INDI
+1 NAME Rose /Rogers/
+1 SEX F
+0 @I81@ INDI
+1 NAME Catherine /Gillan/
+1 BIRT
+2 DATE 1892
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 DEAT
+2 DATE 7 nov 1929
+1 SEX F
+1 FAMS @F81@
+0 @I82@ INDI
+1 NAME John /Reilly/
+1 BIRT
+2 DATE 1798
+2 PLAC Kells,Meath,,Ireland
+1 DEAT
+2 DATE 6 Jan 1866
+1 SEX M
+1 FAMS @F82@
+0 @I83@ INDI
+1 NAME Jean /Lamb/
+1 BIRT
+2 DATE 1831
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX F
+0 @I84@ INDI
+1 NAME Maria /Lynch/
+1 BIRT
+2 DATE 9 may 1854
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE bef oct 1855
+1 SEX F
+0 @I85@ INDI
+1 NAME Peter /Paterson/
+1 BIRT
+2 DATE 13 Feb 1880
+1 DEAT
+2 DATE 29 Mar 1937
+1 SEX M
+1 FAMS @F85@
+0 @I86@ INDI
+1 NAME John /Mooney/
+1 BIRT
+2 DATE 1858
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I87@ INDI
+1 NAME Margaret /Harrington/
+1 BIRT
+2 DATE 1798
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 15 Aug 1862
+1 SEX F
+1 FAMS @F82@
+0 @I88@ INDI
+1 NAME james /Reid/
+1 BIRT
+2 DATE 1821
+1 SEX M
+1 FAMS @F47@
+0 @I89@ INDI
+1 NAME Terence /McDonald/
+1 BIRT
+2 DATE 17 Jun 1869
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1936
+1 SEX M
+0 @I90@ INDI
+1 NAME Paul /Mooney/
+1 SEX M
+1 FAMS @F90@
+0 @I91@ INDI
+1 NAME Brant /Young/
+1 SEX M
+1 FAMS @F91@
+0 @I92@ INDI
+1 NAME john /Farrell/
+1 BIRT
+2 DATE 13 jun 1891
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I93@ INDI
+1 NAME Helen Dalgety /Burnett/
+1 DEAT
+2 DATE 27 Dec 1995
+1 SEX F
+1 FAMS @F93@
+0 @I94@ INDI
+1 NAME Kelly Marie /Bett/
+1 BIRT
+2 DATE 8 Jun 1981
+1 SEX F
+0 @I95@ INDI
+1 NAME Elizabeth /Mahood/
+1 BIRT
+2 DATE abt 1836
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 5 Aug 1911
+1 SEX F
+1 FAMS @F95@
+0 @I96@ INDI
+1 NAME Margaret Cameron /Dalgleish/
+1 SEX F
+1 FAMS @F96@
+0 @I97@ INDI
+1 NAME Catherine /Clark/
+1 BIRT
+2 DATE abt 1801
+1 SEX F
+1 FAMS @F97@
+0 @I98@ INDI
+1 NAME Barbara Ellen /Mooney/
+1 BIRT
+2 DATE 23 Apr 1936
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 10 Oct 1970
+1 SEX F
+1 FAMS @F98@
+0 @I99@ INDI
+1 NAME Thomas /Barnes/
+1 SEX M
+1 FAMS @F99@
+0 @I100@ INDI
+1 NAME Owen Graham /(Grimes)/
+1 SEX M
+1 FAMS @F100@
+0 @I101@ INDI
+1 NAME James Robert (Jimmy) /Bett/
+1 BIRT
+2 DATE 22 Jun 1961
+1 SEX M
+1 FAMS @F101@
+0 @I102@ INDI
+1 NAME Edward /Lynch/
+1 SEX M
+1 FAMS @F97@
+0 @I103@ INDI
+1 NAME James /Mooney/
+1 BIRT
+2 DATE 1850
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 16 jan 1901
+1 SEX M
+1 FAMS @F103@
+0 @I104@ INDI
+1 NAME Gerard Anthony /Farrell/
+1 BIRT
+2 DATE Jan 1904
+2 PLAC Middlesbrough,,Borough of Middlesbrough,England,United Kingdom
+1 SEX M
+0 @I105@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 1833
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 6 Jan 1907
+1 SEX M
+1 FAMS @F105@
+0 @I106@ INDI
+1 NAME James Aaron /Balmain/
+1 BIRT
+2 DATE 1 Oct 1989
+1 SEX M
+0 @I107@ INDI
+1 NAME Elizabeth /Moonie/
+1 BIRT
+2 DATE 28 Jun 1932
+2 PLAC methhill,,Fife,,scotland
+1 DEAT
+2 DATE 30 Jan 2005
+1 SEX F
+0 @I108@ INDI
+1 NAME Jenifer /Young/
+1 BIRT
+2 DATE 1982
+1 SEX F
+0 @I109@ INDI
+1 NAME Lucnda /Mallon/
+1 BIRT
+2 DATE 7 Jun 1865
+2 PLAC Armagh,,Armagh District,N Ireland,United Kingdom
+1 SEX F
+0 @I110@ INDI
+1 NAME Eliza /Smith/
+1 BIRT
+2 DATE 1879
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I111@ INDI
+1 NAME Elizabeth Ann /Barnes/
+1 BIRT
+2 DATE 1837
+1 SEX F
+0 @I112@ INDI
+1 NAME Rose /Graham/
+1 BIRT
+2 DATE 1877
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I113@ INDI
+1 NAME Mary /Clark/
+1 SEX F
+1 FAMS @F100@
+0 @I114@ INDI
+1 NAME Alison /McCormick/
+1 BIRT
+2 DATE 1834
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I115@ INDI
+1 NAME Bridget /Collins/
+1 BIRT
+2 DATE 7 jun 1860
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1 Apr 1861
+1 SEX F
+0 @I116@ INDI
+1 NAME William /Steven/
+1 BIRT
+2 DATE 1851
+2 PLAC Forfar,,Angus,Scotland,United Kingdom
+1 DEAT
+2 DATE Oct 1898
+1 SEX M
+1 FAMS @F116@
+0 @I117@ INDI
+1 NAME Ann /Gaynor/
+1 BIRT
+2 DATE 1821
+1 SEX F
+1 FAMS @F117@
+0 @I118@ INDI
+1 NAME Mary /McCullock/
+1 BIRT
+2 DATE 1895
+1 SEX F
+0 @I119@ INDI
+1 NAME Mary /Lynch/
+1 SEX F
+1 FAMS @F119@
+0 @I120@ INDI
+1 NAME Ann Jane /Farrell/
+1 BIRT
+2 DATE 14 jan 1862
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I121@ INDI
+1 NAME Hannah /Casson/
+1 BIRT
+2 DATE 11 Nov 1902
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1992
+1 SEX F
+0 @I122@ INDI
+1 NAME Catherine Alice /Mooney/
+1 BIRT
+2 DATE 21 Oct 1963
+2 PLAC London,,Greater London,England,United Kingdom
+1 SEX F
+1 FAMS @F58@
+0 @I123@ INDI
+1 NAME Catherine /Lynch/
+1 BIRT
+2 DATE 1854
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I124@ INDI
+1 NAME Betty /Dillon/
+1 DEAT
+2 DATE 1892
+1 SEX F
+1 FAMS @F124@
+0 @I125@ INDI
+1 NAME Clair Lisa Marie /Balmain/
+1 BIRT
+2 DATE 18 Oct 1994
+1 SEX F
+0 @I126@ INDI
+1 NAME John Spencer /Mooney/
+1 BIRT
+2 DATE 4 Feb 1965
+2 PLAC London,,Greater London,England,United Kingdom
+1 SEX M
+1 FAMS @F126@
+0 @I127@ INDI
+1 NAME Thomas W /Whiteside/
+1 BIRT
+2 DATE Abt 1941
+1 SEX M
+0 @I128@ INDI
+1 NAME Ellen /Smith/
+1 BIRT
+2 DATE Mar 1891
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I129@ INDI
+1 NAME Michael /Mooney/
+1 BIRT
+2 DATE 13 Nov 1855
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 13 jul 1910
+1 SEX M
+0 @I130@ INDI
+1 NAME Bridget Helen /Farrell/
+1 BIRT
+2 DATE 13 Jun 1878
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 17 feb 1953
+1 SEX F
+0 @I131@ INDI
+1 NAME Agnes (Nancy) /Barnes/
+1 BIRT
+2 DATE 12 sep 1884
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 23 Nov 1961
+1 SEX F
+1 FAMS @F131@
+0 @I132@ INDI
+1 NAME John /Mooney/
+1 BIRT
+2 DATE 1822
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 13 May 1898
+1 SEX M
+1 FAMS @F25@
+0 @I133@ INDI
+1 NAME Elizabeth /Farrell/
+1 BIRT
+2 DATE 1880
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I134@ INDI
+1 NAME Ann /Mooney/
+1 BIRT
+2 DATE 1956
+1 SEX F
+0 @I135@ INDI
+1 NAME Barbara /Moonie/
+1 BIRT
+2 DATE 27 Oct 1939
+2 PLAC methhill,,Fife,,scotland
+1 DEAT
+2 DATE 7 Aug 2010
+1 SEX F
+0 @I136@ INDI
+1 NAME Terence (Thomas) /McDonald/
+1 BIRT
+2 DATE 1834
+1 DEAT
+2 DATE 10 feb 1901
+1 SEX M
+1 FAMS @F136@
+0 @I137@ INDI
+1 NAME Norman /Moonie/
+1 BIRT
+2 DATE 20 Oct 1917
+2 PLAC Leven,,Fife,Scotland,United Kingdom
+1 DEAT
+2 DATE 23 apr 1918
+1 SEX M
+0 @I138@ INDI
+1 NAME James /Norrie/
+1 BIRT
+2 DATE 31 Dec 1752
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 28 Jun 1736
+1 SEX M
+1 FAMS @F64@
+0 @I139@ INDI
+1 NAME William /Norrie/
+1 BIRT
+2 DATE 23 Dec 1787
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX M
+1 FAMS @F139@
+0 @I140@ INDI
+1 NAME John /Mulholland/
+1 SEX M
+0 @I141@ INDI
+1 NAME William /Gordon/
+1 SEX M
+0 @I142@ INDI
+1 NAME Eliza /Welsh/
+1 BIRT
+2 DATE 1830
+1 DEAT
+2 DATE 7 Oct 1895
+1 SEX F
+1 FAMS @F142@
+0 @I143@ INDI
+1 NAME Bridget (Biddy) /Collins/
+1 BIRT
+2 DATE 24 Dec 1871
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I144@ INDI
+1 NAME Annie /McCullock/
+1 BIRT
+2 DATE 1890
+1 SEX F
+0 @I145@ INDI
+1 NAME Robert Weir /Paterson/
+1 BIRT
+2 DATE 16 jul 1914
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1993
+1 SEX M
+0 @I146@ INDI
+1 NAME Patrick Thornton /Graham/
+1 BIRT
+2 DATE 11 aug 1903
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1978
+1 SEX M
+1 FAMS @F146@
+0 @I147@ INDI
+1 NAME Jane /Lynch/
+1 BIRT
+2 DATE 15 nov 1889
+1 DEAT
+2 DATE 20 dec 1923
+1 SEX F
+0 @I148@ INDI
+1 NAME Adam /Bett/
+1 BIRT
+2 DATE 1985
+1 SEX M
+0 @I149@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 8 dec 1888
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 5 feb 1889
+1 SEX M
+0 @I150@ INDI
+1 NAME Jessie /Moonie/
+1 BIRT
+2 DATE 24 Oct 1921
+2 PLAC methhill,,Fife,,scotland
+1 DEAT
+2 DATE 15 nov 2001
+1 SEX F
+0 @I151@ INDI
+1 NAME Ann /Coleman/
+1 BIRT
+2 DATE 1838
+1 SEX F
+1 FAMS @F151@
+0 @I152@ INDI
+1 NAME Alice /Rogers/
+1 BIRT
+2 DATE abt 1831
+1 DEAT
+2 DATE 5 Aug 1892
+1 SEX F
+1 FAMS @F152@
+0 @I153@ INDI
+1 NAME Thomas /Farrell/
+1 BIRT
+2 DATE 23 Aug 1866
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F51@
+0 @I154@ INDI
+1 NAME John /Summers/
+1 SEX M
+1 FAMS @F154@
+0 @I155@ INDI
+1 NAME Bridget /Lynch/
+1 BIRT
+2 DATE 16 feb 1856
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 10 dec 1892
+1 SEX F
+1 FAMS @F36@
+0 @I156@ INDI
+1 NAME James /Mallon/
+1 BIRT
+2 DATE 1857
+2 PLAC ,,,Ireland
+1 SEX M
+0 @I157@ INDI
+1 NAME Patrick /McDonald/
+1 BIRT
+2 DATE 30 Jan 1861
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I158@ INDI
+1 NAME William Henry /Barnes/
+1 BIRT
+2 DATE 1841
+1 SEX M
+0 @I159@ INDI
+1 NAME John /Collins/
+1 BIRT
+2 DATE abt 1831
+1 SEX M
+1 FAMS @F159@
+0 @I160@ INDI
+1 NAME Mary /Mooney/
+1 BIRT
+2 DATE 22 apr 1892
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 15 may 1897
+1 SEX F
+0 @I161@ INDI
+1 NAME George /Mooney/
+1 BIRT
+2 DATE 1844
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX M
+0 @I162@ INDI
+1 NAME George /Mooney/
+1 BIRT
+2 DATE 10 Jan 1871
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 12 Apr 1874
+1 SEX M
+0 @I163@ INDI
+1 NAME Ann
+1 BIRT
+2 DATE 1861
+2 PLAC Greenock,,Inverclyde,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F163@
+0 @I164@ INDI
+1 NAME Patrick Dorsay /(Darcy)/
+1 BIRT
+2 DATE 17 feb 1859
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F164@
+0 @I165@ INDI
+1 NAME James Muir /Campbell/
+1 BIRT
+2 DATE 1880
+1 DEAT
+2 DATE 1961
+1 SEX M
+1 FAMS @F165@
+0 @I166@ INDI
+1 NAME Ann /Handy/
+1 BIRT
+2 DATE 8 Jun 1868
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 11 Mar 1892
+1 SEX F
+0 @I167@ INDI
+1 NAME John /Mooney/
+1 SEX M
+0 @I168@ INDI
+1 NAME James /McCormick/
+1 SEX M
+1 FAMS @F168@
+0 @I169@ INDI
+1 NAME Ellen (Nell) /Farrell/
+1 BIRT
+2 DATE 28 Mar 1889
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 28 Jan 1973
+1 SEX F
+1 FAMS @F169@
+0 @I170@ INDI
+1 NAME Owen Graham /(Grimes)/
+1 BIRT
+2 DATE 1842
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 SEX M
+0 @I171@ INDI
+1 NAME James /Mooney/
+1 BIRT
+2 DATE 29 may 1826
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 SEX M
+1 FAMS @F171@
+0 @I172@ INDI
+1 NAME Matilda /Mooney/
+1 BIRT
+2 DATE 22 Apr 1874
+2 PLAC Tealing,,Forfarshire,,United Kingdom
+1 SEX M
+0 @I173@ INDI
+1 NAME Elizabeth /Graham/
+1 BIRT
+2 DATE 13 oct 1873
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I174@ INDI
+1 NAME Cecilia /Mallon/
+1 BIRT
+2 DATE 1863
+2 PLAC ,,,Ireland
+1 SEX F
+0 @I175@ INDI
+1 NAME Robert /Weir/
+1 BIRT
+2 DATE 1888
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX M
+0 @I176@ INDI
+1 NAME James /Mooney/
+1 BIRT
+2 DATE 13 aug 1904
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 19 May 1908
+1 SEX M
+0 @I177@ INDI
+1 NAME Margaret /Taggart/
+1 BIRT
+2 DATE 26 mar 1854
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I178@ INDI
+1 NAME Mary /Mallon/
+1 BIRT
+2 DATE 1853
+2 PLAC ,,,Ireland
+1 SEX F
+0 @I179@ INDI
+1 NAME John /Harrington/
+1 BIRT
+2 DATE 1780
+1 SEX M
+1 FAMS @F179@
+0 @I180@ INDI
+1 NAME Daniel J /Farrell/
+1 BIRT
+2 DATE 1895
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 23 Apr 1917
+1 SEX M
+0 @I181@ INDI
+1 NAME Maria /Thornton/
+1 BIRT
+2 DATE 7 apr 1867
+2 PLAC Perth,,Perth and Kinross,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F164@
+0 @I182@ INDI
+1 NAME Isaac Doverty /Wilson/
+1 SEX M
+1 FAMS @F182@
+0 @I183@ INDI
+1 NAME Elizabeth /Gardner/
+1 BIRT
+2 DATE 5 Jul 1891
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1 Sep 1944
+1 SEX F
+0 @I184@ INDI
+1 NAME Ann /McDonald/
+1 BIRT
+2 DATE 17 Jul 1865
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I185@ INDI
+1 NAME Agnes /Lamb/
+1 BIRT
+2 DATE 1834
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX F
+0 @I186@ INDI
+1 NAME Andrew /Blyth/
+1 BIRT
+2 DATE 25 Mar 1926
+2 PLAC Leven,,Fife,Scotland,United Kingdom
+1 DEAT
+2 DATE 7 Oct 2003
+1 SEX M
+1 FAMS @F186@
+0 @I187@ INDI
+1 NAME William /Campbell/
+1 BIRT
+2 DATE 30 Oct 1858
+2 PLAC Stirling,,Stirling,Scotland,United Kingdom
+1 DEAT
+2 DATE 22 jun 1906
+1 SEX M
+1 FAMS @F187@
+0 @I188@ INDI
+1 NAME Ann /Murphy/
+1 BIRT
+2 DATE 1801
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F168@
+0 @I189@ INDI
+1 NAME William /Wylie/
+1 SEX M
+1 FAMS @F189@
+0 @I190@ INDI
+1 NAME Catherine /Doig/
+1 BIRT
+2 DATE 1784
+2 PLAC Tealing,,Forfarshire,,United Kingdom
+1 SEX F
+1 FAMS @F139@
+0 @I191@ INDI
+1 NAME Hannah /Mooney/
+1 BIRT
+2 DATE 9 sep 1861
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 3 Jan 1928
+1 SEX F
+1 FAMS @F191@
+0 @I192@ INDI
+1 NAME John /Mooney/
+1 BIRT
+2 DATE 19 May 1858
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 12 aug 1934
+1 SEX M
+1 FAMS @F192@
+0 @I193@ INDI
+1 NAME Betsy /Mooney/
+1 BIRT
+2 DATE 1885
+1 SEX F
+0 @I194@ INDI
+1 NAME Alexander /Young/
+1 BIRT
+2 DATE 1850
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX M
+0 @I195@ INDI
+1 NAME John /Mooney/
+1 BIRT
+2 DATE 13 Nov 1889
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 27 Mar 1939
+1 SEX M
+1 FAMS @F81@
+0 @I196@ INDI
+1 NAME Matilda /Mooney/
+1 BIRT
+2 DATE 1845
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX F
+0 @I197@ INDI
+1 NAME Mary Hamilton /Farrell/
+1 BIRT
+2 DATE 13 Mar 1868
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I198@ INDI
+1 NAME Catherine /Moonie/
+1 BIRT
+2 DATE 25 jun 1916
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 30 Nov 1948
+1 SEX F
+0 @I199@ INDI
+1 NAME James /Norrie/
+1 BIRT
+2 DATE 21 Mar 1792
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 5 May 1839
+1 SEX M
+0 @I200@ INDI
+1 NAME Maria /Cochrane/
+1 BIRT
+2 DATE 1905
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F146@
+0 @I201@ INDI
+1 NAME Rose /Lynch/
+1 BIRT
+2 DATE abt 1837
+1 SEX F
+0 @I202@ INDI
+1 NAME George Graham /Bett/
+1 BIRT
+2 DATE 8 jan 1956
+1 SEX M
+1 FAMS @F202@
+0 @I203@ INDI
+1 NAME William /Elliot/
+1 BIRT
+2 DATE 8 Dec 1870
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 DEAT
+2 DATE 8 Oct 1913
+1 SEX M
+1 FAMS @F203@
+0 @I204@ INDI
+1 NAME Margaret (Margot) Mc /Lean/
+1 BIRT
+2 DATE 6 Feb 1958
+1 SEX F
+1 FAMS @F202@
+0 @I205@ INDI
+1 NAME Thomas /Smith/
+1 BIRT
+2 DATE 1889
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX M
+0 @I206@ INDI
+1 NAME Catherine M /Porter/
+1 SEX F
+1 FAMS @F206@
+0 @I207@ INDI
+1 NAME Francis Patrick /Farrell/
+1 BIRT
+2 DATE 1878
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE jan 1966
+1 SEX M
+0 @I208@ INDI
+1 NAME Janet /Emm/
+1 BIRT
+2 DATE 14 Dec 1760
+2 PLAC Auchterhouse,,Angus,,United Kingdom
+1 SEX F
+1 FAMS @F208@
+0 @I209@ INDI
+1 NAME Catherine /Harrington/
+1 BIRT
+2 DATE 1796
+1 DEAT
+2 DATE 28 Jan 1863
+1 SEX F
+1 FAMS @F209@
+0 @I210@ INDI
+1 NAME Ellen (Helen) /McCormick/
+1 BIRT
+2 DATE 1829
+1 SEX F
+0 @I211@ INDI
+1 NAME James /Johnston/
+1 SEX M
+1 FAMS @F211@
+0 @I212@ INDI
+1 NAME Andrew /Mooney/
+1 BIRT
+2 DATE 1850
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX M
+1 FAMS @F32@
+0 @I213@ INDI
+1 NAME Alice /Lynch/
+1 BIRT
+2 DATE 30 Nov 1906
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 30 May 1989
+1 SEX F
+1 FAMS @F213@
+0 @I214@ INDI
+1 NAME David /Mooney/
+1 SEX M
+0 @I215@ INDI
+1 NAME Jane /McCullock/
+1 BIRT
+2 DATE 1877
+1 SEX F
+0 @I216@ INDI
+1 NAME Mary /Welsh/
+1 SEX F
+1 FAMS @F216@
+0 @I217@ INDI
+1 NAME Alexander /McCullock/
+1 BIRT
+2 DATE 1873
+1 SEX M
+0 @I218@ INDI
+1 NAME Gordon David Roy /Whiteside/
+1 BIRT
+2 DATE 13 May 1945
+1 DEAT
+2 DATE 1989
+1 SEX M
+1 FAMS @F218@
+0 @I219@ INDI
+1 NAME George Graham /Bett/
+1 BIRT
+2 DATE 22 Jun 1979
+1 SEX M
+0 @I220@ INDI
+1 NAME John Patrick /Mooney/
+1 BIRT
+2 DATE 1910
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 7 nov 1910
+1 SEX M
+0 @I221@ INDI
+1 NAME John /Gardner/
+1 BIRT
+2 DATE 8 July 1881
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I222@ INDI
+1 NAME Catherine /McDonald/
+1 BIRT
+2 DATE 1838
+1 DEAT
+2 DATE 25 Jan 1913
+1 SEX F
+0 @I223@ INDI
+1 NAME Patt /Mooney/
+1 BIRT
+2 DATE 13 Mar 1810
+2 PLAC Kells,Meath,,Ireland
+1 SEX M
+0 @I224@ INDI
+1 NAME William /Mooney/
+1 BIRT
+2 DATE 28 jul 1874
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 14 jul 1890
+1 SEX M
+0 @I225@ INDI
+1 NAME Ann /McCullock/
+1 BIRT
+2 DATE 1868
+1 SEX F
+0 @I226@ INDI
+1 NAME James /Jones/
+1 BIRT
+2 DATE 1827
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX M
+0 @I227@ INDI
+1 NAME Matthew /Weir/
+1 BIRT
+2 DATE 1871
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX M
+0 @I228@ INDI
+1 NAME Margaret /Lynch/
+1 BIRT
+2 DATE 22 may 1863
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F228@
+0 @I229@ INDI
+1 NAME Bridget (Biddy) /Egan/
+1 BIRT
+2 DATE 1801
+1 DEAT
+2 DATE 5 May 1872
+1 SEX F
+1 FAMS @F229@
+0 @I230@ INDI
+1 NAME Edward /Gardner/
+1 BIRT
+2 DATE 1881
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I231@ INDI
+1 NAME Robina /Mooney/
+1 BIRT
+2 DATE 1895
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I232@ INDI
+1 NAME Hannah Veronica /Moonie/
+1 BIRT
+2 DATE 25 Aug 1919
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 17 Nov 1968
+1 SEX F
+0 @I233@ INDI
+1 NAME James /High/
+1 BIRT
+2 DATE 1847
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX M
+0 @I234@ INDI
+1 NAME Elizabeth (Betsy) /Smith/
+1 SEX F
+1 FAMS @F234@
+0 @I235@ INDI
+1 NAME Andrew /Dunn/
+1 SEX M
+1 FAMS @F131@
+0 @I236@ INDI
+1 NAME James /Mooney/
+1 BIRT
+2 DATE 17 Jan 1831
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX M
+0 @I237@ INDI
+1 NAME Charles /Mooney/
+1 BIRT
+2 DATE 1898
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I238@ INDI
+1 NAME Margaret /Gourlay/
+1 SEX F
+1 FAMS @F31@
+0 @I239@ INDI
+1 NAME John L /Lynch/
+1 BIRT
+2 DATE abt 1833
+1 SEX M
+0 @I240@ INDI
+1 NAME Robert Duff /Mooney/
+1 BIRT
+2 DATE 25 nov 1861
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F163@
+0 @I241@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 24 Apr 1868
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I242@ INDI
+1 NAME Annie /Mooney/
+1 BIRT
+2 DATE 1887
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I243@ INDI
+1 NAME Susan /Mooney/
+1 BIRT
+2 DATE 1894
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I244@ INDI
+1 NAME Catherine /Mooney/
+1 BIRT
+2 DATE 12 Feb 1885
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 16 Jan 1980
+1 SEX F
+1 FAMS @F50@
+0 @I245@ INDI
+1 NAME Clementina /McKenzie/
+1 BIRT
+2 DATE 1817
+2 PLAC Brechin,,Angus,Scotland,United Kingdom
+1 DEAT
+2 DATE 17 Jan 1884
+1 SEX F
+1 FAMS @F245@
+0 @I246@ INDI
+1 NAME James Smith or Weir /k/
+1 BIRT
+2 DATE 9 Jun 1901
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 DEAT
+2 DATE 13 Jul 1964
+1 SEX M
+0 @I247@ INDI
+1 NAME William Clark Gilmour (Billy) /Forrest/
+1 SEX M
+1 FAMS @F247@
+0 @I248@ INDI
+1 NAME Mary Ann /McCormick/
+1 BIRT
+2 DATE 1821
+1 DEAT
+2 DATE 25 Nov 1855
+1 SEX F
+1 FAMS @F171@
+0 @I249@ INDI
+1 NAME Rose /McDonald/
+1 BIRT
+2 DATE 1827
+1 SEX F
+0 @I250@ INDI
+1 NAME Andrew Scott /Mooney/
+1 BIRT
+2 DATE 28 April 1961
+2 PLAC Baloch,,,,scotland
+1 SEX M
+1 FAMS @F250@
+0 @I251@ INDI
+1 NAME Alexander /McCullock/
+1 BIRT
+2 DATE 1893
+1 SEX M
+0 @I252@ INDI
+1 NAME Ann /Conner/
+1 BIRT
+2 DATE 1872
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1905
+1 SEX F
+1 FAMS @F252@
+0 @I253@ INDI
+1 NAME Laura Indego /Cooper/
+1 BIRT
+2 DATE 4 Mar 1995
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX F
+0 @I254@ INDI
+1 NAME Ann /Gillon/
+1 BIRT
+2 DATE 1835
+1 DEAT
+2 DATE 13 Jan 1872
+1 SEX F
+1 FAMS @F136@
+0 @I255@ INDI
+1 NAME Thomas Henry /Barnes/
+1 BIRT
+2 DATE 6 jun 1847
+2 PLAC Bury,,Borough of Bury,England,United Kingdom
+1 DEAT
+2 DATE 12 Mar 1915
+1 SEX M
+1 FAMS @F255@
+0 @I256@ INDI
+1 NAME Davie /High/
+1 BIRT
+2 DATE 1850
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX M
+0 @I257@ INDI
+1 NAME Owen /Lynch/
+1 BIRT
+2 DATE abt 1835
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 29 aug 1897
+1 SEX M
+1 FAMS @F152@
+0 @I258@ INDI
+1 NAME William /Elliot/
+1 BIRT
+2 DATE 2 jan 1898
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 DEAT
+2 DATE 24 April 1957
+1 SEX M
+0 @I259@ INDI
+1 NAME Bridget /Patterson/
+1 DEAT
+2 DATE 3 Sep 1892
+1 SEX F
+1 FAMS @F259@
+0 @I260@ INDI
+1 NAME Anne /Lynch/
+1 BIRT
+2 DATE 16 jun 1861
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 22 apr 1904
+1 SEX F
+1 FAMS @F23@
+0 @I261@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 22 mar 1857
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 22 dec 1911
+1 SEX M
+1 FAMS @F261@
+0 @I262@ INDI
+1 NAME Hannah /Mooney/
+1 BIRT
+2 DATE 1833
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 28 jan 1863
+1 SEX F
+0 @I263@ INDI
+1 NAME Isobell /Emm/
+1 BIRT
+2 DATE 1756
+2 PLAC Auchterhouse,,Angus,,United Kingdom
+1 SEX F
+0 @I264@ INDI
+1 NAME Alice /Smith/
+1 SEX F
+1 FAMS @F10@
+0 @I265@ INDI
+1 NAME Catherine /McDonald/
+1 BIRT
+2 DATE 25 Mar 1863
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I266@ INDI
+1 NAME william /Campbell/
+1 BIRT
+2 DATE 1886
+1 SEX M
+0 @I267@ INDI
+1 NAME Ann /Graham/
+1 BIRT
+2 DATE 27 May 1861
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I268@ INDI
+1 NAME Betsy /Henderson/
+1 BIRT
+2 DATE 29 Aug 1851
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F49@
+0 @I269@ INDI
+1 NAME Patrick /Carr/
+1 SEX M
+1 FAMS @F117@
+0 @I270@ INDI
+1 NAME James /Jones/
+1 BIRT
+2 DATE 1787
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F70@
+0 @I271@ INDI
+1 NAME Ann /McDonald/
+1 BIRT
+2 DATE 1834
+1 SEX F
+0 @I272@ INDI
+1 NAME Barbara /Farrell/
+1 BIRT
+2 DATE 21 Dec 1884
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 20 Mar 1969
+1 SEX F
+0 @I273@ INDI
+1 NAME kirsty /Whiteside/
+1 BIRT
+2 DATE 10 Oct 1988
+1 SEX F
+0 @I274@ INDI
+1 NAME James /Munro/
+1 BIRT
+2 DATE 28 Mar 1889
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 31 Jul 1917
+1 SEX M
+1 FAMS @F169@
+0 @I275@ INDI
+1 NAME Bridget /Kelly/
+1 DEAT
+2 DATE 1868
+1 SEX F
+1 FAMS @F65@
+0 @I276@ INDI
+1 NAME Lilias /Mooney/
+1 BIRT
+2 DATE 1899
+2 PLAC Anstruther,,Fife,Scotland,United Kingdom
+1 DEAT
+2 DATE 20 Nov 1917
+1 SEX F
+0 @I277@ INDI
+1 NAME Robert /Ellwood/
+1 BIRT
+2 DATE 1823
+1 SEX M
+1 FAMS @F142@
+0 @I278@ INDI
+1 NAME Catherine /McMahon/
+1 BIRT
+2 DATE 1801
+1 SEX F
+1 FAMS @F278@
+0 @I279@ INDI
+1 NAME John /Steven/
+1 BIRT
+2 DATE Jan 1891
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I280@ INDI
+1 NAME Mary /Lynch/
+1 BIRT
+2 DATE 10 sep 1859
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 16 oct 1890
+1 SEX F
+1 FAMS @F280@
+0 @I281@ INDI
+1 NAME Ann /Mallon/
+1 BIRT
+2 DATE 19 Jun 1860
+2 PLAC Armagh,,Armagh District,N Ireland,United Kingdom
+1 SEX F
+1 FAMS @F192@
+0 @I282@ INDI
+1 NAME john /Welsh/
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I283@ INDI
+1 NAME Margaret /Norrie/
+1 DEAT
+2 DATE 28 Jul 1841
+1 SEX F
+0 @I284@ INDI
+1 NAME John /Mooney/
+1 BIRT
+2 DATE 1882
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I285@ INDI
+1 NAME John /Farrell/
+1 BIRT
+2 DATE 1833
+1 DEAT
+2 DATE 30 jul 1893
+1 SEX M
+1 FAMS @F285@
+0 @I286@ INDI
+1 NAME John /McCormick/
+1 BIRT
+2 DATE 1832
+1 SEX M
+1 FAMS @F286@
+0 @I287@ INDI
+1 NAME Ann /Reid/
+1 BIRT
+2 DATE 1852
+2 PLAC Wishaw,,Lanarkshire,,United Kingdom
+1 SEX F
+0 @I288@ INDI
+1 NAME Rachel /Forrest/
+1 BIRT
+2 DATE 5 Apr 1986
+1 SEX F
+0 @I289@ INDI
+1 NAME George /Mahood/
+1 SEX M
+1 FAMS @F7@
+0 @I290@ INDI
+1 NAME Ann Robertson /Mooney/
+1 BIRT
+2 DATE 14 May 1881
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 29 apr 1904
+1 SEX F
+0 @I291@ INDI
+1 NAME Allan /Mooney/
+1 BIRT
+2 DATE 11 Mar 1874
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 15 Apr 1876
+1 SEX M
+0 @I292@ INDI
+1 NAME Michael /Cunningham/
+1 BIRT
+2 DATE 27 feb 1858
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 8 jul 1894
+1 SEX M
+1 FAMS @F280@
+0 @I293@ INDI
+1 NAME Rose /Tyrell/
+1 SEX F
+1 FAMS @F293@
+0 @I294@ INDI
+1 NAME James /Lynch/
+1 BIRT
+2 DATE Sep 1890
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F61@
+0 @I295@ INDI
+1 NAME John /Mooney/
+1 BIRT
+2 DATE 1875
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I296@ INDI
+1 NAME John /Mooney/
+1 BIRT
+2 DATE 14 Mar 1934
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 21 May 2018
+1 SEX M
+1 FAMS @F296@
+0 @I297@ INDI
+1 NAME Benjamin Michael /Masters/
+1 SEX M
+0 @I298@ INDI
+1 NAME James /Mooney/
+1 BIRT
+2 DATE 1882
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I299@ INDI
+1 NAME Thomasina /Moonie/
+1 BIRT
+2 DATE 1 Feb 1934
+2 PLAC methhill,,Fife,,scotland
+1 DEAT
+2 DATE 8 Aug 2003
+1 SEX F
+0 @I300@ INDI
+1 NAME James Patrick /Mooney/
+1 BIRT
+2 DATE 17 Mar 1941
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F300@
+0 @I301@ INDI
+1 NAME Alice /Lynch/
+1 BIRT
+2 DATE 1899
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I302@ INDI
+1 NAME Samuel /McCullock/
+1 BIRT
+2 DATE 1837
+1 SEX M
+1 FAMS @F151@
+0 @I303@ INDI
+1 NAME Hugh /Mulholland/
+1 BIRT
+2 DATE 8 jun 1902
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F303@
+0 @I304@ INDI
+1 NAME Edward /Handy/
+1 BIRT
+2 DATE 1846
+1 DEAT
+2 DATE 18 Dec 1871
+1 SEX M
+1 FAMS @F304@
+0 @I305@ INDI
+1 NAME Richard /Barnes/
+1 BIRT
+2 DATE 1839
+1 SEX M
+0 @I306@ INDI
+1 NAME John /Mooney/
+1 BIRT
+2 DATE 15 jan 1808
+2 PLAC Kells,Meath,,Ireland
+1 DEAT
+2 DATE 15 Feb 1878
+1 SEX M
+1 FAMS @F71@
+0 @I307@ INDI
+1 NAME Isaiah /Mallon/
+1 SEX M
+0 @I308@ INDI
+1 NAME Euphemia /Housego/
+1 SEX F
+1 FAMS @F101@
+0 @I309@ INDI
+1 NAME Roselyn /Mooney/
+1 BIRT
+2 DATE 12 Jun 1964
+2 PLAC Brampton,,Ontario,Canada
+1 SEX F
+1 FAMS @F91@
+0 @I310@ INDI
+1 NAME Elizabeth /McCullock/
+1 BIRT
+2 DATE 24 Feb 1861
+1 SEX F
+0 @I311@ INDI
+1 NAME Christina /Farrell/
+1 BIRT
+2 DATE 10 Dec 1869
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I312@ INDI
+1 NAME Elizabeth (Elisabeth) /Mooney/
+1 BIRT
+2 DATE 29 Dec 1857
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 5 Jan 1858
+1 SEX F
+0 @I313@ INDI
+1 NAME Catherine (Kate) /Farrell/
+1 BIRT
+2 DATE 12 sep 1882
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 14 apr 1960
+1 SEX F
+1 FAMS @F1@
+0 @I314@ INDI
+1 NAME Agnes Matthews /Keay/
+1 SEX F
+1 FAMS @F182@
+0 @I315@ INDI
+1 NAME John /Weir/
+1 BIRT
+2 DATE 1863
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX M
+0 @I316@ INDI
+1 NAME Margaret /McCormick/
+1 BIRT
+2 DATE 1827
+1 SEX F
+0 @I317@ INDI
+1 NAME Margaret /Mooney/
+1 BIRT
+2 DATE 1895
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I318@ INDI
+1 NAME Samuel /Fullerton/
+1 SEX M
+0 @I319@ INDI
+1 NAME Wilhelmina /Farrell/
+1 BIRT
+2 DATE 11 jun 1865
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I320@ INDI
+1 NAME James /Campbell/
+1 BIRT
+2 DATE 1896
+1 SEX M
+0 @I321@ INDI
+1 NAME Agnes /Sanderson/
+1 BIRT
+2 DATE 1828
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 9 Dec 1889
+1 SEX F
+1 FAMS @F321@
+0 @I322@ INDI
+1 NAME William /Mitchell/
+1 BIRT
+2 DATE 1838
+1 SEX M
+1 FAMS @F142@
+0 @I323@ INDI
+1 NAME Alan /Whiteside/
+1 BIRT
+2 DATE 1 Dec 1964
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F323@
+0 @I324@ INDI
+1 NAME Barbara Alice /Bett/
+1 BIRT
+2 DATE 25 Nov 1957
+1 DEAT
+2 DATE 19 Oct 2012
+1 SEX F
+1 FAMS @F247@
+0 @I325@ INDI
+1 NAME John /Barnes/
+1 BIRT
+2 DATE 2 jan 1888
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 21 Jan 1916
+1 SEX M
+0 @I326@ INDI
+1 NAME Barbara Ellen /Mooney/
+1 BIRT
+2 DATE 18 Feb 1914
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 9 jun 1926
+1 SEX F
+0 @I327@ INDI
+1 NAME Margaret /Lamb/
+1 BIRT
+2 DATE 1837
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F327@
+0 @I328@ INDI
+1 NAME james /Farrell/
+1 BIRT
+2 DATE 18 jun 1855
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 5 Oct 1905
+1 SEX M
+1 FAMS @F328@
+0 @I329@ INDI
+1 NAME Mary /Young/
+1 BIRT
+2 DATE 1846
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX F
+0 @I330@ INDI
+1 NAME James /McDade/
+1 BIRT
+2 DATE 21 Jan 1868
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F228@
+0 @I331@ INDI
+1 NAME Janet
+1 BIRT
+2 DATE 1863
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F331@
+0 @I332@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 1900
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I333@ INDI
+1 NAME Alex /Lamb/
+1 BIRT
+2 DATE 1796
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F333@
+0 @I334@ INDI
+1 NAME Agnes (Nancy) /Mooney/
+1 BIRT
+2 DATE 9 Aug 1883
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 6 Dec 1950
+1 SEX F
+1 FAMS @F165@
+0 @I335@ INDI
+1 NAME James /Sinclair/
+1 BIRT
+2 DATE 1863
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F42@
+0 @I336@ INDI
+1 NAME Michael /McCormick/
+1 BIRT
+2 DATE 1830
+1 SEX M
+0 @I337@ INDI
+1 NAME John /Mooney/
+1 BIRT
+2 DATE 31 Jan 1864
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I338@ INDI
+1 NAME Margaret (Meg) /Lynch/
+1 BIRT
+2 DATE 17 Sep 1902
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 24 Jul 1966
+1 SEX F
+1 FAMS @F303@
+0 @I339@ INDI
+1 NAME William /Mooney/
+1 BIRT
+2 DATE 1893
+1 SEX M
+0 @I340@ INDI
+1 NAME Margaret
+1 BIRT
+2 DATE 1831
+1 SEX F
+1 FAMS @F286@
+0 @I341@ INDI
+1 NAME Patrick /Reid/
+1 BIRT
+2 DATE 1858
+2 PLAC Wishaw,,Lanarkshire,,United Kingdom
+1 SEX M
+0 @I342@ INDI
+1 NAME Terren Dawn /Mooney/
+1 SEX F
+0 @I343@ INDI
+1 NAME James A /Whiteside/
+1 BIRT
+2 DATE abt 1943
+1 SEX M
+0 @I344@ INDI
+1 NAME Jane /Murray/
+1 BIRT
+2 DATE 1849
+2 PLAC Perth,,tayside,,scotland
+1 DEAT
+2 DATE 20 jun 1921
+1 SEX F
+1 FAMS @F103@
+0 @I345@ INDI
+1 NAME Elizabeth /Steven/
+1 BIRT
+2 DATE 1884
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I346@ INDI
+1 NAME Margaret /Lynch/
+1 BIRT
+2 DATE 1894
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1984
+1 SEX F
+0 @I347@ INDI
+1 NAME Alexandra /Young/
+1 SEX F
+0 @I348@ INDI
+1 NAME Janet
+1 SEX F
+1 FAMS @F348@
+0 @I349@ INDI
+1 NAME Elizabeth /Lynch/
+1 BIRT
+2 DATE 22 Oct 1888
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 13 Jul 1967
+1 SEX F
+1 FAMS @F349@
+0 @I350@ INDI
+1 NAME James /Gordon/
+1 BIRT
+2 DATE 1836
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 5 Jun 1889
+1 SEX M
+0 @I351@ INDI
+1 NAME Graham /Whiteside/
+1 BIRT
+2 DATE 11 Aug 1967
+1 SEX M
+0 @I352@ INDI
+1 NAME Janet /Cochran/
+1 SEX F
+1 FAMS @F352@
+0 @I353@ INDI
+1 NAME Joseph /Mooney/
+1 BIRT
+2 DATE 4 jan 1908
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 19 oct 1974
+1 SEX M
+1 FAMS @F213@
+0 @I354@ INDI
+1 NAME Robert /Barnes/
+1 BIRT
+2 DATE Mar 1878
+2 PLAC Stirling,,Stirling,Scotland,United Kingdom
+1 DEAT
+2 DATE 11 oct 1945
+1 SEX M
+0 @I355@ INDI
+1 NAME James /Eason/
+1 BIRT
+2 DATE 3 Sep 1904
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I356@ INDI
+1 NAME George /Young/
+1 BIRT
+2 DATE 1839
+1 SEX M
+0 @I357@ INDI
+1 NAME Owen /Smith/
+1 BIRT
+2 DATE 1846
+1 SEX M
+1 FAMS @F119@
+0 @I358@ INDI
+1 NAME Michael /Moonie/
+1 BIRT
+2 DATE 19 Jun 1929
+2 PLAC methhill,,Fife,,scotland
+1 DEAT
+2 DATE 2020
+1 SEX M
+0 @I359@ INDI
+1 NAME Patrick /McDonald/
+1 BIRT
+2 DATE 1795
+1 DEAT
+2 DATE 9 Jan 1875
+1 SEX M
+1 FAMS @F278@
+0 @I360@ INDI
+1 NAME Barbara /Gordon/
+1 BIRT
+2 DATE 1841
+1 DEAT
+2 DATE 27 Feb 1918
+1 SEX F
+1 FAMS @F360@
+0 @I361@ INDI
+1 NAME Patrick /Farrell/
+1 BIRT
+2 DATE 12 Dec 1879
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 25 Aug 1965
+1 SEX M
+0 @I362@ INDI
+1 NAME John /Lynch/
+1 SEX M
+1 FAMS @F124@
+0 @I363@ INDI
+1 NAME Marie Alison /Bett/
+1 BIRT
+2 DATE 21 Oct 1964
+1 SEX F
+1 FAMS @F363@
+0 @I364@ INDI
+1 NAME Margaret Keay /Wilson/
+1 SEX F
+1 FAMS @F296@
+0 @I365@ INDI
+1 NAME Sarah /Smith/
+1 SEX F
+1 FAMS @F365@
+0 @I366@ INDI
+1 NAME Mary /McDonald/
+1 BIRT
+2 DATE 1840
+1 SEX F
+0 @I367@ INDI
+1 NAME Isaiah /Mallon/
+1 SEX M
+1 FAMS @F3@
+0 @I368@ INDI
+1 NAME Mary Ann /Holt/
+1 SEX F
+1 FAMS @F99@
+0 @I369@ INDI
+1 NAME Thomas /Lynch/
+1 BIRT
+2 DATE 1818
+2 PLAC marlbrough,,,Ireland
+1 DEAT
+2 DATE 22 Jun 1892
+1 SEX M
+1 FAMS @F62@
+0 @I370@ INDI
+1 NAME Jessie Agnes /Smith/
+1 BIRT
+2 DATE 25 Aug 1872
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 18 Dec 1955
+1 SEX F
+1 FAMS @F60@
+0 @I371@ INDI
+1 NAME Mary /High/
+1 BIRT
+2 DATE 1845
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX F
+0 @I372@ INDI
+1 NAME John /Lynch/
+1 BIRT
+2 DATE 21 oct 1898
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1969
+1 SEX M
+1 FAMS @F206@
+0 @I373@ INDI
+1 NAME George /Gordon/
+1 DEAT
+2 DATE 13 Apr 1896
+1 SEX M
+0 @I374@ INDI
+1 NAME Robert /Young/
+1 BIRT
+2 DATE 1854
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX M
+0 @I375@ INDI
+1 NAME Margaret /Collins/
+1 BIRT
+2 DATE 12 feb 1862
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 22 jan 1864
+1 SEX F
+0 @I376@ INDI
+1 NAME Robert /Young/
+1 BIRT
+2 DATE 1812
+2 PLAC Brechin,,Angus,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F245@
+0 @I377@ INDI
+1 NAME Anna /Quin/
+1 SEX F
+0 @I378@ INDI
+1 NAME Janet /Wylie/
+1 BIRT
+2 DATE 1836
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F378@
+0 @I379@ INDI
+1 NAME Elizabeth Jane /Beal/
+1 BIRT
+2 DATE 14 Apr 1966
+2 PLAC Dartford,,Kent,England,United Kingdom
+1 SEX F
+1 FAMS @F126@
+0 @I380@ INDI
+1 NAME Helen /Moonie/
+1 BIRT
+2 DATE 8 Jun 1926
+2 PLAC methhill,,Fife,,scotland
+1 DEAT
+2 DATE 10 Jul 1994
+1 SEX F
+0 @I381@ INDI
+1 NAME Catherine /Lynch/
+1 BIRT
+2 DATE 1882
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 28 December 1956
+1 SEX F
+0 @I382@ INDI
+1 NAME Georgina /Mooney/
+1 BIRT
+2 DATE 1880
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I383@ INDI
+1 NAME Alexander /Gordon/
+1 SEX M
+1 FAMS @F229@
+0 @I384@ INDI
+1 NAME Craig /Bett/
+1 BIRT
+2 DATE 1 Nov 1984
+1 SEX M
+0 @I385@ INDI
+1 NAME Matthew /Lynch/
+1 BIRT
+2 DATE 16 Mar 1880
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 10 Dec 1967
+1 SEX M
+0 @I386@ INDI
+1 NAME Jan /Masters/
+1 SEX F
+1 FAMS @F250@
+0 @I387@ INDI
+1 NAME Patrick /Graham/
+1 BIRT
+2 DATE 7 Apr 1866
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 2 aug 1954
+1 SEX M
+0 @I388@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 5 Apr 1897
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I389@ INDI
+1 NAME Michael /Mooney/
+1 BIRT
+2 DATE 12 jun 1894
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 3 oct 1968
+1 SEX M
+1 FAMS @F44@
+0 @I390@ INDI
+1 NAME Elizabeth /McGregor/
+1 BIRT
+2 DATE 1850
+1 SEX F
+1 FAMS @F105@
+0 @I391@ INDI
+1 NAME Catharine /Mooney/
+1 BIRT
+2 DATE 3 Jan 1837
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I392@ INDI
+1 NAME Bridget /Farrell/
+1 BIRT
+2 DATE 9 Mar 1857
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1857
+1 SEX F
+0 @I393@ INDI
+1 NAME David /Mooney/
+1 BIRT
+2 DATE 1851
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX M
+0 @I394@ INDI
+1 NAME William /Steven/
+1 BIRT
+2 DATE 22 aug 1882
+2 PLAC Forfar,,Angus,Scotland,United Kingdom
+1 DEAT
+2 DATE 22 oct 1919
+1 SEX M
+0 @I395@ INDI
+1 NAME Peter /Lynch/
+1 BIRT
+2 DATE abt 1839
+1 SEX M
+0 @I396@ INDI
+1 NAME Catherine /Moran/
+1 SEX F
+1 FAMS @F39@
+0 @I397@ INDI
+1 NAME Hannah /Mooney/
+1 BIRT
+2 DATE 30 jan 1888
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 15 Dec 1973
+1 SEX F
+1 FAMS @F397@
+0 @I398@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 16 oct 1880
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 8 dec 1880
+1 SEX M
+0 @I399@ INDI
+1 NAME Graeme /Mooney/
+1 BIRT
+2 DATE 11 Aug 1966
+2 PLAC Brampton,,Ontario,Canada
+1 SEX M
+0 @I400@ INDI
+1 NAME Philip /Fisher/
+1 DEAT
+2 DATE 20 apr 1855
+1 SEX M
+1 FAMS @F209@
+0 @I401@ INDI
+1 NAME James /Balmain/
+1 BIRT
+2 DATE 5 Aug 1963
+1 SEX M
+1 FAMS @F363@
+0 @I402@ INDI
+1 NAME Matthew Scott /Masters/
+1 SEX M
+0 @I403@ INDI
+1 NAME Greg William /Forrest/
+1 BIRT
+2 DATE 17 Apr 1984
+1 SEX M
+0 @I404@ INDI
+1 NAME Mary /Moonie/
+1 BIRT
+2 DATE 13 Apr 1928
+1 DEAT
+2 DATE 10 sep 2001
+1 SEX F
+0 @I405@ INDI
+1 NAME Rose Ann /Collins/
+1 BIRT
+2 DATE 23 may 1856
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I406@ INDI
+1 NAME Mary Ann /Smith/
+1 BIRT
+2 DATE 1870
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I407@ INDI
+1 NAME Helen /McDonald/
+1 BIRT
+2 DATE 1857
+1 DEAT
+2 DATE 1896
+1 SEX F
+1 FAMS @F328@
+0 @I408@ INDI
+1 NAME John /Norrie/
+1 BIRT
+2 DATE 27 Jul 1783
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 14 Sep 1795
+1 SEX M
+0 @I409@ INDI
+1 NAME Rachel /Whiteside/
+1 BIRT
+2 DATE 2 Apr 1992
+1 SEX F
+0 @I410@ INDI
+1 NAME Isabella /High/
+1 BIRT
+2 DATE 1844
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX F
+0 @I411@ INDI
+1 NAME Gillian /Traynor/
+1 BIRT
+2 DATE 17 Sep 1979
+1 SEX M
+0 @I412@ INDI
+1 NAME Martha /Stafford/
+1 BIRT
+2 DATE 1834
+2 PLAC Neilston,,,Scotland,United Kingdom
+1 DEAT
+2 DATE 12 Sep 1898
+1 SEX F
+1 FAMS @F412@
+0 @I413@ INDI
+1 NAME John /McDonald/
+1 BIRT
+2 DATE 1829
+1 SEX M
+0 @I414@ INDI
+1 NAME Joseph /Lynch/
+1 BIRT
+2 DATE 1897
+2 PLAC Dysart,,Fife,Scotland,United Kingdom
+1 SEX M
+0 @I415@ INDI
+1 NAME Margaret /Mooney/
+1 BIRT
+2 DATE 1839
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 DEAT
+2 DATE 7 Apr 1916
+1 SEX F
+1 FAMS @F11@
+0 @I416@ INDI
+1 NAME Mary /Mooney/
+1 BIRT
+2 DATE 5 Oct 1886
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 15 May 1887
+1 SEX F
+0 @I417@ INDI
+1 NAME Catherine /Weir/
+1 BIRT
+2 DATE Jan 1891
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX F
+0 @I418@ INDI
+1 NAME James Souter /Graham/
+1 BIRT
+2 DATE 1836
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 11 feb 1897
+1 SEX M
+1 FAMS @F418@
+0 @I419@ INDI
+1 NAME Edward /Lynch/
+1 BIRT
+2 DATE 24 Apr 1867
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 11 Apr 1946
+1 SEX M
+1 FAMS @F419@
+0 @I420@ INDI
+1 NAME William /Doig/
+1 SEX M
+1 FAMS @F208@
+0 @I421@ INDI
+1 NAME Edward (Ned) /Lynch/
+1 BIRT
+2 DATE 17 Dec 1903
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F365@
+0 @I422@ INDI
+1 NAME John /Collins/
+1 BIRT
+2 DATE 26 JUN 1874
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 6 Sep 1874
+1 SEX M
+0 @I423@ INDI
+1 NAME Elizabeth /Currie/
+1 BIRT
+2 DATE abt 1800
+1 DEAT
+2 DATE bef 1861
+1 SEX F
+1 FAMS @F423@
+0 @I424@ INDI
+1 NAME Robert /McDonald/
+1 BIRT
+2 DATE 1827
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 11 Dec 1872
+1 SEX M
+1 FAMS @F321@
+0 @I425@ INDI
+1 NAME Daniel /Quin/
+1 BIRT
+2 DATE 1816
+1 SEX M
+1 FAMS @F259@
+0 @I426@ INDI
+1 NAME Jane /Knox/
+1 BIRT
+2 DATE 1838
+2 PLAC Paisley,,Renfrewshire,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F63@
+0 @I427@ INDI
+1 NAME Jane /Gardner/
+1 BIRT
+2 DATE 1890
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I428@ INDI
+1 NAME Agnes (Nancy) /Harrington/
+1 BIRT
+2 DATE 1799
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 DEAT
+2 DATE 13 Nov 1867
+1 SEX F
+1 FAMS @F46@
+0 @I429@ INDI
+1 NAME Mary /Mooney/
+1 BIRT
+2 DATE 2 Mar 1866
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 2 Dec 1920
+1 SEX F
+1 FAMS @F211@
+0 @I430@ INDI
+1 NAME Robina /Mahannah/
+1 SEX F
+1 FAMS @F90@
+0 @I431@ INDI
+1 NAME Mary /Lynch/
+1 BIRT
+2 DATE 1892
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I432@ INDI
+1 NAME Moira /Meenagh/
+1 BIRT
+2 DATE 15 Apr 1942
+1 DEAT
+2 DATE 25 Jan 2026
+1 SEX F
+1 FAMS @F432@
+0 @I433@ INDI
+1 NAME Joseph Ian /Mooney/
+1 BIRT
+2 DATE 22 Apr 1954
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 8 apr 2023
+1 SEX M
+0 @I434@ INDI
+1 NAME Agnes
+1 BIRT
+2 DATE 1801
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F333@
+0 @I435@ INDI
+1 NAME Alexander /Crichton/
+1 BIRT
+2 DATE 1842
+1 DEAT
+2 DATE 16 Nov 1890
+1 SEX M
+1 FAMS @F95@
+0 @I436@ INDI
+1 NAME James /Bett/
+1 BIRT
+2 DATE 9 Aug 1936
+1 DEAT
+2 DATE 19 Nov 2010
+1 SEX M
+1 FAMS @F98@
+0 @I437@ INDI
+1 NAME John A /Farrell/
+1 BIRT
+2 DATE 23 jan 1872
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I438@ INDI
+1 NAME Betsy (Elizabeth) /Mcknight/
+1 BIRT
+2 DATE 1782
+1 SEX F
+1 FAMS @F179@
+0 @I439@ INDI
+1 NAME Frances /Mooney/
+1 BIRT
+2 DATE 1890
+2 PLAC Sunderland,,City and Borough of Sunderland,England,United Kingdom
+1 SEX F
+0 @I440@ INDI
+1 NAME Rose Graham /(Grimes)/
+1 BIRT
+2 DATE 1840
+2 PLAC Cavan,An Cabhán,Ulster,Ireland
+1 SEX F
+0 @I441@ INDI
+1 NAME Robert /Weir/
+1 BIRT
+2 DATE 1871
+2 PLAC Glasgow,,Glasgow City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F331@
+0 @I442@ INDI
+1 NAME John /Graham/
+1 BIRT
+2 DATE 21 Dec 1863
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 12 jan 1945
+1 SEX M
+0 @I443@ INDI
+1 NAME James /High/
+1 SEX M
+1 FAMS @F443@
+0 @I444@ INDI
+1 NAME John /Bogue/
+1 BIRT
+2 DATE 1893
+1 DEAT
+2 DATE 29 Jul 1947
+1 SEX M
+1 FAMS @F349@
+0 @I445@ INDI
+1 NAME Derek Crawford /Mooney/
+1 BIRT
+2 DATE 29 Oct 1956
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F445@
+0 @I446@ INDI
+1 NAME Joseph /Lynch/
+1 BIRT
+2 DATE 15 Apr 1869
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1908
+1 SEX M
+1 FAMS @F252@
+0 @I447@ INDI
+1 NAME Mary E /Gardner/
+1 BIRT
+2 DATE 1885
+2 PLAC Leith,,,Scotland,United Kingdom
+1 DEAT
+2 DATE 1957
+1 SEX F
+0 @I448@ INDI
+1 NAME William /Ellwood/
+1 BIRT
+2 DATE 1 Apr 1853
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 28 Aug 1917
+1 SEX M
+0 @I449@ INDI
+1 NAME Helen Pattullo /Norrie/
+1 BIRT
+2 DATE 30 Jan 1815
+2 PLAC Monikie,,Angus,,United Kingdom
+1 SEX M
+0 @I450@ INDI
+1 NAME Thomas /Lynch/
+1 BIRT
+2 DATE 1852
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 12 Aug 1911
+1 SEX M
+1 FAMS @F450@
+0 @I451@ INDI
+1 NAME Mary Ann /Carr/
+1 BIRT
+2 DATE 1852
+2 PLAC Leith,,,Scotland,United Kingdom
+1 DEAT
+2 DATE 30 May 1928
+1 SEX F
+1 FAMS @F304@
+0 @I452@ INDI
+1 NAME Agnes /Mooney/
+1 BIRT
+2 DATE 28 Apr 1923
+2 PLAC methhill,,Fife,,scotland
+1 DEAT
+2 DATE 2 Jun 2007
+1 SEX F
+1 FAMS @F186@
+0 @I453@ INDI
+1 NAME Joseph /Lynch/
+1 BIRT
+2 DATE 1896
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 23 Oct 1916
+1 SEX M
+0 @I454@ INDI
+1 NAME Rose M /Farrell/
+1 BIRT
+2 DATE 15 mar 1863
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I455@ INDI
+1 NAME Mary /Lynch/
+1 BIRT
+2 DATE 5 Oct 1886
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1977
+1 SEX F
+0 @I456@ INDI
+1 NAME Norman /McLeod/
+1 SEX M
+1 FAMS @F397@
+0 @I457@ INDI
+1 NAME Euphemia /Jones/
+1 BIRT
+2 DATE 1813
+2 PLAC Aberdeen,,Aberdeen City,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F189@
+0 @I458@ INDI
+1 NAME Elisabeth /Mooney/
+1 BIRT
+2 DATE 1841
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX F
+1 FAMS @F154@
+0 @I459@ INDI
+1 NAME Mark /Mooney/
+1 SEX M
+0 @I460@ INDI
+1 NAME Mary /Ellwood/
+1 BIRT
+2 DATE 14 May 1849
+1 DEAT
+2 DATE 19 Aug 1882
+1 SEX F
+0 @I461@ INDI
+1 NAME Suzanne Mitchell /Farmer/
+1 BIRT
+2 DATE 6 Nov 1943
+2 PLAC Cambridge,,Cambridgeshire,England,United Kingdom
+1 SEX F
+1 FAMS @F300@
+0 @I462@ INDI
+1 NAME William /Hendry/
+1 SEX M
+1 FAMS @F462@
+0 @I463@ INDI
+1 NAME Catherine /Collins/
+1 BIRT
+2 DATE 16 Apr 1867
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 13 Jul 1948
+1 SEX F
+1 FAMS @F462@
+0 @I464@ INDI
+1 NAME james /Campbell/
+1 SEX M
+1 FAMS @F348@
+0 @I465@ INDI
+1 NAME William /Gardner/
+1 BIRT
+2 DATE 31 Jan 1879
+2 PLAC Leith,,,Scotland,United Kingdom
+1 SEX M
+0 @I466@ INDI
+1 NAME Patrick /McDonald/
+1 BIRT
+2 DATE 1834
+1 DEAT
+2 DATE 22 Mar 1905
+1 SEX M
+1 FAMS @F360@
+0 @I467@ INDI
+1 NAME Margaret /Lynch/
+1 BIRT
+2 DATE 1830
+1 DEAT
+2 DATE 23 mar 1901
+1 SEX F
+1 FAMS @F159@
+0 @I468@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 10 Mar 1835
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F378@
+0 @I469@ INDI
+1 NAME Rose /Farrell/
+1 BIRT
+2 DATE 9 Jan 1887
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1975
+1 SEX F
+0 @I470@ INDI
+1 NAME Mary Graham /Mooney/
+1 BIRT
+2 DATE 16 JAN 1947
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 13 Jun 2003
+1 SEX F
+1 FAMS @F218@
+0 @I471@ INDI
+1 NAME William /Emm/
+1 SEX M
+1 FAMS @F352@
+0 @I472@ INDI
+1 NAME Rose McFarland /Cragie/
+1 BIRT
+2 DATE 1 Dec 1931
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 24 May 2026
+1 SEX F
+1 FAMS @F472@
+0 @I473@ INDI
+1 NAME George /High/
+1 BIRT
+2 DATE 1849
+2 PLAC Monifieth,,Angus,,United Kingdom
+1 SEX M
+0 @I474@ INDI
+1 NAME john /Gardner/
+1 BIRT
+2 DATE 1878
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 21 july 1926
+1 SEX M
+0 @I475@ INDI
+1 NAME Mary /Graham/
+1 BIRT
+2 DATE 16 Nov 1868
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 16 jan 1943
+1 SEX F
+1 FAMS @F419@
+0 @I476@ INDI
+1 NAME Mary /Reid/
+1 BIRT
+2 DATE 1858
+1 SEX F
+1 FAMS @F328@
+0 @I477@ INDI
+1 NAME David /Barnes/
+1 BIRT
+2 DATE 22 Aug 1886
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 31 mar 1955
+1 SEX M
+1 FAMS @F96@
+0 @I478@ INDI
+1 NAME Patrick /Collins/
+1 BIRT
+2 DATE 19 Oct 1875
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 9 Jan 1950
+1 SEX M
+0 @I479@ INDI
+1 NAME James /Bett/
+1 BIRT
+2 DATE 1982
+1 SEX M
+0 @I480@ INDI
+1 NAME Edward /Barnes/
+1 BIRT
+2 DATE 6 mar 1880
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 22 feb 1963
+1 SEX M
+1 FAMS @F216@
+0 @I481@ INDI
+1 NAME Robina /Mooney/
+1 BIRT
+2 DATE 1890
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I482@ INDI
+1 NAME Agnes (Nancy) /Mooney/
+1 BIRT
+2 DATE 25 feb 1851
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 8 nov 1908
+1 SEX F
+1 FAMS @F255@
+0 @I483@ INDI
+1 NAME James Dunlop /Whiteside/
+1 BIRT
+2 DATE 13 mar 1903
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 26 feb 1980
+1 SEX M
+1 FAMS @F93@
+0 @I484@ INDI
+1 NAME James /Reilly/
+1 SEX M
+1 FAMS @F234@
+0 @I485@ INDI
+1 NAME Edward /Lynch/
+1 BIRT
+2 DATE 1893
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 1898
+1 SEX M
+0 @I486@ INDI
+1 NAME Samuel /McCullock/
+1 BIRT
+2 DATE Jan 1891
+1 SEX M
+0 @I487@ INDI
+1 NAME John /Gordon/
+1 SEX M
+0 @I488@ INDI
+1 NAME Joseph /Mooney/
+1 BIRT
+2 DATE 4 Mar 1931
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 24 jul 2004
+1 SEX M
+1 FAMS @F472@
+0 @I489@ INDI
+1 NAME Agnes /Mooney/
+1 BIRT
+2 DATE 7 Jan 1874
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I490@ INDI
+1 NAME Patrick (Peter) /Welsh/
+1 BIRT
+2 DATE Abt 1800
+1 DEAT
+2 DATE bef 1861
+1 SEX M
+1 FAMS @F423@
+0 @I491@ INDI
+1 NAME James /Mitchell/
+1 BIRT
+2 DATE 12 Sep 1861
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX M
+0 @I492@ INDI
+1 NAME Malcolm /Young/
+1 SEX M
+0 @I493@ INDI
+1 NAME John /Taggart/
+1 SEX M
+1 FAMS @F327@
+0 @I494@ INDI
+1 NAME Ann /Reilly/
+1 BIRT
+2 DATE abt 1838
+1 DEAT
+2 DATE 13 sep 1909
+1 SEX F
+1 FAMS @F418@
+0 @I495@ INDI
+1 NAME Beth /Newton/
+1 BIRT
+2 DATE 6 Jan 1966
+1 SEX F
+1 FAMS @F323@
+0 @I496@ INDI
+1 NAME John /Farrell/
+1 SEX M
+1 FAMS @F293@
+0 @I497@ INDI
+1 NAME Thomas Henry /Barnes/
+1 BIRT
+2 DATE 5 Feb 1875
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 23 Aug 1915
+1 SEX M
+0 @I498@ INDI
+1 NAME Mary Jane /Mooney/
+1 BIRT
+2 DATE 14 Apr 1991
+2 PLAC Keighley,,City and Borough of Bradford,England,United Kingdom
+1 SEX F
+0 @I499@ INDI
+1 NAME Thomas /Mooney/
+1 BIRT
+2 DATE 20 Nov 1905
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 17 Apr 1908
+1 SEX M
+0 @I500@ INDI
+1 NAME Elizabeth /Mooney/
+1 BIRT
+2 DATE 27 may 1859
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 9 jun 1937
+1 SEX F
+1 FAMS @F187@
+0 @I501@ INDI
+1 NAME Selina Fullerton /Mooney/
+1 BIRT
+2 DATE 15 Mar 1891
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I502@ INDI
+1 NAME Robert /Mooney/
+1 BIRT
+2 DATE 1877
+1 SEX M
+0 @I503@ INDI
+1 NAME Ninian /Weir/
+1 BIRT
+2 DATE 1838
+2 PLAC Paisley,,Renfrewshire,Scotland,United Kingdom
+1 DEAT
+2 DATE 23 May 1912
+1 SEX M
+1 FAMS @F412@
+0 @I504@ INDI
+1 NAME Joseph Victor /Gardner/
+1 BIRT
+2 DATE 6 Mar 1886
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 25 May 1890
+1 SEX M
+0 @I505@ INDI
+1 NAME Catherine (Ann) /Quin/
+1 BIRT
+2 DATE 1829
+1 DEAT
+2 DATE 16 mar 1857
+1 SEX F
+1 FAMS @F285@
+0 @I506@ INDI
+1 NAME Lizzie /Mooney/
+1 BIRT
+2 DATE 1900
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+0 @I507@ INDI
+1 NAME Catherine /Lynch/
+1 BIRT
+2 DATE 29 oct 1855
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 SEX F
+1 FAMS @F261@
+0 @I508@ INDI
+1 NAME John /Norrie/
+1 BIRT
+2 DATE 4 Dec 1796
+2 PLAC Dundee,,Dundee City,Scotland,United Kingdom
+1 DEAT
+2 DATE 13 Mar 1812
+1 SEX M
+0 @I509@ INDI
+1 NAME Lisa /Ordell/
+1 SEX F
+1 FAMS @F445@
+0 @I510@ INDI
+1 NAME Lynne /Forrest/
+1 BIRT
+2 DATE 24 Feb 1982
+1 SEX F
+0 @I511@ INDI
+1 NAME James /Eason/
+1 BIRT
+2 DATE 1867
+2 PLAC Forfar,,Angus,Scotland,United Kingdom
+1 SEX M
+1 FAMS @F191@
+0 @I512@ INDI
+1 NAME Sarah /Mooney/
+1 SEX F
+0 @I513@ INDI
+1 NAME James /Mooney/
+1 SEX M
+0 @I514@ INDI
+1 NAME Adam /Mooney/
+1 SEX M
+0 @F1@ FAM
+1 HUSB @I1@
+1 WIFE @I313@
+1 MARR
+2 DATE 1 jan 1904
+1 CHIL @I176@
+1 CHIL @I499@
+1 CHIL @I353@
+1 CHIL @I220@
+1 CHIL @I326@
+0 @F3@ FAM
+1 WIFE @I3@
+1 HUSB @I367@
+1 MARR
+2 DATE 19 mar 1853
+1 CHIL @I178@
+1 CHIL @I156@
+1 CHIL @I281@
+1 CHIL @I57@
+1 CHIL @I174@
+1 CHIL @I109@
+0 @F5@ FAM
+1 WIFE @I5@
+1 HUSB @I33@
+1 CHIL @I359@
+0 @F7@ FAM
+1 WIFE @I7@
+1 HUSB @I289@
+1 CHIL @I95@
+0 @F10@ FAM
+1 HUSB @I10@
+1 WIFE @I264@
+1 CHIL @I80@
+1 CHIL @I152@
+0 @F11@ FAM
+1 HUSB @I11@
+1 WIFE @I415@
+1 MARR
+2 DATE 14 Dec 1860
+0 @F13@ FAM
+1 WIFE @I13@
+1 HUSB @I132@
+1 MARR
+2 DATE 13 jun 1873
+1 CHIL @I42@
+1 CHIL @I224@
+0 @F15@ FAM
+1 HUSB @I15@
+1 WIFE @I181@
+1 MARR
+2 DATE 16 Nov 1903
+1 CHIL @I146@
+0 @F23@ FAM
+1 HUSB @I23@
+1 WIFE @I260@
+1 MARR
+2 DATE 23 Apr 1890
+1 CHIL @I144@
+1 CHIL @I486@
+1 CHIL @I251@
+1 CHIL @I118@
+0 @F25@ FAM
+1 WIFE @I25@
+1 HUSB @I132@
+1 MARR
+2 DATE 4 Oct 1845
+1 CHIL @I103@
+1 CHIL @I49@
+1 CHIL @I129@
+1 CHIL @I192@
+1 CHIL @I240@
+0 @F26@ FAM
+1 HUSB @I26@
+1 WIFE @I87@
+1 CHIL @I321@
+0 @F27@ FAM
+1 WIFE @I27@
+1 HUSB @I136@
+1 MARR
+2 DATE 29 Jan 1873
+0 @F31@ FAM
+1 HUSB @I31@
+1 WIFE @I238@
+1 MARR
+2 DATE 19 Jul 1821
+1 CHIL @I426@
+0 @F32@ FAM
+1 WIFE @I32@
+1 HUSB @I212@
+1 MARR
+2 DATE 8 Dec 1871
+1 CHIL @I172@
+0 @F36@ FAM
+1 HUSB @I36@
+1 WIFE @I155@
+1 MARR
+2 DATE 12 aug 1878
+1 CHIL @I474@
+1 CHIL @I465@
+1 CHIL @I230@
+1 CHIL @I221@
+1 CHIL @I78@
+1 CHIL @I447@
+1 CHIL @I504@
+1 CHIL @I427@
+1 CHIL @I183@
+0 @F39@ FAM
+1 HUSB @I39@
+1 WIFE @I396@
+1 CHIL @I254@
+0 @F42@ FAM
+1 WIFE @I42@
+1 HUSB @I335@
+0 @F43@ FAM
+1 WIFE @I43@
+1 HUSB @I75@
+1 MARR
+2 DATE 23 Sep 1903
+0 @F44@ FAM
+1 WIFE @I44@
+1 HUSB @I389@
+1 MARR
+2 DATE 29 Oct 1915
+1 CHIL @I198@
+1 CHIL @I137@
+1 CHIL @I232@
+1 CHIL @I150@
+1 CHIL @I452@
+1 CHIL @I380@
+1 CHIL @I404@
+1 CHIL @I358@
+1 CHIL @I107@
+1 CHIL @I299@
+1 CHIL @I16@
+1 CHIL @I135@
+0 @F46@ FAM
+1 HUSB @I46@
+1 WIFE @I428@
+1 CHIL @I132@
+1 CHIL @I171@
+1 CHIL @I262@
+1 CHIL @I105@
+1 CHIL @I8@
+0 @F47@ FAM
+1 WIFE @I47@
+1 HUSB @I88@
+1 CHIL @I287@
+1 CHIL @I476@
+1 CHIL @I341@
+0 @F49@ FAM
+1 HUSB @I49@
+1 WIFE @I268@
+1 MARR
+2 DATE 19 Feb 1875
+1 CHIL @I502@
+1 CHIL @I193@
+1 CHIL @I439@
+0 @F50@ FAM
+1 HUSB @I50@
+1 WIFE @I244@
+1 MARR
+2 DATE 15 Oct 1908
+0 @F51@ FAM
+1 WIFE @I51@
+1 HUSB @I153@
+1 CHIL @I29@
+1 CHIL @I24@
+1 CHIL @I104@
+0 @F54@ FAM
+1 HUSB @I54@
+1 WIFE @I68@
+1 CHIL @I377@
+1 CHIL @I425@
+1 CHIL @I505@
+0 @F58@ FAM
+1 HUSB @I58@
+1 WIFE @I122@
+1 MARR
+2 DATE 21 Jun 1992
+1 CHIL @I253@
+1 CHIL @I66@
+0 @F59@ FAM
+1 HUSB @I59@
+1 WIFE @I324@
+1 CHIL @I411@
+0 @F60@ FAM
+1 HUSB @I60@
+1 WIFE @I370@
+1 MARR
+2 DATE 6 Apr 1894
+1 CHIL @I44@
+0 @F61@ FAM
+1 WIFE @I61@
+1 HUSB @I294@
+1 MARR
+2 DATE 19 feb 1941
+0 @F62@ FAM
+1 WIFE @I62@
+1 HUSB @I369@
+1 MARR
+2 DATE 1845
+1 CHIL @I450@
+1 CHIL @I84@
+1 CHIL @I507@
+0 @F63@ FAM
+1 HUSB @I63@
+1 WIFE @I426@
+1 MARR
+2 DATE 26 April 1861
+1 CHIL @I282@
+0 @F64@ FAM
+1 WIFE @I64@
+1 HUSB @I138@
+1 MARR
+2 DATE 13 Dec 177
+1 CHIL @I283@
+1 CHIL @I408@
+1 CHIL @I139@
+1 CHIL @I199@
+1 CHIL @I508@
+0 @F65@ FAM
+1 HUSB @I65@
+1 WIFE @I275@
+1 CHIL @I46@
+1 CHIL @I306@
+1 CHIL @I223@
+0 @F70@ FAM
+1 WIFE @I70@
+1 HUSB @I270@
+1 CHIL @I457@
+1 CHIL @I226@
+0 @F71@ FAM
+1 WIFE @I71@
+1 HUSB @I306@
+1 MARR
+2 DATE 1 Mar 1829
+1 CHIL @I55@
+1 CHIL @I236@
+1 CHIL @I468@
+1 CHIL @I391@
+1 CHIL @I415@
+1 CHIL @I458@
+1 CHIL @I161@
+1 CHIL @I196@
+1 CHIL @I212@
+1 CHIL @I393@
+1 CHIL @I76@
+0 @F81@ FAM
+1 WIFE @I81@
+1 HUSB @I195@
+1 MARR
+2 DATE 20 dec 1916
+0 @F82@ FAM
+1 HUSB @I82@
+1 WIFE @I87@
+0 @F85@ FAM
+1 HUSB @I85@
+1 WIFE @I370@
+1 MARR
+2 DATE 2 Jan 1937
+1 CHIL @I30@
+1 CHIL @I145@
+0 @F90@ FAM
+1 HUSB @I90@
+1 WIFE @I430@
+1 CHIL @I514@
+1 CHIL @I513@
+1 CHIL @I512@
+0 @F91@ FAM
+1 HUSB @I91@
+1 WIFE @I309@
+1 CHIL @I347@
+1 CHIL @I53@
+1 CHIL @I492@
+1 CHIL @I77@
+1 CHIL @I108@
+0 @F93@ FAM
+1 WIFE @I93@
+1 HUSB @I483@
+1 CHIL @I127@
+1 CHIL @I343@
+1 CHIL @I218@
+0 @F95@ FAM
+1 WIFE @I95@
+1 HUSB @I171@
+1 MARR
+2 DATE 16 feb 1857
+1 CHIL @I75@
+1 CHIL @I312@
+1 CHIL @I500@
+1 CHIL @I191@
+1 CHIL @I337@
+1 CHIL @I429@
+1 CHIL @I241@
+1 CHIL @I162@
+1 CHIL @I291@
+0 @F96@ FAM
+1 WIFE @I96@
+1 HUSB @I477@
+1 MARR
+2 DATE 29 dec 1911
+0 @F97@ FAM
+1 WIFE @I97@
+1 HUSB @I102@
+1 CHIL @I467@
+1 CHIL @I239@
+1 CHIL @I257@
+1 CHIL @I201@
+1 CHIL @I395@
+0 @F98@ FAM
+1 WIFE @I98@
+1 HUSB @I436@
+1 MARR
+2 DATE 10 jul 1955
+1 CHIL @I202@
+1 CHIL @I324@
+1 CHIL @I101@
+1 CHIL @I363@
+0 @F99@ FAM
+1 HUSB @I99@
+1 WIFE @I368@
+1 CHIL @I111@
+1 CHIL @I305@
+1 CHIL @I158@
+1 CHIL @I255@
+1 CHIL @I37@
+0 @F100@ FAM
+1 HUSB @I100@
+1 WIFE @I113@
+1 CHIL @I418@
+1 CHIL @I440@
+1 CHIL @I170@
+0 @F101@ FAM
+1 HUSB @I101@
+1 WIFE @I308@
+1 CHIL @I479@
+1 CHIL @I20@
+1 CHIL @I148@
+0 @F103@ FAM
+1 HUSB @I103@
+1 WIFE @I344@
+1 MARR
+2 DATE 26 jun 1871
+0 @F105@ FAM
+1 HUSB @I105@
+1 WIFE @I390@
+1 MARR
+2 DATE 7 sep 1871
+1 CHIL @I40@
+1 CHIL @I489@
+1 CHIL @I79@
+0 @F116@ FAM
+1 HUSB @I116@
+1 WIFE @I191@
+1 CHIL @I394@
+1 CHIL @I345@
+1 CHIL @I4@
+1 CHIL @I41@
+1 CHIL @I279@
+0 @F117@ FAM
+1 WIFE @I117@
+1 HUSB @I269@
+1 CHIL @I451@
+0 @F119@ FAM
+1 WIFE @I119@
+1 HUSB @I357@
+1 MARR
+2 DATE 14 Jun 1867
+1 CHIL @I406@
+1 CHIL @I370@
+1 CHIL @I18@
+1 CHIL @I110@
+1 CHIL @I34@
+1 CHIL @I12@
+1 CHIL @I205@
+1 CHIL @I128@
+0 @F124@ FAM
+1 WIFE @I124@
+1 HUSB @I362@
+1 CHIL @I369@
+0 @F126@ FAM
+1 HUSB @I126@
+1 WIFE @I379@
+1 MARR
+2 DATE 8 Apr 1989
+1 CHIL @I498@
+0 @F131@ FAM
+1 WIFE @I131@
+1 HUSB @I235@
+0 @F136@ FAM
+1 HUSB @I136@
+1 WIFE @I254@
+1 MARR
+2 DATE 29 Jan 1873
+1 CHIL @I157@
+1 CHIL @I265@
+1 CHIL @I184@
+1 CHIL @I56@
+1 CHIL @I89@
+0 @F139@ FAM
+1 HUSB @I139@
+1 WIFE @I190@
+1 MARR
+2 DATE 3 Jun 1805
+1 CHIL @I71@
+1 CHIL @I449@
+0 @F142@ FAM
+1 WIFE @I142@
+1 HUSB @I277@
+1 MARR
+2 DATE 10 Nov 1860
+1 CHIL @I491@
+1 CHIL @I460@
+1 CHIL @I448@
+0 @F146@ FAM
+1 HUSB @I146@
+1 WIFE @I200@
+1 MARR
+2 DATE 16 oct 1931
+0 @F151@ FAM
+1 WIFE @I151@
+1 HUSB @I302@
+1 MARR
+2 DATE 18 Sep 1854
+1 CHIL @I310@
+1 CHIL @I23@
+1 CHIL @I225@
+1 CHIL @I38@
+1 CHIL @I217@
+1 CHIL @I215@
+0 @F152@ FAM
+1 WIFE @I152@
+1 HUSB @I257@
+1 MARR
+2 DATE 21 Apr 1853
+1 CHIL @I123@
+1 CHIL @I155@
+1 CHIL @I35@
+1 CHIL @I280@
+1 CHIL @I260@
+1 CHIL @I228@
+1 CHIL @I6@
+1 CHIL @I419@
+1 CHIL @I446@
+0 @F154@ FAM
+1 HUSB @I154@
+1 WIFE @I458@
+1 MARR
+2 DATE 30 Dec 1870
+0 @F159@ FAM
+1 HUSB @I159@
+1 WIFE @I467@
+1 MARR
+2 DATE 26 Aug 1853
+1 CHIL @I405@
+1 CHIL @I115@
+1 CHIL @I375@
+1 CHIL @I48@
+1 CHIL @I463@
+1 CHIL @I143@
+1 CHIL @I422@
+1 CHIL @I478@
+0 @F163@ FAM
+1 WIFE @I163@
+1 HUSB @I240@
+1 CHIL @I481@
+1 CHIL @I339@
+1 CHIL @I317@
+1 CHIL @I237@
+1 CHIL @I332@
+0 @F164@ FAM
+1 HUSB @I164@
+1 WIFE @I181@
+1 MARR
+2 DATE 1 may 1911
+0 @F165@ FAM
+1 HUSB @I165@
+1 WIFE @I334@
+1 MARR
+2 DATE 4 Dec 1904
+0 @F168@ FAM
+1 HUSB @I168@
+1 WIFE @I188@
+1 CHIL @I248@
+1 CHIL @I19@
+1 CHIL @I316@
+1 CHIL @I210@
+1 CHIL @I336@
+1 CHIL @I286@
+1 CHIL @I114@
+0 @F169@ FAM
+1 WIFE @I169@
+1 HUSB @I274@
+1 MARR
+2 DATE 4 Oct 1912
+0 @F171@ FAM
+1 HUSB @I171@
+1 WIFE @I248@
+1 MARR
+2 DATE 16 feb 1857
+1 CHIL @I312@
+1 CHIL @I500@
+1 CHIL @I191@
+1 CHIL @I337@
+1 CHIL @I429@
+1 CHIL @I241@
+1 CHIL @I162@
+1 CHIL @I291@
+1 CHIL @I482@
+0 @F179@ FAM
+1 HUSB @I179@
+1 WIFE @I438@
+1 CHIL @I209@
+1 CHIL @I87@
+1 CHIL @I428@
+0 @F182@ FAM
+1 HUSB @I182@
+1 WIFE @I314@
+1 CHIL @I364@
+0 @F186@ FAM
+1 HUSB @I186@
+1 WIFE @I452@
+1 MARR
+2 DATE 2 Apr 1947
+0 @F187@ FAM
+1 HUSB @I187@
+1 WIFE @I500@
+1 MARR
+2 DATE 13 dec 1879
+1 CHIL @I266@
+1 CHIL @I320@
+0 @F189@ FAM
+1 HUSB @I189@
+1 WIFE @I457@
+1 MARR
+2 DATE 31 Jan 1835
+1 CHIL @I378@
+0 @F191@ FAM
+1 WIFE @I191@
+1 HUSB @I511@
+1 CHIL @I394@
+1 CHIL @I345@
+1 CHIL @I4@
+1 CHIL @I41@
+1 CHIL @I279@
+1 CHIL @I276@
+1 CHIL @I121@
+1 CHIL @I355@
+1 CHIL @I388@
+0 @F192@ FAM
+1 HUSB @I192@
+1 WIFE @I281@
+1 CHIL @I298@
+1 CHIL @I284@
+1 CHIL @I45@
+1 CHIL @I242@
+1 CHIL @I501@
+1 CHIL @I231@
+1 CHIL @I506@
+0 @F202@ FAM
+1 HUSB @I202@
+1 WIFE @I204@
+1 CHIL @I219@
+1 CHIL @I94@
+1 CHIL @I384@
+0 @F203@ FAM
+1 HUSB @I203@
+1 WIFE @I370@
+1 CHIL @I258@
+1 CHIL @I246@
+1 CHIL @I17@
+0 @F206@ FAM
+1 WIFE @I206@
+1 HUSB @I372@
+1 MARR
+2 DATE 4 oct 1915
+0 @F208@ FAM
+1 WIFE @I208@
+1 HUSB @I420@
+1 MARR
+2 DATE 8 Dec 1780
+1 CHIL @I190@
+0 @F209@ FAM
+1 WIFE @I209@
+1 HUSB @I400@
+1 MARR
+2 DATE 18 apr 1843
+0 @F211@ FAM
+1 HUSB @I211@
+1 WIFE @I429@
+0 @F213@ FAM
+1 WIFE @I213@
+1 HUSB @I353@
+1 MARR
+2 DATE 7 oct 1929
+1 CHIL @I488@
+1 CHIL @I296@
+1 CHIL @I98@
+1 CHIL @I300@
+1 CHIL @I470@
+0 @F216@ FAM
+1 WIFE @I216@
+1 HUSB @I480@
+0 @F218@ FAM
+1 HUSB @I218@
+1 WIFE @I470@
+1 MARR
+2 DATE 4 Jul 1964
+1 CHIL @I323@
+1 CHIL @I351@
+0 @F228@ FAM
+1 WIFE @I228@
+1 HUSB @I330@
+1 MARR
+2 DATE 28 Jul 1890
+0 @F229@ FAM
+1 WIFE @I229@
+1 HUSB @I383@
+1 MARR
+2 DATE 31 Dec 1832
+1 CHIL @I373@
+1 CHIL @I350@
+1 CHIL @I360@
+0 @F234@ FAM
+1 WIFE @I234@
+1 HUSB @I484@
+1 MARR
+2 DATE 19 feb 1828
+1 CHIL @I494@
+0 @F245@ FAM
+1 WIFE @I245@
+1 HUSB @I376@
+1 MARR
+2 DATE 31 Dec 1838
+1 CHIL @I356@
+1 CHIL @I329@
+1 CHIL @I194@
+1 CHIL @I374@
+0 @F247@ FAM
+1 HUSB @I247@
+1 WIFE @I324@
+1 CHIL @I510@
+1 CHIL @I403@
+1 CHIL @I288@
+0 @F250@ FAM
+1 HUSB @I250@
+1 WIFE @I386@
+1 CHIL @I402@
+0 @F252@ FAM
+1 WIFE @I252@
+1 HUSB @I446@
+1 MARR
+2 DATE 2 jan 1893
+1 CHIL @I431@
+1 CHIL @I52@
+1 CHIL @I414@
+1 CHIL @I301@
+0 @F255@ FAM
+1 HUSB @I255@
+1 WIFE @I482@
+1 MARR
+2 DATE 26 Jan 1872
+1 CHIL @I9@
+1 CHIL @I497@
+1 CHIL @I354@
+1 CHIL @I480@
+1 CHIL @I131@
+1 CHIL @I477@
+1 CHIL @I325@
+1 CHIL @I22@
+0 @F259@ FAM
+1 WIFE @I259@
+1 HUSB @I425@
+0 @F261@ FAM
+1 HUSB @I261@
+1 WIFE @I507@
+1 MARR
+2 DATE 30 jan 1880
+1 CHIL @I1@
+1 CHIL @I398@
+1 CHIL @I28@
+1 CHIL @I334@
+1 CHIL @I244@
+1 CHIL @I416@
+1 CHIL @I397@
+1 CHIL @I149@
+1 CHIL @I195@
+1 CHIL @I160@
+1 CHIL @I389@
+1 CHIL @I243@
+0 @F278@ FAM
+1 WIFE @I278@
+1 HUSB @I359@
+1 CHIL @I249@
+1 CHIL @I413@
+1 CHIL @I271@
+1 CHIL @I466@
+1 CHIL @I136@
+1 CHIL @I222@
+1 CHIL @I366@
+0 @F280@ FAM
+1 WIFE @I280@
+1 HUSB @I292@
+1 MARR
+2 DATE 8 may 1876
+0 @F285@ FAM
+1 HUSB @I285@
+1 WIFE @I505@
+1 MARR
+2 DATE 1 feb 1861
+1 CHIL @I120@
+1 CHIL @I454@
+1 CHIL @I2@
+1 CHIL @I319@
+1 CHIL @I153@
+1 CHIL @I197@
+1 CHIL @I311@
+1 CHIL @I437@
+1 CHIL @I207@
+1 CHIL @I133@
+1 CHIL @I328@
+1 CHIL @I392@
+0 @F286@ FAM
+1 HUSB @I286@
+1 WIFE @I340@
+0 @F293@ FAM
+1 WIFE @I293@
+1 HUSB @I496@
+1 CHIL @I285@
+0 @F296@ FAM
+1 HUSB @I296@
+1 WIFE @I364@
+1 MARR
+2 DATE 10 jul 1954
+1 CHIL @I214@
+1 CHIL @I167@
+1 CHIL @I134@
+0 @F300@ FAM
+1 HUSB @I300@
+1 WIFE @I461@
+1 MARR
+2 DATE 4 Mar 1963
+1 CHIL @I122@
+1 CHIL @I126@
+0 @F303@ FAM
+1 HUSB @I303@
+1 WIFE @I338@
+1 MARR
+2 DATE 1 Jan 1929
+1 CHIL @I140@
+0 @F304@ FAM
+1 HUSB @I304@
+1 WIFE @I451@
+1 MARR
+2 DATE 18 oct 1867
+1 CHIL @I166@
+0 @F321@ FAM
+1 WIFE @I321@
+1 HUSB @I424@
+1 MARR
+2 DATE 14 oct 1854
+0 @F323@ FAM
+1 HUSB @I323@
+1 WIFE @I495@
+1 CHIL @I67@
+1 CHIL @I273@
+1 CHIL @I409@
+0 @F327@ FAM
+1 WIFE @I327@
+1 HUSB @I493@
+1 MARR
+2 DATE 1 feb 1861
+1 CHIL @I120@
+1 CHIL @I454@
+1 CHIL @I2@
+1 CHIL @I319@
+1 CHIL @I153@
+1 CHIL @I197@
+1 CHIL @I311@
+1 CHIL @I437@
+1 CHIL @I207@
+1 CHIL @I133@
+1 CHIL @I177@
+0 @F328@ FAM
+1 HUSB @I328@
+1 WIFE @I476@
+1 MARR
+2 DATE 24 Nov 1876
+1 CHIL @I130@
+1 CHIL @I361@
+1 CHIL @I313@
+1 CHIL @I272@
+1 CHIL @I469@
+1 CHIL @I169@
+1 CHIL @I92@
+1 CHIL @I180@
+0 @F331@ FAM
+1 WIFE @I331@
+1 HUSB @I441@
+1 CHIL @I175@
+1 CHIL @I417@
+0 @F333@ FAM
+1 HUSB @I333@
+1 WIFE @I434@
+1 CHIL @I83@
+1 CHIL @I185@
+1 CHIL @I327@
+0 @F348@ FAM
+1 WIFE @I348@
+1 HUSB @I464@
+1 CHIL @I187@
+0 @F349@ FAM
+1 WIFE @I349@
+1 HUSB @I444@
+1 MARR
+2 DATE 1914
+0 @F352@ FAM
+1 WIFE @I352@
+1 HUSB @I471@
+1 CHIL @I263@
+1 CHIL @I208@
+0 @F360@ FAM
+1 WIFE @I360@
+1 HUSB @I466@
+1 CHIL @I407@
+0 @F363@ FAM
+1 WIFE @I363@
+1 HUSB @I401@
+1 CHIL @I106@
+1 CHIL @I125@
+0 @F365@ FAM
+1 WIFE @I365@
+1 HUSB @I421@
+1 MARR
+2 DATE 1 Jan 1931
+0 @F378@ FAM
+1 WIFE @I378@
+1 HUSB @I468@
+1 MARR
+2 DATE 28 Nov 1856
+1 CHIL @I86@
+0 @F397@ FAM
+1 WIFE @I397@
+1 HUSB @I456@
+1 MARR
+2 DATE 1 Dec 1905
+0 @F412@ FAM
+1 WIFE @I412@
+1 HUSB @I503@
+1 MARR
+2 DATE 8 sep 1857
+1 CHIL @I315@
+1 CHIL @I227@
+1 CHIL @I441@
+1 CHIL @I60@
+1 CHIL @I72@
+0 @F418@ FAM
+1 HUSB @I418@
+1 WIFE @I494@
+1 MARR
+2 DATE 6 May 1859
+1 CHIL @I267@
+1 CHIL @I442@
+1 CHIL @I387@
+1 CHIL @I475@
+1 CHIL @I15@
+1 CHIL @I173@
+1 CHIL @I112@
+0 @F419@ FAM
+1 HUSB @I419@
+1 WIFE @I475@
+1 MARR
+2 DATE 1 Jan 1890
+1 CHIL @I294@
+1 CHIL @I21@
+1 CHIL @I485@
+1 CHIL @I453@
+1 CHIL @I372@
+1 CHIL @I338@
+1 CHIL @I421@
+1 CHIL @I213@
+0 @F423@ FAM
+1 WIFE @I423@
+1 HUSB @I490@
+1 CHIL @I62@
+1 CHIL @I63@
+1 CHIL @I14@
+1 CHIL @I142@
+0 @F432@ FAM
+1 WIFE @I432@
+1 HUSB @I488@
+1 CHIL @I459@
+1 CHIL @I90@
+0 @F443@ FAM
+1 HUSB @I443@
+1 WIFE @I457@
+1 MARR
+2 DATE 3 Oct 1841
+1 CHIL @I410@
+1 CHIL @I371@
+1 CHIL @I233@
+1 CHIL @I473@
+1 CHIL @I256@
+1 CHIL @I73@
+0 @F445@ FAM
+1 HUSB @I445@
+1 WIFE @I509@
+1 CHIL @I342@
+0 @F450@ FAM
+1 HUSB @I450@
+1 WIFE @I451@
+1 MARR
+2 DATE 20 Jan 1880
+1 CHIL @I385@
+1 CHIL @I381@
+1 CHIL @I455@
+1 CHIL @I349@
+1 CHIL @I74@
+1 CHIL @I346@
+0 @F462@ FAM
+1 HUSB @I462@
+1 WIFE @I463@
+0 @F472@ FAM
+1 WIFE @I472@
+1 HUSB @I488@
+1 MARR
+2 DATE 16 Jul 1951
+1 CHIL @I433@
+1 CHIL @I445@
+1 CHIL @I250@
+1 CHIL @I309@
+1 CHIL @I399@
+0 TRLR

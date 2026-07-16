@@ -1,0 +1,929 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Roots — Pedigree Tree</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #faf9f7;
+        }
+
+        .top-bar {
+            position: fixed;
+            top: 0; left: 0; right: 0;
+            height: 56px;
+            background: #fff;
+            border-bottom: 1px solid #e5e5e5;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 0 16px;
+            z-index: 100;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.04);
+            gap: 12px;
+        }
+
+        .app-title {
+            font-size: 17px;
+            font-weight: 700;
+            color: #1a1a1a;
+            white-space: nowrap;
+        }
+
+        .breadcrumbs {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+            scrollbar-width: none;
+            font-size: 12px;
+            color: #666;
+            padding: 0 4px;
+        }
+        .breadcrumbs::-webkit-scrollbar { display: none; }
+        .crumb {
+            white-space: nowrap;
+            cursor: pointer;
+            padding: 4px 8px;
+            border-radius: 6px;
+            transition: background 0.15s;
+        }
+        .crumb:hover { background: #f0f0f0; }
+        .crumb.active { font-weight: 600; color: #1a1a1a; }
+        .crumb-sep { color: #ccc; font-size: 10px; }
+
+        .view-toggle {
+            display: flex;
+            gap: 4px;
+            background: #f0f0f0;
+            border-radius: 8px;
+            padding: 3px;
+            flex-shrink: 0;
+        }
+
+        .view-btn {
+            border: none;
+            background: transparent;
+            padding: 6px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+            color: #666;
+            cursor: pointer;
+            transition: all 0.15s;
+            white-space: nowrap;
+        }
+
+        .view-btn.active {
+            background: #fff;
+            color: #1a1a1a;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+        }
+
+        .tree-scroll {
+            position: fixed;
+            top: 56px; left: 0; right: 0; bottom: 0;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .zoom-wrap {
+            transform-origin: 0 0;
+            transition: transform 0.2s ease;
+        }
+
+        .tree-wrap {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            padding: 60px 80px;
+            min-height: calc(100vh - 56px);
+            gap: 100px;
+        }
+
+        .person-card {
+            position: absolute;
+            left: 0;
+            width: 200px;
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 2;
+        }
+
+        .person-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .person-card.confirmed { border-left-color: #22c55e; }
+        .person-card.probable { border-left-color: #f59e0b; }
+        .person-card.brickwall { border-left-color: #ef4444; border-left-style: dashed; }
+        .person-card.you { border-left-color: #3b82f6; border-left-width: 4px; }
+        .person-card.root { border-left-color: #3b82f6; border-left-width: 4px; }
+
+        .person-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .person-years {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .drill-btn {
+            position: absolute;
+            right: -14px;
+            top: 50%;
+            transform: translateY(-50%);
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            background: #3b82f6;
+            color: #fff;
+            border: 2px solid #fff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 15px;
+            cursor: pointer;
+            z-index: 10;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+        }
+
+        .lines-svg {
+            position: absolute;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+
+        .detail-panel {
+            position: fixed;
+            top: 56px;
+            right: -380px;
+            width: 360px;
+            bottom: 0;
+            background: #fff;
+            border-left: 1px solid #e5e5e5;
+            box-shadow: -4px 0 20px rgba(0,0,0,0.08);
+            z-index: 90;
+            transition: right 0.3s ease;
+            overflow-y: auto;
+            padding: 24px;
+        }
+
+        .detail-panel.open { right: 0; }
+
+        .close-btn {
+            position: absolute;
+            top: 16px;
+            right: 16px;
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: #f0f0f0;
+            cursor: pointer;
+            font-size: 18px;
+            line-height: 1;
+        }
+
+        .detail-panel h2 {
+            font-size: 20px;
+            margin-bottom: 4px;
+            padding-right: 40px;
+        }
+
+        .detail-panel .years { color: #888; font-size: 14px; margin-bottom: 20px; }
+
+        .detail-section { margin-bottom: 24px; }
+        .detail-section h3 {
+            font-size: 11px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            color: #999;
+            margin-bottom: 10px;
+        }
+
+        .source-item {
+            padding: 10px 12px;
+            background: #f8f8f8;
+            border-radius: 8px;
+            margin-bottom: 8px;
+            font-size: 13px;
+            border-left: 3px solid #ccc;
+        }
+        .source-item.confirmed { border-left-color: #22c55e; }
+        .source-item.missing { border-left-color: #ef4444; background: #fef2f2; }
+        .source-item.suggested { border-left-color: #3b82f6; background: #eff6ff; }
+        .source-item .source-title { font-weight: 600; color: #333; }
+        .source-item .source-meta { color: #888; font-size: 11px; margin-top: 2px; }
+
+        .suggest-action {
+            padding: 14px;
+            background: #eff6ff;
+            border: 1px solid #bfdbfe;
+            border-radius: 10px;
+            margin-top: 16px;
+        }
+        .suggest-action h4 { font-size: 13px; color: #1e40af; margin-bottom: 6px; }
+        .suggest-action p { font-size: 12px; color: #3b82f6; line-height: 1.5; }
+        .price-tag {
+            display: inline-block;
+            margin-top: 8px;
+            padding: 4px 10px;
+            background: #3b82f6;
+            color: #fff;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .action-btn {
+            width: 100%;
+            padding: 12px;
+            background: #1a1a1a;
+            color: #fff;
+            border: none;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 13px;
+            margin-top: 8px;
+        }
+
+        .zoom-controls {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .zoom-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .zoom-level {
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+            text-align: center;
+            background: #fff;
+            padding: 4px 0;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        @media (max-width: 768px) {
+            .detail-panel { width: 100%; right: -100%; }
+            .tree-wrap { padding: 40px 20px; gap: 50px; }
+            .person-card { width: 160px; padding: 12px 16px; }
+            .person-name { font-size: 13px; }
+            .app-title { display: none; }
+        }
+    </style>
+</head>
+<body>
+    <div class="top-bar">
+        <div class="app-title">Roots</div>
+        <div class="breadcrumbs" id="breadcrumbs"></div>
+        <div class="view-toggle">
+            <button class="view-btn active" id="btnCompact" onclick="switchView('compact')">5 Generations</button>
+            <button class="view-btn" id="btnFull" onclick="switchView('full')">Full Tree</button>
+        </div>
+    </div>
+
+    <div class="tree-scroll" id="treeScroll">
+        <div class="zoom-wrap" id="zoomWrap">
+            <div class="tree-wrap" id="treeWrap">
+                <svg class="lines-svg" id="linesSvg"></svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="detail-panel" id="detailPanel">
+        <button class="close-btn" onclick="closePanel()">&times;</button>
+        <div id="panelContent"></div>
+    </div>
+
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <div class="zoom-level" id="zoomLevel">100%</div>
+        <button class="zoom-btn" onclick="zoomOut()">&minus;</button>
+        <button class="zoom-btn" onclick="zoomReset()">&#x21BB;</button>
+    </div>
+
+    <script>
+    // ===== DATA =====
+    const allPeople = {
+        'p000': { name: "Graeme Mooney", years: "b. 1966", status: "you", gen: 0, parents: ['p100','p101'], sources: [], suggestion: null },
+
+        'p100': { name: "Joseph Mooney", years: "1931–2004", status: "confirmed", gen: 1, parents: ['p200','p201'], sources: [
+            {title: "Birth Certificate", meta: "Dundee, 4 Mar 1931 — Polepark Road", status: "confirmed"},
+            {title: "Marriage Certificate", meta: "St Francis, Lochee, 14 Jul 1951 — Engineering Draughtsman, 37 Kirk Street", status: "confirmed"},
+            {title: "Death Certificate", meta: "Ontario, 2004", status: "confirmed"}
+        ], suggestion: null },
+        'p101': { name: "Rose Craigie", years: "b. 1931", status: "confirmed", gen: 1, parents: ['p210','p211'], sources: [
+            {title: "Birth Certificate", meta: "Dundee, 1931", status: "confirmed"}
+        ], suggestion: null },
+
+        'p200': { name: "Joseph Mooney", years: "1908–?", status: "confirmed", gen: 2, parents: ['p300','p301'], sources: [
+            {title: "Marriage Certificate", meta: "St Joseph's, Dundee, 7 Oct 1929 — Motor Engineer. Parents: Joseph Mooney (Jute Mill Manager) + Catherine Farrell.", status: "confirmed"},
+            {title: "Death Certificate", meta: "1974", status: "confirmed"}
+        ], suggestion: null },
+        'p201': { name: "Alice Lynch", years: "1907–?", status: "confirmed", gen: 2, parents: ['p310','p311'], sources: [
+            {title: "Birth Certificate", meta: "Dundee, 1907", status: "confirmed"},
+            {title: "Marriage Certificate", meta: "St Joseph's, Dundee, 7 Oct 1929 — Jute Spinner. Parents: Edward Lynch + Mary J. Graham", status: "confirmed"}
+        ], suggestion: null },
+        'p210': { name: "Andrew H. Craigie", years: "1904–1972", status: "confirmed", gen: 2, parents: ['p320','p321'], sources: [
+            {title: "Birth Certificate", meta: "Auchterderran, Fife, 20 Dec 1904", status: "confirmed"},
+            {title: "Death Certificate", meta: "1972", status: "confirmed"}
+        ], suggestion: null },
+        'p211': { name: "Agnes Crawford", years: "1900–1987", status: "confirmed", gen: 2, parents: ['p330','p331'], sources: [
+            {title: "Birth Certificate", meta: "1900", status: "confirmed"},
+            {title: "Death Certificate", meta: "1987", status: "confirmed"}
+        ], suggestion: null },
+
+        'p300': { name: "Joseph Mooney", years: "1879–?", status: "confirmed", gen: 3, parents: ['p400','p401'], sources: [
+            {title: "Marriage Certificate", meta: "Lochee, 1 Jan 1904 — Age 24. Stoker, 93 Mid Street. Parents: Thomas Mooney (Stoker) + Catherine Lynch.", status: "confirmed"},
+            {title: "Birth Certificate", meta: "1 Aug 1879, Albert St, Lochee — illegitimate, mother Catherine Lynch (Jute Spinner). Later took surname Mooney.", status: "confirmed"}
+        ], suggestion: null },
+        'p301': { name: "Catherine Farrell", years: "~1883–?", status: "confirmed", gen: 3, parents: ['p420','p421'], sources: [
+            {title: "Marriage Certificate", meta: "Lochee, 1 Jan 1904 — Age 21. Jute Spinner, 80 Liff Road. Parents: James Farrell + Helen McDonald (deceased).", status: "confirmed"},
+            {title: "1901 Census", meta: "80 Liff Road, Lochee — age 18, Jute Spinner, with siblings Bridget (29), Patrick (21), Rose (14), Ellen (12), John (9), Daniel J. (6)", status: "confirmed"}
+        ], suggestion: null },
+        'p310': { name: "Edward Lynch", years: "~1868–?", status: "confirmed", gen: 3, parents: ['p410','p411'], sources: [
+            {title: "1901 Census", meta: "16 Pole St, Dundee — age 33, Jute Selector. Wife Mary Lynch (32) [Mary J. Graham]. Children: James (10), Joseph (5), John (3)", status: "confirmed"},
+            {title: "Marriage (Alice Lynch)", meta: "Parents of Alice Lynch (b. 1907). Father: Edward Lynch.", status: "confirmed"}
+        ], suggestion: null },
+        'p311': { name: "Mary J. Graham", years: "~1869–?", status: "probable", gen: 3, parents: ['p430','p431'], sources: [
+            {title: "1871 Census", meta: "29 Blackness Rd, Dundee — daughter of James Graham (34, Shoemaker) + Ann (25). Mary age 2.", status: "confirmed"}
+        ], suggestion: {text: "Search marriage of Edward Lynch + Mary J. Graham, or birth cert for Mary J. Graham", price: "Free"} },
+        'p320': { name: "James Craigie", years: "~1872–?", status: "confirmed", gen: 3, parents: ['p440','p441'], sources: [
+            {title: "1901 Census", meta: "Glencraig Cottages, Fife — age 28, Coal Miner. Wife Agnes (26) [Agnes B. Henderson].", status: "confirmed"}
+        ], suggestion: null },
+        'p321': { name: "Agnes Henderson", years: "~1875–?", status: "probable", gen: 3, parents: ['p450','p451'], sources: [
+            {title: "1881 Census", meta: "Castle St, Clackmannan — daughter of Andrew Henderson (31, Shoemaker) + Eliza (31). Agnes B. age 5.", status: "confirmed"}
+        ], suggestion: {text: "Search marriage of James Craigie + Agnes Henderson, or birth cert for Agnes Henderson", price: "Free"} },
+        'p330': { name: "Francis Crawford", years: "1850–?", status: "probable", gen: 3, parents: null, sources: [
+            {title: "Marriage Certificate", meta: "Eliza McGinley, 22 Jan 1869 — Power Loom Tenter, age 19. Parents: Francis Crawford + Alice Crawford", status: "confirmed"}
+        ], suggestion: null },
+        'p331': { name: "Eliza McGinley", years: "1852–?", status: "probable", gen: 3, parents: null, sources: [
+            {title: "Marriage Certificate", meta: "Francis Crawford, 22 Jan 1869 — age 17. Parents: Peter McLinley + Frances McLinley", status: "confirmed"}
+        ], suggestion: null },
+
+        'p400': { name: "Thomas Mooney", years: "1857–1911", status: "confirmed", gen: 4, parents: ['p500'], sources: [
+            {title: "Birth Certificate", meta: "Lochee, 22 Mar 1857 — illegitimate, mother Hannah Mooney (Jute Mill Worker), 130 Liff Road", status: "confirmed"},
+            {title: "Death Certificate", meta: "Lochee, 22 Dec 1911 — Alcohol Poisoning. Age stated as 49. Occupation: Jute Mill Worker. Widow Catherine Mooney. Mother: Hannah Mooney.", status: "confirmed"},
+            {title: "1891 Census", meta: "4 Albert St, Lochee — age 33, Fireman. Children: Joseph (12), Hannah (8), Agnes (6), Catherine (4), John (1)", status: "confirmed"}
+        ], suggestion: {text: "Age discrepancy: birth cert says b.1857 (~age 54 at death) but death cert says age 49. Occupation varies: Fireman (1891), Mason's Lab (1901), Jute Mill Worker (1911).", price: "Free"} },
+        'p401': { name: "Catherine Lynch", years: "~1858–?", status: "confirmed", gen: 4, parents: ['p510','p511'], sources: [
+            {title: "Marriage Certificate", meta: "Lochee, 30 Jan 1880 — Age 22. Spinster, Spinner (Jute Mill). Parents: Thomas Lynch (Weaver) + Catherine Lynch M.S. Welsh.", status: "confirmed"},
+            {title: "1901 Census", meta: "Living with son John (19), daughter Susan (7). Address: 19 Rosebank St.", status: "confirmed"}
+        ], suggestion: null },
+        'p410': { name: "Owen Lynch", years: "~1834–?", status: "probable", gen: 4, parents: ['p540','p541'], sources: [
+            {title: "1851 Census", meta: "Dundee — age 17, Millworker, cousin in household. Born Ireland.", status: "confirmed"},
+            {title: "1871 Census", meta: "141 Scouringburn, Dundee — head, age 38, Jute Selector. Wife Alice (30). Children: Edward (4), John (3), Mary (1).", status: "confirmed"}
+        ], suggestion: null },
+        'p411': { name: "Alice Rogers", years: "~1841–1892", status: "confirmed", gen: 4, parents: ['p542','p543'], sources: [
+            {title: "1853 Marriage", meta: "Married Owen Lynch 22 Apr 1853 — 'of this parish'", status: "confirmed"},
+            {title: "1892 Death", meta: "Died 5 Aug 1892, age 51. Wife of Owen Lynch (Jute Batcher). Parents: John Rogers (Crofter) + Alice Smith.", status: "confirmed"}
+        ], suggestion: null },
+        'p420': { name: "James Farrell", years: "~1855–?", status: "confirmed", gen: 4, parents: ['p520','p521'], sources: [
+            {title: "Marriage Certificate", meta: "Lochee, 24 Nov 1876 — Age 21. Stone Quarry Worker. Parents: John Farrell (Stone Quarry Worker) + Ann Quinn (deceased).", status: "confirmed"},
+            {title: "1901 Census", meta: "80 Liff Road, Lochee — father present. Listed as Yarn Dresser on daughter's 1904 marriage.", status: "confirmed"}
+        ], suggestion: null },
+        'p421': { name: "Helen McDonald", years: "~1857–<1904", status: "confirmed", gen: 4, parents: ['p530','p531'], sources: [
+            {title: "Marriage Certificate", meta: "Lochee, 24 Nov 1876 — Age 19. Parents: Patrick McDonald (Carpet Weaver) + Barbara Gordon (deceased).", status: "confirmed"},
+            {title: "1904 Daughter's Marriage", meta: "Listed as deceased by 1904. M.S. McDonald.", status: "confirmed"}
+        ], suggestion: null },
+        'p430': { name: "James Graham", years: "~1837–?", status: "probable", gen: 4, parents: null, sources: [
+            {title: "1871 Census", meta: "29 Blackness Rd, Dundee — head, age 34, Shoemaker. Wife Ann (25). Children: John (7), Patrick (4), James (11m). Mary age 2.", status: "confirmed"}
+        ], suggestion: null },
+        'p431': { name: "Ann", years: "~1846–?", status: "probable", gen: 4, parents: null, sources: [
+            {title: "1871 Census", meta: "29 Blackness Rd — wife of James Graham, age 25", status: "probable"}
+        ], suggestion: null },
+        'p440': { name: "William Craigie", years: "~1841–?", status: "probable", gen: 4, parents: ['p550','p551'], sources: [
+            {title: "1851 Census", meta: "Russell St, Auchterderran — age 10, born Kennoway. Parents: William (50, Coal Miner) + Betsy (48).", status: "confirmed"}
+        ], suggestion: null },
+        'p441': { name: "Betsy", years: "~1843–?", status: "probable", gen: 4, parents: null, sources: [
+            {title: "1851 Census", meta: "Russell St, Auchterderran — wife of William Craigie, age ~48", status: "probable"}
+        ], suggestion: null },
+        'p450': { name: "Andrew Henderson", years: "~1850–?", status: "probable", gen: 4, parents: null, sources: [
+            {title: "1881 Census", meta: "Castle St, Clackmannan — head, age 31, Shoemaker. Wife Eliza (31). Children: Roberts (10), Elizabeth (7), Agnes B. (5), George M. (2).", status: "confirmed"}
+        ], suggestion: null },
+        'p451': { name: "Eliza", years: "~1850–?", status: "probable", gen: 4, parents: null, sources: [
+            {title: "1881 Census", meta: "Castle St, Clackmannan — wife of Andrew Henderson, age 31", status: "probable"}
+        ], suggestion: null },
+
+        'p500': { name: "Hannah Mooney", years: "~1833–1863", status: "confirmed", gen: "interp", parents: ['p600','p601'], sources: [
+            {title: "Death Certificate", meta: "Lochee, 18 Feb 1863 — Age 30 (b. ~1833). Jute Millworker (Single). Cause: Suicide by Vitriol. Father: Michael Mooney. Mother: Agnes Mooney M.S. Harrington (deceased). Brother James Mooney informant (+ mark).", status: "confirmed"},
+            {title: "1851 Census", meta: "North Road, Lochee — age 17. Parents: Michael (50) + Nancy [Agnes] (52). Siblings: Mary (30), James (24), Nancy (15).", status: "confirmed"},
+            {title: "1861 Census", meta: "Liff Road, Lochee — age 28, Flax Millworker. Living with father Michael (63). Son Thomas (4).", status: "confirmed"}
+        ], suggestion: {text: "Census vs death cert age: 1851 says 17 (b.~1834), 1861 says 28 (b.~1833), death cert says 30 (b.~1833). All consistent. Born Ireland.", price: "Free"} },
+        'p510': { name: "Thomas Lynch", years: "~1819–1892", status: "confirmed", gen: 5, parents: ['p610','p611'], sources: [
+            {title: "1880 Marriage", meta: "Lochee, 30 Jan 1880 — Father of Catherine Lynch. Weaver. Born Maryborough, Queen's Co (now Laois), Ireland.", status: "confirmed"},
+            {title: "1892 Death", meta: "Died 22 Jun 1892, age 73. Weaver. Parents: John Lynch (Laborer) + Betty Dillon.", status: "confirmed"},
+            {title: "1891 Census", meta: "Liff Road — age 72, Retired Weaver. Wife Catherine (60). Born Maryborough, Queen's Co.", status: "confirmed"}
+        ], suggestion: null },
+        'p511': { name: "Catherine Welsh", years: "~1833–1899", status: "confirmed", gen: 5, parents: ['p612','p613'], sources: [
+            {title: "1880 Marriage", meta: "Mother of Catherine Lynch (deceased by 1880).", status: "confirmed"},
+            {title: "1899 Death", meta: "Died 17 Jan 1899, age 66. Parents: Patrick Welsh (Crofter) + Elizabeth Currie.", status: "confirmed"}
+        ], suggestion: null },
+        'p520': { name: "John Farrell", years: "?", status: "confirmed", gen: 5, parents: null, sources: [
+            {title: "1876 Marriage (James)", meta: "Father of James Farrell. Stone Quarry Worker. Born Ireland.", status: "confirmed"},
+            {title: "1871 Census", meta: "117 Scouringburn — age 40, Lab at Foundry. Wife Ann (41). Born Ireland.", status: "confirmed"}
+        ], suggestion: null },
+        'p521': { name: "Ann Quinn", years: "?", status: "confirmed", gen: 5, parents: null, sources: [
+            {title: "1876 Marriage (James)", meta: "Mother of James Farrell. Deceased by 1876.", status: "confirmed"}
+        ], suggestion: null },
+        'p530': { name: "Patrick McDonald", years: "?", status: "confirmed", gen: 5, parents: null, sources: [
+            {title: "1876 Marriage (Helen)", meta: "Father of Helen McDonald. Carpet Weaver.", status: "confirmed"}
+        ], suggestion: null },
+        'p531': { name: "Barbara Gordon", years: "?", status: "confirmed", gen: 5, parents: null, sources: [
+            {title: "1876 Marriage (Helen)", meta: "Mother of Helen McDonald. M.S. Gordon. Deceased by 1876.", status: "confirmed"}
+        ], suggestion: null },
+        'p540': { name: "Owen Lynch", years: "~1806–1897", status: "probable", gen: 5, parents: ['p614','p615'], sources: [
+            {title: "1841 Census", meta: "Dee Bridge, Balmaghie — age 30, born Ireland. Wife: Margaret (30). Children: Philip (10), Edward (8), John (6), Mary (3), James (1).", status: "confirmed"},
+            {title: "1897 Death", meta: "Died 29 Aug 1897, age 56. Parents: Edward Lynch + Catherine Clark.", status: "confirmed"}
+        ], suggestion: {text: "This is a DIFFERENT Owen Lynch from the one who married Alice Rogers (~1834). Likely uncle or cousin.", price: "Free"} },
+        'p541': { name: "Margaret", years: "~1811–?", status: "probable", gen: 5, parents: null, sources: [
+            {title: "1841 Census", meta: "Dee Bridge, Balmaghie — wife of Owen Lynch, age 30, born Ireland", status: "probable"}
+        ], suggestion: null },
+        'p542': { name: "John Rogers", years: "?", status: "probable", gen: 5, parents: null, sources: [
+            {title: "1892 Death (Alice Rogers)", meta: "Father of Alice Rogers. Crofter.", status: "probable"}
+        ], suggestion: null },
+        'p543': { name: "Alice Smith", years: "?", status: "probable", gen: 5, parents: null, sources: [
+            {title: "1892 Death (Alice Rogers)", meta: "Mother of Alice Rogers", status: "probable"}
+        ], suggestion: null },
+        'p550': { name: "William Craigie", years: "~1816–?", status: "probable", gen: 5, parents: null, sources: [
+            {title: "1851 Census", meta: "Russell St, Auchterderran — age ~35, Labourer on Coal Work", status: "probable"}
+        ], suggestion: null },
+        'p551': { name: "Ann", years: "~1822–?", status: "probable", gen: 5, parents: null, sources: [
+            {title: "1851 Census", meta: "Russell St — wife of William Craigie", status: "probable"}
+        ], suggestion: null },
+
+        'p600': { name: "Michael Mooney", years: "~1801–1875", status: "confirmed", gen: 6, parents: ['p700','p701'], sources: [
+            {title: "Death Certificate", meta: "Lochee, 23 Mar 1875 — Age 74 (b. ~1801). Jute Millworker. Parents: Thomas Mooney (Farm Labourer, deceased) + Bridget Reilly (M.S. deceased).", status: "confirmed"},
+            {title: "1851 Census", meta: "North Road, Lochee — Age 50, Mill Worker, born County Cavan, Ireland. Wife Nancy [Agnes] (52).", status: "confirmed"},
+            {title: "1861 Census", meta: "Liff Road — Age 63, Labourer. Living with Hannah (28) + Thomas (4).", status: "confirmed"}
+        ], suggestion: {text: "County Cavan confirmed. Age consistent: 50 in 1851, 74 in 1875. OPR 1798 is likely a different Michael Mooney.", price: "Free"} },
+        'p601': { name: "Agnes Harrington", years: "~1806–1867", status: "confirmed", gen: 6, parents: ['p702','p703'], sources: [
+            {title: "1867 Death Certificate", meta: "Died 13 Nov 1867, age 61 (b. ~1806). Parents: John Harrington (Tailor) + Betsy McKnight.", status: "confirmed"},
+            {title: "1851 Census", meta: "North Road — Nancy Mooney (52), born Ireland. Also called Agnes.", status: "confirmed"}
+        ], suggestion: {text: "Name appears as 'Nancy' in census. Age 61 = born ~1806.", price: "Free"} },
+        'p610': { name: "Patrick Welsh", years: "?", status: "confirmed", gen: 6, parents: null, sources: [
+            {title: "1899 Death (Catherine Welsh)", meta: "Father of Catherine Welsh. Crofter.", status: "confirmed"}
+        ], suggestion: null },
+        'p611': { name: "Elizabeth Currie", years: "?", status: "confirmed", gen: 6, parents: null, sources: [
+            {title: "1899 Death (Catherine Welsh)", meta: "Mother of Catherine Welsh. M.S. Currie.", status: "confirmed"}
+        ], suggestion: null },
+        'p612': { name: "John Lynch", years: "?", status: "confirmed", gen: 6, parents: null, sources: [
+            {title: "1892 Death (Thomas Lynch)", meta: "Father of Thomas Lynch. Laborer. Ireland.", status: "confirmed"}
+        ], suggestion: null },
+        'p613': { name: "Betty Dillon", years: "?", status: "confirmed", gen: 6, parents: null, sources: [
+            {title: "1892 Death (Thomas Lynch)", meta: "Mother of Thomas Lynch. Ireland.", status: "confirmed"}
+        ], suggestion: null },
+        'p614': { name: "Edward Lynch", years: "?", status: "probable", gen: 6, parents: null, sources: [
+            {title: "1897 Death (Owen Lynch)", meta: "Father of Owen Lynch.", status: "probable"}
+        ], suggestion: null },
+        'p615': { name: "Catherine Clark", years: "?", status: "probable", gen: 6, parents: null, sources: [
+            {title: "1897 Death (Owen Lynch)", meta: "Mother of Owen Lynch. M.S. Clark.", status: "probable"}
+        ], suggestion: null },
+        'p616': { name: "David Graham", years: "~1809–?", status: "probable", gen: 6, parents: null, sources: [
+            {title: "1841 Census", meta: "Cowgate, Dundee — age 30, Shoemaker. Wife Elizabeth (30).", status: "confirmed"},
+            {title: "1851 Census", meta: "Scouringburn — age 42, Shoemaker. Wife Betsy (41).", status: "confirmed"}
+        ], suggestion: null },
+        'p617': { name: "Elizabeth Rattray", years: "b. 26 Jan 1807", status: "confirmed", gen: 6, parents: ['p704','p705'], sources: [
+            {title: "Birth Certificate", meta: "26 Jan 1807, Kirriemuir — parents George Rattray (Dyer) + Helen Garvie", status: "confirmed"},
+            {title: "1834 Marriage", meta: "David Graham, 13 Jun 1834 — David listed as Shoemaker", status: "confirmed"}
+        ], suggestion: null },
+
+        'p700': { name: "Thomas Mooney", years: "?", status: "probable", gen: 7, parents: null, sources: [
+            {title: "1875 Death (Michael)", meta: "Father of Michael Mooney. Farm Labourer, deceased by 1875.", status: "probable"}
+        ], suggestion: {text: "Search Ireland parish registers for Thomas Mooney + Bridget Reilly marriage, Cavan/Meath area", price: "Free"} },
+        'p701': { name: "Bridget Reilly", years: "?", status: "probable", gen: 7, parents: null, sources: [
+            {title: "1875 Death (Michael)", meta: "Mother of Michael Mooney. Bridget Reilly M.S. (deceased).", status: "probable"}
+        ], suggestion: {text: "Search Ireland parish registers for Bridget Reilly marrying Thomas Mooney. Cavan/Meath area.", price: "Free"} },
+        'p702': { name: "John Harrington", years: "?", status: "confirmed", gen: 7, parents: null, sources: [
+            {title: "1867 Death (Agnes)", meta: "Father of Agnes Harrington. Tailor.", status: "confirmed"}
+        ], suggestion: null },
+        'p703': { name: "Betsy McKnight", years: "?", status: "confirmed", gen: 7, parents: null, sources: [
+            {title: "1867 Death (Agnes)", meta: "Mother of Agnes Harrington. M.S. McKnight.", status: "confirmed"}
+        ], suggestion: null },
+        'p704': { name: "George Rattray", years: "?", status: "brickwall", gen: 7, parents: null, sources: [
+            {title: "1807 Birth (Elizabeth)", meta: "Father of Elizabeth Rattray. Dyer in Kirriemuir.", status: "confirmed"}
+        ], suggestion: null },
+        'p705': { name: "Helen Garvie", years: "?", status: "brickwall", gen: 7, parents: null, sources: [
+            {title: "1807 Birth (Elizabeth)", meta: "Mother of Elizabeth Rattray", status: "confirmed"}
+        ], suggestion: null },
+    };
+
+    // ===== STATE =====
+    let rootPath = ['p000'];
+    let currentView = 'compact'; // 'compact' = 5 gens, 'full' = all
+    let currentZoom = 1;
+
+    const svg = document.getElementById('linesSvg');
+    const wrap = document.getElementById('treeWrap');
+    const panel = document.getElementById('detailPanel');
+    const panelContent = document.getElementById('panelContent');
+
+    // ===== HELPERS =====
+    function getParents(pid, depth) {
+        const result = [];
+        const queue = [{id: pid, g: 0}];
+        while (queue.length) {
+            const n = queue.shift();
+            if (n.g > depth) continue;
+            result.push(n);
+            const p = allPeople[n.id];
+            if (p.parents) {
+                p.parents.forEach(parentId => {
+                    if (allPeople[parentId]) queue.push({id: parentId, g: n.g + 1});
+                });
+            }
+        }
+        return result;
+    }
+
+    function groupByGen(nodes) {
+        const groups = [];
+        nodes.forEach(n => {
+            if (!groups[n.g]) groups[n.g] = [];
+            groups[n.g].push(n.id);
+        });
+        return groups;
+    }
+
+    function rebuildBreadcrumbs() {
+        const bc = document.getElementById('breadcrumbs');
+        bc.innerHTML = '';
+        rootPath.forEach((pid, i) => {
+            const person = allPeople[pid];
+            const span = document.createElement('span');
+            span.className = 'crumb' + (i === rootPath.length - 1 ? ' active' : '');
+            span.textContent = person.name.split(' ')[0];
+            span.title = person.name;
+            span.onclick = () => jumpTo(i);
+            bc.appendChild(span);
+            if (i < rootPath.length - 1) {
+                const sep = document.createElement('span');
+                sep.className = 'crumb-sep';
+                sep.textContent = '>';
+                bc.appendChild(sep);
+            }
+        });
+    }
+
+    function jumpTo(index) {
+        rootPath = rootPath.slice(0, index + 1);
+        rebuildBreadcrumbs();
+        render();
+    }
+
+    function drillDown(pid) {
+        rootPath.push(pid);
+        rebuildBreadcrumbs();
+        render();
+    }
+
+    // ===== RENDER =====
+    function render() {
+        wrap.querySelectorAll('.person-card').forEach(c => c.remove());
+        svg.innerHTML = '';
+
+        const rootId = rootPath[rootPath.length - 1];
+        const maxDepth = currentView === 'compact' ? 4 : 10;
+        const COL_W = 300;
+        const CARD_H = 64;
+        const GAP = 14;
+        const K_SPRING = 0.25;
+        const K_REPULSE = 1.0;
+        const K_FRICTION = 0.88;
+        const MAX_ITER = 250;
+
+        // ---- 1. Collect visible nodes ----
+        const visible = new Set();
+        const depthOf = {};
+        function visit(id, d) {
+            if (d > maxDepth) return;
+            if (depthOf[id] !== undefined && depthOf[id] <= d) return;
+            depthOf[id] = d;
+            visible.add(id);
+            const p = allPeople[id];
+            if (p.parents) p.parents.forEach(par => { if (allPeople[par]) visit(par, d+1); });
+        }
+        visit(rootId, 0);
+
+        // ---- 2. Build children map ----
+        const childrenOf = {};
+        for (let id of visible) {
+            const p = allPeople[id];
+            if (p.parents) {
+                p.parents.forEach(par => {
+                    if (visible.has(par)) {
+                        if (!childrenOf[par]) childrenOf[par] = [];
+                        if (!childrenOf[par].includes(id)) childrenOf[par].push(id);
+                    }
+                });
+            }
+        }
+
+        // ---- 3. Group by generation ----
+        const gens = [];
+        for (let id of visible) {
+            const d = depthOf[id];
+            if (!gens[d]) gens[d] = [];
+            gens[d].push(id);
+        }
+
+        // ---- 4. Initialize Y positions ----
+        // Leaves (oldest generation) get sequential Y, others start at 0
+        const y = {};
+        const maxGen = gens.length - 1;
+        for (let d = maxGen; d >= 0; d--) {
+            if (!gens[d]) continue;
+            // sort by ID for consistent initial ordering
+            gens[d].sort((a,b) => parseInt(a.replace('p',''),10) - parseInt(b.replace('p',''),10));
+            if (d === maxGen) {
+                // Oldest generation: spread them out
+                gens[d].forEach((id, i) => { y[id] = 100 + i * (CARD_H + GAP * 1.5); });
+            } else {
+                gens[d].forEach(id => { y[id] = 0; });
+            }
+        }
+
+        // ---- 5. Spring relaxation ----
+        let vy = {};
+        for (let iter = 0; iter < MAX_ITER; iter++) {
+            let maxMove = 0;
+
+            // Process generations from oldest (parents) to youngest (root)
+            // This ensures leaf Ys are stable before their children settle
+            for (let d = maxGen; d >= 0; d--) {
+                if (!gens[d]) continue;
+
+                for (let id of gens[d]) {
+                    let force = 0;
+
+                    // Spring: pulled toward average of children's Y positions
+                    const children = childrenOf[id] || [];
+                    if (children.length > 0) {
+                        const avg = children.reduce((s, c) => s + y[c], 0) / children.length;
+                        force += K_SPRING * (avg - y[id]);
+                    }
+
+                    // Spring: pulled toward average of parents' Y positions (for smoother convergence)
+                    const myParents = allPeople[id].parents;
+                    if (myParents && myParents.length > 0) {
+                        const validParents = myParents.filter(pid => visible.has(pid) && y[pid] !== undefined);
+                        if (validParents.length > 0) {
+                            const avgP = validParents.reduce((s, p) => s + y[p], 0) / validParents.length;
+                            force -= K_SPRING * 0.3 * (y[id] - avgP); // weaker pull to parents
+                        }
+                    }
+
+                    // Repulsion from same-generation neighbors
+                    for (let other of gens[d]) {
+                        if (other === id) continue;
+                        const dy = y[other] - y[id];
+                        const minSep = CARD_H + GAP;
+                        if (dy > 0 && dy < minSep) {
+                            force -= K_REPULSE * (minSep - dy); // other below me, push me up
+                        } else if (dy < 0 && Math.abs(dy) < minSep) {
+                            force += K_REPULSE * (minSep - Math.abs(dy)); // other above me, push me down
+                        }
+                    }
+
+                    vy[id] = (vy[id] || 0) + force;
+                    vy[id] *= K_FRICTION;
+                    const move = vy[id];
+                    y[id] += move;
+                    maxMove = Math.max(maxMove, Math.abs(move));
+                }
+            }
+
+            if (maxMove < 0.05) break;
+        }
+
+        // ---- 6. Post-process: enforce exact gaps ----
+        for (let d = 0; d <= maxGen; d++) {
+            if (!gens[d]) continue;
+            gens[d].sort((a, b) => y[a] - y[b]);
+            for (let i = 1; i < gens[d].length; i++) {
+                const prev = gens[d][i-1];
+                const curr = gens[d][i];
+                const minY = y[prev] + CARD_H + GAP;
+                if (y[curr] < minY) y[curr] = minY;
+            }
+            // One more pass to re-center any single-parent nodes that got pushed
+        }
+
+        // ---- 7. Create DOM elements ----
+        const cardMap = {};
+        for (let d = 0; d <= maxGen; d++) {
+            if (!gens[d]) continue;
+            for (let id of gens[d]) {
+                const person = allPeople[id];
+                const el = document.createElement('div');
+                el.className = 'person-card ' + person.status + (id === rootId ? ' root' : '');
+                el.innerHTML = '<div class="person-name">' + person.name + '</div><div class="person-years">' + person.years + '</div>';
+                el.style.left = (d * COL_W) + 'px';
+                el.style.top = y[id] + 'px';
+                el.dataset.pid = id;
+
+                if (person.parents && d === maxGen && currentView === 'compact') {
+                    const btn = document.createElement('div');
+                    btn.className = 'drill-btn';
+                    btn.innerHTML = '&rarr;';
+                    btn.title = 'Drill into this branch';
+                    btn.onclick = (e) => { e.stopPropagation(); drillDown(id); };
+                    el.appendChild(btn);
+                }
+
+                el.onclick = () => openPanel(id);
+                wrap.appendChild(el);
+                cardMap[id] = el;
+            }
+        }
+
+        // ---- 8. Resize container ----
+        let maxY = 0;
+        for (let d = 0; d <= maxGen; d++) {
+            if (!gens[d]) continue;
+            for (let id of gens[d]) {
+                maxY = Math.max(maxY, y[id] + CARD_H);
+            }
+        }
+        const maxW = maxGen * COL_W + 200 + 160;
+        wrap.style.width = maxW + 'px';
+        wrap.style.minHeight = (maxY + 100) + 'px';
+
+        // ---- 9. Draw SVG lines ----
+        svg.setAttribute('width', wrap.scrollWidth);
+        svg.setAttribute('height', wrap.scrollHeight);
+        const svgNS = 'http://www.w3.org/2000/svg';
+
+        for (let d = 0; d < maxGen; d++) {
+            if (!gens[d]) continue;
+            for (let id of gens[d]) {
+                const person = allPeople[id];
+                if (!person.parents) continue;
+
+                const cMidX = d * COL_W + 200;
+                const cMidY = y[id] + CARD_H / 2;
+
+                const validParents = person.parents.filter(pid => visible.has(pid));
+                if (validParents.length === 0) continue;
+
+                if (validParents.length === 2) {
+                    const fId = validParents[0], mId = validParents[1];
+                    const fy = y[fId] + CARD_H / 2;
+                    const my = y[mId] + CARD_H / 2;
+                    const jx = (d+1) * COL_W - 30;
+                    const midY = (fy + my) / 2;
+                    const px = (d+1) * COL_W;
+
+                    const p1 = document.createElementNS(svgNS, 'path');
+                    p1.setAttribute('d', 'M' + cMidX + ',' + cMidY + ' C' + (cMidX+40) + ',' + cMidY + ' ' + (jx-10) + ',' + midY + ' ' + jx + ',' + midY);
+                    p1.setAttribute('stroke', '#ccc'); p1.setAttribute('stroke-width', '1.5'); p1.setAttribute('fill', 'none');
+                    svg.appendChild(p1);
+
+                    const vl = document.createElementNS(svgNS, 'line');
+                    vl.setAttribute('x1', jx); vl.setAttribute('y1', fy);
+                    vl.setAttribute('x2', jx); vl.setAttribute('y2', my);
+                    vl.setAttribute('stroke', '#ccc'); vl.setAttribute('stroke-width', '1.5');
+                    svg.appendChild(vl);
+
+                    const fl = document.createElementNS(svgNS, 'line');
+                    fl.setAttribute('x1', jx); fl.setAttribute('y1', fy);
+                    fl.setAttribute('x2', px); fl.setAttribute('y2', fy);
+                    fl.setAttribute('stroke', '#ccc'); fl.setAttribute('stroke-width', '1.5');
+                    svg.appendChild(fl);
+
+                    const ml = document.createElementNS(svgNS, 'line');
+                    ml.setAttribute('x1', jx); ml.setAttribute('y1', my);
+                    ml.setAttribute('x2', px); fl.setAttribute('y2', my);
+                    ml.setAttribute('stroke', '#ccc'); ml.setAttribute('stroke-width', '1.5');
+                    svg.appendChild(ml);
+                } else {
+                    const pId = validParents[0];
+                    const py = y[pId] + CARD_H / 2;
+                    const px = (d+1) * COL_W;
+                    const ln = document.createElementNS(svgNS, 'path');
+                    ln.setAttribute('d', 'M' + cMidX + ',' + cMidY + ' C' + (cMidX+40) + ',' + cMidY + ' ' + (px-40) + ',' + py + ' ' + px + ',' + py);
+                    ln.setAttribute('stroke', '#ccc'); ln.setAttribute('stroke-width', '1.5'); ln.setAttribute('fill', 'none');
+                    svg.appendChild(ln);
+                }
+            }
+        }
+    }
+
+    // ===== DETAIL PANEL =====
+    function openPanel(pid) {
+        const person = allPeople[pid];
+        if (!person) return;
+
+        let sourcesHtml = person.sources.length ? person.sources.map(s =>
+            '<div class="source-item ' + s.status + '"><div class="source-title">' + s.title + '</div><div class="source-meta">' + s.meta + '</div></div>'
+        ).join('') : '<div class="source-item missing">No sources attached yet</div>';
+
+        let suggestHtml = person.suggestion ?
+            '<div class="suggest-action"><h4>\uD83D\uDCA1 Research Suggestion</h4><p>' + person.suggestion.text + '</p><div class="price-tag">' + person.suggestion.price + '</div></div>' : '';
+
+        let actionsHtml = '';
+        if (person.parents) {
+            actionsHtml += '<button class="action-btn" onclick="drillDown(\'' + pid + '\'); closePanel();">Drill into this branch</button>';
+        }
+        actionsHtml += '<button class="action-btn" style="background:#f0f0f0;color:#333;" onclick="closePanel()">Close</button>';
+
+        panelContent.innerHTML =
+            '<h2>' + person.name + '</h2>' +
+            '<div class="years">' + person.years + '</div>' +
+            '<div class="detail-section"><h3>Sources & Records</h3>' + sourcesHtml + '</div>' +
+            suggestHtml +
+            '<div class="detail-section"><h3>Actions</h3>' + actionsHtml + '</div>';
+
+        panel.classList.add('open');
+    }
+
+    window.closePanel = function() { panel.classList.remove('open'); };
+
+    window.drillDown = function(pid) {
+        rootPath.push(pid);
+        rebuildBreadcrumbs();
+        render();
+    };
+
+    window.switchView = function(view) {
+        currentView = view;
+        document.getElementById('btnCompact').classList.toggle('active', view === 'compact');
+        document.getElementById('btnFull').classList.toggle('active', view === 'full');
+        if (view === 'full') rootPath = ['p000'];
+        rebuildBreadcrumbs();
+        render();
+    };
+
+    function jumpTo(index) {
+        rootPath = rootPath.slice(0, index + 1);
+        rebuildBreadcrumbs();
+        render();
+    }
+    window.jumpTo = jumpTo;
+
+    // ===== ZOOM =====
+    const zoomWrap = document.getElementById('zoomWrap');
+    const zoomLevel = document.getElementById('zoomLevel');
+    window.zoomIn = function() { currentZoom = Math.min(currentZoom + 0.15, 3); applyZoom(); };
+    window.zoomOut = function() { currentZoom = Math.max(currentZoom - 0.15, 0.25); applyZoom(); };
+    window.zoomReset = function() { currentZoom = 1; applyZoom(); };
+
+    function applyZoom() {
+        zoomWrap.style.transform = 'scale(' + currentZoom + ')';
+        zoomLevel.textContent = Math.round(currentZoom * 100) + '%';
+    }
+
+    // ===== INIT =====
+    rebuildBreadcrumbs();
+    setTimeout(render, 50);
+    window.addEventListener('resize', () => setTimeout(render, 50));
+
+    window.onerror = function(msg, url, line) {
+        wrap.innerHTML = '<div style="padding:40px;color:#c00;"><h3>Error</h3><p>' + msg + '</p><p>Line: ' + line + '</p></div>';
+    };
+    </script>
+</body>
+</html>

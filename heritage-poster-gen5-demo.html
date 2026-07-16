@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Family Tree — Grid Template</title>
 <style>
-@import url('./fonts.css');
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
 
 * { box-sizing: border-box; margin: 0; padding: 0; }
 html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
@@ -29,7 +29,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   position: relative;
   width: 1408px; height: 768px;
   flex-shrink: 0;
-  background: url('template-bg-v1.webp') no-repeat center center;
+  background: url('template-bg-v1.png') no-repeat center center;
   background-size: 100% 100%;
   border: 14px solid #1e140a;
   box-shadow: 0 0 50px rgba(0,0,0,0.8);
@@ -137,29 +137,40 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   line-height: 1.15;
   max-width: 140px;
 }
-.nameplate[data-gen="3"] .name {
-  max-width: 170px;
-  font-size: 9px;
+.nameplate[data-gen="1"] {
+  padding: 4px 10px;
 }
-.nameplate[data-gen="4"] .name {
-  max-width: 160px;
+.nameplate[data-gen="1"] .name {
   font-size: 9px;
-}
-.nameplate[data-gen="5"] .name {
   max-width: 130px;
-  font-size: 8px;
-  line-height: 1.1;
-  white-space: nowrap;
+}
+.nameplate[data-gen="2"] {
+  padding: 5px 12px;
+}
+.nameplate[data-gen="2"] .name {
+  font-size: 9px;
+  max-width: 150px;
+}
+.nameplate[data-gen="3"] .name {
+  max-width: 140px;
+  font-size: 9px;
 }
 .nameplate[data-gen="4"] {
-  padding: 4px 8px;
-}
-.nameplate[data-gen="5"] {
   padding: 3px 8px;
 }
+.nameplate[data-gen="4"] .name {
+  max-width: 110px;
+  font-size: 8px;
+}
+.nameplate[data-gen="4"] .years {
+  display: none;
+}
+.nameplate[data-gen="5"] .name {
+  max-width: 150px;
+  font-size: 9px;
+}
 .nameplate[data-gen="5"] .years {
-  font-size: 7px;
-  margin-top: 0;
+  display: none;
 }
 .nameplate .years {
   font-family: 'Cormorant Garamond', serif;
@@ -641,45 +652,7 @@ html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
   }
 }
 </style>
-<!-- Google Analytics 4 — cookieless mode -->
-<script async src="https://www.googletagmanager.com/gtag/js?id=G-MFQ3DV323Y"></script>
-<script>
-  window.dataLayer = window.dataLayer || [];
-  function gtag(){dataLayer.push(arguments);}
-  gtag('js', new Date());
-  gtag('config', 'G-MFQ3DV323Y', {
-    client_storage: 'none',
-    anonymize_ip: true,
-    allow_google_signals: false,
-    allow_ad_personalization_signals: false
-  });
-</script>
-<script>
-// Register Service Worker with auto-update
-if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
-    .then(function(reg) {
-      console.log('[SW] Registered', reg.scope);
-      reg.addEventListener('updatefound', function() {
-        var newSW = reg.installing;
-        if (newSW) {
-          newSW.addEventListener('statechange', function() {
-            if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
-              console.log('[SW] New version activated — reloading');
-              location.reload();
-            }
-          });
-        }
-      });
-    })
-    .catch(function(err) { console.error('[SW] Failed', err); });
-  navigator.serviceWorker.addEventListener('controllerchange', function() {
-    location.reload();
-  });
-}
-</script>
 </head>
-
 <body>
 
 <div class="viewport" id="viewport">
@@ -762,68 +735,68 @@ if ('serviceWorker' in navigator) {
   <div class="years">YYYY — YYYY</div>
 </div>
 
-<!-- Gen 4: Great-great-grandparents -->
+<!-- Gen 4: Great-great-grandparents — arched layout, pairs stay together -->
 <div class="nameplate" data-gen="4" data-slot="pat-pat-pat-grandfather" style="left: 111px; top: 376px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-pat-pat-grandmother" style="left: 189px; top: 361px;">
+<div class="nameplate" data-gen="4" data-slot="pat-pat-pat-grandmother" style="left: 189px; top: 376px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandfather" style="left: 268px; top: 348px;">
+<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandfather" style="left: 268px; top: 366px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandmother" style="left: 346px; top: 338px;">
+<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandmother" style="left: 346px; top: 366px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandfather" style="left: 424px; top: 329px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandfather" style="left: 424px; top: 356px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandmother" style="left: 502px; top: 323px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandmother" style="left: 502px; top: 356px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandfather" style="left: 580px; top: 318px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandfather" style="left: 580px; top: 346px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandmother" style="left: 659px; top: 316px;">
+<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandmother" style="left: 659px; top: 346px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandfather" style="left: 737px; top: 316px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandfather" style="left: 737px; top: 346px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandmother" style="left: 815px; top: 318px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandmother" style="left: 815px; top: 346px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandfather" style="left: 893px; top: 323px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandfather" style="left: 893px; top: 356px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandmother" style="left: 972px; top: 329px;">
+<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandmother" style="left: 972px; top: 356px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandfather" style="left: 1050px; top: 338px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandfather" style="left: 1050px; top: 366px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandmother" style="left: 1128px; top: 348px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandmother" style="left: 1128px; top: 366px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandfather" style="left: 1206px; top: 361px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandfather" style="left: 1206px; top: 376px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
-<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandmother" style="left: 1284px; top: 391px;">
+<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandmother" style="left: 1284px; top: 376px;">
   <div class="name">Name</div>
   <div class="years">YYYY — YYYY</div>
 </div>
@@ -847,22 +820,22 @@ if ('serviceWorker' in navigator) {
 <div class="nameplate" data-gen="5" data-slot="mat-mat-mat-pat-grandfather" style="left: 1206px; top: 251px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
 <div class="nameplate" data-gen="5" data-slot="mat-mat-mat-mat-grandfather" style="left: 1284px; top: 282px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
 <!-- Lower row (mothers of gen 4) -->
-<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-pat-grandmother" style="left: 111px; top: 335px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-mat-grandmother" style="left: 189px; top: 303px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-pat-grandmother" style="left: 268px; top: 277px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-mat-grandmother" style="left: 346px; top: 255px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-pat-grandmother" style="left: 424px; top: 237px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-mat-grandmother" style="left: 502px; top: 224px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-pat-grandmother" style="left: 580px; top: 214px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-mat-grandmother" style="left: 659px; top: 210px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-pat-grandmother" style="left: 737px; top: 210px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-mat-grandmother" style="left: 815px; top: 214px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-pat-grandmother" style="left: 893px; top: 224px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-mat-grandmother" style="left: 972px; top: 237px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-pat-grandmother" style="left: 1050px; top: 255px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-mat-grandmother" style="left: 1128px; top: 277px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-pat-grandmother" style="left: 1206px; top: 303px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
-<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-mat-grandmother" style="left: 1284px; top: 335px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-pat-grandmother" style="left: 111px; top: 315px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-mat-grandmother" style="left: 189px; top: 283px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-pat-grandmother" style="left: 268px; top: 257px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-mat-grandmother" style="left: 346px; top: 235px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-pat-grandmother" style="left: 424px; top: 217px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-mat-grandmother" style="left: 502px; top: 204px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-pat-grandmother" style="left: 580px; top: 194px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-mat-grandmother" style="left: 659px; top: 190px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-pat-grandmother" style="left: 737px; top: 190px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-mat-grandmother" style="left: 815px; top: 194px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-pat-grandmother" style="left: 893px; top: 204px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-mat-grandmother" style="left: 972px; top: 217px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-pat-grandmother" style="left: 1050px; top: 235px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-mat-grandmother" style="left: 1128px; top: 257px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-pat-grandmother" style="left: 1206px; top: 283px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-mat-grandmother" style="left: 1284px; top: 315px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
 
 <!-- NO PRE-PLACED NAMEPLATES — tell me where they go -->
 
@@ -878,7 +851,7 @@ if ('serviceWorker' in navigator) {
     <div class="detail-name" id="detailName">Name</div>
     <div class="detail-years" id="detailYears">YYYY — YYYY</div>
     <div class="detail-maiden" id="detailMaiden" style="display:none;font-family:'Cormorant Garamond',serif;font-size:11px;color:#9a8565;text-align:center;margin-top:2px;font-style:italic;"></div>
-    <div id="detailEditHint" style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;text-align:center;margin-top:4px;font-style:italic;">Tap name or dates to edit</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;text-align:center;margin-top:4px;font-style:italic;">Tap name or dates to edit</div>
   </div>
   <div class="detail-body">
     <div class="detail-section-title">Parents</div>
@@ -909,18 +882,18 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <div class="zoom-controls">
-  <button class="zoom-btn" id="backBtn" onclick="hpBackToTree()" title="Back to tree">⬅️</button>
   <button class="zoom-btn" id="zoomIn" onclick="zoomIn()">+</button>
   <div class="zoom-level" id="zoomLevel">100%</div>
   <button class="zoom-btn" id="zoomOut" onclick="zoomOut()">−</button>
   <button class="zoom-btn" id="zoomReset" onclick="zoomReset()">↻</button>
 </div>
 
-<div style="position:fixed;bottom:16px;right:16px;display:flex;gap:6px;z-index:200;">
+<div style="position:fixed;bottom:16px;left:16px;display:flex;gap:6px;z-index:200;">
   <button class="poster-icon-btn" id="saveSessionBtn" title="Save session" style="background:#3e3225;color:#f0e6d2;" onclick="hpSaveSession()">💾</button>
   <button class="poster-icon-btn" id="loadSessionBtn" title="Load session" style="background:#3e3225;color:#f0e6d2;" onclick="hpLoadSession()">📂</button>
   <button class="poster-icon-btn" id="guideBtn" title="Next steps" style="background:#5a7a3a;color:#f0e6d2;" onclick="openGuide()">📖</button>
   <button class="poster-icon-btn" id="backToTreeBtn" title="Back to tree" style="background:#3e5a8a;color:#f0e6d2;" onclick="hpBackToTree()">🌳</button>
+  <button class="poster-icon-btn" id="prevSubjectBtn" title="Previous person" style="background:#8a6a3a;color:#f0e6d2;display:none;" onclick="hpPrevSubject()">⬅️</button>
   <button class="poster-icon-btn" id="printBtn" title="Print / PDF" style="background:#5a3a2a;color:#f0e6d2;" onclick="hpPrintPDF()">🖨️</button>
   <input type="file" id="sessionFileInput" accept=".familytree,.json,application/json" style="display:none;">
 </div>
@@ -1036,18 +1009,16 @@ if (gridOverlay && gridToggle) {
   console.warn('[heritage-poster] gridOverlay or gridToggle not found in DOM; skipping grid features');
 }
 
-// Coordinate readout on hover (dev-only — element may not exist in production DOM)
+// Coordinate readout on hover
 const coordReadout = document.getElementById('coordReadout');
-if (coordReadout) {
-  poster.addEventListener('mousemove', (e) => {
-    const rect = poster.getBoundingClientRect();
-    const x = (e.clientX - rect.left) / scale;
-    const y = (e.clientY - rect.top) / scale;
-    const col = Math.round(x / cellW);
-    const row = Math.round(y / cellH);
-    coordReadout.textContent = `Col: ${col}, Row: ${row} | Pixel: ${Math.round(x)}, ${Math.round(y)}`;
-  });
-}
+poster.addEventListener('mousemove', (e) => {
+  const rect = poster.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / scale;
+  const y = (e.clientY - rect.top) / scale;
+  const col = Math.round(x / cellW);
+  const row = Math.round(y / cellH);
+  coordReadout.textContent = `Col: ${col}, Row: ${row} | Pixel: ${Math.round(x)}, ${Math.round(y)}`;
+});
 
 // Zoom
 let scale = 1;
@@ -1160,7 +1131,7 @@ function renderSiblings(slot) {
   list.forEach((name, i) => {
     const row = document.createElement('div');
     row.style.cssText = 'display:flex;align-items:center;gap:6px;justify-content:center;';
-    row.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:11px;color:#3e3225;">' + escapeHtml(name) + '</span>' +
+    row.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:11px;color:#3e3225;">' + name + '</span>' +
       '<button data-idx="' + i + '" style="font-size:9px;padding:1px 4px;border:none;border-radius:3px;background:#c9b896;color:#fff;cursor:pointer;line-height:1;">×</button>';
     row.querySelector('button').addEventListener('click', () => {
       removeSibling(slot, i);
@@ -1192,14 +1163,9 @@ function updateSiblingBadge(slot) {
 // Init badges for all slots on load
 Object.keys(slotSiblings).forEach(slot => updateSiblingBadge(slot));
 
-function escapeHtml(s) {
-  if (!s) return '';
-  return s.replace(/[<>&"]/g, c => ({'<': '&lt;', '>': '&gt;', '&': '&amp;', '"': '&quot;'}[c]));
-}
-
 // ========== IndexedDB Document Storage ==========
-const DB_NAME = 'VRTDocs';
-const DB_VERSION = 3;
+const DB_NAME = 'FamilyTreeDocs';
+const DB_VERSION = 1;
 const STORE_NAME = 'documents';
 let db = null;
 
@@ -1219,11 +1185,6 @@ function openDocDB() {
 }
 
 async function saveDoc(slot, type, base64Image, meta) {
-  // SEC-02: Validate image is a proper data URL before storing
-  if (base64Image && !/^data:image\/(jpeg|png|webp|gif);base64,/.test(base64Image)) {
-    console.warn('[SEC-02] Rejected doc image with invalid format for slot', slot);
-    return null;
-  }
   if (!db) await openDocDB();
   const id = slot + '_' + type + '_' + Date.now();
   const tx = db.transaction(STORE_NAME, 'readwrite');
@@ -1318,10 +1279,6 @@ function openDetail(name, years, slot) {
     detailMaiden.style.display = 'none';
   }
 
-  // Show "Tap name or dates to edit" hint in editable mode
-  const editHint = document.getElementById('detailEditHint');
-  if (editHint) editHint.style.display = '';
-
   // Show doc badges
   detailDocs.innerHTML = '';
   const docs = (plate?.dataset.docs || '').split(',').filter(Boolean);
@@ -1378,11 +1335,7 @@ function openDetail(name, years, slot) {
     parent2.querySelector('.p-years').textContent = 'YYYY — YYYY';
     parent2.dataset.parentSlot = '';
   }
-  // Show add-sibling UI in editable mode
-  const addSiblingWrap = document.getElementById('addSiblingWrap');
-  if (addSiblingWrap) addSiblingWrap.style.display = '';
 
-  // Show panel
   detailPanel.classList.add('active');
   detailOverlay.classList.add('active');
 
@@ -1406,115 +1359,6 @@ function closeDetail() {
   detailOverlay.classList.remove('active');
 }
 
-// Show read-only detail popup from data-tree person data
-async function openDtDetail(person, slot) {
-  const name = person.name || person.fullName || 'Name';
-  detailName.textContent = name;
-  detailYears.textContent = formatPersonYears(person);
-
-  // Maiden name
-  const maidenName = person.maidenName || '';
-  if (maidenName) {
-    detailMaiden.textContent = 'née ' + maidenName;
-    detailMaiden.style.display = '';
-  } else {
-    detailMaiden.style.display = 'none';
-  }
-
-  // Hide "Tap name or dates to edit" hint in read-only mode
-  const editHint = document.getElementById('detailEditHint');
-  if (editHint) editHint.style.display = 'none';
-
-  // Doc badges from person.docs (data-tree source)
-  detailDocs.innerHTML = '';
-  if (person.docs && person.docs.length) {
-    const codes = [];
-    person.docs.forEach(d => {
-      const type = typeof d === 'string' ? d : d.type;
-      const code = type === 'birth' || type === 'bc' ? 'BC' : type === 'marriage' || type === 'mc' ? 'MC' : type === 'death' || type === 'dc' ? 'DC' : '';
-      if (code && !codes.includes(code)) codes.push(code);
-    });
-    codes.forEach(code => {
-      const badge = document.createElement('span');
-      badge.className = 'doc-badge';
-      badge.textContent = code;
-      detailDocs.appendChild(badge);
-    });
-  } else {
-    detailDocs.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No documents yet</span>';
-  }
-
-  // Doc thumbnails — fetch from IndexedDB by docId from person.docs (read-only view)
-  detailDocThumbs.innerHTML = '';
-  if (person.docs && person.docs.length) {
-    if (!db) await openDocDB();
-    const store = db.transaction(STORE_NAME, 'readonly').objectStore(STORE_NAME);
-    person.docs.forEach(d => {
-      const docId = typeof d === 'string' ? null : (d.docId || null);
-      if (!docId) return;
-      const req = store.get(docId);
-      req.onsuccess = () => {
-        const doc = req.result;
-        if (!doc || !doc.image) return;
-        const thumb = document.createElement('img');
-        thumb.src = doc.image;
-        thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #c9b896;cursor:pointer;';
-        thumb.title = (typeof d === 'string' ? d : d.type) + ' — ' + (typeof d === 'string' ? '' : (d.date || ''));
-        thumb.addEventListener('click', () => {
-          const viewer = document.createElement('div');
-          viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
-          viewer.innerHTML = '<img src="' + doc.image + '" style="max-width:90vw;max-height:90vh;border-radius:4px;">';
-          viewer.addEventListener('click', () => viewer.remove());
-          document.body.appendChild(viewer);
-        });
-        detailDocThumbs.appendChild(thumb);
-      };
-    });
-  }
-
-  // Parents — look up from dtPeopleMap using person.parents
-  if (person.parents && person.parents.length >= 2) {
-    const father = dtPeopleMap.get(person.parents[0]);
-    const mother = dtPeopleMap.get(person.parents[1]);
-    parent1.querySelector('.p-name').textContent = father ? (father.name || father.fullName || 'Name') : 'Name';
-    parent1.querySelector('.p-years').textContent = father ? formatPersonYears(father) : 'YYYY — YYYY';
-    parent1.dataset.parentSlot = father ? (father.slot || '') : '';
-    parent2.querySelector('.p-name').textContent = mother ? (mother.name || mother.fullName || 'Name') : 'Name';
-    parent2.querySelector('.p-years').textContent = mother ? formatPersonYears(mother) : 'YYYY — YYYY';
-    parent2.dataset.parentSlot = mother ? (mother.slot || '') : '';
-  } else {
-    parent1.querySelector('.p-name').textContent = 'Name';
-    parent1.querySelector('.p-years').textContent = 'YYYY — YYYY';
-    parent1.dataset.parentSlot = '';
-    parent2.querySelector('.p-name').textContent = 'Name';
-    parent2.querySelector('.p-years').textContent = 'YYYY — YYYY';
-    parent2.dataset.parentSlot = '';
-  }
-
-  // Siblings — from person.siblings (read-only list)
-  const siblingsContainer = document.getElementById('detailSiblings');
-  siblingsContainer.innerHTML = '';
-  if (person.siblings && person.siblings.length) {
-    person.siblings.forEach(s => {
-      const el = document.createElement('div');
-      el.style.cssText = 'font-family:Cormorant Garamond,serif;font-size:11px;color:#3e3225;';
-      el.textContent = typeof s === 'string' ? s : (s.name || '');
-      siblingsContainer.appendChild(el);
-    });
-  } else {
-    siblingsContainer.innerHTML = '<div style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No siblings recorded</div>';
-  }
-
-  // Hide add-sibling UI in read-only mode
-  const addSiblingWrap = document.getElementById('addSiblingWrap');
-  if (addSiblingWrap) addSiblingWrap.style.display = 'none';
-
-  // Show panel
-  detailPanel.classList.add('active');
-  detailOverlay.classList.add('active');
-  detailPanel.dataset.currentSlot = slot || '';
-}
-
 // Click handler for nameplates — branches on data-tree mode
 let currentSubjectId = null;
 let currentPeopleMap = new Map();
@@ -1532,14 +1376,9 @@ document.querySelectorAll('.nameplate').forEach((np) => {
       if (e.shiftKey) return; // shift-click falls through to old behavior (detail panel)
       const path = slotToPath(slot);
       const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
-      if (!person) return;
-      if (gen === 5) {
-        // Gen 5: re-root poster at this person, show their ancestors above
+      if (person && person.id !== dtSubjectId) {
         populatePosterFromDataTree(person.id);
         showToast('Now showing: ' + (person.name || person.fullName || 'Ancestor'));
-      } else {
-        // Gen 0-4: show read-only detail popup from data-tree
-        openDtDetail(person, slot);
       }
       return;
     }
@@ -1609,18 +1448,6 @@ detailOverlay.addEventListener('click', closeDetail);
 
 // Parent cards are also clickable — drill into that person's detail
 parent1.addEventListener('click', () => {
-  if (dtModeActive) {
-    // In data-tree mode, lookup parent from dtPeopleMap and show read-only detail
-    const currentSlot = detailPanel.dataset.currentSlot;
-    if (!currentSlot) return;
-    const path = slotToPath(currentSlot);
-    const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
-    if (person && person.parents && person.parents.length >= 1) {
-      const parent = dtPeopleMap.get(person.parents[0]);
-      if (parent) openDtDetail(parent, parent.slot || '');
-    }
-    return;
-  }
   const slot = parent1.dataset.parentSlot;
   if (slot) {
     const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
@@ -1628,17 +1455,6 @@ parent1.addEventListener('click', () => {
   }
 });
 parent2.addEventListener('click', () => {
-  if (dtModeActive) {
-    const currentSlot = detailPanel.dataset.currentSlot;
-    if (!currentSlot) return;
-    const path = slotToPath(currentSlot);
-    const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
-    if (person && person.parents && person.parents.length >= 2) {
-      const parent = dtPeopleMap.get(person.parents[1]);
-      if (parent) openDtDetail(parent, parent.slot || '');
-    }
-    return;
-  }
   const slot = parent2.dataset.parentSlot;
   if (slot) {
     const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
@@ -1686,7 +1502,7 @@ function makeEditable(el, targetPlate, targetSelector) {
 // Wire up detail panel name + years editing
 detailName.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (dtModeActive) return; // read-only in data-tree mode
+  // Find which nameplate this detail refers to
   const currentSlot = detailPanel.dataset.currentSlot;
   const targetPlate = currentSlot ? document.querySelector(`.nameplate[data-slot="${currentSlot}"]`) : null;
   makeEditableInline(detailName, targetPlate, '.name');
@@ -1694,7 +1510,6 @@ detailName.addEventListener('click', (e) => {
 
 detailYears.addEventListener('click', (e) => {
   e.stopPropagation();
-  if (dtModeActive) return; // read-only in data-tree mode
   const currentSlot = detailPanel.dataset.currentSlot;
   const targetPlate = currentSlot ? document.querySelector(`.nameplate[data-slot="${currentSlot}"]`) : null;
   makeEditableInline(detailYears, targetPlate, '.years');
@@ -1748,7 +1563,6 @@ openDetail = function(name, years, slot) {
 function wireParentEdit(cardEl, selector) {
   cardEl.querySelector(selector).addEventListener('click', (e) => {
     e.stopPropagation();
-    if (dtModeActive) return; // read-only in data-tree mode
     const pSlot = cardEl.dataset.parentSlot;
     const targetPlate = pSlot ? document.querySelector(`.nameplate[data-slot="${pSlot}"]`) : null;
     makeEditableInline(cardEl.querySelector(selector), targetPlate, selector === '.p-name' ? '.name' : '.years');
@@ -1821,39 +1635,12 @@ function showToast(msg, duration) {
   setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
   setTimeout(() => el.remove(), duration + 500);
 }
-// UX-14: Debug toasts only show when ?debug is in the URL
-const _debugMode = new URLSearchParams(window.location.search).has('debug');
-function debugToast(msg, duration) {
-  if (!_debugMode) return;
-  showToast(msg, duration);
-}
 
 const saveSessionBtn = document.getElementById('saveSessionBtn');
 const loadSessionBtn = document.getElementById('loadSessionBtn');
 const sessionFileInput = document.getElementById('sessionFileInput');
 
 async function exportSession() {
-  // BUG-21 fix: in data-tree mode, export the canonical {people} format
-  // so the main app's loadSession can read it.
-  if (typeof dtModeActive !== 'undefined' && dtModeActive && typeof dtPeopleMap !== 'undefined' && dtPeopleMap && dtPeopleMap.size > 0) {
-    const peopleArr = Array.from(dtPeopleMap.values());
-    const payload = {
-      version: 5,
-      exportedAt: new Date().toISOString(),
-      people: peopleArr,
-      nextId: peopleArr.reduce((mx, p) => Math.max(mx, p.id || 0), 0) + 1,
-      visibleMaxGen: typeof visibleMaxGen !== 'undefined' ? visibleMaxGen : 8
-    };
-    const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
-    const url = URL.createObjectURL(blob);
-    const a = document.createElement('a');
-    a.href = url;
-    a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
-    a.click();
-    URL.revokeObjectURL(url);
-    return;
-  }
-  // Poster-native format (for standalone poster saves)
   const payload = {
     version: 1,
     exportedAt: new Date().toISOString(),
@@ -1932,6 +1719,7 @@ async function importSession(file) {
         plate.dataset.docs = '';
         plate.querySelector('.name').textContent = 'Name';
         plate.querySelector('.years').textContent = 'YYYY — YYYY';
+        if (parseInt(plate.dataset.gen || '0', 10) === 5) plate.style.display = 'none';
       }
     });
 
@@ -1965,8 +1753,23 @@ async function importSession(file) {
 }
 
 function hpSaveSession() { exportSession(); }
-function hpLoadSession() { sessionFileInput.click(); }
+function hpLoadSession(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  setTimeout(() => sessionFileInput.click(), 50);
+}
 function hpBackToTree() { window.location.href = 'data-tree.html'; }
+function hpPrevSubject() {
+  if (!dtModeActive || subjectHistory.length === 0) return;
+  const prevId = subjectHistory.pop();
+  if (prevId && dtPeopleMap.has(prevId)) {
+    dtSubjectId = prevId;
+    populatePosterFromDataTree(prevId);
+    const person = dtPeopleMap.get(prevId);
+    showToast('Back to: ' + (person?.name || person?.fullName || 'Previous'));
+  }
+  const prevBtn = document.getElementById('prevSubjectBtn');
+  if (prevBtn) prevBtn.style.display = subjectHistory.length > 0 ? 'inline-block' : 'none';
+}
 function hpPrintPDF() {
   const wasGridOn = gridOverlay && gridOverlay.style.display !== 'none';
   const wasZoom = scale;
@@ -1994,15 +1797,21 @@ function hpPrintPDF() {
   }, 50);
 }
 
-saveSessionBtn.addEventListener('click', hpSaveSession);
-loadSessionBtn.addEventListener('click', hpLoadSession);
-sessionFileInput.addEventListener('change', (e) => {
+sessionFileInput.addEventListener('change', async (e) => {
   const file = e.target.files[0];
-  if (file) importSession(file);
+  if (file) {
+    try {
+      await importSession(file);
+    } catch (err) {
+      console.error('Import error:', err);
+      showToast('Import failed: ' + (err.message || 'Unknown error'));
+    }
+  }
   sessionFileInput.value = '';
 });
 
 document.getElementById('backToTreeBtn').addEventListener('click', hpBackToTree);
+document.getElementById('prevSubjectBtn').addEventListener('click', hpPrevSubject);
 document.getElementById('printBtn').addEventListener('click', hpPrintPDF);
 
 certRetry.addEventListener('click', () => {
@@ -2532,7 +2341,7 @@ const SPOUSE_MAP = {
 
   certConfirm.addEventListener('click', () => {
   try {
-  debugToast('Apply clicked — type will show next');
+  showToast('Apply clicked — type will show next');
   } catch(e) { console.error('toast err', e); }
   if (!lastTranscription) {
     showToast('No entry selected. Tap a card first.');
@@ -2547,7 +2356,7 @@ const SPOUSE_MAP = {
   showToast('Applying...');
   // DEBUG: show what data we're working with
   const preview = lastTranscription.child?.name || lastTranscription.groom?.name || lastTranscription.deceased?.name || 'no name';
-  debugToast('Data: ' + preview.substring(0, 30));
+  showToast('Data: ' + preview.substring(0, 30));
   const data = lastTranscription;
   const type = data._type || 'unknown';
 
@@ -2850,15 +2659,26 @@ const SPOUSE_MAP = {
   function formatNameplateName(fullName) {
     if (!fullName || fullName === 'Name') return 'Name';
     const parts = fullName.trim().split(/\s+/);
-    if (parts.length < 2) return escapeHtml(fullName);
-    const surname = escapeHtml(parts.pop());
-    const forename = escapeHtml(parts.join(' '));
+    if (parts.length < 2) return fullName;
+    const surname = parts.pop();
+    const forename = parts.join(' ');
     return forename + '<br>' + surname;
   }
 
-  // Helper: shorten a full name for nameplate display (legacy wrapper)
+  // Helper: shorten a full name for nameplate display
+  // Gen 5: aggressively abbreviate to fit tight outer-ring spacing
   function shortName(fullName, gen) {
-    return formatNameplateName(fullName);
+    if (!fullName || fullName === 'Name') return 'Name';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length < 2) return fullName;
+    const surname = parts.pop();
+    const forename = parts.join(' ');
+    // Gen 4+ abbreviation: initial + surname for long names
+    if (gen >= 4 && (fullName.length > 14 || forename.length > 7)) {
+      const initial = forename.charAt(0).toUpperCase();
+      return initial + '.<br>' + surname;
+    }
+    return forename + '<br>' + surname;
   }
 
   // Helper: fill a nameplate with name + years; stores full name in data-fullname, displays short
@@ -2882,11 +2702,27 @@ const SPOUSE_MAP = {
     if (maidenName) plate.dataset.maiden = maidenName;
     const gen = parseInt(plate.dataset.gen || '0', 10);
     nameEl.innerHTML = shortName(name, gen);
-    if (years) {
+    if (years && gen < 4) {
       const yearsEl = plate.querySelector('.years');
       if (yearsEl) yearsEl.textContent = years;
     }
+    // Gen 5 visibility: show when filled, hide when cleared to 'Name'
+    if (gen === 5) {
+      plate.style.display = '';
+    }
     return true;
+  }
+
+  // Helper: update visibility of blank gen-5 placeholders
+  function updateGen5Visibility() {
+    document.querySelectorAll('.nameplate[data-gen="5"]').forEach(plate => {
+      const nameText = plate.querySelector('.name')?.textContent?.trim() || '';
+      if (nameText === 'Name' || !plate.dataset.fullname) {
+        plate.style.display = 'none';
+      } else {
+        plate.style.display = '';
+      }
+    });
   }
 
   // Helper: add a doc badge to a nameplate
@@ -3016,6 +2852,7 @@ const SPOUSE_MAP = {
           delete dup.dataset.fullname;
           delete dup.dataset.maiden;
           delete dup.dataset.docs;
+          if (parseInt(dup.dataset.gen || '0', 10) === 5) dup.style.display = 'none';
           mergeCount++;
         });
         // Re-display keeper with formatted name from fullname
@@ -3032,7 +2869,7 @@ const SPOUSE_MAP = {
 
     // Try to find the child in the tree
     childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
-    debugToast('BC: searching for "' + childName + '" (year=' + (birthYear||'?') + ')');
+    showToast('BC: searching for "' + childName + '" (year=' + (birthYear||'?') + ')');
     // Surname fallback only if generation makes sense
     if (!childPlate && birthYear) {
       childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
@@ -3061,9 +2898,9 @@ const SPOUSE_MAP = {
       const slot = childPlate.dataset.slot || 'unnamed';
       const gen = childPlate.dataset.gen || '?';
       const existing = childPlate.querySelector('.name')?.textContent || 'empty';
-      debugToast('Matched "' + childName + '" to slot ' + slot + ' (gen ' + gen + ', was: ' + existing + ')');
+      showToast('Matched "' + childName + '" to slot ' + slot + ' (gen ' + gen + ', was: ' + existing + ')');
     } else {
-      debugToast('No match for "' + childName + '" — will try generation placement');
+      showToast('No match for "' + childName + '" — will try generation placement');
     }
     // Also show all candidates in a delayed toast for mobile debugging
     const allCands = window.__lastFindCandidates || [];
@@ -3072,7 +2909,7 @@ const SPOUSE_MAP = {
         const top3 = allCands.slice(0, 3).map(c => {
           return c.slot + '=' + c.name.substring(0, 12) + '(sc' + c.score + ')';
         }).join(', ');
-        debugToast('Top matches: ' + top3);
+        showToast('Top matches: ' + top3);
       }, 1500);
     }
 
@@ -3097,18 +2934,18 @@ const SPOUSE_MAP = {
               addDocBadge(fPlate, 'birth');
               filled++;
               messages.push("BC father → " + pMap.fatherSlot);
-              debugToast('Father: ' + bcFather + ' → ' + pMap.fatherSlot);
+              showToast('Father: ' + bcFather + ' → ' + pMap.fatherSlot);
             } else {
-              debugToast('Father slot ' + pMap.fatherSlot + ' blocked by fillPlate');
+              showToast('Father slot ' + pMap.fatherSlot + ' blocked by fillPlate');
             }
           } else {
-            debugToast('Father slot ' + pMap.fatherSlot + ' already has: ' + existing);
+            showToast('Father slot ' + pMap.fatherSlot + ' already has: ' + existing);
           }
         } else {
-          debugToast('Father slot ' + pMap.fatherSlot + ' not found in DOM');
+          showToast('Father slot ' + pMap.fatherSlot + ' not found in DOM');
         }
       } else {
-        debugToast('No pMap or no father data. pMap=' + JSON.stringify(pMap) + ' father=' + (data.father?.name || 'missing'));
+        showToast('No pMap or no father data. pMap=' + JSON.stringify(pMap) + ' father=' + (data.father?.name || 'missing'));
       }
       if (pMap && pMap.motherSlot && data.mother?.name) {
         const mPlate = findSlot(pMap.motherSlot);
@@ -3121,18 +2958,18 @@ const SPOUSE_MAP = {
               addDocBadge(mPlate, 'birth');
               filled++;
               messages.push("BC mother → " + pMap.motherSlot);
-              debugToast('Mother: ' + bcMother + ' → ' + pMap.motherSlot);
+              showToast('Mother: ' + bcMother + ' → ' + pMap.motherSlot);
             } else {
-              debugToast('Mother slot ' + pMap.motherSlot + ' blocked by fillPlate');
+              showToast('Mother slot ' + pMap.motherSlot + ' blocked by fillPlate');
             }
           } else {
-            debugToast('Mother slot ' + pMap.motherSlot + ' already has: ' + existing);
+            showToast('Mother slot ' + pMap.motherSlot + ' already has: ' + existing);
           }
         } else {
-          debugToast('Mother slot ' + pMap.motherSlot + ' not found in DOM');
+          showToast('Mother slot ' + pMap.motherSlot + ' not found in DOM');
         }
       } else {
-        debugToast('No mother data or pMap. mother=' + (data.mother?.name || 'missing'));
+        showToast('No mother data or pMap. mother=' + (data.mother?.name || 'missing'));
       }
     } else if (childPlate) {
       // Found the child but on a generic nameplate (no slot) — just update
@@ -3406,7 +3243,7 @@ const SPOUSE_MAP = {
         const deathSlot = deathPlate.dataset.slot;
         console.log('[DC DEBUG] deceasedName:', deceasedName, 'deathSlot:', deathSlot);
         console.log('[DC DEBUG] OWN_PARENT_MAP[' + deathSlot + ']:', deathSlot ? OWN_PARENT_MAP[deathSlot] : 'NO SLOT');
-        debugToast('DC: ' + deceasedName + ' → slot ' + deathSlot, 4000);
+        showToast('DC: ' + deceasedName + ' → slot ' + deathSlot, 4000);
         if (deathSlot && OWN_PARENT_MAP[deathSlot]) {
           const pMap = OWN_PARENT_MAP[deathSlot];
           console.log('[DC DEBUG] fatherSlot:', pMap.fatherSlot, 'motherSlot:', pMap.motherSlot);
@@ -3422,7 +3259,7 @@ const SPOUSE_MAP = {
                 addDocBadge(fPlate, 'death');
                 filled++;
                 messages.push('DC father → ' + pMap.fatherSlot);
-                debugToast('Father: ' + dcFather + ' → ' + pMap.fatherSlot);
+                showToast('Father: ' + dcFather + ' → ' + pMap.fatherSlot);
               } else if (existing.toLowerCase().trim() !== dcFather.toLowerCase().trim()) {
                 // Name already there but different — check if it's the same person (partial match)
                 if (normalizeName(existing) === normalizeName(dcFather) || existing.toLowerCase().includes(dcFather.split(' ')[0].toLowerCase())) {
@@ -3439,7 +3276,7 @@ const SPOUSE_MAP = {
                   addDocBadge(fPlate, 'death');
                   filled++;
                   messages.push('DC father corrected ' + pMap.fatherSlot + ': ' + existing + ' → ' + dcFather);
-                  debugToast('Corrected: ' + existing + ' → ' + dcFather + ' @ ' + pMap.fatherSlot);
+                  showToast('Corrected: ' + existing + ' → ' + dcFather + ' @ ' + pMap.fatherSlot);
                 }
               }
             }
@@ -3456,7 +3293,7 @@ const SPOUSE_MAP = {
                 addDocBadge(mPlate, 'death');
                 filled++;
                 messages.push('DC mother → ' + pMap.motherSlot);
-                debugToast('Mother: ' + dcMother + (dcMaiden ? ' née ' + dcMaiden : '') + ' → ' + pMap.motherSlot);
+                showToast('Mother: ' + dcMother + (dcMaiden ? ' née ' + dcMaiden : '') + ' → ' + pMap.motherSlot);
               } else if (existing.toLowerCase().trim() !== dcMother.toLowerCase().trim()) {
                 if (normalizeName(existing) === normalizeName(dcMother) || existing.toLowerCase().includes(dcMother.split(' ')[0].toLowerCase())) {
                   if (dcMother.length > existing.length) {
@@ -3471,7 +3308,7 @@ const SPOUSE_MAP = {
                   addDocBadge(mPlate, 'death');
                   filled++;
                   messages.push('DC mother corrected ' + pMap.motherSlot + ': ' + existing + ' → ' + dcMother);
-                  debugToast('Corrected: ' + existing + ' → ' + dcMother + ' @ ' + pMap.motherSlot);
+                  showToast('Corrected: ' + existing + ' → ' + dcMother + ' @ ' + pMap.motherSlot);
                 }
               }
             }
@@ -3505,16 +3342,16 @@ const SPOUSE_MAP = {
                     addDocBadge(sPlate, 'death');
                     filled++;
                     messages.push('DC spouse corrected ' + spouseSlot + ': ' + existingSpouse + ' → ' + dcSpouseName);
-                    debugToast('Corrected spouse: ' + existingSpouse + ' → ' + dcSpouseName);
+                    showToast('Corrected spouse: ' + existingSpouse + ' → ' + dcSpouseName);
                   }
                 }
               }
             }
           }
         } else if (deathSlot) {
-          debugToast('DC matched ' + deceasedName + ' but no OWN_PARENT_MAP entry for slot "' + deathSlot + '"');
+          showToast('DC matched ' + deceasedName + ' but no OWN_PARENT_MAP entry for slot "' + deathSlot + '"');
         } else {
-          debugToast('DC matched ' + deceasedName + ' but no slot assigned');
+          showToast('DC matched ' + deceasedName + ' but no slot assigned');
         }
       }
     }
@@ -3532,7 +3369,7 @@ const SPOUSE_MAP = {
     const pMap = dSlot ? OWN_PARENT_MAP[dSlot] : null;
     const debugMsg = 'DC: slot=' + dSlot + ' parents=' + (pMap ? pMap.fatherSlot + '/' + pMap.motherSlot : 'NONE') + ' filled=' + filled;
     console.log('[CERT APPLY]', debugMsg);
-    debugToast('✓ ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' — ' + debugMsg, 5000);
+    showToast('✓ ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' — ' + debugMsg, 5000);
   } else {
     showToast('✓ Applied ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' to tree', 4000);
   }
@@ -3569,6 +3406,7 @@ const SPOUSE_MAP = {
   pendingDocType = null;
 
   setTimeout(closeCertPanel, 1500);
+  updateGen5Visibility();
 
   } catch (err) {
     console.error('[CERT APPLY ERROR]', err);
@@ -3932,6 +3770,7 @@ function getSourceForCouple(name1, name2) {
         plate.dataset.docs = '';
         plate.querySelector('.name').textContent = 'Name';
         plate.querySelector('.years').textContent = 'YYYY — YYYY';
+        if (parseInt(plate.dataset.gen || '0', 10) === 5) plate.style.display = 'none';
       }
     });
 
@@ -3984,51 +3823,47 @@ function getPersonByPath(rootId, path, peopleMap) {
   return peopleMap.get(currentId) || null;
 }
 
-// Format years from person data — always extract 4-digit years, show year-only
+// Format years from person data
 function formatPersonYears(person) {
-  let birthYear = '', deathYear = '';
-
+  if (person.years && person.years !== 'YYYY — YYYY') return person.years;
+  let y = '';
   if (person.birthDate) {
     const m = person.birthDate.match(/\d{4}/);
-    if (m) birthYear = m[0];
+    if (m) y = m[0];
   }
-  if (!birthYear && person.years && person.years !== 'YYYY — YYYY') {
-    const years = person.years.match(/\d{4}/g);
-    if (years && years.length >= 1) birthYear = years[0];
-  }
-
+  y += ' —';
   if (person.deathDate) {
     const m = person.deathDate.match(/\d{4}/);
-    if (m) deathYear = m[0];
+    if (m) y = y.replace(' —', '') + ' — ' + m[0];
   }
-  if (!deathYear && person.years && person.years !== 'YYYY — YYYY') {
-    const years = person.years.match(/\d{4}/g);
-    if (years && years.length >= 2) deathYear = years[1];
-  }
-
-  if (birthYear && deathYear) return birthYear + ' — ' + deathYear;
-  if (birthYear) return birthYear + ' —';
-  if (deathYear) return '? — ' + deathYear;
-  return 'YYYY — YYYY';
+  if (!y || y === ' —') return 'YYYY — YYYY';
+  return y;
 }
 
 // Global helper: split a full name into forename + <br> + surname for nameplate display
 // Defined at top level so both poster internals and data-tree integration can use it
 function formatNameplateName(fullName) {
   if (!fullName || fullName === 'Name') return 'Name';
-  // Strip parenthetical maiden-name suffix from display name
-  const clean = fullName.replace(/\s*[(\[][^)\]]*[)\]]/g, '').trim();
-  const parts = clean.split(/\s+/);
-  if (parts.length < 2) return escapeHtml(clean);
-  const surname = escapeHtml(parts.pop());
-  const forename = escapeHtml(parts.join(' '));
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length < 2) return fullName;
+  const surname = parts.pop();
+  const forename = parts.join(' ');
   return forename + '<br>' + surname;
 }
 
 // Short name for display (mimics heritage-poster shortName)
+// Gen 4+: aggressively abbreviate to fit tight outer-ring spacing
 function dtShortName(fullName, gen) {
-  if (gen >= 5) return escapeHtml(fullName || 'Name');
-  return formatNameplateName(fullName);
+  if (!fullName || fullName === 'Name') return 'Name';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length < 2) return fullName;
+  const surname = parts.pop();
+  const forename = parts.join(' ');
+  if (gen >= 4 && (fullName.length > 14 || forename.length > 7)) {
+    const initial = forename.charAt(0).toUpperCase();
+    return initial + '.<br>' + surname;
+  }
+  return forename + '<br>' + surname;
 }
 
 // Update heraldic banner from the subject (Gen 0) nameplate
@@ -4047,10 +3882,15 @@ function updateBanner() {
 let dtPeopleMap = new Map();
 let dtSubjectId = null;
 let dtModeActive = false;
+let subjectHistory = []; // Stack for back-navigation in data-tree mode
 
 // Populate all poster slots from a given subject person ID
 function populatePosterFromDataTree(subjectId) {
   if (!dtPeopleMap.has(subjectId)) return;
+  // Push current subject to history before switching
+  if (dtSubjectId && dtSubjectId !== subjectId) {
+    subjectHistory.push(dtSubjectId);
+  }
   dtSubjectId = subjectId;
   dtModeActive = true;
 
@@ -4061,7 +3901,7 @@ function populatePosterFromDataTree(subjectId) {
     plate.dataset.docs = '';
     plate.querySelector('.name').innerHTML = 'Name';
     plate.querySelector('.years').textContent = 'YYYY — YYYY';
-    plate.style.opacity = '0';
+    plate.style.opacity = '1';
   });
 
   // Fill each slot
@@ -4085,22 +3925,37 @@ function populatePosterFromDataTree(subjectId) {
       const codes = [];
       person.docs.forEach(d => {
         const type = typeof d === 'string' ? d : d.type;
-        const code = type === 'birth' || type === 'bc' ? 'BC' : type === 'marriage' || type === 'mc' ? 'MC' : type === 'death' || type === 'dc' ? 'DC' : '';
+        const code = type === 'birth' ? 'BC' : type === 'marriage' ? 'MC' : type === 'death' ? 'DC' : '';
         if (code && !codes.includes(code)) codes.push(code);
       });
       if (codes.length) plate.dataset.docs = codes.join(',');
     }
 
     plate.querySelector('.name').innerHTML = dtShortName(name, gen);
-    plate.querySelector('.years').textContent = years;
-    plate.style.opacity = '1';
+    if (gen < 4) {
+      plate.querySelector('.years').textContent = years;
+    } else {
+      plate.querySelector('.years').textContent = '';
+    }
     filledCount++;
   });
   console.log('[DT POPULATE] filled slots:', filledCount);
 
-  // Show back button
+  // Hide blank gen-5 placeholders so outer ring isn't cluttered
+  document.querySelectorAll('.nameplate[data-gen="5"]').forEach(plate => {
+    const nameText = plate.querySelector('.name')?.textContent?.trim() || '';
+    if (nameText === 'Name' || !plate.dataset.fullname) {
+      plate.style.display = 'none';
+    } else {
+      plate.style.display = '';
+    }
+  });
+
+  // Show back button and prev-subject button
   const backBtn = document.getElementById('backToTreeBtn');
   if (backBtn) backBtn.style.display = 'inline-block';
+  const prevBtn = document.getElementById('prevSubjectBtn');
+  if (prevBtn) prevBtn.style.display = subjectHistory.length > 0 ? 'inline-block' : 'none';
 
   // Update heraldic banner with subject surname
   updateBanner();
@@ -4119,11 +3974,9 @@ function loadFromDataTree() {
   dtPeopleMap = new Map();
   data.people.forEach(p => dtPeopleMap.set(p.id, p));
 
-  // Find subject: prefer status='you' (set by focus picker), then gen 0 with parents,
-  // then gen 0, then first confirmed, then first person
-  const subject = data.people.find(p => p.status === 'you') ||
-                  data.people.find(p => p.gen === 0 && p.parents && p.parents.length > 0) ||
-                  data.people.find(p => p.gen === 0) ||
+  // Find subject: gen 0, or status='you', or first confirmed, or first person
+  const subject = data.people.find(p => p.gen === 0) ||
+                  data.people.find(p => p.status === 'you') ||
                   data.people.find(p => p.status === 'confirmed') ||
                   data.people[0];
   if (!subject) { console.log('[DT LOAD] no subject found'); return false; }
@@ -4136,114 +3989,15 @@ function loadFromDataTree() {
 // Try loading from data-tree
 loadFromDataTree();
 updateBanner();
+
+// Hide blank gen-5 placeholders on initial load (no data-tree data)
+document.querySelectorAll('.nameplate[data-gen="5"]').forEach(plate => {
+  const nameText = plate.querySelector('.name')?.textContent?.trim() || '';
+  if (nameText === 'Name' || !plate.dataset.fullname) {
+    plate.style.display = 'none';
+  }
+});
 </script>
 
-<script>
-// GA4 Event Tracking — heritage poster clicks
-(function() {
-  var buttonMap = {
-    saveSessionBtn: { action: 'save_session',  category: 'poster' },
-    loadSessionBtn: { action: 'load_session',  category: 'poster' },
-    guideBtn:       { action: 'open_guide',    category: 'poster' },
-    backToTreeBtn:  { action: 'back_to_tree',  category: 'poster' },
-    printBtn:       { action: 'print_poster',   category: 'poster' },
-    zoomIn:         { action: 'zoom_in',        category: 'poster' },
-    zoomOut:        { action: 'zoom_out',       category: 'poster' },
-    zoomReset:      { action: 'zoom_reset',     category: 'poster' },
-    backBtn:        { action: 'go_back',         category: 'poster' },
-    detailClose:    { action: 'close_detail',   category: 'poster' },
-  };
-
-  document.addEventListener('click', function(e) {
-    var el = e.target.closest('button, [onclick]');
-    if (!el) return;
-
-    var id = el.id;
-    if (id && buttonMap[id]) {
-      var m = buttonMap[id];
-      if (typeof gtag === 'function') {
-        gtag('event', m.action, {
-          event_category: m.category,
-          event_label: id
-        });
-      }
-    }
-  });
-
-  var gt = document.getElementById('gridToggle');
-  if (gt) {
-    gt.addEventListener('click', function() {
-      if (typeof gtag === 'function') {
-        gtag('event', 'toggle_grid', { event_category: 'poster', event_label: 'gridToggle' });
-      }
-    });
-  }
-})();
-
-function showPrivacyModal() {
-  const modal = document.getElementById('privacyModal');
-  if (!modal) return;
-  modal.style.display = 'flex';
-  updateExpandGenBtn();
-}
-function showFeedbackModal() {
-  const modal = document.getElementById('feedbackModal');
-  if (!modal) return;
-  // Reset to feedback defaults in case founding form changed them
-  const title = modal.querySelector('[style*="font-size:18px"]');
-  if (title) title.textContent = 'Send Feedback';
-  const subtitle = modal.querySelector('[style*="font-size:13px"]');
-  if (subtitle) subtitle.textContent = "We'd love to hear your thoughts";
-  const subjectInput = document.getElementById('feedbackSubject');
-  if (subjectInput) subjectInput.value = 'New Vaulted Roots feedback';
-  const msgLabel = modal.querySelector('label[for="feedbackMessage"]');
-  if (msgLabel) msgLabel.textContent = 'Message';
-  const msgArea = modal.querySelector('textarea[name="message"]');
-  if (msgArea) msgArea.placeholder = "What's on your mind?";
-  const submitBtn = modal.querySelector('button[type="submit"]');
-  if (submitBtn) submitBtn.textContent = 'Send Feedback';
-  modal.style.display = 'flex';
-}
-
-function openFoundingForm() {
-  // Close member modal first
-  document.getElementById('memberModal').classList.remove('active');
-  // Open feedback modal repurposed as founding intent form
-  const modal = document.getElementById('feedbackModal');
-  if (!modal) return;
-  const title = modal.querySelector('[style*="font-size:18px"]');
-  if (title) title.textContent = 'Founding Member';
-  const subtitle = modal.querySelector('[style*="font-size:13px"]');
-  if (subtitle) subtitle.textContent = 'Be first in line when spots open';
-  const subjectInput = document.getElementById('feedbackSubject');
-  if (subjectInput) subjectInput.value = 'VR Founding Member Intent';
-  const msgArea = modal.querySelector('textarea[name="message"]');
-  if (msgArea) msgArea.placeholder = 'I want early access to founding membership ($19.99, first 100).';
-  const submitBtn = modal.querySelector('button[type="submit"]');
-  if (submitBtn) submitBtn.textContent = 'Join the list';
-  modal.style.display = 'flex';
-}
-document.getElementById('privacyModalOk').addEventListener('click', () => {
-  document.getElementById('privacyModal').style.display = 'none';
-  updateExpandGenBtn();
-});
-document.getElementById('privacyModalDismissForever').addEventListener('click', () => {
-  document.getElementById('privacyModal').style.display = 'none';
-  localStorage.setItem('vaultedRootsPrivacySeen', '1');
-  updateExpandGenBtn();
-});
-if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => showPrivacyModal());
-  } else {
-    showPrivacyModal();
-  }
-}
-</script>
-
-<div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
-  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
-    <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:48px;margin-bottom:8px;">🔒</div>
 </body>
 </html>

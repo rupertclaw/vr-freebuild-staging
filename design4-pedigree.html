@@ -1,0 +1,550 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes">
+    <title>Roots — Pedigree Layout Demo (Zoomable)</title>
+    <style>
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        html, body {
+            height: 100%;
+            overflow: hidden;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background: #faf9f7;
+        }
+
+        .tree-scroll {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            overflow: auto;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .zoom-wrap {
+            transform-origin: 0 0;
+            transition: transform 0.2s ease;
+        }
+
+        .zoom-controls {
+            position: fixed;
+            bottom: 24px;
+            right: 24px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            z-index: 100;
+        }
+
+        .zoom-btn {
+            width: 44px;
+            height: 44px;
+            border-radius: 50%;
+            border: none;
+            background: #fff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+            font-size: 20px;
+            font-weight: 600;
+            color: #333;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: transform 0.1s;
+        }
+
+        .zoom-btn:active { transform: scale(0.92); }
+        .zoom-level {
+            font-size: 11px;
+            font-weight: 600;
+            color: #666;
+            text-align: center;
+            background: #fff;
+            padding: 4px 0;
+            border-radius: 12px;
+            box-shadow: 0 1px 4px rgba(0,0,0,0.1);
+        }
+
+        .tree-wrap {
+            position: relative;
+            display: flex;
+            align-items: flex-start;
+            padding: 60px 80px;
+            min-height: 100%;
+            gap: 100px;
+        }
+
+        .generation {
+            display: flex;
+            flex-direction: column;
+            position: relative;
+            min-width: 200px;
+        }
+
+        .gen-label {
+            position: absolute;
+            top: -40px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 11px;
+            font-weight: 600;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: #999;
+            white-space: nowrap;
+        }
+
+        .person-card {
+            position: absolute;
+            left: 0;
+            width: 200px;
+            background: #fff;
+            border-radius: 12px;
+            padding: 16px 20px;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.06), 0 4px 12px rgba(0,0,0,0.04);
+            border-left: 3px solid transparent;
+            cursor: pointer;
+            transition: transform 0.2s, box-shadow 0.2s;
+            z-index: 2;
+        }
+
+        .person-card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 16px rgba(0,0,0,0.12);
+        }
+
+        .person-card.confirmed { border-left-color: #22c55e; }
+        .person-card.probable { border-left-color: #f59e0b; }
+        .person-card.brickwall { border-left-color: #ef4444; border-left-style: dashed; }
+        .person-card.you { border-left-color: #3b82f6; border-left-width: 4px; }
+
+        .person-name {
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 4px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+
+        .person-years {
+            font-size: 12px;
+            color: #888;
+        }
+
+        .lines-svg {
+            position: absolute;
+            top: 0; left: 0;
+            pointer-events: none;
+            z-index: 1;
+        }
+    </style>
+</head>
+<body>
+    <div class="tree-scroll" id="treeScroll">
+        <div class="zoom-wrap" id="zoomWrap">
+            <div class="tree-wrap" id="treeWrap">
+                <svg class="lines-svg" id="linesSvg"></svg>
+            </div>
+        </div>
+    </div>
+
+    <div class="zoom-controls">
+        <button class="zoom-btn" onclick="zoomIn()">+</button>
+        <div class="zoom-level" id="zoomLevel">100%</div>
+        <button class="zoom-btn" onclick="zoomOut()">−</button>
+        <button class="zoom-btn" onclick="zoomReset()" title="Reset zoom">⟲</button>
+    </div>
+
+    <script>
+    (function() {
+        'use strict';
+
+        // === CONFIG ===
+        const CARD_W = 200;
+        const CARD_H = 64; // approx, will measure actual
+        const GAP_X = 100; // horizontal gap between generations
+        const GAP_Y = 16;  // vertical gap between sibling groups at the rightmost generation
+        const JUNCT_DIST = 30; // distance from parent to junction point
+
+        const svgNS = 'http://www.w3.org/2000/svg';
+        const wrap = document.getElementById('treeWrap');
+        const svg = document.getElementById('linesSvg');
+        const scroll = document.getElementById('treeScroll');
+
+        // === DEMO DATA: 6 generations ===
+        // Structure: each gen is an array of person objects
+        // Each person has: id, name, years, status, parentIndices (indices in NEXT gen)
+        const generations = [];
+
+        // Gen 5 (rightmost, 32 slots) - the "leaf" generation
+        // We'll create placeholder names or use actual data where known
+        const g5Names = [
+            "? Father","Hannah Mooney","Thomas Lynch","Catherine Welch",
+            "? Father","? Mother","Alex Craigie","Ann",
+            "Francis Crawford","Alice Gourley","Peter McGinley","Margaret Crumley",
+            "John Farrell","Ann Quinn","Patrick McDonald","Barbara Gordon",
+            "David Graham","Elizabeth Rattray","John Reilly","Catherine",
+            "? Father","? Mother","Michael Mooney","Agnes Harrington",
+            "John Harrington","Betsy McKnight","? Father","? Mother",
+            "? Father","? Mother","? Father","? Mother"
+        ];
+        const g5Years = [
+            "?","1833-1862","1815-?","1820-?",
+            "?","?","1814-?","1822-?",
+            "Gen Labourer","?","Flaxsmith","?",
+            "Stone Quarry","Deceased","Carpet Weaver","?",
+            "b. 1809","1810-?","1821-?","1822-?",
+            "?","?","1788-1875","1799-1887",
+            "?","?","?","?",
+            "?","?","?","?"
+        ];
+        const g5Status = [
+            "brickwall","probable","probable","probable",
+            "brickwall","brickwall","probable","probable",
+            "probable","probable","probable","probable",
+            "probable","probable","probable","probable",
+            "probable","probable","probable","probable",
+            "brickwall","brickwall","probable","probable",
+            "probable","probable","brickwall","brickwall",
+            "brickwall","brickwall","brickwall","brickwall"
+        ];
+
+        generations[5] = g5Names.map((name, i) => ({
+            id: 'g5-' + i,
+            name: name,
+            years: g5Years[i],
+            status: g5Status[i],
+            parentIndices: null // no parents for rightmost gen
+        }));
+
+        // Gen 4 (16 cards) - each card's parents are 2 consecutive cards in gen 5
+        const g4Data = [
+            {name:"Thomas Mooney", years:"1862-1911", status:"probable", parents:[0,1]},
+            {name:"Catherine Lynch", years:"1858-?", status:"probable", parents:[2,3]},
+            {name:"Owen Lynch", years:"1833-?", status:"probable", parents:[4,5]},
+            {name:"Alice Rogers", years:"1831-?", status:"probable", parents:[6,7]},
+            {name:"William Craigie", years:"1841-?", status:"probable", parents:[8,9]},
+            {name:"Elizabeth (Betsy)", years:"1842-?", status:"probable", parents:[10,11]},
+            {name:"Francis Crawford", years:"1850-?", status:"probable", parents:[12,13]},
+            {name:"Eliza McGinley", years:"1852-?", status:"probable", parents:[14,15]},
+            {name:"James Farrell", years:"Stone Quarry", status:"probable", parents:[16,17]},
+            {name:"Helen McDonald", years:"Jute Spinner", status:"probable", parents:[18,19]},
+            {name:"John McFarland", years:"?", status:"probable", parents:[20,21]},
+            {name:"Mary Shields", years:"?", status:"probable", parents:[22,23]},
+            {name:"Andrew Henderson", years:"Shoemaker", status:"probable", parents:[24,25]},
+            {name:"Elizabeth Simpson", years:"?", status:"probable", parents:[26,27]},
+            {name:"? Father", years:"?", status:"brickwall", parents:[28,29]},
+            {name:"Hannah Mooney", years:"1833-1862", status:"probable", parents:[30,31]},
+        ];
+        generations[4] = g4Data.map((d, i) => ({
+            id: 'g4-' + i,
+            ...d,
+            parentIndices: d.parents
+        }));
+
+        // Gen 3 (8 cards)
+        const g3Data = [
+            {name:"Joseph Mooney", years:"1879-?", status:"probable", parents:[0,1]},
+            {name:"Catherine Farrell", years:"b. 1883", status:"probable", parents:[2,3]},
+            {name:"Edward Lynch", years:"1868-?", status:"probable", parents:[4,5]},
+            {name:"Mary Graham", years:"1865-?", status:"probable", parents:[6,7]},
+            {name:"James Craigie", years:"1872-?", status:"probable", parents:[8,9]},
+            {name:"Agnes Henderson", years:"?-1938", status:"probable", parents:[10,11]},
+            {name:"Patrick Crawford", years:"1872-?", status:"probable", parents:[12,13]},
+            {name:"Rose McFarland", years:"1872-?", status:"probable", parents:[14,15]},
+        ];
+        generations[3] = g3Data.map((d, i) => ({
+            id: 'g3-' + i,
+            ...d,
+            parentIndices: d.parents
+        }));
+
+        // Gen 2 (4 cards)
+        const g2Data = [
+            {name:"Joseph Mooney", years:"1905-1974", status:"confirmed", parents:[0,1]},
+            {name:"Alice Lynch", years:"1907-1978", status:"confirmed", parents:[2,3]},
+            {name:"Andrew Craigie", years:"1902-1972", status:"confirmed", parents:[4,5]},
+            {name:"Agnes Crawford", years:"b. 1902", status:"confirmed", parents:[6,7]},
+        ];
+        generations[2] = g2Data.map((d, i) => ({
+            id: 'g2-' + i,
+            ...d,
+            parentIndices: d.parents
+        }));
+
+        // Gen 1 (2 cards)
+        const g1Data = [
+            {name:"Joseph Mooney", years:"1931-2004", status:"confirmed", parents:[0,1]},
+            {name:"Rose Craigie", years:"b. 1931", status:"confirmed", parents:[2,3]},
+        ];
+        generations[1] = g1Data.map((d, i) => ({
+            id: 'g1-' + i,
+            ...d,
+            parentIndices: d.parents
+        }));
+
+        // Gen 0 (you, 1 card)
+        generations[0] = [{
+            id: 'g0-0',
+            name: "Graeme Mooney",
+            years: "b. 1966",
+            status: "you",
+            parentIndices: [0,1]
+        }];
+
+        const numGens = generations.length;
+
+        // === LAYOUT ALGORITHM ===
+        // 1. Position rightmost generation (Gen 5) with fixed spacing
+        // 2. Work backwards: each person's Y = midpoint of their two parents
+
+        const positions = []; // positions[gen][index] = {y: number}
+        const cards = [];   // cards[gen][index] = DOM element
+
+        // Step 1: Position rightmost generation
+        positions[numGens - 1] = [];
+        const rightmostGen = generations[numGens - 1];
+        let currentY = 0;
+        for (let i = 0; i < rightmostGen.length; i++) {
+            positions[numGens - 1][i] = { y: currentY };
+            currentY += CARD_H + GAP_Y;
+        }
+
+        // Step 2: Work backwards from right to left
+        for (let g = numGens - 2; g >= 0; g--) {
+            positions[g] = [];
+            const gen = generations[g];
+            for (let i = 0; i < gen.length; i++) {
+                const person = gen[i];
+                const parentIdx1 = person.parentIndices[0];
+                const parentIdx2 = person.parentIndices[1];
+                const parentY1 = positions[g + 1][parentIdx1].y;
+                const parentY2 = positions[g + 1][parentIdx2].y;
+                // Person is centered between their two parents
+                const midY = (parentY1 + parentY2) / 2;
+                positions[g][i] = { y: midY };
+            }
+        }
+
+        // Step 3: Create DOM elements
+        const colLefts = [];
+        for (let g = 0; g < numGens; g++) {
+            colLefts[g] = g * (CARD_W + GAP_X);
+
+            const genDiv = document.createElement('div');
+            genDiv.className = 'generation';
+            genDiv.style.width = CARD_W + 'px';
+
+            const label = document.createElement('div');
+            label.className = 'gen-label';
+            label.textContent = 'Generation ' + (g + 1);
+            genDiv.appendChild(label);
+
+            wrap.appendChild(genDiv);
+
+            cards[g] = [];
+            const gen = generations[g];
+            for (let i = 0; i < gen.length; i++) {
+                const person = gen[i];
+                const card = document.createElement('div');
+                card.className = 'person-card ' + person.status + (g === 0 ? ' you' : '');
+                card.innerHTML = '<div class="person-name">' + person.name + '</div><div class="person-years">' + person.years + '</div>';
+                card.style.left = colLefts[g] + 'px';
+                card.style.top = positions[g][i].y + 'px';
+                wrap.appendChild(card);
+                cards[g][i] = card;
+            }
+        }
+
+        // Force layout to get actual heights
+        document.body.offsetHeight;
+
+        // Re-measure and adjust for actual card heights
+        const actualHeights = [];
+        for (let g = 0; g < numGens; g++) {
+            actualHeights[g] = [];
+            for (let i = 0; i < cards[g].length; i++) {
+                actualHeights[g][i] = cards[g][i].offsetHeight;
+            }
+        }
+
+        // Recalculate Y positions using actual heights
+        // Rightmost gen: stack with GAP_Y
+        const rightmostCount = generations[numGens - 1].length;
+        let y = 0;
+        for (let i = 0; i < rightmostCount; i++) {
+            positions[numGens - 1][i] = { y: y };
+            y += actualHeights[numGens - 1][i] + GAP_Y;
+        }
+
+        // Work backwards
+        for (let g = numGens - 2; g >= 0; g--) {
+            for (let i = 0; i < generations[g].length; i++) {
+                const person = generations[g][i];
+                const p1 = person.parentIndices[0];
+                const p2 = person.parentIndices[1];
+                const y1 = positions[g + 1][p1].y + actualHeights[g + 1][p1] / 2;
+                const y2 = positions[g + 1][p2].y + actualHeights[g + 1][p2] / 2;
+                const midY = (y1 + y2) / 2;
+                positions[g][i] = { y: midY - actualHeights[g][i] / 2 };
+            }
+        }
+
+        // Apply new positions
+        for (let g = 0; g < numGens; g++) {
+            for (let i = 0; i < cards[g].length; i++) {
+                cards[g][i].style.top = positions[g][i].y + 'px';
+            }
+        }
+
+        // Size container
+        const maxW = colLefts[numGens - 1] + CARD_W + 80;
+        const maxH = Math.max(
+            ...positions[numGens - 1].map((p, i) => p.y + actualHeights[numGens - 1][i])
+        ) + 120;
+        wrap.style.width = maxW + 'px';
+        wrap.style.minHeight = maxH + 'px';
+
+        // === DRAW CONNECTORS ===
+        function drawLines() {
+            const wrapRect = wrap.getBoundingClientRect();
+            svg.setAttribute('width', wrap.scrollWidth);
+            svg.setAttribute('height', wrap.scrollHeight);
+            svg.innerHTML = '';
+
+            for (let g = 0; g < numGens - 1; g++) {
+                for (let i = 0; i < generations[g].length; i++) {
+                    const person = generations[g][i];
+                    const childCard = cards[g][i];
+                    const p1Idx = person.parentIndices[0];
+                    const p2Idx = person.parentIndices[1];
+                    const fatherCard = cards[g + 1][p1Idx];
+                    const motherCard = cards[g + 1][p2Idx];
+
+                    if (!childCard || !fatherCard || !motherCard) continue;
+
+                    const cRect = childCard.getBoundingClientRect();
+                    const fRect = fatherCard.getBoundingClientRect();
+                    const mRect = motherCard.getBoundingClientRect();
+
+                    const cx = (cRect.right - wrapRect.left);
+                    const cy = (cRect.top - wrapRect.top) + cRect.height / 2;
+
+                    const fx = (fRect.left - wrapRect.left);
+                    const fy = (fRect.top - wrapRect.top) + fRect.height / 2;
+                    const mx = (mRect.left - wrapRect.left);
+                    const my = (mRect.top - wrapRect.top) + mRect.height / 2;
+
+                    const jx = fx - JUNCT_DIST;
+                    const midY = (fy + my) / 2;
+
+                    // Curve from child to junction
+                    const curve = document.createElementNS(svgNS, 'path');
+                    curve.setAttribute('d', 'M' + cx + ',' + cy + ' C' + (cx + 20) + ',' + cy + ' ' + (jx - 10) + ',' + midY + ' ' + jx + ',' + midY);
+                    curve.setAttribute('stroke', '#ccc');
+                    curve.setAttribute('stroke-width', '1.5');
+                    curve.setAttribute('fill', 'none');
+                    svg.appendChild(curve);
+
+                    // Vertical line between parents
+                    const vLine = document.createElementNS(svgNS, 'line');
+                    vLine.setAttribute('x1', jx); vLine.setAttribute('y1', fy);
+                    vLine.setAttribute('x2', jx); vLine.setAttribute('y2', my);
+                    vLine.setAttribute('stroke', '#ccc');
+                    vLine.setAttribute('stroke-width', '1.5');
+                    svg.appendChild(vLine);
+
+                    // Horizontal to father
+                    const fLine = document.createElementNS(svgNS, 'line');
+                    fLine.setAttribute('x1', jx); fLine.setAttribute('y1', fy);
+                    fLine.setAttribute('x2', fx); fLine.setAttribute('y2', fy);
+                    fLine.setAttribute('stroke', '#ccc');
+                    fLine.setAttribute('stroke-width', '1.5');
+                    svg.appendChild(fLine);
+
+                    // Horizontal to mother
+                    const mLine = document.createElementNS(svgNS, 'line');
+                    mLine.setAttribute('x1', jx); mLine.setAttribute('y1', my);
+                    mLine.setAttribute('x2', mx); mLine.setAttribute('y2', my);
+                    mLine.setAttribute('stroke', '#ccc');
+                    mLine.setAttribute('stroke-width', '1.5');
+                    svg.appendChild(mLine);
+                }
+            }
+        }
+
+        drawLines();
+        scroll.addEventListener('scroll', drawLines);
+        window.addEventListener('resize', drawLines);
+
+        // Center horizontally on "You" initially
+        setTimeout(() => {
+            const rootCard = cards[0][0];
+            if (rootCard) {
+                const rRect = rootCard.getBoundingClientRect();
+                scroll.scrollLeft = 0;
+            }
+        }, 50);
+
+        // === ZOOM CONTROLS ===
+        let currentZoom = 1;
+        const zoomWrap = document.getElementById('zoomWrap');
+        const zoomLevel = document.getElementById('zoomLevel');
+        const ZOOM_STEP = 0.15;
+        const MIN_ZOOM = 0.25;
+        const MAX_ZOOM = 3;
+
+        function applyZoom() {
+            zoomWrap.style.transform = 'scale(' + currentZoom + ')';
+            zoomLevel.textContent = Math.round(currentZoom * 100) + '%';
+            // After zoom, redraw lines
+            setTimeout(drawLines, 250);
+        }
+
+        window.zoomIn = function() {
+            currentZoom = Math.min(currentZoom + ZOOM_STEP, MAX_ZOOM);
+            applyZoom();
+        };
+
+        window.zoomOut = function() {
+            currentZoom = Math.max(currentZoom - ZOOM_STEP, MIN_ZOOM);
+            applyZoom();
+        };
+
+        window.zoomReset = function() {
+            currentZoom = 1;
+            applyZoom();
+        };
+
+        // Pinch-to-zoom support on mobile
+        let initialDistance = 0;
+        let initialZoom = 1;
+
+        scroll.addEventListener('touchstart', (e) => {
+            if (e.touches.length === 2) {
+                initialDistance = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+                initialZoom = currentZoom;
+            }
+        });
+
+        scroll.addEventListener('touchmove', (e) => {
+            if (e.touches.length === 2) {
+                e.preventDefault();
+                const distance = Math.hypot(
+                    e.touches[0].pageX - e.touches[1].pageX,
+                    e.touches[0].pageY - e.touches[1].pageY
+                );
+                currentZoom = Math.min(Math.max(
+                    initialZoom * (distance / initialDistance),
+                    MIN_ZOOM
+                ), MAX_ZOOM);
+                applyZoom();
+            }
+        });
+    })();
+    </script>
+</body>
+</html>
