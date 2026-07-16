@@ -153,11 +153,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 /* Free Build cards */
 .fb-card {
-  position: absolute; width: 150px; background: #faf5eb;
+  position: absolute; width: 150px; height: 40px; background: #faf5eb;
   border: 1px solid #c9b896; border-radius: 4px; padding: 4px 8px;
   text-align: center; z-index: 2; cursor: pointer;
   box-shadow: 0 1px 4px var(--shadow-card);
-  min-height: 34px; transition: box-shadow 0.15s;
+  overflow: hidden; transition: box-shadow 0.15s;
 }
 .fb-card:hover { box-shadow: 0 2px 8px rgba(90, 60, 30, 0.20); }
 .fb-card .name {
@@ -515,7 +515,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .view-toggle button { padding: 4px 8px; font-size: 9px; }
   .gedcom-btn { padding: 5px 8px; font-size: 9px; }
   .header-btn { width: 30px; height: 28px; font-size: 14px; }
-  .fb-card { width: 120px; }
+  .fb-card { width: 120px; height: 34px; }
   .fb-card .name { font-size: 9px; }
   .fb-card .years { font-size: 8px; }
   .floating-toolbar { bottom: 8px; }
@@ -1224,11 +1224,26 @@ function parseGedcom(text) {
 // FREE BUILD LAYOUT ENGINE
 // ═══════════════════════════════════════════════════════════════
 
-const CARD_W = 150;
-const CARD_H = 40;
+// Card dimensions — must match CSS .fb-card width and height
+// Mobile media query (max-width: 600px) shrinks cards to 120x34
+let CARD_W = window.innerWidth <= 600 ? 120 : 150;
+let CARD_H = window.innerWidth <= 600 ? 34 : 40;
 const CARD_GAP_X = 30;
 const CARD_GAP_Y = 80;
 const COUPLE_GAP = 10;
+
+// Update card dimensions on viewport change
+function updateCardDimensions() {
+  const newW = window.innerWidth <= 600 ? 120 : 150;
+  const newH = window.innerWidth <= 600 ? 34 : 40;
+  if (newW !== CARD_W || newH !== CARD_H) {
+    CARD_W = newW;
+    CARD_H = newH;
+    renderFreeBuild();
+  }
+}
+
+window.addEventListener('resize', updateCardDimensions);
 
 function getVisiblePeople() {
   if (focusPersonId) {
