@@ -4924,20 +4924,6 @@ function attachGedcomListener() {
       e.target.value = '';
     });
   }
-  // Attach suggestion gate listener
-  const overlay = document.getElementById('suggestionOverlay');
-  if (overlay && !overlay._gateListening) {
-    overlay._gateListening = true;
-    overlay.addEventListener('click', function() {
-      checkMemberFeature('guidance_suggestions', function() {
-        const gate = document.getElementById('suggestionGate');
-        if (gate) {
-          const ov = document.getElementById('suggestionOverlay');
-          if (ov) ov.remove();
-        }
-      });
-    });
-  }
 }
 
 function renderGuidanceResults({ suggestions, stats }) {
@@ -4964,16 +4950,8 @@ function renderGuidanceResults({ suggestions, stats }) {
     return;
   }
 
-  html += '<div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#2a1f10;margin-bottom:8px;">Top Priority Suggestions <span class="member-badge-guidance">M</span></div>';
+  html += '<div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#2a1f10;margin-bottom:8px;">Top Priority Suggestions</div>';
   const icons = { BC: '📜', MC: '💍', DC: '⚰️' };
-
-  // Check if member popup for suggestions has been shown
-  var suggestionsGated = !localStorage.getItem('vr_member_shown_guidance_suggestions');
-  if (suggestionsGated) {
-    // Show suggestions but wrap in a click handler
-    html += '<div id="suggestionGate" style="position:relative;">';
-    html += '<div id="suggestionOverlay" style="position:absolute;top:0;left:0;right:0;bottom:0;background:rgba(245,238,220,0.92);z-index:5;display:flex;align-items:center;justify-content:center;cursor:pointer;border-radius:8px;"><div style="text-align:center;padding:20px;"><div style="font-size:28px;margin-bottom:6px;">🧭</div><div style="font-family:Cinzel Decorative,serif;font-size:14px;color:#3a2a10;">Tap to view suggestions</div><div style="font-size:11px;color:#8a6a3a;margin-top:4px;">Members feature — free during early access</div></div></div>';
-  }
 
   for (const s of suggestions) {
     const cls = s.priority === 'high' ? 'high' : (s.priority === 'med' ? 'med' : 'low');
@@ -4991,9 +4969,6 @@ function renderGuidanceResults({ suggestions, stats }) {
     html += '<a href="' + safeSourceUrl + '" target="_blank" rel="noopener" class="source-link">🔍 Search ' + safeSourceName + '</a>';
     html += '<span class="cost-note">🛒 ' + s.type + ' cert: ' + safeCost + '</span>';
     html += '</div></div>';
-  }
-  if (suggestionsGated) {
-    html += '</div>'; // close suggestionGate
   }
   html += '<div style="border-top:2px solid #c4b89a;margin-top:16px;padding-top:12px;">';
   html += '<button onclick="showPrivacyModal()" style="width:100%;text-align:left;background:rgba(250,244,230,0.6);border:1px solid rgba(138,122,90,0.3);border-radius:6px;padding:10px 12px;font-family:\'Cinzel Decorative\',serif;font-size:13px;color:#2a1f10;cursor:pointer;display:flex;justify-content:space-between;align-items:center;">';
