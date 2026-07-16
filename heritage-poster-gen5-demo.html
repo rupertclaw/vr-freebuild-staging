@@ -1,0 +1,4003 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Family Tree — Grid Template</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@400;700&family=Cormorant+Garamond:wght@400;600&display=swap');
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { width: 100%; height: 100%; overflow: hidden; background: #0c0803; }
+
+.viewport {
+  width: 100vw; height: 100vh; overflow: auto;
+  background: radial-gradient(ellipse at center bottom, #3a2a15 0%, #0c0803 70%);
+  -webkit-overflow-scrolling: touch;
+  overscroll-behavior: contain;
+}
+.scroll-wrapper {
+  display: inline-flex;
+  padding: 20px;
+}
+.poster-wrap {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+.poster {
+  position: relative;
+  width: 1408px; height: 768px;
+  flex-shrink: 0;
+  background: url('template-bg-v1.png') no-repeat center center;
+  background-size: 100% 100%;
+  border: 14px solid #1e140a;
+  box-shadow: 0 0 50px rgba(0,0,0,0.8);
+}
+
+/* Grid overlay */
+.grid-overlay {
+  position: absolute; top: 0; left: 0;
+  width: 100%; height: 100%;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+.grid-overlay.active { opacity: 1; }
+.grid-line-h {
+  position: absolute; left: 0; right: 0;
+  border-top: 1.5px dashed rgba(255,30,30,0.55);
+}
+.grid-line-v {
+  position: absolute; top: 0; bottom: 0;
+  border-left: 1.5px dashed rgba(255,30,30,0.55);
+}
+.grid-label-x {
+  position: absolute; bottom: -22px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; color: rgba(255,30,30,0.85);
+  font-weight: 600;
+  transform: translateX(-50%);
+  background: rgba(253,243,216,0.85);
+  padding: 1px 5px;
+  border-radius: 3px;
+  line-height: 1;
+}
+.grid-label-y {
+  position: absolute; left: -28px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; color: rgba(255,30,30,0.85);
+  font-weight: 600;
+  transform: translateY(-50%);
+  background: rgba(253,243,216,0.85);
+  padding: 1px 5px;
+  border-radius: 3px;
+  line-height: 1;
+}
+.grid-toggle {
+  position: fixed; top: 20px; left: 20px;
+  z-index: 200;
+  padding: 10px 20px;
+  background: #e8dcc8; border: 2px solid #6b5537;
+  border-radius: 6px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 14px; color: #1e140a;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+.grid-toggle:active { transform: scale(0.95); }
+
+.zoom-controls {
+  position: fixed; bottom: 20px; left: 20px;
+  z-index: 200; display: flex; flex-direction: column; gap: 8px;
+}
+.zoom-btn {
+  width: 44px; height: 44px; border-radius: 50%;
+  border: 2px solid #6b5537; background: #e8dcc8; color: #1e140a;
+  font-size: 20px; font-family: 'Cinzel Decorative', serif;
+  cursor: pointer; box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+  display: flex; align-items: center; justify-content: center;
+  user-select: none;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+}
+.zoom-btn:active { transform: scale(0.92); }
+.zoom-level {
+  text-align: center; font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; color: #e8dcc8; font-weight: 600;
+}
+
+/* Nameplate Style B — Ornate Border */
+.nameplate {
+  position: absolute;
+  background: rgba(250, 244, 230, 0.94);
+  border: 2px solid #4a3a22;
+  border-radius: 2px;
+  padding: 6px 14px;
+  text-align: center;
+  z-index: 50;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.25);
+  transform: translate(-50%, -50%);
+  cursor: pointer;
+}
+.nameplate::before {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px; right: 2px; bottom: 2px;
+  border: 1px solid #8a7a5a;
+  pointer-events: none;
+  border-radius: 1px;
+}
+.nameplate .name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 10px;
+  color: #2a1f10;
+  letter-spacing: 0.5px;
+  line-height: 1.15;
+  max-width: 140px;
+}
+.nameplate[data-gen="1"] {
+  padding: 4px 10px;
+}
+.nameplate[data-gen="1"] .name {
+  font-size: 9px;
+  max-width: 130px;
+}
+.nameplate[data-gen="2"] {
+  padding: 5px 12px;
+}
+.nameplate[data-gen="2"] .name {
+  font-size: 9px;
+  max-width: 150px;
+}
+.nameplate[data-gen="3"] .name {
+  max-width: 140px;
+  font-size: 9px;
+}
+.nameplate[data-gen="4"] {
+  padding: 3px 8px;
+}
+.nameplate[data-gen="4"] .name {
+  max-width: 110px;
+  font-size: 8px;
+}
+.nameplate[data-gen="4"] .years {
+  display: none;
+}
+.nameplate[data-gen="5"] .name {
+  max-width: 150px;
+  font-size: 9px;
+}
+.nameplate[data-gen="5"] .years {
+  display: none;
+}
+.nameplate .years {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 9px;
+  color: #7a6545;
+  margin-top: 1px;
+  font-style: italic;
+  white-space: nowrap;
+}
+
+/* Detail panel */
+.detail-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.6);
+  z-index: 300;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.detail-overlay.active { opacity: 1; pointer-events: auto; }
+
+.detail-panel {
+  position: fixed;
+  top: 0; right: 0; bottom: 0;
+  width: 320px;
+  max-width: 85vw;
+  background: #f5eedc;
+  border-left: 4px solid #4a3a22;
+  z-index: 310;
+  transform: translateX(100%);
+  transition: transform 0.35s ease;
+  display: flex; flex-direction: column;
+  box-shadow: -5px 0 30px rgba(0,0,0,0.5);
+}
+.detail-panel.active { transform: translateX(0); }
+
+.detail-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 36px; height: 36px;
+  border-radius: 50%;
+  border: 2px solid #6b5537;
+  background: #e8dcc8;
+  color: #1e140a;
+  font-size: 20px;
+  font-family: 'Cinzel Decorative', serif;
+  cursor: pointer;
+  display: flex; align-items: center; justify-content: center;
+  z-index: 5;
+}
+.detail-close:active { transform: scale(0.92); }
+
+.detail-header {
+  padding: 50px 24px 24px;
+  text-align: center;
+  border-bottom: 2px solid #4a3a22;
+  background: rgba(250,244,230,0.6);
+}
+.detail-header .detail-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 18px;
+  color: #2a1f10;
+  letter-spacing: 0.5px;
+  cursor: pointer; border-bottom: 1px dashed transparent; transition: border-color 0.2s;
+}
+.detail-header .detail-name:hover { border-bottom-color: #8a7a5a; }
+.detail-header .detail-years {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px;
+  color: #7a6545;
+  margin-top: 4px;
+  font-style: italic;
+  cursor: pointer; border-bottom: 1px dashed transparent; transition: border-color 0.2s;
+}
+.detail-header .detail-years:hover { border-bottom-color: #8a7a5a; }
+.detail-edit-input {
+  width: 90%; padding: 4px 8px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 16px; font-weight: 600;
+  color: #2a1f10; background: #fdf7e8;
+  border: 1px solid #8a7a5a; border-radius: 2px;
+  text-align: center; outline: none;
+}
+.detail-edit-input:focus { border-color: #4a3a22; box-shadow: 0 0 3px rgba(74,58,34,0.3); }
+
+.detail-body {
+  flex: 1;
+  overflow-y: auto;
+  padding: 20px 24px;
+  -webkit-overflow-scrolling: touch;
+}
+.detail-section-title {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 12px;
+  color: #6b5537;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 12px;
+  text-align: center;
+}
+.detail-parents {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+.detail-parent-card {
+  background: rgba(250,244,230,0.94);
+  border: 2px solid #4a3a22;
+  border-radius: 2px;
+  padding: 10px 16px;
+  text-align: center;
+  cursor: pointer;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+  position: relative;
+}
+.detail-parent-card::before {
+  content: '';
+  position: absolute;
+  top: 2px; left: 2px; right: 2px; bottom: 2px;
+  border: 1px solid #8a7a5a;
+  pointer-events: none;
+  border-radius: 1px;
+}
+.detail-parent-card .p-name {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 12px;
+  color: #2a1f10;
+  letter-spacing: 0.5px;
+}
+.detail-parent-card .p-years {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 10px;
+  color: #7a6545;
+  margin-top: 2px;
+  font-style: italic;
+}
+.detail-parent-card .p-label {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 9px;
+  color: #9a8565;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  margin-bottom: 4px;
+}
+.detail-parent-card:active { transform: scale(0.98); }
+.doc-badge {
+  display: inline-block;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 10px;
+  font-weight: 700;
+  color: #2a1f10;
+  background: #ede4ce;
+  border: 1px solid #8a7a5a;
+  border-radius: 2px;
+  padding: 3px 8px;
+  letter-spacing: 0.5px;
+  text-transform: uppercase;
+}
+
+/* Gen 6 reveal cards */
+.gen6-card {
+  border-style: dashed;
+  opacity: 0;
+  animation: gen6fade 0.3s ease forwards;
+}
+@keyframes gen6fade {
+  to { opacity: 1; }
+}
+
+/* Coord readout */
+.coord-readout {
+  position: fixed; top: 20px; right: 20px;
+  z-index: 200;
+  background: rgba(0,0,0,0.75);
+  color: #e8dcc8;
+  padding: 10px 16px;
+  border-radius: 6px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px;
+  pointer-events: none;
+  border: 1px solid rgba(255,255,255,0.15);
+}
+
+/* Edit mode */
+.edit-toggle {
+  position: fixed; top: 20px; left: 140px;
+  z-index: 200;
+  padding: 10px 20px;
+  background: #e8dcc8; border: 2px solid #6b5537;
+  border-radius: 6px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 14px; color: #1e140a;
+  cursor: pointer;
+  box-shadow: 0 3px 10px rgba(0,0,0,0.3);
+}
+.edit-toggle.active {
+  background: #4a3a22; color: #e8dcc8; border-color: #8a7a5a;
+}
+.edit-toggle:active { transform: scale(0.95); }
+
+/* Cert upload panel */
+.cert-overlay {
+  position: fixed; inset: 0;
+  background: rgba(0,0,0,0.7);
+  z-index: 400;
+  opacity: 0; pointer-events: none;
+  transition: opacity 0.3s;
+}
+.cert-overlay.active { opacity: 1; pointer-events: auto; }
+
+.cert-panel {
+  position: fixed; top: 0; right: 0; bottom: 0;
+  width: 380px; max-width: 90vw;
+  background: #f5eedc;
+  border-left: 4px solid #4a3a22;
+  z-index: 410;
+  transform: translateX(100%);
+  transition: transform 0.35s ease;
+  display: flex; flex-direction: column;
+  box-shadow: -5px 0 30px rgba(0,0,0,0.5);
+  overflow-y: auto;
+}
+.cert-panel.active { transform: translateX(0); }
+
+.cert-header {
+  padding: 20px 24px;
+  text-align: center;
+  border-bottom: 2px solid #4a3a22;
+  background: rgba(250,244,230,0.6);
+}
+.cert-header h2 {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 16px; color: #2a1f10;
+  letter-spacing: 0.5px;
+}
+.cert-header p {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; color: #7a6545;
+  margin-top: 4px; font-style: italic;
+}
+
+.cert-body { padding: 20px 24px; flex: 1; }
+
+.cert-type-selector {
+  display: flex; gap: 8px; margin-bottom: 16px;
+}
+.cert-type-btn {
+  flex: 1; padding: 8px 4px;
+  background: #e8dcc8; border: 2px solid #6b5537;
+  border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 11px; color: #1e140a;
+  cursor: pointer; text-align: center;
+}
+.cert-type-btn.active {
+  background: #4a3a22; color: #e8dcc8; border-color: #8a7a5a;
+}
+
+.cert-upload-area {
+  border: 2px dashed #6b5537;
+  border-radius: 8px;
+  padding: 24px;
+  text-align: center;
+  cursor: pointer;
+  margin-bottom: 16px;
+  background: rgba(232,220,200,0.3);
+  transition: background 0.2s;
+}
+.cert-upload-area:hover { background: rgba(232,220,200,0.6); }
+.cert-upload-area input { display: none; }
+.cert-upload-icon { font-size: 32px; margin-bottom: 8px; }
+.cert-upload-text {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px; color: #4a3a22;
+}
+.cert-upload-hint {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 11px; color: #7a6545; margin-top: 4px;
+}
+
+.cert-preview-img {
+  width: 100%; border: 2px solid #6b5537;
+  border-radius: 4px; margin-bottom: 16px;
+}
+
+.cert-status {
+  text-align: center; padding: 16px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 14px; color: #7a6545;
+}
+.cert-status.scan {
+  color: #4a3a22;
+  font-weight: 600;
+  animation: pulse 1.5s infinite;
+}
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+
+.cert-results {
+  margin-top: 12px;
+}
+.cert-result-card {
+  background: rgba(250,244,230,0.94);
+  border: 2px solid #4a3a22;
+  border-radius: 2px;
+  padding: 10px 14px;
+  margin-bottom: 10px;
+  position: relative;
+  cursor: pointer;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
+}
+.cert-result-card::before {
+  content: ''; position: absolute;
+  top: 2px; left: 2px; right: 2px; bottom: 2px;
+  border: 1px solid #8a7a5a;
+  pointer-events: none; border-radius: 1px;
+}
+.cert-result-card .field {
+  display: flex; justify-content: space-between;
+  align-items: baseline; padding: 3px 0;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px;
+}
+.cert-result-card .field-label {
+  color: #7a6545; font-size: 11px; text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+.cert-result-card .field-value {
+  color: #2a1f10; font-weight: 600; text-align: right;
+  cursor: pointer; min-width: 60px; display: inline-block;
+  border-bottom: 1px dashed transparent; transition: border-color 0.2s;
+}
+.cert-result-card .field-value:hover {
+  border-bottom-color: #8a7a5a;
+}
+.cert-result-card .field-value.low {
+  color: #b85c00; background: rgba(255,200,100,0.2);
+  padding: 1px 4px; border-radius: 2px;
+}
+.cert-result-card.selected {
+  border-color: #8a7a5a; background: rgba(250,244,230,0.98);
+  box-shadow: 0 0 0 3px rgba(138,122,90,0.4); cursor: pointer;
+}
+.cert-edit-input {
+  width: 120px; padding: 2px 4px;
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 13px; font-weight: 600;
+  color: #2a1f10; background: #fdf7e8;
+  border: 1px solid #8a7a5a; border-radius: 2px;
+  text-align: right; outline: none;
+}
+.cert-edit-input:focus { border-color: #4a3a22; box-shadow: 0 0 3px rgba(74,58,34,0.3); }
+
+.cert-actions {
+  display: flex; gap: 10px; margin-top: 16px;
+}
+.cert-btn {
+  flex: 1; padding: 10px 16px;
+  border: 2px solid #6b5537;
+  border-radius: 4px;
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 12px; cursor: pointer; text-align: center;
+}
+.cert-btn.primary {
+  background: #4a3a22; color: #e8dcc8;
+}
+.cert-btn.secondary {
+  background: #e8dcc8; color: #1e140a;
+}
+.cert-btn:active { transform: scale(0.95); }
+.cert-btn:disabled { opacity: 0.4; cursor: not-allowed; }
+
+.cert-close {
+  position: absolute; top: 12px; right: 12px;
+  width: 36px; height: 36px; border-radius: 50%;
+  border: 2px solid #6b5537; background: #e8dcc8;
+  color: #1e140a; font-size: 20px;
+  font-family: 'Cinzel Decorative', serif;
+  cursor: pointer; z-index: 5;
+  display: flex; align-items: center; justify-content: center;
+}
+.cert-close:active { transform: scale(0.92); }
+.poster-icon-btn {
+  width: 38px; height: 38px;
+  padding: 0;
+  border: none;
+  border-radius: 6px;
+  font-size: 18px;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+  transition: transform 0.1s;
+}
+.poster-icon-btn:active { transform: scale(0.92); }
+
+/* Heraldic banner above the tree */
+.poster-banner {
+  position: absolute;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 10;
+  padding: 10px 36px;
+  background: rgba(30, 20, 10, 0.88);
+  border: 2px solid #b89a5e;
+  border-radius: 4px;
+  box-shadow: 0 4px 16px rgba(0,0,0,0.5);
+  pointer-events: none;
+}
+.poster-banner-text {
+  font-family: 'Cinzel Decorative', serif;
+  font-size: 15px;
+  color: #c9a96e;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  text-align: center;
+  white-space: nowrap;
+}
+.poster-banner-name {
+  font-size: 20px;
+  color: #f5dca0;
+  font-weight: 700;
+  letter-spacing: 2px;
+}
+
+@media print {
+  @page { size: landscape; margin: 6mm; }
+
+  /* Hide all UI chrome */
+  .zoom-controls,
+  .edit-toggle,
+  .grid-toggle,
+  .coord-readout,
+  .detail-panel,
+  .detail-overlay,
+  .cert-panel,
+  .cert-overlay,
+  .guide-panel,
+  .guide-overlay,
+  [style*="position:fixed"][style*="bottom:16px"],
+  [style*="position:fixed"][style*="bottom: 16px"] { display: none !important; }
+
+  /* Clean page */
+  body { background: white !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .viewport { background: white !important; overflow: visible !important; width: auto !important; height: auto !important; }
+  .scroll-wrapper { padding: 0 !important; }
+
+  /* Poster: scale to fit landscape page (A4 ≈ 1123×794px at 96dpi) */
+  .poster-wrap { justify-content: center !important; align-items: flex-start !important; }
+  .poster {
+    zoom: 0.75 !important;
+    border: 2px solid #1e140a !important;
+    box-shadow: none !important;
+    margin: 0 !important;
+    page-break-inside: avoid;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+
+  /* Ensure text stays readable */
+  .nameplate { opacity: 1 !important; -webkit-print-color-adjust: exact; print-color-adjust: exact; }
+  .grid-overlay { display: none !important; }
+
+  /* Banner prints dark with gold text */
+  .poster-banner {
+    background: rgba(30, 20, 10, 0.9) !important;
+    border-color: #b89a5e !important;
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+  }
+  .poster-banner-text {
+    color: #c9a96e !important;
+  }
+  .poster-banner-name {
+    color: #f5dca0 !important;
+  }
+}
+</style>
+</head>
+<body>
+
+<div class="viewport" id="viewport">
+<div class="scroll-wrapper">
+<div class="poster-wrap">
+<div class="poster" id="poster">
+
+<!-- Heraldic banner — shows the subject's family name -->
+<div class="poster-banner" id="posterBanner">
+  <div class="poster-banner-text">
+    The <span class="poster-banner-name" id="bannerName">Family</span> Family Tree
+  </div>
+</div>
+
+<!-- Gen 0: Subject -->
+<div class="nameplate" data-gen="0" data-slot="subject" style="left: 696px; top: 576px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+
+<!-- Gen 1: Parents -->
+<div class="nameplate" data-gen="1" data-slot="father" style="left: 649px; top: 526px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="1" data-slot="mother" style="left: 747px; top: 526px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+
+<!-- Gen 2: Grandparents -->
+<div class="nameplate" data-gen="2" data-slot="paternal-grandfather" style="left: 228px; top: 476px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="2" data-slot="paternal-grandmother" style="left: 541px; top: 476px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="2" data-slot="maternal-grandfather" style="left: 854px; top: 476px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="2" data-slot="maternal-grandmother" style="left: 1167px; top: 476px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+
+<!-- Gen 3: Great-grandparents -->
+<div class="nameplate" data-gen="3" data-slot="pat-pat-grandfather" style="left: 150px; top: 426px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="3" data-slot="pat-pat-grandmother" style="left: 307px; top: 426px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="3" data-slot="pat-mat-grandfather" style="left: 463px; top: 426px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="3" data-slot="pat-mat-grandmother" style="left: 620px; top: 426px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="3" data-slot="mat-pat-grandfather" style="left: 776px; top: 426px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="3" data-slot="mat-pat-grandmother" style="left: 932px; top: 426px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="3" data-slot="mat-mat-grandfather" style="left: 1089px; top: 426px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="3" data-slot="mat-mat-grandmother" style="left: 1245px; top: 426px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+
+<!-- Gen 4: Great-great-grandparents — arched layout, pairs stay together -->
+<div class="nameplate" data-gen="4" data-slot="pat-pat-pat-grandfather" style="left: 111px; top: 376px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="pat-pat-pat-grandmother" style="left: 189px; top: 376px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandfather" style="left: 268px; top: 366px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="pat-pat-mat-grandmother" style="left: 346px; top: 366px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandfather" style="left: 424px; top: 356px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="pat-mat-pat-grandmother" style="left: 502px; top: 356px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandfather" style="left: 580px; top: 346px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="pat-mat-mat-grandmother" style="left: 659px; top: 346px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandfather" style="left: 737px; top: 346px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="mat-pat-pat-grandmother" style="left: 815px; top: 346px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandfather" style="left: 893px; top: 356px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="mat-pat-mat-grandmother" style="left: 972px; top: 356px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandfather" style="left: 1050px; top: 366px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="mat-mat-pat-grandmother" style="left: 1128px; top: 366px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandfather" style="left: 1206px; top: 376px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+<div class="nameplate" data-gen="4" data-slot="mat-mat-mat-grandmother" style="left: 1284px; top: 376px;">
+  <div class="name">Name</div>
+  <div class="years">YYYY — YYYY</div>
+</div>
+
+<!-- Gen 5: Double-stacked great-great-great-grandparents -->
+<!-- Upper row (fathers of gen 4) -->
+<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-pat-grandfather" style="left: 111px; top: 282px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-mat-grandfather" style="left: 189px; top: 251px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-pat-grandfather" style="left: 268px; top: 224px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-mat-grandfather" style="left: 346px; top: 202px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-pat-grandfather" style="left: 424px; top: 184px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-mat-grandfather" style="left: 502px; top: 171px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-pat-grandfather" style="left: 580px; top: 161px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-mat-grandfather" style="left: 659px; top: 157px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-pat-grandfather" style="left: 737px; top: 157px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-mat-grandfather" style="left: 815px; top: 161px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-pat-grandfather" style="left: 893px; top: 171px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-mat-grandfather" style="left: 972px; top: 184px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-pat-grandfather" style="left: 1050px; top: 202px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-mat-grandfather" style="left: 1128px; top: 224px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-pat-grandfather" style="left: 1206px; top: 251px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-mat-grandfather" style="left: 1284px; top: 282px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<!-- Lower row (mothers of gen 4) -->
+<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-pat-grandmother" style="left: 111px; top: 315px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-pat-mat-grandmother" style="left: 189px; top: 283px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-pat-grandmother" style="left: 268px; top: 257px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-pat-mat-mat-grandmother" style="left: 346px; top: 235px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-pat-grandmother" style="left: 424px; top: 217px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-pat-mat-grandmother" style="left: 502px; top: 204px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-pat-grandmother" style="left: 580px; top: 194px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="pat-mat-mat-mat-grandmother" style="left: 659px; top: 190px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-pat-grandmother" style="left: 737px; top: 190px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-pat-mat-grandmother" style="left: 815px; top: 194px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-pat-grandmother" style="left: 893px; top: 204px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-pat-mat-mat-grandmother" style="left: 972px; top: 217px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-pat-grandmother" style="left: 1050px; top: 235px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-pat-mat-grandmother" style="left: 1128px; top: 257px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-pat-grandmother" style="left: 1206px; top: 283px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+<div class="nameplate" data-gen="5" data-slot="mat-mat-mat-mat-grandmother" style="left: 1284px; top: 315px;"><div class="name">Name</div><div class="years">YYYY — YYYY</div></div>
+
+<!-- NO PRE-PLACED NAMEPLATES — tell me where they go -->
+
+</div>
+</div>
+</div>
+</div>
+
+<div class="detail-overlay" id="detailOverlay"></div>
+<div class="detail-panel" id="detailPanel">
+  <button class="detail-close" id="detailClose" onclick="closeDetail()">×</button>
+  <div class="detail-header">
+    <div class="detail-name" id="detailName">Name</div>
+    <div class="detail-years" id="detailYears">YYYY — YYYY</div>
+    <div class="detail-maiden" id="detailMaiden" style="display:none;font-family:'Cormorant Garamond',serif;font-size:11px;color:#9a8565;text-align:center;margin-top:2px;font-style:italic;"></div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;text-align:center;margin-top:4px;font-style:italic;">Tap name or dates to edit</div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-section-title">Parents</div>
+    <div class="detail-parents" id="detailParents">
+      <div class="detail-parent-card" id="parent1">
+        <div class="p-label">Father</div>
+        <div class="p-name">Name</div>
+        <div class="p-years">YYYY — YYYY</div>
+      </div>
+      <div class="detail-parent-card" id="parent2">
+        <div class="p-label">Mother</div>
+        <div class="p-name">Name</div>
+        <div class="p-years">YYYY — YYYY</div>
+      </div>
+    </div>
+    <div class="detail-section-title" style="margin-top:16px;">Siblings</div>
+    <div id="detailSiblings" style="display:flex;flex-direction:column;gap:6px;align-items:center;">
+      <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;font-style:italic;">No siblings recorded</div>
+    </div>
+    <div id="addSiblingWrap" style="display:flex;gap:6px;justify-content:center;margin-top:8px;">
+      <input type="text" id="siblingInput" placeholder="Sibling name" style="font-family:'Cormorant Garamond',serif;font-size:11px;padding:4px 8px;border:1px solid #c9b896;border-radius:4px;background:rgba(255,255,255,0.5);color:#3e3225;width:120px;outline:none;">
+      <button id="addSiblingBtn" style="font-family:'Cormorant Garamond',serif;font-size:11px;padding:4px 10px;border:none;border-radius:4px;background:#3e3225;color:#f0e6d2;cursor:pointer;">Add</button>
+    </div>
+    <div class="detail-section-title" style="margin-top:16px;">Documents</div>
+    <div id="detailDocs" style="display:flex;gap:6px;justify-content:center;flex-wrap:wrap;"></div>
+    <div id="detailDocThumbs" style="display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-top:8px;max-height:120px;overflow-y:auto;"></div>
+  </div>
+</div>
+
+<div class="zoom-controls">
+  <button class="zoom-btn" id="zoomIn" onclick="zoomIn()">+</button>
+  <div class="zoom-level" id="zoomLevel">100%</div>
+  <button class="zoom-btn" id="zoomOut" onclick="zoomOut()">−</button>
+  <button class="zoom-btn" id="zoomReset" onclick="zoomReset()">↻</button>
+</div>
+
+<div style="position:fixed;bottom:16px;left:16px;display:flex;gap:6px;z-index:200;">
+  <button class="poster-icon-btn" id="saveSessionBtn" title="Save session" style="background:#3e3225;color:#f0e6d2;" onclick="hpSaveSession()">💾</button>
+  <button class="poster-icon-btn" id="loadSessionBtn" title="Load session" style="background:#3e3225;color:#f0e6d2;" onclick="hpLoadSession()">📂</button>
+  <button class="poster-icon-btn" id="guideBtn" title="Next steps" style="background:#5a7a3a;color:#f0e6d2;" onclick="openGuide()">📖</button>
+  <button class="poster-icon-btn" id="backToTreeBtn" title="Back to tree" style="background:#3e5a8a;color:#f0e6d2;" onclick="hpBackToTree()">🌳</button>
+  <button class="poster-icon-btn" id="prevSubjectBtn" title="Previous person" style="background:#8a6a3a;color:#f0e6d2;display:none;" onclick="hpPrevSubject()">⬅️</button>
+  <button class="poster-icon-btn" id="printBtn" title="Print / PDF" style="background:#5a3a2a;color:#f0e6d2;" onclick="hpPrintPDF()">🖨️</button>
+  <input type="file" id="sessionFileInput" accept=".familytree,.json,application/json" style="display:none;">
+</div>
+
+<!-- Cert upload panel -->
+<div class="cert-overlay" id="certOverlay"></div>
+<div class="cert-panel" id="certPanel">
+  <button class="cert-close" id="certClose" onclick="closeCertPanel()">×</button>
+  <div class="cert-header">
+    <h2>Scan Certificate</h2>
+    <p>Snap a photo or upload an image</p>
+  </div>
+  <div class="cert-body">
+    <div class="cert-type-selector">
+      <button class="cert-type-btn active" data-type="auto">Auto</button>
+      <button class="cert-type-btn" data-type="birth">Birth</button>
+      <button class="cert-type-btn" data-type="marriage">Marriage</button>
+      <button class="cert-type-btn" data-type="death">Death</button>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;gap:8px;margin:8px 0;font-family:Cormorant Garamond,serif;font-size:11px;color:#5a4a32;">
+      <label style="display:flex;align-items:center;gap:4px;cursor:pointer;">
+        <input type="checkbox" id="keepDocsToggle" checked style="cursor:pointer;">
+        Keep document images with tree
+      </label>
+    </div>
+    <div class="cert-upload-area" id="certUploadArea">
+      <input type="file" id="certFileInput" accept="image/*">
+      <div class="cert-upload-icon">📷</div>
+      <div class="cert-upload-text">Tap to upload certificate</div>
+      <div class="cert-upload-hint">Camera or photo library</div>
+    </div>
+    <div id="certPreviewArea" style="display:none;">
+      <img class="cert-preview-img" id="certPreviewImg">
+    </div>
+    <div class="cert-status" id="certStatus" style="display:none;"></div>
+    <button class="cert-btn secondary" id="certRetry" style="display:none;margin-top:8px;">Try Again</button>
+    <div class="cert-results" id="certResults"></div>
+    <div class="cert-actions" id="certActions" style="display:none;">
+      <button class="cert-btn secondary" id="certCancel">Cancel</button>
+      <button class="cert-btn secondary" id="certRetryScan">Retry Scan</button>
+      <button class="cert-btn secondary" id="certSwapParents" style="display:none;">↔ Swap Parents</button>
+      <button class="cert-btn primary" id="certConfirm" disabled>Apply to Tree</button>
+    </div>
+  </div>
+</div>
+
+<!-- Research Guidance panel -->
+<div class="cert-overlay" id="guideOverlay"></div>
+<div class="cert-panel" id="guidePanel">
+  <button class="cert-close" id="guideClose" onclick="closeGuide()">×</button>
+  <div class="cert-header">
+    <h2>Research Guidance</h2>
+    <p>What to get next and where to find it</p>
+  </div>
+  <div class="cert-body" id="guideBody">
+    <div id="guideResults"></div>
+  </div>
+</div>
+
+<script>
+// Grid config
+const cols = 32;
+const rows = 16;
+const w = 1408;
+const h = 768;
+const cellW = w / cols;
+const cellH = h / rows;
+
+const gridOverlay = document.getElementById('gridOverlay');
+const gridToggle = document.getElementById('gridToggle');
+const poster = document.getElementById('poster');
+
+// Build grid
+if (gridOverlay && gridToggle) {
+  for (let i = 0; i <= cols; i++) {
+    const x = i * cellW;
+    const line = document.createElement('div');
+    line.className = 'grid-line-v';
+    line.style.left = x + 'px';
+    gridOverlay.appendChild(line);
+
+    if (i < cols && i % 5 === 0) {
+      const label = document.createElement('div');
+      label.className = 'grid-label-x';
+      label.style.left = (x + cellW/2) + 'px';
+      label.textContent = i;
+      gridOverlay.appendChild(label);
+    }
+  }
+
+  for (let i = 0; i <= rows; i++) {
+    const y = i * cellH;
+    const line = document.createElement('div');
+    line.className = 'grid-line-h';
+    line.style.top = y + 'px';
+    gridOverlay.appendChild(line);
+
+    if (i < rows && i % 5 === 0) {
+      const label = document.createElement('div');
+      label.className = 'grid-label-y';
+      label.style.top = (y + cellH/2) + 'px';
+      label.textContent = i;
+      gridOverlay.appendChild(label);
+    }
+  }
+
+  gridToggle.addEventListener('click', () => {
+    gridOverlay.classList.toggle('active');
+    gridToggle.textContent = gridOverlay.classList.contains('active') ? 'Hide Grid' : 'Show Grid';
+  });
+} else {
+  // Grid elements missing from DOM: silently skip grid features
+  console.warn('[heritage-poster] gridOverlay or gridToggle not found in DOM; skipping grid features');
+}
+
+// Coordinate readout on hover
+const coordReadout = document.getElementById('coordReadout');
+poster.addEventListener('mousemove', (e) => {
+  const rect = poster.getBoundingClientRect();
+  const x = (e.clientX - rect.left) / scale;
+  const y = (e.clientY - rect.top) / scale;
+  const col = Math.round(x / cellW);
+  const row = Math.round(y / cellH);
+  coordReadout.textContent = `Col: ${col}, Row: ${row} | Pixel: ${Math.round(x)}, ${Math.round(y)}`;
+});
+
+// Zoom
+let scale = 1;
+const zoomLevel = document.getElementById('zoomLevel');
+
+function updateZoom() {
+  poster.style.zoom = scale;
+  zoomLevel.textContent = Math.round(scale * 100) + '%';
+}
+
+function zoomHandler(delta) {
+  scale = Math.min(Math.max(scale + delta, 0.15), 3);
+  updateZoom();
+}
+
+function zoomIn() { zoomHandler(0.2); }
+function zoomOut() { zoomHandler(-0.2); }
+function zoomReset() { scale = 1; updateZoom(); }
+
+document.getElementById('zoomIn').addEventListener('click', zoomIn);
+document.getElementById('zoomOut').addEventListener('click', zoomOut);
+document.getElementById('zoomReset').addEventListener('click', zoomReset);
+// Touch support for zoom buttons on mobile
+document.getElementById('zoomIn').addEventListener('touchstart', (e) => { e.preventDefault(); zoomIn(); }, {passive: false});
+document.getElementById('zoomOut').addEventListener('touchstart', (e) => { e.preventDefault(); zoomOut(); }, {passive: false});
+document.getElementById('zoomReset').addEventListener('touchstart', (e) => { e.preventDefault(); zoomReset(); }, {passive: false});
+
+// Pinch-to-zoom on the poster (for browsers where CSS zoom doesn't work)
+let pinchStartDist = 0;
+let pinchStartScale = 1;
+let pinchActive = false;
+
+poster.addEventListener('touchstart', (e) => {
+  if (e.touches.length === 2) {
+    pinchActive = true;
+    pinchStartDist = Math.hypot(
+      e.touches[0].pageX - e.touches[1].pageX,
+      e.touches[0].pageY - e.touches[1].pageY
+    );
+    pinchStartScale = scale;
+  }
+}, {passive: true});
+
+poster.addEventListener('touchmove', (e) => {
+  if (pinchActive && e.touches.length === 2) {
+    e.preventDefault();
+    const dist = Math.hypot(
+      e.touches[0].pageX - e.touches[1].pageX,
+      e.touches[0].pageY - e.touches[1].pageY
+    );
+    const ratio = dist / pinchStartDist;
+    scale = Math.min(Math.max(pinchStartScale * ratio, 0.15), 3);
+    updateZoom();
+  }
+}, {passive: false});
+
+poster.addEventListener('touchend', () => { pinchActive = false; });
+poster.addEventListener('touchcancel', () => { pinchActive = false; });
+
+// Detail panel
+const detailPanel = document.getElementById('detailPanel');
+const detailOverlay = document.getElementById('detailOverlay');
+const detailClose = document.getElementById('detailClose');
+const detailName = document.getElementById('detailName');
+const detailYears = document.getElementById('detailYears');
+const detailMaiden = document.getElementById('detailMaiden');
+const parent1 = document.getElementById('parent1');
+const parent2 = document.getElementById('parent2');
+
+const detailDocs = document.getElementById('detailDocs');
+const detailDocThumbs = document.getElementById('detailDocThumbs');
+const detailSiblings = document.getElementById('detailSiblings');
+const siblingInput = document.getElementById('siblingInput');
+const addSiblingBtn = document.getElementById('addSiblingBtn');
+
+// Siblings data: { slotName: ['Name 1', 'Name 2', ...] }
+let slotSiblings = JSON.parse(localStorage.getItem('slotSiblings') || '{}');
+
+function saveSiblings() {
+  localStorage.setItem('slotSiblings', JSON.stringify(slotSiblings));
+}
+
+function getSiblings(slot) {
+  return slotSiblings[slot] || [];
+}
+
+function addSibling(slot, name) {
+  if (!name || !slot) return;
+  if (!slotSiblings[slot]) slotSiblings[slot] = [];
+  slotSiblings[slot].push(name.trim());
+  saveSiblings();
+  updateSiblingBadge(slot);
+}
+
+function removeSibling(slot, index) {
+  if (!slotSiblings[slot]) return;
+  slotSiblings[slot].splice(index, 1);
+  if (slotSiblings[slot].length === 0) delete slotSiblings[slot];
+  saveSiblings();
+  updateSiblingBadge(slot);
+}
+
+function renderSiblings(slot) {
+  const list = getSiblings(slot);
+  detailSiblings.innerHTML = '';
+  if (!list.length) {
+    detailSiblings.innerHTML = '<div style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No siblings recorded</div>';
+    return;
+  }
+  list.forEach((name, i) => {
+    const row = document.createElement('div');
+    row.style.cssText = 'display:flex;align-items:center;gap:6px;justify-content:center;';
+    row.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:11px;color:#3e3225;">' + name + '</span>' +
+      '<button data-idx="' + i + '" style="font-size:9px;padding:1px 4px;border:none;border-radius:3px;background:#c9b896;color:#fff;cursor:pointer;line-height:1;">×</button>';
+    row.querySelector('button').addEventListener('click', () => {
+      removeSibling(slot, i);
+      renderSiblings(slot);
+    });
+    detailSiblings.appendChild(row);
+  });
+}
+
+// Sibling count badge on nameplates
+function updateSiblingBadge(slot) {
+  const plate = document.querySelector('.nameplate[data-slot="' + slot + '"]');
+  if (!plate) return;
+  const count = getSiblings(slot).length;
+  let badge = plate.querySelector('.sibling-badge');
+  if (count > 0) {
+    if (!badge) {
+      badge = document.createElement('span');
+      badge.className = 'sibling-badge';
+      badge.style.cssText = 'position:absolute;top:-8px;right:-8px;background:#2e7d32;color:#fff;font-size:9px;font-family:Cormorant Garamond,serif;padding:2px 5px;border-radius:10px;z-index:5;box-shadow:0 1px 3px rgba(0,0,0,0.3);display:flex;align-items:center;gap:2px;';
+      plate.appendChild(badge);
+    }
+    badge.innerHTML = '<span style="font-size:10px;line-height:1;">🍃</span><span>' + count + '</span>';
+  } else if (badge) {
+    badge.remove();
+  }
+}
+
+// Init badges for all slots on load
+Object.keys(slotSiblings).forEach(slot => updateSiblingBadge(slot));
+
+// ========== IndexedDB Document Storage ==========
+const DB_NAME = 'FamilyTreeDocs';
+const DB_VERSION = 1;
+const STORE_NAME = 'documents';
+let db = null;
+
+function openDocDB() {
+  return new Promise((resolve, reject) => {
+    const req = indexedDB.open(DB_NAME, DB_VERSION);
+    req.onerror = () => reject(req.error);
+    req.onsuccess = () => { db = req.result; resolve(db); };
+    req.onupgradeneeded = (e) => {
+      const d = e.target.result;
+      if (!d.objectStoreNames.contains(STORE_NAME)) {
+        const store = d.createObjectStore(STORE_NAME, { keyPath: 'id' });
+        store.createIndex('slot', 'slot', { unique: false });
+      }
+    };
+  });
+}
+
+async function saveDoc(slot, type, base64Image, meta) {
+  if (!db) await openDocDB();
+  const id = slot + '_' + type + '_' + Date.now();
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  const store = tx.objectStore(STORE_NAME);
+  await new Promise((resolve, reject) => {
+    const req = store.put({ id, slot, type, image: base64Image, meta, created: Date.now() });
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+  return id;
+}
+
+async function getDocsForSlot(slot) {
+  if (!db) await openDocDB();
+  const tx = db.transaction(STORE_NAME, 'readonly');
+  const store = tx.objectStore(STORE_NAME);
+  const idx = store.index('slot');
+  return new Promise((resolve, reject) => {
+    const req = idx.getAll(slot);
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function deleteDoc(id) {
+  if (!db) await openDocDB();
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  const store = tx.objectStore(STORE_NAME);
+  return new Promise((resolve, reject) => {
+    const req = store.delete(id);
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function getAllDocs() {
+  if (!db) await openDocDB();
+  const tx = db.transaction(STORE_NAME, 'readonly');
+  const store = tx.objectStore(STORE_NAME);
+  return new Promise((resolve, reject) => {
+    const req = store.getAll();
+    req.onsuccess = () => resolve(req.result || []);
+    req.onerror = () => reject(req.error);
+  });
+}
+
+async function clearAllDocs() {
+  if (!db) await openDocDB();
+  const tx = db.transaction(STORE_NAME, 'readwrite');
+  const store = tx.objectStore(STORE_NAME);
+  return new Promise((resolve, reject) => {
+    const req = store.clear();
+    req.onsuccess = () => resolve();
+    req.onerror = () => reject(req.error);
+  });
+}
+
+// Temporary storage for current scan image (before Apply)
+let pendingDocImage = null;
+let pendingDocType = null;
+
+// Slot parent mapping: given a slot, which slots are the father and mother?
+const SLOT_PARENTS = {
+  'subject':         { father: 'father',              mother: 'mother' },
+  'father':          { father: 'paternal-grandfather', mother: 'paternal-grandmother' },
+  'mother':          { father: 'maternal-grandfather', mother: 'maternal-grandmother' },
+  'paternal-grandfather':   { father: 'pat-pat-grandfather',   mother: 'pat-pat-grandmother' },
+  'paternal-grandmother':   { father: 'pat-mat-grandfather',   mother: 'pat-mat-grandmother' },
+  'maternal-grandfather':   { father: 'mat-pat-grandfather',  mother: 'mat-pat-grandmother' },
+  'maternal-grandmother':   { father: 'mat-mat-grandfather',  mother: 'mat-mat-grandmother' },
+};
+
+function openDetail(name, years, slot) {
+  // Use full name from data-fullname if available
+  const plate = slot ? document.querySelector(`.nameplate[data-slot="${slot}"]`) : null;
+  const fullName = plate?.dataset.fullname || name;
+  detailName.textContent = fullName;
+  detailYears.textContent = years || 'YYYY — YYYY';
+
+  // Show maiden name if available
+  const maidenName = plate?.dataset.maiden || '';
+  if (maidenName && maidenName.toLowerCase() !== fullName.toLowerCase()) {
+    const maidenSurname = maidenName.includes(' ') ? maidenName.split(' ').pop() : maidenName;
+    const fullSurname = fullName.includes(' ') ? fullName.split(' ').pop() : fullName;
+    if (maidenSurname !== fullSurname) {
+      detailMaiden.textContent = 'née ' + maidenSurname;
+      detailMaiden.style.display = '';
+    } else {
+      detailMaiden.style.display = 'none';
+    }
+  } else {
+    detailMaiden.style.display = 'none';
+  }
+
+  // Show doc badges
+  detailDocs.innerHTML = '';
+  const docs = (plate?.dataset.docs || '').split(',').filter(Boolean);
+  if (docs.length) {
+    docs.forEach(code => {
+      const badge = document.createElement('span');
+      badge.className = 'doc-badge';
+      badge.textContent = code;
+      detailDocs.appendChild(badge);
+    });
+  } else {
+    detailDocs.innerHTML = '<span style="font-family:Cormorant Garamond,serif;font-size:10px;color:#9a8565;font-style:italic;">No documents yet</span>';
+  }
+
+  // Show document thumbnails from IndexedDB
+  detailDocThumbs.innerHTML = '';
+  if (slot) {
+    getDocsForSlot(slot).then(docs => {
+      if (docs.length) {
+        docs.forEach(doc => {
+          const thumb = document.createElement('img');
+          thumb.src = doc.image;
+          thumb.style.cssText = 'width:60px;height:60px;object-fit:cover;border-radius:4px;border:1px solid #c9b896;cursor:pointer;';
+          thumb.title = doc.type + ' — ' + (doc.meta?.date || '');
+          thumb.addEventListener('click', () => {
+            const viewer = document.createElement('div');
+            viewer.style.cssText = 'position:fixed;inset:0;background:rgba(0,0,0,0.85);z-index:1000;display:flex;align-items:center;justify-content:center;cursor:pointer;';
+            viewer.innerHTML = '<img src="' + doc.image + '" style="max-width:90vw;max-height:90vh;border-radius:4px;">';
+            viewer.addEventListener('click', () => viewer.remove());
+            document.body.appendChild(viewer);
+          });
+          detailDocThumbs.appendChild(thumb);
+        });
+      }
+    });
+  }
+
+  // Look up actual parents from the tree using slot hierarchy
+  if (slot && SLOT_PARENTS[slot]) {
+    const { father, mother } = SLOT_PARENTS[slot];
+    const fatherPlate = document.querySelector(`.nameplate[data-slot="${father}"]`);
+    const motherPlate = document.querySelector(`.nameplate[data-slot="${mother}"]`);
+    parent1.querySelector('.p-name').textContent = fatherPlate ? (fatherPlate.dataset.fullname || fatherPlate.querySelector('.name').textContent) : 'Name';
+    parent1.querySelector('.p-years').textContent = fatherPlate ? fatherPlate.querySelector('.years').textContent : 'YYYY — YYYY';
+    parent1.dataset.parentSlot = father;
+    parent2.querySelector('.p-name').textContent = motherPlate ? (motherPlate.dataset.fullname || motherPlate.querySelector('.name').textContent) : 'Name';
+    parent2.querySelector('.p-years').textContent = motherPlate ? motherPlate.querySelector('.years').textContent : 'YYYY — YYYY';
+    parent2.dataset.parentSlot = mother;
+  } else {
+    parent1.querySelector('.p-name').textContent = 'Name';
+    parent1.querySelector('.p-years').textContent = 'YYYY — YYYY';
+    parent1.dataset.parentSlot = '';
+    parent2.querySelector('.p-name').textContent = 'Name';
+    parent2.querySelector('.p-years').textContent = 'YYYY — YYYY';
+    parent2.dataset.parentSlot = '';
+  }
+
+  detailPanel.classList.add('active');
+  detailOverlay.classList.add('active');
+
+  // Render siblings for this slot
+  renderSiblings(slot || '');
+
+  // Wire up add sibling button for current slot
+  addSiblingBtn.onclick = () => {
+    const name = siblingInput.value.trim();
+    if (name && slot) {
+      addSibling(slot, name);
+      siblingInput.value = '';
+      renderSiblings(slot);
+    }
+  };
+  siblingInput.onkeydown = (e) => { if (e.key === 'Enter') addSiblingBtn.click(); };
+}
+
+function closeDetail() {
+  detailPanel.classList.remove('active');
+  detailOverlay.classList.remove('active');
+}
+
+// Click handler for nameplates — branches on data-tree mode
+let currentSubjectId = null;
+let currentPeopleMap = new Map();
+
+document.querySelectorAll('.nameplate').forEach((np) => {
+  np.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const name = np.dataset.fullname || '';
+    const years = np.querySelector('.years').textContent;
+    const slot = np.dataset.slot || '';
+    const gen = parseInt(np.dataset.gen || '0', 10);
+
+    // === DATA-TREE MODE: click-to-focus ===
+    if (dtModeActive) {
+      if (e.shiftKey) return; // shift-click falls through to old behavior (detail panel)
+      const path = slotToPath(slot);
+      const person = getPersonByPath(dtSubjectId, path, dtPeopleMap);
+      if (person && person.id !== dtSubjectId) {
+        populatePosterFromDataTree(person.id);
+        showToast('Now showing: ' + (person.name || person.fullName || 'Ancestor'));
+      }
+      return;
+    }
+
+    // === ORIGINAL HERITAGE-POSTER MODE ===
+    if (gen === 5) {
+      // Save main tree state and navigate to branch tree
+      const payload = {
+        version: 1,
+        savedAt: new Date().toISOString(),
+        slots: {},
+        siblings: slotSiblings,
+        settings: { keepDocs: document.getElementById('keepDocsToggle').checked }
+      };
+      document.querySelectorAll('.nameplate').forEach(p => {
+        const s = p.dataset.slot;
+        if (!s) return;
+        payload.slots[s] = {
+          name: p.querySelector('.name')?.textContent || '',
+          fullname: p.dataset.fullname || '',
+          years: p.querySelector('.years')?.textContent || '',
+          maiden: p.dataset.maiden || '',
+          docs: p.dataset.docs || ''
+        };
+      });
+      localStorage.setItem('familytree_main', JSON.stringify(payload));
+      const personData = {
+        name: name,
+        fullname: np.dataset.fullname || name,
+        years: years,
+        maiden: np.dataset.maiden || '',
+        docs: np.dataset.docs || '',
+        slot: slot
+      };
+      const parentMap = OWN_PARENT_MAP[slot];
+      if (parentMap) {
+        const fPlate = document.querySelector('.nameplate[data-slot="' + parentMap.fatherSlot + '"]');
+        const mPlate = document.querySelector('.nameplate[data-slot="' + parentMap.motherSlot + '"]');
+        if (fPlate && fPlate.querySelector('.name').textContent !== 'Name') {
+          personData.father = {
+            name: fPlate.querySelector('.name').textContent,
+            fullname: fPlate.dataset.fullname || '',
+            years: fPlate.querySelector('.years').textContent,
+            slot: parentMap.fatherSlot
+          };
+        }
+        if (mPlate && mPlate.querySelector('.name').textContent !== 'Name') {
+          personData.mother = {
+            name: mPlate.querySelector('.name').textContent,
+            fullname: mPlate.dataset.fullname || '',
+            years: mPlate.querySelector('.years').textContent,
+            maiden: mPlate.dataset.maiden || '',
+            slot: parentMap.motherSlot
+          };
+        }
+      }
+      localStorage.setItem('familytree_branch_subject', JSON.stringify(personData));
+      window.location.href = 'branch-tree.html';
+    } else {
+      openDetail(name, years, slot);
+    }
+  });
+});
+
+detailClose.addEventListener('click', closeDetail);
+detailOverlay.addEventListener('click', closeDetail);
+
+// Parent cards are also clickable — drill into that person's detail
+parent1.addEventListener('click', () => {
+  const slot = parent1.dataset.parentSlot;
+  if (slot) {
+    const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
+    if (plate) openDetail(plate.dataset.fullname || '', plate.querySelector('.years').textContent, slot);
+  }
+});
+parent2.addEventListener('click', () => {
+  const slot = parent2.dataset.parentSlot;
+  if (slot) {
+    const plate = document.querySelector(`.nameplate[data-slot="${slot}"]`);
+    if (plate) openDetail(plate.dataset.fullname || '', plate.querySelector('.years').textContent, slot);
+  }
+});
+
+// ========== Inline Editing ==========
+
+// Make a text element tap-to-edit; on commit, write back to the linked nameplate
+function makeEditable(el, targetPlate, targetSelector) {
+  el.addEventListener('click', (e) => {
+    e.stopPropagation();
+    const currentValue = el.textContent === 'Name' || el.textContent === 'YYYY — YYYY' ? '' : el.textContent;
+    const input = document.createElement('input');
+    input.type = 'text';
+    input.className = 'detail-edit-input';
+    input.value = currentValue;
+    el.style.display = 'none';
+    el.parentNode.insertBefore(input, el.nextSibling);
+    input.focus();
+    input.select();
+    const commit = () => {
+      const newVal = input.value.trim();
+      el.textContent = newVal || (el.classList.contains('detail-years') ? 'YYYY — YYYY' : 'Name');
+      el.style.display = '';
+      input.remove();
+      // Write back to the tree nameplate
+      if (targetPlate && targetSelector) {
+        const targetEl = targetPlate.querySelector(targetSelector);
+        if (targetEl) {
+          if (targetSelector === '.name') {
+            targetEl.innerHTML = formatNameplateName(el.textContent);
+          } else {
+            targetEl.textContent = el.textContent;
+          }
+        }
+      }
+    };
+    input.addEventListener('blur', commit);
+    input.addEventListener('keydown', (ke) => { if (ke.key === 'Enter') { ke.preventDefault(); commit(); } });
+  });
+}
+
+// Wire up detail panel name + years editing
+detailName.addEventListener('click', (e) => {
+  e.stopPropagation();
+  // Find which nameplate this detail refers to
+  const currentSlot = detailPanel.dataset.currentSlot;
+  const targetPlate = currentSlot ? document.querySelector(`.nameplate[data-slot="${currentSlot}"]`) : null;
+  makeEditableInline(detailName, targetPlate, '.name');
+});
+
+detailYears.addEventListener('click', (e) => {
+  e.stopPropagation();
+  const currentSlot = detailPanel.dataset.currentSlot;
+  const targetPlate = currentSlot ? document.querySelector(`.nameplate[data-slot="${currentSlot}"]`) : null;
+  makeEditableInline(detailYears, targetPlate, '.years');
+});
+
+// Helper for inline editing (avoids nested stopPropagation issues)
+function makeEditableInline(el, targetPlate, targetSelector) {
+  const currentValue = el.textContent === 'Name' || el.textContent === 'YYYY — YYYY' ? '' : el.textContent;
+  const input = document.createElement('input');
+  input.type = 'text';
+  input.className = 'detail-edit-input';
+  input.value = currentValue;
+  el.style.display = 'none';
+  el.parentNode.insertBefore(input, el.nextSibling);
+  input.focus();
+  input.select();
+  const commit = () => {
+    const newVal = input.value.trim();
+    el.textContent = newVal || (el.classList.contains('detail-years') ? 'YYYY — YYYY' : 'Name');
+    el.style.display = '';
+    input.remove();
+    if (targetPlate && targetSelector) {
+      const targetEl = targetPlate.querySelector(targetSelector);
+      if (targetEl && newVal) {
+        if (targetSelector === '.name') {
+          targetEl.innerHTML = formatNameplateName(newVal);
+        } else {
+          targetEl.textContent = newVal;
+        }
+      }
+      // Also update data-fullname when editing a name, so cert matching works later
+      if (targetSelector === '.name' && newVal) {
+        targetPlate.dataset.fullname = newVal;
+        // Update heraldic banner if subject name changed
+        if (targetPlate.dataset.slot === 'subject') updateBanner();
+      }
+    }
+  };
+  input.addEventListener('blur', commit);
+  input.addEventListener('keydown', (ke) => { if (ke.key === 'Enter') { ke.preventDefault(); commit(); } });
+}
+
+// Store current slot when opening detail so edits know which nameplate to update
+const _origOpenDetail = openDetail;
+openDetail = function(name, years, slot) {
+  detailPanel.dataset.currentSlot = slot || '';
+  _origOpenDetail(name, years, slot);
+};
+
+// Wire up parent card editing (once, not on every open)
+function wireParentEdit(cardEl, selector) {
+  cardEl.querySelector(selector).addEventListener('click', (e) => {
+    e.stopPropagation();
+    const pSlot = cardEl.dataset.parentSlot;
+    const targetPlate = pSlot ? document.querySelector(`.nameplate[data-slot="${pSlot}"]`) : null;
+    makeEditableInline(cardEl.querySelector(selector), targetPlate, selector === '.p-name' ? '.name' : '.years');
+  });
+}
+wireParentEdit(parent1, '.p-name');
+wireParentEdit(parent1, '.p-years');
+wireParentEdit(parent2, '.p-name');
+wireParentEdit(parent2, '.p-years');
+
+// ========== Cert Upload & Transcription ==========
+const API_URL = 'https://genealogy-api.vercel.app/api/transcribe';
+let selectedCertType = 'auto';
+let lastTranscription = null;
+let selectedEntryIndex = null;
+
+const certPanel = document.getElementById('certPanel');
+const certOverlay = document.getElementById('certOverlay');
+const certClose = document.getElementById('certClose');
+const certUploadArea = document.getElementById('certUploadArea');
+const certFileInput = document.getElementById('certFileInput');
+const certPreviewArea = document.getElementById('certPreviewArea');
+const certPreviewImg = document.getElementById('certPreviewImg');
+const certStatus = document.getElementById('certStatus');
+const certResults = document.getElementById('certResults');
+const certActions = document.getElementById('certActions');
+const certConfirm = document.getElementById('certConfirm');
+const certCancel = document.getElementById('certCancel');
+const certRetry = document.getElementById('certRetry');
+const certRetryScan = document.getElementById('certRetryScan');
+
+let pendingDocFile = null; // Store the last uploaded file for retries
+
+function openCertPanel() {
+  certPanel.classList.add('active');
+  certOverlay.classList.add('active');
+}
+function closeCertPanel() {
+  certPanel.classList.remove('active');
+  certOverlay.classList.remove('active');
+  resetCertPanel();
+}
+function resetCertPanel() {
+  certPreviewArea.style.display = 'none';
+  certStatus.style.display = 'none';
+  certRetry.style.display = 'none';
+  certResults.innerHTML = '';
+  certActions.style.display = 'none';
+  certUploadArea.style.display = '';
+  lastTranscription = null;
+  selectedEntryIndex = null;
+  certFileInput.value = '';
+}
+
+certClose.addEventListener('click', closeCertPanel);
+certOverlay.addEventListener('click', closeCertPanel);
+certCancel.addEventListener('click', closeCertPanel);
+
+// ========== Export / Import Session ==========
+// Custom toast (avoids "rupertclaw.github.io says" browser alert title)
+function showToast(msg, duration) {
+  duration = duration || 2500;
+  const existing = document.getElementById('toastMsg');
+  if (existing) existing.remove();
+  const el = document.createElement('div');
+  el.id = 'toastMsg';
+  el.textContent = msg;
+  el.style.cssText = 'position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);background:rgba(30,25,20,0.92);color:#f0e6d2;padding:14px 24px;border-radius:8px;font-family:Cormorant Garamond,serif;font-size:15px;z-index:9999;box-shadow:0 4px 16px rgba(0,0,0,0.4);text-align:center;';
+  document.body.appendChild(el);
+  setTimeout(() => { el.style.opacity = '0'; el.style.transition = 'opacity 0.4s'; }, duration);
+  setTimeout(() => el.remove(), duration + 500);
+}
+
+const saveSessionBtn = document.getElementById('saveSessionBtn');
+const loadSessionBtn = document.getElementById('loadSessionBtn');
+const sessionFileInput = document.getElementById('sessionFileInput');
+
+async function exportSession() {
+  const payload = {
+    version: 1,
+    exportedAt: new Date().toISOString(),
+    slots: {},
+    siblings: slotSiblings,
+    settings: { keepDocs: document.getElementById('keepDocsToggle').checked }
+  };
+  document.querySelectorAll('.nameplate').forEach(np => {
+    const slot = np.dataset.slot;
+    if (!slot) return; // skip nameplates without a slot
+    payload.slots[slot] = {
+      name: np.querySelector('.name')?.textContent || '',
+      fullname: np.dataset.fullname || '',
+      years: np.querySelector('.years')?.textContent || '',
+      maiden: np.dataset.maiden || '',
+      docs: np.dataset.docs || ''
+    };
+  });
+  const docs = await getAllDocs();
+  if (docs.length) {
+    payload.documents = docs.map(d => ({ id: d.id, slot: d.slot, type: d.type, image: d.image, meta: d.meta, created: d.created }));
+  }
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+async function importSession(file) {
+  try {
+    const text = await file.text();
+    const data = JSON.parse(text);
+
+    // Data-tree export format: {people: [...], nextId, version}
+    if (data.people && Array.isArray(data.people)) {
+      dtPeopleMap = new Map();
+      data.people.forEach(p => dtPeopleMap.set(p.id, p));
+      const subject = data.people.find(p => p.gen === 0) ||
+                      data.people.find(p => p.status === 'you') ||
+                      data.people.find(p => p.status === 'confirmed') ||
+                      data.people[0];
+      if (subject) {
+        populatePosterFromDataTree(subject.id);
+        showToast('Tree loaded from data-tree file!');
+        return;
+      }
+      showToast('Invalid session file — no subject found');
+      return;
+    }
+
+    // Poster-native format: {slots: {...}}
+    if (!data.slots) { showToast('Invalid session file — no tree data found'); return; }
+
+    // Restore slot data
+    Object.entries(data.slots).forEach(([slot, info]) => {
+      if (slot === 'undefined' || !slot) return; // skip bad keys
+      const plate = document.querySelector('.nameplate[data-slot="' + slot + '"]');
+      if (!plate) return;
+      if (info.fullname) {
+        plate.dataset.fullname = info.fullname;
+        plate.querySelector('.name').innerHTML = formatNameplateName(info.name || info.fullname);
+      }
+      if (info.years) {
+        const yEl = plate.querySelector('.years');
+        if (yEl) yEl.textContent = info.years;
+      }
+      if (info.maiden) plate.dataset.maiden = info.maiden;
+      if (info.docs) plate.dataset.docs = info.docs;
+      if (info.name === 'Name' && !info.fullname) {
+        // Empty slot — reset to default
+        plate.dataset.fullname = '';
+        plate.dataset.maiden = '';
+        plate.dataset.docs = '';
+        plate.querySelector('.name').textContent = 'Name';
+        plate.querySelector('.years').textContent = 'YYYY — YYYY';
+        if (parseInt(plate.dataset.gen || '0', 10) === 5) plate.style.display = 'none';
+      }
+    });
+
+    // Restore siblings
+    if (data.siblings) {
+      slotSiblings = data.siblings;
+      saveSiblings();
+      Object.keys(slotSiblings).forEach(slot => updateSiblingBadge(slot));
+    }
+
+    // Restore settings
+    if (data.settings?.keepDocs !== undefined) {
+      document.getElementById('keepDocsToggle').checked = data.settings.keepDocs;
+    }
+
+    // Restore documents to IndexedDB
+    if (data.documents?.length) {
+      await clearAllDocs();
+      for (const d of data.documents) {
+        if (!d.slot || d.slot === 'undefined') continue;
+        await saveDoc(d.slot, d.type, d.image, d.meta || {});
+      }
+    }
+
+    showToast('Session restored!');
+    updateBanner();
+  } catch (err) {
+    console.error('Import failed:', err);
+    showToast('Import failed: ' + (err.message || 'Unknown error'));
+  }
+}
+
+function hpSaveSession() { exportSession(); }
+function hpLoadSession(e) {
+  if (e) { e.preventDefault(); e.stopPropagation(); }
+  setTimeout(() => sessionFileInput.click(), 50);
+}
+function hpBackToTree() { window.location.href = 'data-tree.html'; }
+function hpPrevSubject() {
+  if (!dtModeActive || subjectHistory.length === 0) return;
+  const prevId = subjectHistory.pop();
+  if (prevId && dtPeopleMap.has(prevId)) {
+    dtSubjectId = prevId;
+    populatePosterFromDataTree(prevId);
+    const person = dtPeopleMap.get(prevId);
+    showToast('Back to: ' + (person?.name || person?.fullName || 'Previous'));
+  }
+  const prevBtn = document.getElementById('prevSubjectBtn');
+  if (prevBtn) prevBtn.style.display = subjectHistory.length > 0 ? 'inline-block' : 'none';
+}
+function hpPrintPDF() {
+  const wasGridOn = gridOverlay && gridOverlay.style.display !== 'none';
+  const wasZoom = scale;
+  // Reset to clean state for print
+  scale = 1;
+  updateZoom();
+  if (gridOverlay) gridOverlay.style.display = 'none';
+  if (gridToggle) gridToggle.textContent = 'Show Grid';
+  // Small delay so the browser sees the clean layout
+  setTimeout(() => {
+    try {
+      window.print();
+    } catch (e) {
+      // Mobile Chrome often blocks print — silently ignore
+    }
+    // Restore after print dialog closes
+    setTimeout(() => {
+      scale = wasZoom;
+      updateZoom();
+      if (gridOverlay && wasGridOn) {
+        gridOverlay.style.display = '';
+        if (gridToggle) gridToggle.textContent = 'Hide Grid';
+      }
+    }, 100);
+  }, 50);
+}
+
+sessionFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (file) {
+    try {
+      await importSession(file);
+    } catch (err) {
+      console.error('Import error:', err);
+      showToast('Import failed: ' + (err.message || 'Unknown error'));
+    }
+  }
+  sessionFileInput.value = '';
+});
+
+document.getElementById('backToTreeBtn').addEventListener('click', hpBackToTree);
+document.getElementById('prevSubjectBtn').addEventListener('click', hpPrevSubject);
+document.getElementById('printBtn').addEventListener('click', hpPrintPDF);
+
+certRetry.addEventListener('click', () => {
+  if (pendingDocFile) {
+    // Retry the same file without making user re-pick it
+    certStatus.style.display = 'block';
+    certStatus.textContent = 'Retrying scan...';
+    certRetry.style.display = 'none';
+    setTimeout(() => processDocFile(pendingDocFile), 500); // Small delay to prevent rate limiting
+  } else {
+    // No file in memory — fall back to file picker
+    certRetry.style.display = 'none';
+    certStatus.style.display = 'none';
+    certResults.innerHTML = '';
+    certActions.style.display = 'none';
+    certPreviewArea.style.display = 'none';
+    certUploadArea.style.display = '';
+    lastTranscription = null;
+    selectedEntryIndex = null;
+    certFileInput.value = '';
+    certFileInput.click();
+  }
+});
+
+// Swap parents button: fixes transposed groom/bride parents (common vision model error)
+const certSwapParents = document.getElementById('certSwapParents');
+certSwapParents.addEventListener('click', () => {
+  if (!lastTranscription || lastTranscription._type !== 'marriage') return;
+  const entry = lastTranscription;
+  // Swap fathers
+  const tempFather = entry.groomFather;
+  entry.groomFather = entry.brideFather;
+  entry.brideFather = tempFather;
+  // Swap mothers
+  const tempMother = entry.groomMother;
+  entry.groomMother = entry.brideMother;
+  entry.brideMother = tempMother;
+  // Re-render
+  certResults.innerHTML = '';
+  const fields = extractEntryFields(entry, 'marriage');
+  const card = buildEntryCard(fields, entry, 'marriage', selectedEntryIndex || 0, () => {});
+  card.classList.add('selected');
+  certResults.appendChild(card);
+  showToast('Parents swapped — groom↔bride');
+});
+
+// Re-scan button: re-run transcription on the same image (for when transcription looks wrong)
+certRetryScan.addEventListener('click', () => {
+  if (pendingDocImage) {
+    lastTranscription = null;
+    selectedEntryIndex = null;
+    certConfirm.disabled = true;
+    certResults.innerHTML = '';
+    sendToTranscriptionAPI(pendingDocImage);
+  } else {
+    showToast('No image to re-scan. Upload a document first.');
+  }
+});
+
+// Cert type selector
+document.querySelectorAll('.cert-type-btn').forEach(btn => {
+  btn.addEventListener('click', () => {
+    document.querySelectorAll('.cert-type-btn').forEach(b => b.classList.remove('active'));
+    btn.classList.add('active');
+    selectedCertType = btn.dataset.type;
+  });
+});
+
+// Click upload area → trigger file input
+certUploadArea.addEventListener('click', () => certFileInput.click());
+
+// File selected
+certFileInput.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  pendingDocFile = file;
+  try {
+    await processDocFile(file);
+  } catch (err) {
+    console.error('[UPLOAD ERROR]', err);
+    certStatus.style.display = 'block';
+    certStatus.className = 'cert-status';
+    certStatus.innerHTML = 'Error: ' + (err.message || 'Could not process image') + '<br><small>Tap Try Again to retry</small>';
+    certRetry.style.display = 'block';
+  }
+});
+
+// Shared processing function — used for initial upload AND retries
+async function processDocFile(file) {
+  // Show preview immediately
+  const reader = new FileReader();
+  reader.onload = (ev) => {
+    certPreviewImg.src = ev.target.result;
+    certPreviewArea.style.display = 'block';
+    certUploadArea.style.display = 'none';
+  };
+  reader.readAsDataURL(file);
+
+  // Show compressing status
+  certStatus.style.display = 'block';
+  certStatus.className = 'cert-status scan';
+  certStatus.textContent = 'Preparing image...';
+
+  let base64;
+  try {
+    // Compress/resize image before API to stay under Vercel's 4.5MB limit
+    // Use 1600px max and 90% quality for better OCR of small handwritten text
+    base64 = await resizeAndCompressImage(file, 1600, 0.90);
+  } catch (compressErr) {
+    console.error('[COMPRESS ERROR]', compressErr);
+    // Fallback: use original file
+    base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = () => resolve(r.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+  }
+
+  // Store for potential document retention
+  pendingDocImage = base64;
+  pendingDocType = selectedCertType;
+
+  // Reset UI for new scan
+  certResults.innerHTML = '';
+  certActions.style.display = 'none';
+  certConfirm.disabled = true;
+  lastTranscription = null;
+  selectedEntryIndex = null;
+
+  await sendToTranscriptionAPI(base64);
+}
+
+async function sendToTranscriptionAPI(base64) {
+  certStatus.style.display = 'block';
+  certStatus.className = 'cert-status scan';
+  certStatus.textContent = 'Scanning certificate...';
+  certRetry.style.display = 'none';
+
+  try {
+    const resp = await fetch(API_URL, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ image: base64, certType: selectedCertType })
+    });
+    const json = await resp.json();
+
+    if (!json.success) {
+      certStatus.className = 'cert-status';
+      let errMsg = json.error || json.message || 'Unknown error';
+      certStatus.innerHTML = 'Scan failed: ' + errMsg + '<br><small>Tap Try Again to retry same file</small>';
+      if (json.raw) {
+        certStatus.innerHTML += '<br><small>(raw output received)</small>';
+      }
+      certRetry.style.display = 'block';
+      console.error('[SCAN FAILED]', json);
+      return;
+    }
+
+    lastTranscription = json.data;
+    certStatus.className = 'cert-status';
+    certStatus.textContent = '✓ Cert type: ' + (json.data.type || 'unknown').toUpperCase();
+
+    // Build result cards
+    renderTranscriptionResults(json.data);
+
+    certActions.style.display = 'flex';
+    certConfirm.disabled = false;
+    // Show swap button only for marriage certs
+    if (json.data.type === 'marriage') {
+      certSwapParents.style.display = '';
+    } else {
+      certSwapParents.style.display = 'none';
+    }
+
+  } catch (err) {
+    certStatus.className = 'cert-status';
+    certStatus.innerHTML = 'Network error: ' + (err.message || 'Could not reach server') + '<br><small>Tap Try Again to retry</small>';
+    certRetry.style.display = 'block';
+    console.error('[SCAN ERROR]', err);
+  }
+}
+
+function extractEntryFields(entry, type) {
+  const fields = [];
+  const confidence = entry.confidence || {};
+
+  if (type === 'marriage') {
+    if (entry.groom?.name) fields.push({ label: 'Groom', value: entry.groom.name, conf: confidence.fields?.groom_name, path: 'groom.name' });
+    if (entry.groom?.age) fields.push({ label: 'Groom Age', value: entry.groom.age, conf: confidence.fields?.groom_age, path: 'groom.age' });
+    if (entry.groom?.occupation) fields.push({ label: 'Groom Occupation', value: entry.groom.occupation, conf: confidence.fields?.groom_occupation, path: 'groom.occupation' });
+    if (entry.bride?.name) fields.push({ label: 'Bride', value: entry.bride.name, conf: confidence.fields?.bride_name, path: 'bride.name' });
+    if (entry.bride?.age) fields.push({ label: 'Bride Age', value: entry.bride.age, conf: confidence.fields?.bride_age, path: 'bride.age' });
+    if (entry.groomFather?.name) fields.push({ label: "Groom's Father", value: entry.groomFather.name, conf: confidence.fields?.groomFather_name, path: 'groomFather.name' });
+    if (entry.groomMother?.name) fields.push({ label: "Groom's Mother", value: entry.groomMother.name, conf: confidence.fields?.groomMother_name, path: 'groomMother.name' });
+    if (entry.groomMother?.maidenName) fields.push({ label: "Groom's Mother Maiden", value: entry.groomMother.maidenName, conf: confidence.fields?.groomMother_maidenName, path: 'groomMother.maidenName' });
+    if (entry.brideFather?.name) fields.push({ label: "Bride's Father", value: entry.brideFather.name, conf: confidence.fields?.brideFather_name, path: 'brideFather.name' });
+    if (entry.brideMother?.name) fields.push({ label: "Bride's Mother", value: entry.brideMother.name, conf: confidence.fields?.brideMother_name, path: 'brideMother.name' });
+    if (entry.brideMother?.maidenName) fields.push({ label: "Bride's Mother Maiden", value: entry.brideMother.maidenName, conf: confidence.fields?.brideMother_maidenName, path: 'brideMother.maidenName' });
+    if (entry.date) fields.push({ label: 'Date', value: entry.date, conf: confidence.fields?.date, path: 'date' });
+    if (entry.place) fields.push({ label: 'Place', value: entry.place, conf: confidence.fields?.place, path: 'place' });
+    if (entry.district) fields.push({ label: 'District', value: entry.district, conf: confidence.fields?.district, path: 'district' });
+  } else if (type === 'birth') {
+    if (entry.child?.name) fields.push({ label: 'Child', value: entry.child.name, conf: confidence.fields?.child_name, path: 'child.name' });
+    if (entry.child?.birthDate) fields.push({ label: 'Birth Date', value: entry.child.birthDate, conf: confidence.fields?.child_birthDate, path: 'child.birthDate' });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, conf: confidence.fields?.father_name, path: 'father.name' });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name, conf: confidence.fields?.mother_name, path: 'mother.name' });
+    if (entry.mother?.maidenName) fields.push({ label: 'Mother Maiden', value: entry.mother.maidenName, conf: confidence.fields?.mother_maidenName, path: 'mother.maidenName' });
+    if (entry.mother?.maidenSurname) fields.push({ label: 'Mother Maiden', value: entry.mother.maidenSurname, conf: confidence.fields?.mother_maidenSurname, path: 'mother.maidenSurname' });
+    if (entry.parentsMarriage?.date) fields.push({ label: 'Parents Married', value: entry.parentsMarriage.date, conf: confidence.fields?.parentsMarriage_date, path: 'parentsMarriage.date' });
+    if (entry.district) fields.push({ label: 'District', value: entry.district, conf: confidence.fields?.district, path: 'district' });
+  } else if (type === 'death') {
+    if (entry.deceased?.name) fields.push({ label: 'Deceased', value: entry.deceased.name, conf: confidence.fields?.deceased_name, path: 'deceased.name' });
+    if (entry.deceased?.age) fields.push({ label: 'Age', value: entry.deceased.age, conf: confidence.fields?.deceased_age, path: 'deceased.age' });
+    if (entry.deceased?.spouseName) fields.push({ label: 'Spouse', value: entry.deceased.spouseName, conf: confidence.fields?.spouseName, path: 'deceased.spouseName' });
+    if (entry.father?.name) fields.push({ label: 'Father', value: entry.father.name, conf: confidence.fields?.father_name, path: 'father.name' });
+    if (entry.father?.occupation) fields.push({ label: 'Father Occupation', value: entry.father.occupation, conf: confidence.fields?.father_occupation, path: 'father.occupation' });
+    if (entry.mother?.name) fields.push({ label: 'Mother', value: entry.mother.name, conf: confidence.fields?.mother_name, path: 'mother.name' });
+    if (entry.mother?.maidenName) fields.push({ label: 'Mother Maiden', value: entry.mother.maidenName, conf: confidence.fields?.mother_maidenName, path: 'mother.maidenName' });
+    if (entry.causeOfDeath) fields.push({ label: 'Cause', value: entry.causeOfDeath, conf: confidence.fields?.causeOfDeath, path: 'causeOfDeath' });
+    if (entry.deathDate) fields.push({ label: 'Date', value: entry.deathDate, conf: confidence.fields?.deathDate, path: 'deathDate' });
+    if (entry.place) fields.push({ label: 'Place', value: entry.place, conf: confidence.fields?.place, path: 'place' });
+    if (entry.district) fields.push({ label: 'District', value: entry.district, conf: confidence.fields?.district, path: 'district' });
+  }
+
+  return fields;
+}
+
+// Get a short summary line for an entry (used as card header)
+function entrySummary(entry, type) {
+  // Try to extract name from various possible structures
+  const name = entry.child?.name || entry.groom?.name || entry.bride?.name || entry.deceased?.name || entry.name || entry.person?.name || 'Unknown';
+  const date = entry.child?.birthDate || entry.date || entry.deathDate || entry.birthDate || '';
+  
+  if (type === 'marriage' || (!type && entry.groom?.name)) {
+    const groom = entry.groom?.name || entry.groom || 'Unknown';
+    const bride = entry.bride?.name || entry.bride || 'Unknown';
+    return `${groom} & ${bride}${date ? ' — ' + date : ''}`;
+  } else if (type === 'birth' || (!type && (entry.child?.name || entry.father?.name))) {
+    return `${name}${date ? ' — b. ' + date : ''}`;
+  } else if (type === 'death' || (!type && entry.deceased?.name)) {
+    return `${name}${date ? ' — d. ' + date : ''}`;
+  }
+  return name !== 'Unknown' ? name : 'Unknown record';
+}
+
+function renderTranscriptionResults(data) {
+  certResults.innerHTML = '';
+  selectedEntryIndex = null;
+
+  // Handle multi-entry format
+  const entries = data.entries || [data];
+  
+  // Auto-detect type if not provided
+  let type = data.type || 'unknown';
+  if (type === 'unknown' && entries.length > 0) {
+    const first = entries[0];
+    if (first.groom?.name || first.bride?.name) type = 'marriage';
+    else if (first.child?.name || first.father?.name || first.mother?.name) type = 'birth';
+    else if (first.deceased?.name) type = 'death';
+    // Also try flat structures
+    else if (first.name && first.age && first.spouseName) type = 'death';
+    else if (first.name && first.father?.name) type = 'birth';
+  }
+
+  // Shared helper: select a card and update state
+  function selectCard(card, entry, idx) {
+    certResults.querySelectorAll('.cert-result-card').forEach(c => c.classList.remove('selected'));
+    card.classList.add('selected');
+    selectedEntryIndex = idx;
+    lastTranscription = entry;
+    lastTranscription._type = type;
+    certConfirm.disabled = false;
+    showToast('Selected: ' + entrySummary(entry, type));
+    console.log('[CERT SELECT] entry', idx, 'child:', entry.child?.name || entry.groom?.name || entry.deceased?.name);
+  }
+
+  if (entries.length === 1) {
+    // Single entry — show directly, auto-select it
+    lastTranscription = entries[0];
+    lastTranscription._type = type;
+    selectedEntryIndex = 0;
+    const fields = extractEntryFields(entries[0], type);
+    const card = buildEntryCard(fields, entries[0], type, 0, selectCard);
+    card.classList.add('selected');
+    certResults.appendChild(card);
+    certConfirm.disabled = false;
+  } else {
+    // Multiple entries — show as selectable list
+    const heading = document.createElement('div');
+    heading.style.cssText = "font-family:'Cinzel Decorative',serif;font-size:14px;color:#2a1f10;margin-bottom:12px;text-align:center;";
+    heading.textContent = entries.length + ' entries found — tap to select yours';
+    certResults.appendChild(heading);
+
+    entries.forEach((entry, i) => {
+      const fields = extractEntryFields(entry, type);
+      const card = buildEntryCard(fields, entry, type, i, selectCard);
+      card.addEventListener('click', () => selectCard(card, entry, i));
+      certResults.appendChild(card);
+    });
+  }
+}
+
+function buildEntryCard(fields, entry, type, index, selectCardFn) {
+  const card = document.createElement('div');
+  card.className = 'cert-result-card';
+  card.dataset.entryIndex = index;
+
+  // Summary header if multi-entry
+  const summary = document.createElement('div');
+  summary.style.cssText = "font-family:'Cinzel Decorative',serif;font-size:12px;color:#4a3a22;margin-bottom:8px;padding-bottom:6px;border-bottom:1px solid #8a7a5a;";
+  summary.textContent = entrySummary(entry, type);
+  card.appendChild(summary);
+
+  // Edit hint
+  const hint = document.createElement('div');
+  hint.style.cssText = "font-family:'Cormorant Garamond',serif;font-size:10px;color:#9a8565;text-align:center;margin-bottom:8px;font-style:italic;";
+  hint.textContent = 'Tap any value to correct it';
+  card.appendChild(hint);
+
+  fields.forEach(f => {
+    const row = document.createElement('div');
+    row.className = 'field';
+    const label = document.createElement('span');
+    label.className = 'field-label';
+    label.textContent = f.label;
+    const value = document.createElement('span');
+    value.className = 'field-value';
+    if (f.conf !== undefined && f.conf < 0.6) value.classList.add('low');
+    value.textContent = f.value || '—';
+    value.dataset.path = f.path;
+    value.dataset.original = f.value || '';
+    // Tap to edit — also select the card first so Apply works
+    value.addEventListener('click', (e) => {
+      e.stopPropagation(); // Don't bubble to card click (we handle selection here)
+      if (selectCardFn) selectCardFn(card, entry, index);
+      const currentValue = value.textContent === '—' ? '' : value.textContent;
+      const input = document.createElement('input');
+      input.type = 'text';
+      input.className = 'cert-edit-input';
+      input.value = currentValue;
+      value.style.display = 'none';
+      value.parentNode.insertBefore(input, value.nextSibling);
+      input.focus();
+      input.select();
+      const commit = () => {
+        const newVal = input.value.trim();
+        value.textContent = newVal || '—';
+        value.style.display = '';
+        input.remove();
+        // Update the entry data in-place
+        const path = value.dataset.path;
+        if (path && lastTranscription) {
+          setNestedValue(lastTranscription, path, newVal);
+          // Also update the summary header
+          const sumEl = card.querySelector('div[style*="Cinzel"]');
+          if (sumEl) sumEl.textContent = entrySummary(lastTranscription, lastTranscription._type || type);
+        }
+      };
+      input.addEventListener('blur', commit);
+      input.addEventListener('keydown', (ke) => { if (ke.key === 'Enter') { ke.preventDefault(); commit(); } });
+    });
+    row.appendChild(label);
+    row.appendChild(value);
+    card.appendChild(row);
+  });
+
+  return card;
+}
+
+// Set a nested value like "groom.name" on an object
+function setNestedValue(obj, path, value) {
+  const keys = path.split('.');
+  let current = obj;
+  for (let i = 0; i < keys.length - 1; i++) {
+    if (!current[keys[i]]) current[keys[i]] = {};
+    current = current[keys[i]];
+  }
+  current[keys[keys.length - 1]] = value;
+}
+
+// Apply transcription to tree nameplates
+// Shared slot parent map (used by both birth and marriage cert logic)
+// OWN_PARENT_MAP: gives the ACTUAL parents of the person in each slot
+// This replaces the old OWN_PARENT_MAP which was wrong for "maternal" line slots
+// Convention: pat-X = X's father's line, mat-X = X's mother's line
+// So paternal-grandmother's own parents = pat-mat-grandfather/mother (her maternal line)
+const OWN_PARENT_MAP = {
+  'subject': { fatherSlot: 'father', motherSlot: 'mother' },
+  'father':  { fatherSlot: 'paternal-grandfather', motherSlot: 'paternal-grandmother' },
+  'mother':  { fatherSlot: 'maternal-grandfather', motherSlot: 'maternal-grandmother' },
+  'paternal-grandfather':   { fatherSlot: 'pat-pat-grandfather', motherSlot: 'pat-pat-grandmother' },
+  'paternal-grandmother':   { fatherSlot: 'pat-mat-grandfather', motherSlot: 'pat-mat-grandmother' },
+  'maternal-grandfather':   { fatherSlot: 'mat-pat-grandfather', motherSlot: 'mat-pat-grandmother' },
+  'maternal-grandmother':   { fatherSlot: 'mat-mat-grandfather', motherSlot: 'mat-mat-grandmother' },
+  'pat-pat-grandfather':    { fatherSlot: 'pat-pat-pat-grandfather', motherSlot: 'pat-pat-pat-grandmother' },
+  'pat-pat-grandmother':    { fatherSlot: 'pat-pat-mat-grandfather', motherSlot: 'pat-pat-mat-grandmother' },
+  'pat-mat-grandfather':    { fatherSlot: 'pat-mat-pat-grandfather', motherSlot: 'pat-mat-pat-grandmother' },
+  'pat-mat-grandmother':    { fatherSlot: 'pat-mat-mat-grandfather', motherSlot: 'pat-mat-mat-grandmother' },
+  'mat-pat-grandfather':    { fatherSlot: 'mat-pat-pat-grandfather', motherSlot: 'mat-pat-pat-grandmother' },
+  'mat-pat-grandmother':    { fatherSlot: 'mat-pat-mat-grandfather', motherSlot: 'mat-pat-mat-grandmother' },
+  'mat-mat-grandfather':    { fatherSlot: 'mat-mat-pat-grandfather', motherSlot: 'mat-mat-pat-grandmother' },
+  'mat-mat-grandmother':    { fatherSlot: 'mat-mat-mat-grandfather', motherSlot: 'mat-mat-mat-grandmother' },
+  // Gen 4: great-great-grandparents' parents (gen 5 slots — arc layout, may not exist as findSlot targets)
+  'pat-pat-pat-grandfather':    { fatherSlot: 'pat-pat-pat-pat-grandfather', motherSlot: 'pat-pat-pat-pat-grandmother' },
+  'pat-pat-pat-grandmother':    { fatherSlot: 'pat-pat-pat-mat-grandfather', motherSlot: 'pat-pat-pat-mat-grandmother' },
+  'pat-pat-mat-grandfather':    { fatherSlot: 'pat-pat-mat-pat-grandfather', motherSlot: 'pat-pat-mat-pat-grandmother' },
+  'pat-pat-mat-grandmother':    { fatherSlot: 'pat-pat-mat-mat-grandfather', motherSlot: 'pat-pat-mat-mat-grandmother' },
+  'pat-mat-pat-grandfather':    { fatherSlot: 'pat-mat-pat-pat-grandfather', motherSlot: 'pat-mat-pat-pat-grandmother' },
+  'pat-mat-pat-grandmother':    { fatherSlot: 'pat-mat-pat-mat-grandfather', motherSlot: 'pat-mat-pat-mat-grandmother' },
+  'pat-mat-mat-grandfather':    { fatherSlot: 'pat-mat-mat-pat-grandfather', motherSlot: 'pat-mat-mat-pat-grandmother' },
+  'pat-mat-mat-grandmother':    { fatherSlot: 'pat-mat-mat-mat-grandfather', motherSlot: 'pat-mat-mat-mat-grandmother' },
+  'mat-pat-pat-grandfather':    { fatherSlot: 'mat-pat-pat-pat-grandfather', motherSlot: 'mat-pat-pat-pat-grandmother' },
+  'mat-pat-pat-grandmother':    { fatherSlot: 'mat-pat-pat-mat-grandfather', motherSlot: 'mat-pat-pat-mat-grandmother' },
+  'mat-pat-mat-grandfather':    { fatherSlot: 'mat-pat-mat-pat-grandfather', motherSlot: 'mat-pat-mat-pat-grandmother' },
+  'mat-pat-mat-grandmother':    { fatherSlot: 'mat-pat-mat-mat-grandfather', motherSlot: 'mat-pat-mat-mat-grandmother' },
+  'mat-mat-pat-grandfather':    { fatherSlot: 'mat-mat-pat-pat-grandfather', motherSlot: 'mat-mat-pat-pat-grandmother' },
+  'mat-mat-pat-grandmother':    { fatherSlot: 'mat-mat-pat-mat-grandfather', motherSlot: 'mat-mat-pat-mat-grandmother' },
+  'mat-mat-mat-grandfather':    { fatherSlot: 'mat-mat-mat-pat-grandfather', motherSlot: 'mat-mat-mat-pat-grandmother' },
+  'mat-mat-mat-grandmother':    { fatherSlot: 'mat-mat-mat-mat-grandfather', motherSlot: 'mat-mat-mat-mat-grandmother' },
+  // Gen 5: great-great-great-grandparents' parents would be gen 6 (not on tree)
+  // We still add entries so the routing doesn't crash — findSlot will return null gracefully
+  'pat-pat-pat-pat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'pat-pat-pat-pat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'pat-pat-pat-mat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'pat-pat-pat-mat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'pat-pat-mat-pat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'pat-pat-mat-pat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'pat-pat-mat-mat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'pat-pat-mat-mat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'pat-mat-pat-pat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'pat-mat-pat-pat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'pat-mat-pat-mat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'pat-mat-pat-mat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'pat-mat-mat-pat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'pat-mat-mat-pat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'pat-mat-mat-mat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'pat-mat-mat-mat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'mat-pat-pat-pat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'mat-pat-pat-pat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'mat-pat-pat-mat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'mat-pat-pat-mat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'mat-pat-mat-pat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'mat-pat-mat-pat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'mat-pat-mat-mat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'mat-pat-mat-mat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'mat-mat-pat-pat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'mat-mat-pat-pat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'mat-mat-pat-mat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'mat-mat-pat-mat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'mat-mat-mat-pat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'mat-mat-mat-pat-grandmother':    { fatherSlot: null, motherSlot: null },
+  'mat-mat-mat-mat-grandfather':    { fatherSlot: null, motherSlot: null },
+  'mat-mat-mat-mat-grandmother':    { fatherSlot: null, motherSlot: null },
+};
+
+// Spouse map: given a slot, where does the spouse go?
+// Paternal line slots → corresponding maternal line slot, and vice versa.
+const SPOUSE_MAP = {
+  'father': 'mother',
+  'mother': 'father',
+  'paternal-grandfather': 'paternal-grandmother',
+  'paternal-grandmother': 'paternal-grandfather',
+  'maternal-grandfather': 'maternal-grandmother',
+  'maternal-grandmother': 'maternal-grandfather',
+  'pat-pat-grandfather': 'pat-pat-grandmother',
+  'pat-pat-grandmother': 'pat-pat-grandfather',
+  'pat-mat-grandfather': 'pat-mat-grandmother',
+  'pat-mat-grandmother': 'pat-mat-grandfather',
+  'mat-pat-grandfather': 'mat-pat-grandmother',
+  'mat-pat-grandmother': 'mat-pat-grandfather',
+  'mat-mat-grandfather': 'mat-mat-grandmother',
+  'mat-mat-grandmother': 'mat-mat-grandfather',
+  // Gen 4: great-great-grandparent spouses
+  'pat-pat-pat-grandfather': 'pat-pat-pat-grandmother',
+  'pat-pat-pat-grandmother': 'pat-pat-pat-grandfather',
+  'pat-pat-mat-grandfather': 'pat-pat-mat-grandmother',
+  'pat-pat-mat-grandmother': 'pat-pat-mat-grandfather',
+  'pat-mat-pat-grandfather': 'pat-mat-pat-grandmother',
+  'pat-mat-pat-grandmother': 'pat-mat-pat-grandfather',
+  'pat-mat-mat-grandfather': 'pat-mat-mat-grandmother',
+  'pat-mat-mat-grandmother': 'pat-mat-mat-grandfather',
+  'mat-pat-pat-grandfather': 'mat-pat-pat-grandmother',
+  'mat-pat-pat-grandmother': 'mat-pat-pat-grandfather',
+  'mat-pat-mat-grandfather': 'mat-pat-mat-grandmother',
+  'mat-pat-mat-grandmother': 'mat-pat-mat-grandfather',
+  'mat-mat-pat-grandfather': 'mat-mat-pat-grandmother',
+  'mat-mat-pat-grandmother': 'mat-mat-pat-grandfather',
+  'mat-mat-mat-grandfather': 'mat-mat-mat-grandmother',
+  'mat-mat-mat-grandmother': 'mat-mat-mat-grandfather',
+  // Gen 5: great-great-great-grandparent spouses (upper row ↔ lower row pairs)
+  'pat-pat-pat-pat-grandfather': 'pat-pat-pat-pat-grandmother',
+  'pat-pat-pat-pat-grandmother': 'pat-pat-pat-pat-grandfather',
+  'pat-pat-pat-mat-grandfather': 'pat-pat-pat-mat-grandmother',
+  'pat-pat-pat-mat-grandmother': 'pat-pat-pat-mat-grandfather',
+  'pat-pat-mat-pat-grandfather': 'pat-pat-mat-pat-grandmother',
+  'pat-pat-mat-pat-grandmother': 'pat-pat-mat-pat-grandfather',
+  'pat-pat-mat-mat-grandfather': 'pat-pat-mat-mat-grandmother',
+  'pat-pat-mat-mat-grandmother': 'pat-pat-mat-mat-grandfather',
+  'pat-mat-pat-pat-grandfather': 'pat-mat-pat-pat-grandmother',
+  'pat-mat-pat-pat-grandmother': 'pat-mat-pat-pat-grandfather',
+  'pat-mat-pat-mat-grandfather': 'pat-mat-pat-mat-grandmother',
+  'pat-mat-pat-mat-grandmother': 'pat-mat-pat-mat-grandfather',
+  'pat-mat-mat-pat-grandfather': 'pat-mat-mat-pat-grandmother',
+  'pat-mat-mat-pat-grandmother': 'pat-mat-mat-pat-grandfather',
+  'pat-mat-mat-mat-grandfather': 'pat-mat-mat-mat-grandmother',
+  'pat-mat-mat-mat-grandmother': 'pat-mat-mat-mat-grandfather',
+  'mat-pat-pat-pat-grandfather': 'mat-pat-pat-pat-grandmother',
+  'mat-pat-pat-pat-grandmother': 'mat-pat-pat-pat-grandfather',
+  'mat-pat-pat-mat-grandfather': 'mat-pat-pat-mat-grandmother',
+  'mat-pat-pat-mat-grandmother': 'mat-pat-pat-mat-grandfather',
+  'mat-pat-mat-pat-grandfather': 'mat-pat-mat-pat-grandmother',
+  'mat-pat-mat-pat-grandmother': 'mat-pat-mat-pat-grandfather',
+  'mat-pat-mat-mat-grandfather': 'mat-pat-mat-mat-grandmother',
+  'mat-pat-mat-mat-grandmother': 'mat-pat-mat-mat-grandfather',
+  'mat-mat-pat-pat-grandfather': 'mat-mat-pat-pat-grandmother',
+  'mat-mat-pat-pat-grandmother': 'mat-mat-pat-pat-grandfather',
+  'mat-mat-pat-mat-grandfather': 'mat-mat-pat-mat-grandmother',
+  'mat-mat-pat-mat-grandmother': 'mat-mat-pat-mat-grandfather',
+  'mat-mat-mat-pat-grandfather': 'mat-mat-mat-pat-grandmother',
+  'mat-mat-mat-pat-grandmother': 'mat-mat-mat-pat-grandfather',
+  'mat-mat-mat-mat-grandfather': 'mat-mat-mat-mat-grandmother',
+  'mat-mat-mat-mat-grandmother': 'mat-mat-mat-mat-grandfather',
+};
+
+// SPOUSE_PARENT_MAP removed — use OWN_PARENT_MAP[SPOUSE_MAP[slot]] instead
+
+  certConfirm.addEventListener('click', () => {
+  try {
+  showToast('Apply clicked — type will show next');
+  } catch(e) { console.error('toast err', e); }
+  if (!lastTranscription) {
+    showToast('No entry selected. Tap a card first.');
+    return;
+  }
+  // Guard: if lastTranscription still has .entries, it's the wrapper object — not a single entry
+  if (lastTranscription.entries) {
+    showToast('Please select an entry first. Tap a card above.');
+    return;
+  }
+  try {
+  showToast('Applying...');
+  // DEBUG: show what data we're working with
+  const preview = lastTranscription.child?.name || lastTranscription.groom?.name || lastTranscription.deceased?.name || 'no name';
+  showToast('Data: ' + preview.substring(0, 30));
+  const data = lastTranscription;
+  const type = data._type || 'unknown';
+
+  let filled = 0;
+  const messages = [];
+
+  // Hoist slot variables so document save section can reference them
+  let childPlate = null, groomPlate = null, bridePlate = null;
+  let groomSlot = null, brideSlot = null;
+  let deathPlate = null;
+
+  // Normalize a name for fuzzy matching: lowercase, trim, return first+last (drop middle names)
+  function normalizeName(name) {
+    if (!name) return '';
+    const parts = name.toLowerCase().trim().split(/\s+/).filter(Boolean);
+    if (parts.length < 2) return parts.join(' ');
+    return parts[0] + ' ' + parts[parts.length - 1];
+  }
+
+  // Compute expected generation for a birth year (relative to subject, default 1985)
+  function expectedGen(birthYear) {
+    if (!birthYear) return null;
+    const by = parseInt(birthYear);
+    const subjectPlate = document.querySelector('.nameplate[data-slot="subject"]');
+    const subjectYears = subjectPlate?.querySelector('.years')?.textContent || '';
+    const subjectBirth = subjectYears.match(/(\d{4})/);
+    const subjectBorn = subjectBirth ? parseInt(subjectBirth[1]) : 1985;
+    const genGap = 30;
+    const gen = Math.round((subjectBorn - by) / genGap);
+    return Math.max(0, Math.min(5, gen));
+  }
+
+  // Helper: find a nameplate by current name text (case-insensitive, searches .name text and data-fullname)
+  // If refYear provided, picks the best match when multiple exist (prefers closest birth year)
+  // Among ties, prefers nameplates that are still placeholder ("Name") over already-filled ones
+  // opts: { certType, certYear } — filters out impossible generation matches
+  function findNameplate(name, refYear, opts) {
+    if (!name) return null;
+    const plates = document.querySelectorAll('.nameplate');
+    const searchName = name.toLowerCase().trim();
+    const searchNorm = normalizeName(name);
+    let candidates = [];
+    const expGen = (opts && opts.certType === 'birth' && refYear) ? expectedGen(refYear) : null;
+
+    function getPlateBirthYear(p) {
+      const y = p?.querySelector('.years')?.textContent?.match(/\d{4}/);
+      return y ? parseInt(y[0]) : null;
+    }
+
+    function scoreMatch(plate) {
+      const nameEl = plate.querySelector('.name');
+      const fullName = (plate.dataset.fullname || '').toLowerCase().trim();
+      const display = nameEl ? nameEl.textContent.toLowerCase().trim() : '';
+      const maiden = (plate.dataset.maiden || '').toLowerCase().trim();
+      const displayNorm = normalizeName(display);
+      const fullNorm = normalizeName(fullName);
+      const plateGen = parseInt(plate.dataset.gen || '0');
+
+      let score = 0;
+      // SAME PERSON CHECK: if normalized first+last names match, it's the same person
+      // regardless of middle names, initials, or name variations.
+      // "Andrew Fenwick" === "Andrew Maddox Fenwick" after normalization.
+      // This MUST score as high as an exact match so tiebreakers (generation, slot) decide.
+      if (displayNorm === searchNorm || fullNorm === searchNorm) {
+        score = 100; // Same person — exact-match tier
+      }
+      // Exact string match (display/full/maiden matches search exactly)
+      else if (display === searchName || fullName === searchName || maiden === searchName) {
+        score = 100;
+      }
+      // Full containment (one name contains the other)
+      else if (searchName.includes(fullName) || fullName.includes(searchName)) {
+        score = 80;
+      }
+      else if (searchName.includes(display) || display.includes(searchName)) {
+        score = 75;
+      }
+      // Partial normalized match
+      else if (searchNorm.includes(displayNorm) || displayNorm.includes(searchNorm)) {
+        score = 50;
+      }
+
+      // Generation penalty/bonus for birth certs
+      // If this plate is in a wildly wrong generation, penalize it heavily
+      if (score > 0 && opts && opts.certType === 'birth' && expGen !== null) {
+        const genDiff = Math.abs(plateGen - expGen);
+        if (genDiff > 1) {
+          score -= 50;
+        } else if (genDiff === 0) {
+          score += 10;
+        }
+      }
+
+      return score;
+    }
+
+    for (const plate of plates) {
+      const score = scoreMatch(plate);
+      if (score > 0) {
+        candidates.push({ plate, score });
+      }
+    }
+
+    // DEBUG: log all candidates and store for mobile toast
+    if (candidates.length > 0) {
+      console.log('[findNameplate] Candidates for "' + name + '":');
+      candidates.forEach(c => {
+        const slot = c.plate.dataset.slot || 'no-slot';
+        const gen = c.plate.dataset.gen || '?';
+        const display = c.plate.querySelector('.name')?.textContent || 'empty';
+        console.log('  slot=' + slot + ' gen=' + gen + ' score=' + c.score + ' name="' + display + '"');
+      });
+    }
+    window.__lastFindCandidates = candidates.map(c => ({
+      slot: c.plate.dataset.slot || '?',
+      gen: c.plate.dataset.gen || '?',
+      name: c.plate.querySelector('.name')?.textContent || 'empty',
+      score: c.score
+    }));
+
+    // Filter out impossible generation matches before ranking
+    if (opts && opts.certType && opts.certYear && !isNaN(opts.certYear)) {
+      candidates = candidates.filter(({plate}) => {
+        const by = getPlateBirthYear(plate);
+        if (!by) return true; // unfilled cards pass through
+        if (opts.certType === 'marriage') return by <= opts.certYear - 16; // can't marry before ~16
+        if (opts.certType === 'death') return by < opts.certYear; // can't die before born
+        // Birth cert: if card already has a birth year, ensure it doesn't contradict
+        if (opts.certType === 'birth' && by && refYear) {
+          return Math.abs(by - refYear) < 50; // within 50 years is OK
+        }
+        return true;
+      });
+    }
+
+    if (!candidates.length) return null;
+    if (candidates.length === 1) return candidates[0].plate;
+
+    // Sort by score descending, then by generation match, then by year proximity
+    // NOTE: removed empty-preference tiebreaker — it was causing birth certs to skip the
+    // correct filled match and land in a wrong-generation empty slot. fillPlate() blocks
+    // cross-person overwrites, so we can safely match filled slots first.
+    candidates.sort((a, b) => {
+      if (b.score !== a.score) return b.score - a.score;
+      // Generation match bonus/penalty for birth certs
+      if (expGen !== null) {
+        const aGen = parseInt(a.plate.dataset.gen || '0');
+        const bGen = parseInt(b.plate.dataset.gen || '0');
+        const aGenDiff = Math.abs(aGen - expGen);
+        const bGenDiff = Math.abs(bGen - expGen);
+        if (aGenDiff !== bGenDiff) return aGenDiff - bGenDiff; // closer generation wins
+      }
+      if (refYear) {
+        const aY = (a.plate.querySelector('.years')?.textContent || '').match(/\d{4}/);
+        const bY = (b.plate.querySelector('.years')?.textContent || '').match(/\d{4}/);
+        const aDiff = aY ? Math.abs(parseInt(aY[0]) - refYear) : 9999;
+        const bDiff = bY ? Math.abs(parseInt(bY[0]) - refYear) : 9999;
+        if (aDiff !== bDiff) return aDiff - bDiff;
+      }
+      // Tiebreaker: prefer slotted plates (they're in the correct position in the tree)
+      const aSlot = a.plate.dataset.slot ? 1 : 0;
+      const bSlot = b.plate.dataset.slot ? 1 : 0;
+      if (aSlot !== bSlot) return bSlot - aSlot; // slotted wins
+      // Final tiebreaker: for birth certs, prefer the LESS-filled plate
+      // so "Andrew Fenwick" (empty) beats "Andrew H. Fenwick" (duplicate with data)
+      if (opts && opts.certType === 'birth') {
+        const aData = (a.plate.dataset.fullname ? 1 : 0) + (a.plate.dataset.docs ? 1 : 0);
+        const bData = (b.plate.dataset.fullname ? 1 : 0) + (b.plate.dataset.docs ? 1 : 0);
+        return aData - bData; // less data wins (ascending)
+      }
+      return 0;
+    });
+
+    // For birth certs: if best match is from wrong generation by >1, reject it
+    if (expGen !== null && candidates.length > 0) {
+      const best = candidates[0];
+      const bestGen = parseInt(best.plate.dataset.gen || '0');
+      if (Math.abs(bestGen - expGen) > 1) {
+        console.log('[findNameplate] Rejecting match: gen', bestGen, 'vs expected', expGen, 'slot', best.plate.dataset.slot);
+        return null; // Wrong generation — let generation-based placement handle it
+      }
+    }
+
+    return candidates[0].plate;
+  }
+
+  // Helper: find nameplate by surname (fuzzy) — prefers nameplates with matching or close birth year
+  // opts: { certType, certYear } — filters out impossible generation matches
+  function findNameplateBySurname(name, refYear, opts) {
+    if (!name) return null;
+    const surname = name.split(' ').pop().toLowerCase();
+    const plates = document.querySelectorAll('.nameplate');
+    let candidates = [];
+    for (const plate of plates) {
+      const nameText = plate.querySelector('.name')?.textContent || '';
+      const fullText = plate.dataset.fullname || nameText;
+      const maidenText = plate.dataset.maiden || '';
+      if ((fullText.toLowerCase().includes(surname) || maidenText.toLowerCase().includes(surname)) && nameText !== 'Name') {
+        candidates.push(plate);
+      }
+    }
+    // Filter by generation if opts provided
+    if (opts && opts.certType && opts.certYear && !isNaN(opts.certYear)) {
+      candidates = candidates.filter(p => {
+        const by = (p.querySelector('.years')?.textContent || '').match(/\d{4}/);
+        if (!by) return true;
+        if (opts.certType === 'marriage') return parseInt(by[0]) <= opts.certYear - 16;
+        if (opts.certType === 'death') return parseInt(by[0]) < opts.certYear;
+        if (opts.certType === 'birth' && refYear) return Math.abs(parseInt(by[0]) - refYear) < 50;
+        return true;
+      });
+    }
+    if (!candidates.length) return null;
+    if (candidates.length === 1) return candidates[0];
+    // Multiple candidates — prefer one closest to the reference year
+    if (refYear) {
+      candidates.sort((a, b) => {
+        const aYears = a.querySelector('.years')?.textContent || '';
+        const bYears = b.querySelector('.years')?.textContent || '';
+        const aYear = aYears.match(/\d{4}/);
+        const bYear = bYears.match(/\d{4}/);
+        const aDiff = aYear ? Math.abs(parseInt(aYear[0]) - refYear) : 9999;
+        const bDiff = bYear ? Math.abs(parseInt(bYear[0]) - refYear) : 9999;
+        return aDiff - bDiff;
+      });
+      return candidates[0];
+    }
+    return candidates[0]; // fallback: first match
+  }
+
+  // Helper: find a nameplate by first name (for MC matching where bride changed surname)
+  // Only matches already-filled nameplates (not "Name" placeholders)
+  function findNameplateByFirstName(firstName, refYear) {
+    if (!firstName) return null;
+    const search = firstName.toLowerCase().trim();
+    const plates = document.querySelectorAll('.nameplate');
+    let candidates = [];
+    for (const plate of plates) {
+      const nameText = plate.querySelector('.name')?.textContent || '';
+      if (nameText === 'Name') continue; // skip unfilled
+      const first = nameText.split(' ')[0].toLowerCase().trim();
+      if (first === search) candidates.push(plate);
+    }
+    if (!candidates.length) return null;
+    if (candidates.length === 1) return candidates[0];
+    // Multiple — prefer closest to refYear
+    if (refYear) {
+      candidates.sort((a, b) => {
+        const aY = (a.querySelector('.years')?.textContent || '').match(/\d{4}/);
+        const bY = (b.querySelector('.years')?.textContent || '').match(/\d{4}/);
+        const aDiff = aY ? Math.abs(parseInt(aY[0]) - refYear) : 9999;
+        const bDiff = bY ? Math.abs(parseInt(bY[0]) - refYear) : 9999;
+        return aDiff - bDiff;
+      });
+    }
+    return candidates[0];
+  }
+
+  // Helper: find the best empty nameplate for a birth year
+  // Uses generation heuristics: assumes ~30 years per generation, subject ~1985
+  function findEmptyNameplateByGeneration(birthYear) {
+    if (!birthYear) return null;
+    const by = parseInt(birthYear);
+    // Try to read subject birth year from tree
+    const subjectPlate = document.querySelector('.nameplate[data-slot="subject"]');
+    const subjectYears = subjectPlate?.querySelector('.years')?.textContent || '';
+    const subjectBirth = subjectYears.match(/(\d{4})/);
+    const subjectBorn = subjectBirth ? parseInt(subjectBirth[1]) : 1985;
+    const genGap = 30; // approximate years per generation
+    // Expected birth year per generation
+    const genCenters = {
+      0: subjectBorn,
+      1: subjectBorn - genGap,
+      2: subjectBorn - genGap * 2,
+      3: subjectBorn - genGap * 3,
+      4: subjectBorn - genGap * 4,
+      5: subjectBorn - genGap * 5,
+    };
+    // Find all empty nameplates and score by generation proximity
+    const emptyPlates = [];
+    document.querySelectorAll('.nameplate').forEach(p => {
+      if (p.querySelector('.name')?.textContent === 'Name') {
+        const gen = parseInt(p.dataset.gen || '0');
+        const diff = Math.abs(by - (genCenters[gen] || subjectBorn - gen * genGap));
+        emptyPlates.push({ plate: p, gen, diff });
+      }
+    });
+    if (!emptyPlates.length) return null;
+    // Sort by closest generation center
+    emptyPlates.sort((a, b) => a.diff - b.diff);
+    return emptyPlates[0].plate;
+  }
+
+  // Helper: find a nameplate by slot attribute
+  function findSlot(slotName) {
+    return document.querySelector(`.nameplate[data-slot="${slotName}"]`);
+  }
+
+// Helper: split a full name into forename + <br> + surname for nameplate display
+  function formatNameplateName(fullName) {
+    if (!fullName || fullName === 'Name') return 'Name';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length < 2) return fullName;
+    const surname = parts.pop();
+    const forename = parts.join(' ');
+    return forename + '<br>' + surname;
+  }
+
+  // Helper: shorten a full name for nameplate display
+  // Gen 5: aggressively abbreviate to fit tight outer-ring spacing
+  function shortName(fullName, gen) {
+    if (!fullName || fullName === 'Name') return 'Name';
+    const parts = fullName.trim().split(/\s+/);
+    if (parts.length < 2) return fullName;
+    const surname = parts.pop();
+    const forename = parts.join(' ');
+    // Gen 4+ abbreviation: initial + surname for long names
+    if (gen >= 4 && (fullName.length > 14 || forename.length > 7)) {
+      const initial = forename.charAt(0).toUpperCase();
+      return initial + '.<br>' + surname;
+    }
+    return forename + '<br>' + surname;
+  }
+
+  // Helper: fill a nameplate with name + years; stores full name in data-fullname, displays short
+  // If maidenName provided, stores in data-maiden for later matching
+  // SAFETY: will NOT overwrite an already-filled nameplate with a DIFFERENT person, unless force=true
+  function fillPlate(plate, name, years, maidenName, force) {
+    if (!plate) return false;
+    const nameEl = plate.querySelector('.name');
+    if (!nameEl) return false;
+    const existing = nameEl.textContent.trim();
+    const existingFull = (plate.dataset.fullname || '').toLowerCase().trim();
+    const newFull = name.toLowerCase().trim();
+    const newNorm = normalizeName(name);
+    const existingNorm = normalizeName(plate.dataset.fullname || existing);
+    // Block cross-person overwrite: if slot has a real name and it's a different person
+    if (!force && existing !== 'Name' && existing !== '' && existingNorm !== newNorm) {
+      console.log('[fillPlate] BLOCKED overwrite of', plate.dataset.slot, ':', existing, '→', name);
+      return false;
+    }
+    plate.dataset.fullname = name;
+    if (maidenName) plate.dataset.maiden = maidenName;
+    const gen = parseInt(plate.dataset.gen || '0', 10);
+    nameEl.innerHTML = shortName(name, gen);
+    if (years && gen < 4) {
+      const yearsEl = plate.querySelector('.years');
+      if (yearsEl) yearsEl.textContent = years;
+    }
+    // Gen 5 visibility: show when filled, hide when cleared to 'Name'
+    if (gen === 5) {
+      plate.style.display = '';
+    }
+    return true;
+  }
+
+  // Helper: update visibility of blank gen-5 placeholders
+  function updateGen5Visibility() {
+    document.querySelectorAll('.nameplate[data-gen="5"]').forEach(plate => {
+      const nameText = plate.querySelector('.name')?.textContent?.trim() || '';
+      if (nameText === 'Name' || !plate.dataset.fullname) {
+        plate.style.display = 'none';
+      } else {
+        plate.style.display = '';
+      }
+    });
+  }
+
+  // Helper: add a doc badge to a nameplate
+  function addDocBadge(plate, docType) {
+    if (!plate) return;
+    const docs = (plate.dataset.docs || '').split(',').filter(Boolean);
+    const code = docType === 'birth' ? 'BC' : docType === 'marriage' ? 'MC' : docType === 'death' ? 'DC' : '?';
+    if (!docs.includes(code)) {
+      docs.push(code);
+      plate.dataset.docs = docs.join(',');
+    }
+  }
+
+  // Helper: get years string from age at marriage/birth
+  function birthYearFromAge(age, year) {
+    if (!age || !year) return '';
+    return (parseInt(year) - parseInt(age)) + ' —';
+  }
+
+  // Helper: resize and compress image to stay under API limits
+  function resizeAndCompressImage(file, maxWidth, quality) {
+    return new Promise((resolve, reject) => {
+      const img = new Image();
+      const url = URL.createObjectURL(file);
+      img.onload = () => {
+        URL.revokeObjectURL(url);
+        let w = img.width;
+        let h = img.height;
+        if (w > maxWidth) {
+          h = Math.round(h * (maxWidth / w));
+          w = maxWidth;
+        }
+        const canvas = document.createElement('canvas');
+        canvas.width = w;
+        canvas.height = h;
+        const ctx = canvas.getContext('2d');
+        ctx.fillStyle = '#FFFFFF';
+        ctx.fillRect(0, 0, w, h);
+        ctx.drawImage(img, 0, 0, w, h);
+        const dataUrl = canvas.toDataURL('image/jpeg', quality);
+        resolve(dataUrl);
+      };
+      img.onerror = (e) => {
+        URL.revokeObjectURL(url);
+        reject(new Error('Failed to load image for compression'));
+      };
+      img.src = url;
+    });
+  }
+
+  // Helper: extract year from date string
+  function extractYear(dateStr) {
+    if (!dateStr) return null;
+    const m = dateStr.match(/\d{4}/);
+    return m ? m[0] : null;
+  }
+
+  // Helper: format a date to just the year for years field
+  function dateToYear(dateStr) {
+    const y = extractYear(dateStr);
+    return y ? y + ' —' : '';
+  }
+
+  // === BIRTH CERT ===
+  // Smart: try matching child to existing nameplate first. If found, update dates and add BC doc.
+  // If not found, check parents against existing tree — if parents match, this is a sibling/relative.
+  // Fall back to Gen 0 only if child is genuinely new (the tree subject).
+  if (type === 'birth') {
+    const childName = data.child?.name || '';
+    const birthYear = extractYear(data.child?.birthDate);
+    const bcOpts = birthYear ? { certType: 'birth', certYear: parseInt(birthYear) } : null;
+
+    // PRE-MATCH: Merge duplicate nameplates for the same normalized person.
+    // e.g. "Andrew Fenwick" (slotted, empty) and "Andrew H. Fenwick" (unslotted, with data)
+    // are the same person. Merge: copy data from duplicate into the best plate, then clear it.
+    try {
+    (function mergeDuplicates() {
+      const allPlates = Array.from(document.querySelectorAll('.nameplate'));
+      const normGroups = new Map();
+      allPlates.forEach(p => {
+        const disp = normalizeName(p.querySelector('.name')?.textContent || '');
+        const full = normalizeName(p.dataset.fullname || '');
+        // Only group non-placeholder plates
+        if (disp && disp !== 'name') {
+          if (!normGroups.has(disp)) normGroups.set(disp, []);
+          normGroups.get(disp).push(p);
+        }
+        if (full && full !== disp && full !== 'name') {
+          if (!normGroups.has(full)) normGroups.set(full, []);
+          // Don't double-add if display norm already matches
+          if (!normGroups.get(full).includes(p)) normGroups.get(full).push(p);
+        }
+      });
+      let mergeCount = 0;
+      normGroups.forEach((plates, norm) => {
+        if (plates.length < 2) return; // no duplicates
+        // Sort: prefer the slotted plate with data, then slotted without data, then least-filled
+        plates.sort((a, b) => {
+          const aSlot = a.dataset.slot ? 2 : 0;
+          const bSlot = b.dataset.slot ? 2 : 0;
+          const aData = (a.dataset.fullname ? 1 : 0) + (a.dataset.docs ? 1 : 0);
+          const bData = (b.dataset.fullname ? 1 : 0) + (b.dataset.docs ? 1 : 0);
+          return (bSlot + bData) - (aSlot + aData); // slotted + data wins
+        });
+        const keeper = plates[0]; // best plate (slotted with data, or slotted, or with data)
+        const dups = plates.slice(1);
+        dups.forEach(dup => {
+          // Merge data from duplicate into keeper (if keeper doesn't have it)
+          if (!keeper.dataset.fullname && dup.dataset.fullname) keeper.dataset.fullname = dup.dataset.fullname;
+          if (!keeper.dataset.maiden && dup.dataset.maiden) keeper.dataset.maiden = dup.dataset.maiden;
+          if (!keeper.dataset.docs && dup.dataset.docs) keeper.dataset.docs = dup.dataset.docs;
+          const keeperYears = keeper.querySelector('.years')?.textContent || '';
+          const dupYears = dup.querySelector('.years')?.textContent || '';
+          if ((keeperYears === 'YYYY — YYYY' || !keeperYears.trim()) && dupYears && dupYears !== 'YYYY — YYYY') {
+            keeper.querySelector('.years').textContent = dupYears;
+          }
+          // Update display name to the fuller version
+          const keeperFull = keeper.dataset.fullname || '';
+          const dupFull = dup.dataset.fullname || '';
+          if ((!keeperFull || keeperFull.length < dupFull.length) && dupFull) {
+            keeper.dataset.fullname = dupFull;
+          }
+          // Clear the duplicate
+          console.log('[MERGE] Merging duplicate "' + norm + '": kept', keeper.dataset.slot, ', cleared', dup.dataset.slot);
+          dup.querySelector('.name').textContent = 'Name';
+          dup.querySelector('.years').textContent = 'YYYY — YYYY';
+          delete dup.dataset.fullname;
+          delete dup.dataset.maiden;
+          delete dup.dataset.docs;
+          if (parseInt(dup.dataset.gen || '0', 10) === 5) dup.style.display = 'none';
+          mergeCount++;
+        });
+        // Re-display keeper with formatted name from fullname
+        if (keeper.dataset.fullname) {
+          keeper.querySelector('.name').innerHTML = formatNameplateName(keeper.dataset.fullname);
+        }
+      });
+      if (mergeCount > 0) showToast('Merged ' + mergeCount + ' duplicate(s)');
+    })();
+    } catch(mergeErr) {
+      console.error('[MERGE ERROR]', mergeErr);
+      showToast('Merge error: ' + mergeErr.message);
+    }
+
+    // Try to find the child in the tree
+    childPlate = findNameplate(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
+    showToast('BC: searching for "' + childName + '" (year=' + (birthYear||'?') + ')');
+    // Surname fallback only if generation makes sense
+    if (!childPlate && birthYear) {
+      childPlate = findNameplateBySurname(childName, birthYear ? parseInt(birthYear) : null, bcOpts);
+      if (childPlate) {
+        const matchedGen = parseInt(childPlate.dataset.gen || '0');
+        const expGen = expectedGen(parseInt(birthYear));
+        if (expGen !== null && Math.abs(matchedGen - expGen) > 1) {
+          console.log('[BC] Surname match rejected: gen', matchedGen, 'vs expected', expGen);
+          childPlate = null; // Wrong generation — discard
+        }
+      }
+    }
+    // NOTE: If findNameplate() matched an existing nameplate, we always update it.
+    // fillPlate() blocks cross-person overwrites (different first+last surname).
+    // Parent consistency is NOT checked here — the birth cert is the source of truth for parents.
+    // If tree parents differ from cert parents, the cert parents win (they're the primary source).
+    if (!childPlate && birthYear) {
+      // No name/surname match — tree may be empty. Try generation-based placement.
+      childPlate = findEmptyNameplateByGeneration(parseInt(birthYear));
+      if (childPlate) {
+        messages.push('BC → placed by generation (' + (childPlate.dataset.gen || '?') + ')');
+      }
+    }
+    // DEBUG: tell user what we matched
+    if (childPlate) {
+      const slot = childPlate.dataset.slot || 'unnamed';
+      const gen = childPlate.dataset.gen || '?';
+      const existing = childPlate.querySelector('.name')?.textContent || 'empty';
+      showToast('Matched "' + childName + '" to slot ' + slot + ' (gen ' + gen + ', was: ' + existing + ')');
+    } else {
+      showToast('No match for "' + childName + '" — will try generation placement');
+    }
+    // Also show all candidates in a delayed toast for mobile debugging
+    const allCands = window.__lastFindCandidates || [];
+    if (allCands.length > 1) {
+      setTimeout(() => {
+        const top3 = allCands.slice(0, 3).map(c => {
+          return c.slot + '=' + c.name.substring(0, 12) + '(sc' + c.score + ')';
+        }).join(', ');
+        showToast('Top matches: ' + top3);
+      }, 1500);
+    }
+
+    if (childPlate && childPlate.dataset.slot) {
+      // Child found in tree — update their birth date and add BC badge
+      fillPlate(childPlate, childName, data.child.birthDate || '');
+      addDocBadge(childPlate, 'birth');
+      filled++;
+      messages.push('BC → matched ' + (childPlate.dataset.slot || 'nameplate'));
+
+      // Also try to match parents from BC to existing slots (cross-verify)
+      const slot = childPlate.dataset.slot;
+      const pMap = OWN_PARENT_MAP[slot];
+      if (pMap && pMap.fatherSlot && data.father?.name) {
+        const fPlate = findSlot(pMap.fatherSlot);
+        if (fPlate) {
+          const existing = fPlate.dataset.fullname || fPlate.querySelector('.name').textContent;
+          const bcFather = data.father.name;
+          if (existing === 'Name') {
+            const ok = fillPlate(fPlate, bcFather, '');
+            if (ok) {
+              addDocBadge(fPlate, 'birth');
+              filled++;
+              messages.push("BC father → " + pMap.fatherSlot);
+              showToast('Father: ' + bcFather + ' → ' + pMap.fatherSlot);
+            } else {
+              showToast('Father slot ' + pMap.fatherSlot + ' blocked by fillPlate');
+            }
+          } else {
+            showToast('Father slot ' + pMap.fatherSlot + ' already has: ' + existing);
+          }
+        } else {
+          showToast('Father slot ' + pMap.fatherSlot + ' not found in DOM');
+        }
+      } else {
+        showToast('No pMap or no father data. pMap=' + JSON.stringify(pMap) + ' father=' + (data.father?.name || 'missing'));
+      }
+      if (pMap && pMap.motherSlot && data.mother?.name) {
+        const mPlate = findSlot(pMap.motherSlot);
+        if (mPlate) {
+          const existing = mPlate.dataset.fullname || mPlate.querySelector('.name').textContent;
+          const bcMother = data.mother.name;
+          if (existing === 'Name') {
+            const ok = fillPlate(mPlate, bcMother, '', data.mother?.maidenName || data.mother?.maidenSurname || '');
+            if (ok) {
+              addDocBadge(mPlate, 'birth');
+              filled++;
+              messages.push("BC mother → " + pMap.motherSlot);
+              showToast('Mother: ' + bcMother + ' → ' + pMap.motherSlot);
+            } else {
+              showToast('Mother slot ' + pMap.motherSlot + ' blocked by fillPlate');
+            }
+          } else {
+            showToast('Mother slot ' + pMap.motherSlot + ' already has: ' + existing);
+          }
+        } else {
+          showToast('Mother slot ' + pMap.motherSlot + ' not found in DOM');
+        }
+      } else {
+        showToast('No mother data or pMap. mother=' + (data.mother?.name || 'missing'));
+      }
+    } else if (childPlate) {
+      // Found the child but on a generic nameplate (no slot) — just update
+      fillPlate(childPlate, childName, data.child.birthDate || '');
+      addDocBadge(childPlate, 'birth');
+      filled++;
+    } else {
+      // No match — this is a new person. Place as Gen 0 (subject)
+      const plate = findSlot('subject');
+      if (plate) {
+        fillPlate(plate, childName, data.child.birthDate || '');
+        addDocBadge(plate, 'birth');
+        filled++;
+        messages.push('Child → Subject');
+
+        // Place parents if slots are empty
+        if (data.father?.name) {
+          const fPlate = findSlot('father');
+          if (fPlate && fPlate.querySelector('.name').textContent === 'Name') {
+            fillPlate(fPlate, data.father.name, '');
+            addDocBadge(fPlate, 'birth');
+            filled++;
+            messages.push('Father → Gen 1');
+          }
+        }
+        if (data.mother?.name) {
+          const mPlate = findSlot('mother');
+          if (mPlate && mPlate.querySelector('.name').textContent === 'Name') {
+            fillPlate(mPlate, data.mother.name, '');
+            addDocBadge(mPlate, 'birth');
+            filled++;
+            messages.push('Mother → Gen 1');
+          }
+        }
+      }
+    }
+  } else if (type === 'marriage') {
+    // Marriage cert: find groom/bride in the tree, then place their parents one generation up
+    // OWN_PARENT_MAP gives ACTUAL parents for each slot (not in-laws)
+    // Bride's parents = OWN_PARENT_MAP[brideSlot], groom's parents = OWN_PARENT_MAP[groomSlot]
+    const groomName = data.groom?.name || '';
+    const brideName = data.bride?.name || '';
+    const marriageYear = extractYear(data.date);
+
+    const groomBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.groom?.age || 0)) : null;
+    const brideBirthYear = marriageYear ? (parseInt(marriageYear) - parseInt(data.bride?.age || 0)) : null;
+    const mcOpts = marriageYear ? { certType: 'marriage', certYear: parseInt(marriageYear) } : null;
+
+    // STEP 1: Match groom
+    groomPlate = findNameplate(groomName, groomBirthYear, mcOpts);
+    if (!groomPlate) groomPlate = findNameplateBySurname(groomName, groomBirthYear);
+
+    // STEP 2: Match bride — SPOUSE SLOT FIRST
+    // If groom is matched, bride MUST be in SPOUSE_MAP[groomSlot]. This is definitive.
+    // Prevents false matches from previous scans that placed the bride in wrong slots.
+    if (groomPlate && brideName) {
+      const expectedBrideSlot = SPOUSE_MAP[groomPlate.dataset.slot];
+      if (expectedBrideSlot) {
+        const expectedBridePlate = findSlot(expectedBrideSlot);
+        if (expectedBridePlate) {
+          const brideFirstName = brideName.split(' ')[0]?.toLowerCase();
+          const expectedName = (expectedBridePlate.querySelector('.name')?.textContent || '').toLowerCase();
+          const expectedFull = (expectedBridePlate.dataset.fullname || '').toLowerCase();
+          const expectedMaiden = (expectedBridePlate.dataset.maiden || '').toLowerCase();
+          // Match if first name matches (display, fullname, or maiden)
+          if (expectedName !== 'name' && (
+            expectedName.split(' ')[0] === brideFirstName ||
+            expectedFull.split(' ')[0] === brideFirstName ||
+            expectedMaiden.split(' ')[0] === brideFirstName
+          )) {
+            bridePlate = expectedBridePlate;
+            // Store maiden name for future matching
+            if (!expectedBridePlate.dataset.maiden) {
+              expectedBridePlate.dataset.maiden = brideName;
+            }
+          }
+        }
+      }
+    }
+
+    // STEP 3: If spouse slot didn't match, fall back to tree search
+    if (!bridePlate) {
+      bridePlate = findNameplate(brideName, brideBirthYear, mcOpts);
+      if (!bridePlate) bridePlate = findNameplateBySurname(brideName, brideBirthYear);
+    }
+
+    // STEP 4: Last resort — first name only
+    if (!bridePlate && brideName) {
+      const brideFirst = brideName.split(' ')[0];
+      bridePlate = findNameplateByFirstName(brideFirst, brideBirthYear);
+    }
+    if (!groomPlate && groomName) {
+      const groomFirst = groomName.split(' ')[0];
+      groomPlate = findNameplateByFirstName(groomFirst, groomBirthYear);
+    }
+
+    // Sanity check: a groom/bride cannot be born AFTER their marriage year
+    // If the matched card's birth year > marriage year, it's the wrong person
+    function getBirthYear(plate) {
+      const y = plate?.querySelector('.years')?.textContent?.match(/\d{4}/);
+      return y ? parseInt(y[0]) : null;
+    }
+    if (groomPlate && marriageYear) {
+      const by = getBirthYear(groomPlate);
+      if (by && by > parseInt(marriageYear)) {
+        // Groom matched someone born after the wedding — wrong person
+        // Try to find another candidate with the same name born before the wedding
+        const all = document.querySelectorAll('.nameplate');
+        const search = groomName.toLowerCase().trim();
+        let alt = null;
+        for (const p of all) {
+          const fn = (p.dataset.fullname || '').toLowerCase().trim();
+          const disp = (p.querySelector('.name')?.textContent || '').toLowerCase().trim();
+          const md = (p.dataset.maiden || '').toLowerCase().trim();
+          if (fn === search || disp === search || md === search) {
+            const b = getBirthYear(p);
+            if (b && b <= parseInt(marriageYear)) { alt = p; break; }
+          }
+        }
+        groomPlate = alt; // may be null if no valid candidate
+      }
+    }
+    if (bridePlate && marriageYear) {
+      const by = getBirthYear(bridePlate);
+      if (by && by > parseInt(marriageYear)) {
+        const all = document.querySelectorAll('.nameplate');
+        const search = brideName.toLowerCase().trim();
+        let alt = null;
+        for (const p of all) {
+          const fn = (p.dataset.fullname || '').toLowerCase().trim();
+          const disp = (p.querySelector('.name')?.textContent || '').toLowerCase().trim();
+          const md = (p.dataset.maiden || '').toLowerCase().trim();
+          if (fn === search || disp === search || md === search) {
+            const b = getBirthYear(p);
+            if (b && b <= parseInt(marriageYear)) { alt = p; break; }
+          }
+        }
+        bridePlate = alt;
+      }
+    }
+
+    // Helper: fill a slot only if empty
+    function fillEmptySlot(slotName, name, badge, maidenName) {
+      const plate = findSlot(slotName);
+      if (plate && plate.querySelector('.name').textContent === 'Name') {
+        fillPlate(plate, name, '', maidenName);
+        addDocBadge(plate, badge);
+        filled++;
+        messages.push(name + ' → ' + slotName);
+        return true;
+      }
+      return false;
+    }
+
+    // Helper: place parents into the correct slots
+    // parentMap = { fatherSlot, motherSlot } from OWN_PARENT_MAP
+    function placeParents(fatherName, motherData, parentMap) {
+      if (!parentMap) return;
+      const { fatherSlot, motherSlot } = parentMap;
+      if (fatherName) fillEmptySlot(fatherSlot, fatherName, 'marriage');
+      const mName = motherData?.name || motherData?.maidenName;
+      const mMaiden = motherData?.maidenName || null;
+      if (mName) fillEmptySlot(motherSlot, mName, 'marriage', mMaiden);
+    }
+
+    groomSlot = null; brideSlot = null;
+
+    if (groomPlate) {
+      groomSlot = groomPlate.dataset.slot;
+      fillPlate(groomPlate, groomName, marriageYear ? birthYearFromAge(data.groom?.age, marriageYear) : '');
+      addDocBadge(groomPlate, 'marriage');
+      filled++;
+      messages.push('Groom matched (existing) → ' + groomSlot);
+      // Groom's OWN parents → OWN_PARENT_MAP
+      placeParents(data.groomFather?.name, data.groomMother, OWN_PARENT_MAP[groomSlot]);
+      // Bride (spouse) → SPOUSE_MAP
+      brideSlot = SPOUSE_MAP[groomSlot] || null;
+    }
+
+    if (bridePlate) {
+      brideSlot = bridePlate.dataset.slot;
+      // Store bride's maiden name from cert (cert always uses maiden name)
+      // This enables future MC matching by maiden name
+      const brideCertSurname = brideName.includes(' ') ? brideName.split(' ').pop() : '';
+      const brideCardSurname = (bridePlate.dataset.fullname || '').includes(' ') ? bridePlate.dataset.fullname.split(' ').pop() : '';
+      if (brideCertSurname && brideCardSurname && brideCertSurname !== brideCardSurname) {
+        // Cert says "Alice Marsh", card says "Alice Harrow" — store "Alice Marsh" as maiden
+        bridePlate.dataset.maiden = brideName;
+      }
+      fillPlate(bridePlate, bridePlate.dataset.fullname || brideName, marriageYear ? birthYearFromAge(data.bride?.age, marriageYear) : '');
+      addDocBadge(bridePlate, 'marriage');
+      filled++;
+      messages.push('Bride matched (existing) → ' + brideSlot);
+      // Bride's OWN parents → OWN_PARENT_MAP[her slot] (her own line, not in-laws)
+      placeParents(data.brideFather?.name, data.brideMother, OWN_PARENT_MAP[brideSlot]);
+      // Groom (spouse) → SPOUSE_MAP
+      if (!groomPlate) groomSlot = SPOUSE_MAP[brideSlot] || null;
+    }
+
+    // If only groom matched, derive bride slot and place bride + her parents
+    if (groomPlate && !bridePlate && brideSlot && brideName) {
+      fillEmptySlot(brideSlot, brideName, 'marriage');
+      // Bride's parents → OWN_PARENT_MAP[brideSlot] (her own line)
+      placeParents(data.brideFather?.name, data.brideMother, OWN_PARENT_MAP[brideSlot]);
+      messages.push('Bride → ' + brideSlot + ' (derived from groom)');
+    }
+
+    // If only bride matched, derive groom slot and place groom + his parents
+    if (bridePlate && !groomPlate && groomSlot && groomName) {
+      fillEmptySlot(groomSlot, groomName, 'marriage');
+      // Groom's parents → OWN_PARENT_MAP[groomSlot] (his own line)
+      placeParents(data.groomFather?.name, data.groomMother, OWN_PARENT_MAP[groomSlot]);
+      // Also place groom's updated birth year if we can derive it
+      const gPlate = findSlot(groomSlot);
+      if (gPlate && marriageYear) {
+        const gYears = birthYearFromAge(data.groom?.age, marriageYear);
+        const yearsEl = gPlate.querySelector('.years');
+        if (yearsEl && yearsEl.textContent.includes('YYYY')) yearsEl.textContent = gYears;
+      }
+      messages.push('Groom → ' + groomSlot + ' (derived from bride)');
+    }
+
+    // Total fallback: neither matched, no slots derived → place in Gen 1
+    if (!groomPlate && !bridePlate && !groomSlot && !brideSlot) {
+      if (groomName) {
+        fillEmptySlot('father', groomName, 'marriage');
+        // Groom's parents → OWN_PARENT_MAP['father']
+        placeParents(data.groomFather?.name, data.groomMother, OWN_PARENT_MAP['father']);
+      }
+      if (brideName) {
+        fillEmptySlot('mother', brideName, 'marriage');
+        // Bride's parents → OWN_PARENT_MAP[SPOUSE_MAP['father']] = OWN_PARENT_MAP['mother']
+        placeParents(data.brideFather?.name, data.brideMother, OWN_PARENT_MAP['mother']);
+      }
+    }
+  } else if (type === 'death') {
+    const deceasedName = data.deceased?.name;
+    const deathYear = extractYear(data.deathDate);
+    const dcOpts = deathYear ? { certType: 'death', certYear: parseInt(deathYear) } : null;
+    if (deceasedName) {
+      deathPlate = findNameplate(deceasedName, deathYear, dcOpts);
+      if (!deathPlate) deathPlate = findNameplateBySurname(deceasedName, deathYear);
+      if (deathPlate) {
+        // Update death year on the nameplate
+        const deathInfo = data.deathDate || (data.deceased?.age ? 'd. age ' + data.deceased.age : '');
+        const yearsEl = deathPlate.querySelector('.years');
+        if (yearsEl) {
+          const existing = yearsEl.textContent;
+          if (existing.includes('YYYY')) {
+            yearsEl.textContent = deathInfo;
+          } else if (existing.includes('—') && !existing.match(/\d{4}\s*—\s*\d{4}/)) {
+            // Has birth year but no death year (e.g. "1932 —")
+            const birthYear = existing.match(/\d{4}/);
+            if (birthYear && extractYear(data.deathDate)) {
+              yearsEl.textContent = birthYear[0] + ' — ' + extractYear(data.deathDate);
+            }
+          } else if (existing.match(/\d{4}\s*—\s*\d{4}/)) {
+            // Already has both years — just update death year
+            const parts = existing.split(/\s*—\s*/);
+            if (parts.length === 2 && extractYear(data.deathDate)) {
+              yearsEl.textContent = parts[0].trim() + ' — ' + extractYear(data.deathDate);
+            }
+          }
+        }
+        fillPlate(deathPlate, deceasedName, yearsEl?.textContent || '');
+        addDocBadge(deathPlate, 'death');
+        filled++;
+        messages.push('DC → matched ' + deceasedName);
+
+        // Place the deceased's parents into the correct slots
+        const deathSlot = deathPlate.dataset.slot;
+        console.log('[DC DEBUG] deceasedName:', deceasedName, 'deathSlot:', deathSlot);
+        console.log('[DC DEBUG] OWN_PARENT_MAP[' + deathSlot + ']:', deathSlot ? OWN_PARENT_MAP[deathSlot] : 'NO SLOT');
+        showToast('DC: ' + deceasedName + ' → slot ' + deathSlot, 4000);
+        if (deathSlot && OWN_PARENT_MAP[deathSlot]) {
+          const pMap = OWN_PARENT_MAP[deathSlot];
+          console.log('[DC DEBUG] fatherSlot:', pMap.fatherSlot, 'motherSlot:', pMap.motherSlot);
+          console.log('[DC DEBUG] data.father:', data.father, 'data.mother:', data.mother);
+          // Father
+          if (data.father?.name) {
+            const fPlate = findSlot(pMap.fatherSlot);
+            if (fPlate) {
+              const existing = fPlate.dataset.fullname || fPlate.querySelector('.name').textContent;
+              const dcFather = data.father.name;
+              if (existing === 'Name') {
+                fillPlate(fPlate, dcFather, '', '');
+                addDocBadge(fPlate, 'death');
+                filled++;
+                messages.push('DC father → ' + pMap.fatherSlot);
+                showToast('Father: ' + dcFather + ' → ' + pMap.fatherSlot);
+              } else if (existing.toLowerCase().trim() !== dcFather.toLowerCase().trim()) {
+                // Name already there but different — check if it's the same person (partial match)
+                if (normalizeName(existing) === normalizeName(dcFather) || existing.toLowerCase().includes(dcFather.split(' ')[0].toLowerCase())) {
+                  // Same person, possibly with fuller name — update
+                  if (dcFather.length > existing.length) {
+                    fillPlate(fPlate, dcFather, '', '');
+                    addDocBadge(fPlate, 'death');
+                    filled++;
+                    messages.push('DC father updated ' + pMap.fatherSlot);
+                  }
+                } else {
+                  // Different person entirely — cert is primary source, force overwrite
+                  fillPlate(fPlate, dcFather, '', '', true);
+                  addDocBadge(fPlate, 'death');
+                  filled++;
+                  messages.push('DC father corrected ' + pMap.fatherSlot + ': ' + existing + ' → ' + dcFather);
+                  showToast('Corrected: ' + existing + ' → ' + dcFather + ' @ ' + pMap.fatherSlot);
+                }
+              }
+            }
+          }
+          // Mother
+          if (data.mother?.name) {
+            const mPlate = findSlot(pMap.motherSlot);
+            if (mPlate) {
+              const existing = mPlate.dataset.fullname || mPlate.querySelector('.name').textContent;
+              const dcMother = data.mother.name;
+              const dcMaiden = data.mother?.maidenName || data.mother?.maidenSurname || '';
+              if (existing === 'Name') {
+                fillPlate(mPlate, dcMother, '', dcMaiden);
+                addDocBadge(mPlate, 'death');
+                filled++;
+                messages.push('DC mother → ' + pMap.motherSlot);
+                showToast('Mother: ' + dcMother + (dcMaiden ? ' née ' + dcMaiden : '') + ' → ' + pMap.motherSlot);
+              } else if (existing.toLowerCase().trim() !== dcMother.toLowerCase().trim()) {
+                if (normalizeName(existing) === normalizeName(dcMother) || existing.toLowerCase().includes(dcMother.split(' ')[0].toLowerCase())) {
+                  if (dcMother.length > existing.length) {
+                    fillPlate(mPlate, dcMother, '', dcMaiden);
+                    addDocBadge(mPlate, 'death');
+                    filled++;
+                    messages.push('DC mother updated ' + pMap.motherSlot);
+                  }
+                } else {
+                  // Different person entirely — cert is primary source, force overwrite
+                  fillPlate(mPlate, dcMother, '', dcMaiden, true);
+                  addDocBadge(mPlate, 'death');
+                  filled++;
+                  messages.push('DC mother corrected ' + pMap.motherSlot + ': ' + existing + ' → ' + dcMother);
+                  showToast('Corrected: ' + existing + ' → ' + dcMother + ' @ ' + pMap.motherSlot);
+                }
+              }
+            }
+          }
+          // If spouse info from DC, update the spouse nameplate if it exists
+          if (data.deceased?.spouseName) {
+            const spouseSlot = SPOUSE_MAP[deathSlot];
+            if (spouseSlot) {
+              const sPlate = findSlot(spouseSlot);
+              if (sPlate) {
+                const existingSpouse = sPlate.dataset.fullname || sPlate.querySelector('.name').textContent;
+                const dcSpouseName = data.deceased.spouseName;
+                if (existingSpouse === 'Name') {
+                  fillPlate(sPlate, dcSpouseName, '');
+                  addDocBadge(sPlate, 'death');
+                  filled++;
+                  messages.push('DC spouse → ' + spouseSlot);
+                } else if (existingSpouse.toLowerCase().trim() !== dcSpouseName.toLowerCase().trim()) {
+                  // Spouse name differs — check if same person with more complete name
+                  if (normalizeName(existingSpouse) === normalizeName(dcSpouseName) || existingSpouse.toLowerCase().includes(dcSpouseName.split(' ')[0].toLowerCase())) {
+                    // Same person — update if cert has fuller name
+                    if (dcSpouseName.length > existingSpouse.length) {
+                      fillPlate(sPlate, dcSpouseName, '');
+                      addDocBadge(sPlate, 'death');
+                      filled++;
+                      messages.push('DC spouse updated ' + spouseSlot + ': ' + existingSpouse + ' → ' + dcSpouseName);
+                    }
+                  } else {
+                    // Different person entirely — cert is primary source, force overwrite
+                    fillPlate(sPlate, dcSpouseName, '', '', true);
+                    addDocBadge(sPlate, 'death');
+                    filled++;
+                    messages.push('DC spouse corrected ' + spouseSlot + ': ' + existingSpouse + ' → ' + dcSpouseName);
+                    showToast('Corrected spouse: ' + existingSpouse + ' → ' + dcSpouseName);
+                  }
+                }
+              }
+            }
+          }
+        } else if (deathSlot) {
+          showToast('DC matched ' + deceasedName + ' but no OWN_PARENT_MAP entry for slot "' + deathSlot + '"');
+        } else {
+          showToast('DC matched ' + deceasedName + ' but no slot assigned');
+        }
+      }
+    }
+  }
+
+  certStatus.className = 'cert-status';
+  certStatus.textContent = '✓ Applied ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' to tree';
+  certActions.style.display = 'none';
+
+  console.log('[CERT APPLY] type:', type, 'filled:', filled, 'messages:', messages);
+  console.log('[CERT APPLY] deathPlate slot:', deathPlate?.dataset?.slot, 'childPlate slot:', childPlate?.dataset?.slot);
+  // Show detailed debug toast for DC parents
+  if (type === 'death' && deathPlate) {
+    const dSlot = deathPlate.dataset.slot;
+    const pMap = dSlot ? OWN_PARENT_MAP[dSlot] : null;
+    const debugMsg = 'DC: slot=' + dSlot + ' parents=' + (pMap ? pMap.fatherSlot + '/' + pMap.motherSlot : 'NONE') + ' filled=' + filled;
+    console.log('[CERT APPLY]', debugMsg);
+    showToast('✓ ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' — ' + debugMsg, 5000);
+  } else {
+    showToast('✓ Applied ' + filled + ' field' + (filled !== 1 ? 's' : '') + ' to tree', 4000);
+  }
+
+  // Save document image to IndexedDB if retention is enabled
+  const keepDocs = document.getElementById('keepDocsToggle').checked;
+  if (keepDocs && pendingDocImage && pendingDocType) {
+    const primarySlots = [];
+    if (type === 'birth' && childPlate) primarySlots.push(childPlate.dataset.slot);
+    if (type === 'marriage') {
+      if (groomSlot) primarySlots.push(groomSlot);
+      if (brideSlot) primarySlots.push(brideSlot);
+    }
+    if (type === 'death' && deathPlate) primarySlots.push(deathPlate.dataset.slot);
+    // Also save for parents that were filled
+    // Find all slots that got filled from this cert
+    const filledSlots = [];
+    document.querySelectorAll('.nameplate').forEach(p => {
+      const docs = (p.dataset.docs || '').split(',').filter(Boolean);
+      if (docs.includes(pendingDocType === 'auto' ? (type === 'birth' ? 'birth' : type === 'marriage' ? 'marriage' : 'death') : pendingDocType)) {
+        filledSlots.push(p.dataset.slot);
+      }
+    });
+    const allSlots = [...new Set([...primarySlots, ...filledSlots])];
+    allSlots.forEach(async (slot) => {
+      if (slot) {
+        try {
+          await saveDoc(slot, pendingDocType, pendingDocImage, { certType: type, date: data.date });
+        } catch (e) { console.error('Doc save failed for', slot, e); }
+      }
+    });
+  }
+  pendingDocImage = null;
+  pendingDocType = null;
+
+  setTimeout(closeCertPanel, 1500);
+  updateGen5Visibility();
+
+  } catch (err) {
+    console.error('[CERT APPLY ERROR]', err);
+    showToast('Apply failed: ' + err.message);
+    return;
+  }
+});
+
+// ============================================
+// RESEARCH GUIDANCE
+// ============================================
+
+const guideBtn = document.getElementById('guideBtn');
+const guidePanel = document.getElementById('guidePanel');
+const guideOverlay = document.getElementById('guideOverlay');
+const guideClose = document.getElementById('guideClose');
+const guideResults = document.getElementById('guideResults');
+
+function openGuide() {
+  guidePanel.classList.add('active');
+  guideOverlay.classList.add('active');
+  runGuidanceAnalysis();
+}
+function closeGuide() {
+  guidePanel.classList.remove('active');
+  guideOverlay.classList.remove('active');
+}
+
+guideBtn.addEventListener('click', openGuide);
+guideClose.addEventListener('click', closeGuide);
+guideOverlay.addEventListener('click', closeGuide);
+
+function runGuidanceAnalysis() {
+  guideResults.style.display = 'block';
+  guideResults.innerHTML = '<div style="text-align:center;padding:20px 0;font-family:\'Cormorant Garamond\',serif;color:#5a4a32;font-size:13px;">Analysing your family tree...</div>';
+
+  // Guidance-specific helpers (some tree functions are scoped inside applyCert, so we define lightweight versions here)
+  function guideFindSlot(slotName) {
+    return document.querySelector(`.nameplate[data-slot="${slotName}"]`);
+  }
+
+  try {
+  const plates = document.querySelectorAll('.nameplate');
+  const filled = [];
+  const empty = [];
+  const docs = {};
+
+  plates.forEach(plate => {
+    const nameEl = plate.querySelector('.name');
+    const yearsEl = plate.querySelector('.years');
+    const slot = plate.dataset.slot || '';
+    const gen = plate.dataset.gen || '0';
+    const name = (plate.dataset.fullname || nameEl?.textContent || '').trim();
+    const years = yearsEl?.textContent?.trim() || '';
+    const plateDocs = (plate.dataset.docs || '').split(',').filter(Boolean);
+
+    if (name && name !== 'Name') {
+      filled.push({ slot, gen, name, years, docs: plateDocs });
+      plateDocs.forEach(d => { docs[d] = (docs[d] || 0) + 1; });
+    } else {
+      empty.push({ slot, gen });
+    }
+  });
+
+  // Determine which slots have missing data
+  const missingBirth = [];
+  const missingParents = [];
+  const couplesWithoutMC = [];
+
+  filled.forEach(p => {
+    const gen = parseInt(p.gen, 10);
+    const pMap = OWN_PARENT_MAP[p.slot];
+
+    // Missing birth year?
+    if (!p.years || p.years === 'YYYY — YYYY' || p.years.startsWith('YYYY')) {
+      // Check how many slots a BC would actually fill
+      const parentSlotsFilled = [];
+      if (pMap) {
+        const fPlate = guideFindSlot(pMap.fatherSlot);
+        const mPlate = guideFindSlot(pMap.motherSlot);
+        const fName = fPlate?.dataset?.fullname || fPlate?.querySelector('.name')?.textContent?.trim();
+        const mName = mPlate?.dataset?.fullname || mPlate?.querySelector('.name')?.textContent?.trim();
+        if (fName === 'Name' || !fName) parentSlotsFilled.push('father');
+        if (mName === 'Name' || !mName) parentSlotsFilled.push('mother');
+      }
+      missingBirth.push({ ...p, newSlots: 1 + parentSlotsFilled.length, parentSlotsFilled });
+    }
+
+    // Missing parents?
+    if (pMap && pMap.fatherSlot && pMap.motherSlot) {
+      const fPlate = guideFindSlot(pMap.fatherSlot);
+      const mPlate = guideFindSlot(pMap.motherSlot);
+      const fName = fPlate?.dataset?.fullname || fPlate?.querySelector('.name')?.textContent?.trim();
+      const mName = mPlate?.dataset?.fullname || mPlate?.querySelector('.name')?.textContent?.trim();
+      const missing = [];
+      if (fName === 'Name' || !fName) missing.push('father');
+      if (mName === 'Name' || !mName) missing.push('mother');
+      if (missing.length > 0) {
+        missingParents.push({ person: p, missing, newSlots: missing.length });
+      }
+    }
+
+    // Known couple without marriage cert?
+    const spouseSlot = SPOUSE_MAP[p.slot];
+    if (spouseSlot) {
+      const spousePlate = guideFindSlot(spouseSlot);
+      const sName = spousePlate?.dataset?.fullname || spousePlate?.querySelector('.name')?.textContent?.trim();
+      if (sName && sName !== 'Name') {
+        const pDocs = p.docs || [];
+        if (!pDocs.includes('MC')) {
+          // How many slots would this MC fill?
+          // MC confirms: marriage date, groom's parents, bride's parents = up to 5 slots
+          const groomParentSlots = [];
+          const brideParentSlots = [];
+          const groomPMap = OWN_PARENT_MAP[p.slot];
+          const bridePMap = OWN_PARENT_MAP[spouseSlot];
+          if (groomPMap) {
+            const gfPlate = guideFindSlot(groomPMap.fatherSlot);
+            const gmPlate = guideFindSlot(groomPMap.motherSlot);
+            const gfName = gfPlate?.dataset?.fullname || gfPlate?.querySelector('.name')?.textContent?.trim();
+            const gmName = gmPlate?.dataset?.fullname || gmPlate?.querySelector('.name')?.textContent?.trim();
+            if (gfName === 'Name' || !gfName) groomParentSlots.push('groom father');
+            if (gmName === 'Name' || !gmName) groomParentSlots.push('groom mother');
+          }
+          if (bridePMap) {
+            const bfPlate = guideFindSlot(bridePMap.fatherSlot);
+            const bmPlate = guideFindSlot(bridePMap.motherSlot);
+            const bfName = bfPlate?.dataset?.fullname || bfPlate?.querySelector('.name')?.textContent?.trim();
+            const bmName = bmPlate?.dataset?.fullname || bmPlate?.querySelector('.name')?.textContent?.trim();
+            if (bfName === 'Name' || !bfName) brideParentSlots.push('bride father');
+            if (bmName === 'Name' || !bmName) brideParentSlots.push('bride mother');
+          }
+          couplesWithoutMC.push({
+            person: p,
+            spouseName: sName,
+            newSlots: 1 + groomParentSlots.length + brideParentSlots.length, // marriage date + parents
+            groomParentSlots,
+            brideParentSlots
+          });
+        }
+      }
+    }
+  });
+
+  // Compute coverage
+  const totalSlots = plates.length;
+  const fillPercent = Math.round((filled.length / totalSlots) * 100);
+  const bcCount = docs['BC'] || 0;
+  const mcCount = docs['MC'] || 0;
+  const dcCount = docs['DC'] || 0;
+  const uniqueDocs = bcCount + mcCount + dcCount;
+
+  // Build research suggestions — prioritise by impact (how many slots each doc fills)
+  const suggestions = [];
+
+  // P1: Marriage certs for known couples (highest yield — fills parents of BOTH spouses)
+  couplesWithoutMC.forEach(c => {
+    if (c.newSlots <= 0) return; // Skip if nothing new to learn
+    const source = getSourceForCouple(c.person.name, c.spouseName);
+    const fillsList = [];
+    fillsList.push('Marriage date & place');
+    c.groomParentSlots.forEach(s => fillsList.push(s));
+    c.brideParentSlots.forEach(s => fillsList.push(s));
+    suggestions.push({
+      impact: c.newSlots,
+      type: 'MC',
+      icon: '💍',
+      title: `Marriage cert: ${c.person.name} & ${c.spouseName}`,
+      desc: `Known couple, no marriage cert on file. Would confirm the marriage and ${c.newSlots > 1 ? `fill ${c.newSlots - 1} empty parent slot${c.newSlots - 1 > 1 ? 's' : ''}` : 'confirm the date'}.`,
+      person: c.person.name,
+      fills: fillsList,
+      source: source
+    });
+  });
+
+  // P2: Death/marriage certs for people with missing parents
+  // Group by person to avoid duplicates
+  const peopleWithMissingParents = {};
+  missingParents.forEach(mp => {
+    const key = mp.person.slot;
+    if (!peopleWithMissingParents[key]) {
+      peopleWithMissingParents[key] = { person: mp.person, missing: [], newSlots: 0 };
+    }
+    peopleWithMissingParents[key].missing.push(...mp.missing.filter(m => !peopleWithMissingParents[key].missing.includes(m)));
+    peopleWithMissingParents[key].newSlots = peopleWithMissingParents[key].missing.length;
+  });
+
+  Object.values(peopleWithMissingParents).forEach(({ person: p, missing, newSlots }) => {
+    const gen = parseInt(p.gen, 10);
+    const rels = missing.join(' & ');
+    const source = getSourceForPerson({...p, suggestType: gen <= 2 ? 'MC' : 'DC'});
+    const certType = gen <= 2 ? 'Marriage' : 'Death';
+    const certIcon = gen <= 2 ? '💍' : '⚰️';
+    const desc = gen <= 2
+      ? `Missing ${rels} for ${p.name} (Gen ${gen}). A marriage cert would confirm both sets of parents.`
+      : `Missing ${rels} for ${p.name} (Gen ${gen}). A death cert would list ${rels}' names.`;
+    suggestions.push({
+      impact: newSlots + 1, // doc date + parent slots
+      type: gen <= 2 ? 'MC' : 'DC',
+      icon: certIcon,
+      title: `${certType} cert for ${p.name}`,
+      desc: desc,
+      person: p.name,
+      fills: [`${certType.toLowerCase()} date`, ...missing.map(m => `${m} of ${p.name}`)],
+      source: source
+    });
+  });
+
+  // P3: Birth certs for people with no birth year (least impact if parents already known)
+  // Sort by newSlots descending so BCs that fill more gaps come first
+  missingBirth.sort((a, b) => b.newSlots - a.newSlots);
+
+  missingBirth.forEach(p => {
+    const source = getSourceForPerson({...p, suggestType: 'BC'});
+    const parentNote = p.parentSlotsFilled.length > 0
+      ? `Also reveals ${p.parentSlotsFilled.join(' & ')} names.`
+      : `Parents already recorded — would only confirm the birth date.`;
+    suggestions.push({
+      impact: p.newSlots,
+      type: 'BC',
+      icon: '🪒',
+      title: `Birth cert for ${p.name}`,
+      desc: `No birth year for ${p.name} (Gen ${p.gen}). ${parentNote}`,
+      person: p.name,
+      fills: [`Birth year for ${p.name}`, ...p.parentSlotsFilled.map(s => `${s} of ${p.name}`)],
+      source: source
+    });
+  });
+
+  // Sort by impact descending (most slots filled = highest priority)
+  suggestions.sort((a, b) => b.impact - a.impact);
+
+  // Deduplicate by title
+  const seen = new Set();
+  const unique = suggestions.filter(s => {
+    if (seen.has(s.title)) return false;
+    seen.add(s.title);
+    return true;
+  });
+
+  // Limit to top 8
+  const top = unique.slice(0, 8);
+
+  // Render
+  guideResults.style.display = 'block';
+
+  // Tree summary
+  let html = `
+    <div style="margin-bottom:20px;padding:14px;background:rgba(250,244,230,0.6);border:2px solid #4a3a22;border-radius:4px;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:14px;color:#2a1f10;text-align:center;margin-bottom:8px;">Tree Coverage</div>
+      <div style="display:flex;justify-content:space-around;font-family:'Cormorant Garamond',serif;font-size:12px;color:#5a4a32;">
+        <div style="text-align:center;"><div style="font-size:18px;color:#2a1f10;font-weight:bold;">${fillPercent}%</div><div>Filled</div></div>
+        <div style="text-align:center;"><div style="font-size:18px;color:#2a1f10;font-weight:bold;">${filled.length}/${totalSlots}</div><div>Slots</div></div>
+        <div style="text-align:center;"><div style="font-size:18px;color:#2a1f10;font-weight:bold;">${bcCount + mcCount + dcCount}</div><div>Doc badges</div></div>
+      </div>
+    </div>
+  `;
+
+  if (top.length === 0) {
+    html += `<div style="text-align:center;font-family:'Cormorant Garamond',serif;font-size:13px;color:#5a4a32;padding:20px;">
+      Your tree looks well-covered! Consider adding census records or parish registers for missing details.
+    </div>`;
+  } else {
+    html += `<div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#2a1f10;text-align:center;margin-bottom:10px;">Suggested Next Steps</div>`;
+    top.forEach((s, i) => {
+      html += `
+        <div style="margin-bottom:12px;padding:10px;background:rgba(255,255,255,0.5);border:1px solid #c9b896;border-radius:4px;">
+          <div style="display:flex;align-items:center;gap:6px;margin-bottom:4px;">
+            <span style="font-size:16px;">${s.icon}</span>
+            <span style="font-family:'Cinzel Decorative',serif;font-size:11px;color:#2a1f10;font-weight:bold;">${s.title}</span>
+          </div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:11px;color:#5a4a32;margin-bottom:6px;">${s.desc}</div>
+          <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#7a6545;margin-bottom:4px;">
+            <strong>Fills:</strong> ${s.fills.join(' · ')}
+          </div>
+          ${s.source ? `<a href="${s.source.url}" target="_blank" rel="noopener" style="font-family:'Cormorant Garamond',serif;font-size:11px;color:#3a5a8a;text-decoration:none;display:inline-block;padding:3px 8px;border:1px solid #3a5a8a;border-radius:3px;margin-top:4px;">🛒 ${s.source.label} →</a>` : ''}
+          <div style="font-family:'Cormorant Garamond',serif;font-size:10px;color:#8a7a65;margin-top:6px;font-style:italic;">
+            💡 Cost: ~£1 per certificate image on ScotlandsPeople (30 credits)
+          </div>
+        </div>
+      `;
+    });
+  }
+
+  guideResults.innerHTML = html;
+  } catch (err) {
+    guideResults.innerHTML = `<div style="padding:20px;font-family:'Cormorant Garamond',serif;color:#8a3a32;font-size:13px;text-align:center;">
+      <strong>Error analysing tree</strong><br>
+      ${err.message}<br><br>
+      <button onclick="runGuidanceAnalysis()" style="padding:6px 12px;border:1px solid #4a3a22;border-radius:4px;background:#f5eedc;cursor:pointer;font-family:'Cormorant Garamond',serif;">Retry</button>
+    </div>`;
+    console.error('[GUIDANCE] Error:', err);
+  }
+}
+
+function getSourceForPerson(p) {
+  // Build smart deep links based on cert type and generation
+  const name = p.name || '';
+  
+  // Type-specific URLs
+  const type = p.suggestType || 'BC';
+  let spPath, spLabel, spDesc;
+  if (type === 'BC') {
+    spPath = 'stat_births';
+    spLabel = 'Buy birth cert (£1)';
+    spDesc = `Search for ${name}'s birth record`;
+  } else if (type === 'DC') {
+    spPath = 'stat_deaths';
+    spLabel = 'Buy death cert (£1)';
+    spDesc = `Search for ${name}'s death record`;
+  } else {
+    spPath = 'stat_marriages';
+    spLabel = 'Buy marriage cert (£1)';
+    spDesc = `Search for ${name}'s marriage record`;
+  }
+  
+  const spBase = 'https://www.scotlandspeople.gov.uk/search-records/statutory-records/';
+  
+  return {
+    label: spLabel,
+    url: spBase + spPath,
+    desc: spDesc
+  };
+}
+
+function getSourceForCouple(name1, name2) {
+  // For marriage certs, link to marriages search
+  return {
+    label: 'Buy marriage cert (£1)',
+    url: 'https://www.scotlandspeople.gov.uk/search-records/statutory-records/stat_marriages',
+    desc: `Search for ${name1} & ${name2}'s marriage`
+  };
+}
+
+// Auto-restore main tree state when returning from branch tree
+(function restoreFromBranch() {
+  const saved = localStorage.getItem('familytree_main');
+  if (!saved) return;
+  try {
+    const data = JSON.parse(saved);
+    if (!data.slots) return;
+
+    // Restore slot data
+    Object.entries(data.slots).forEach(([slot, info]) => {
+      if (slot === 'undefined' || !slot) return;
+      const plate = document.querySelector('.nameplate[data-slot="' + slot + '"]');
+      if (!plate) return;
+      if (info.fullname) {
+        plate.dataset.fullname = info.fullname;
+        plate.querySelector('.name').innerHTML = formatNameplateName(info.name || info.fullname);
+      }
+      if (info.years) {
+        const yEl = plate.querySelector('.years');
+        if (yEl) yEl.textContent = info.years;
+      }
+      if (info.maiden) plate.dataset.maiden = info.maiden;
+      if (info.docs) plate.dataset.docs = info.docs;
+      if (info.name === 'Name' && !info.fullname) {
+        plate.dataset.fullname = '';
+        plate.dataset.maiden = '';
+        plate.dataset.docs = '';
+        plate.querySelector('.name').textContent = 'Name';
+        plate.querySelector('.years').textContent = 'YYYY — YYYY';
+        if (parseInt(plate.dataset.gen || '0', 10) === 5) plate.style.display = 'none';
+      }
+    });
+
+    // Restore siblings
+    if (data.siblings) {
+      slotSiblings = data.siblings;
+      saveSiblings();
+      Object.keys(slotSiblings).forEach(slot => updateSiblingBadge(slot));
+    }
+
+    // Restore settings
+    if (data.settings?.keepDocs !== undefined) {
+      document.getElementById('keepDocsToggle').checked = data.settings.keepDocs;
+    }
+
+    showToast('Tree restored from branch view');
+    // Clear the saved state so we don't restore again on refresh
+    localStorage.removeItem('familytree_main');
+  } catch (err) {
+    console.error('[RESTORE] Failed:', err);
+  }
+})();
+
+// ========== Data-Tree Integration Layer ==========
+// Maps poster slot names to binary tree paths (0=father/paternal, 1=mother/maternal)
+function slotToPath(slot) {
+  if (slot === 'subject') return [];
+  const path = [];
+  const parts = slot.split('-');
+  for (let i = 0; i < parts.length; i++) {
+    const p = parts[i];
+    if (p === 'father' || p === 'paternal' || p === 'pat' || p === 'grandfather') {
+      path.push(0);
+    } else if (p === 'mother' || p === 'maternal' || p === 'mat' || p === 'grandmother') {
+      path.push(1);
+    }
+  }
+  return path;
+}
+
+// Follow parent chain from root person using binary path
+function getPersonByPath(rootId, path, peopleMap) {
+  let currentId = rootId;
+  for (const direction of path) {
+    const person = peopleMap.get(currentId);
+    if (!person || !person.parents || person.parents.length < 2) return null;
+    currentId = person.parents[direction];
+    if (currentId == null) return null;
+  }
+  return peopleMap.get(currentId) || null;
+}
+
+// Format years from person data
+function formatPersonYears(person) {
+  if (person.years && person.years !== 'YYYY — YYYY') return person.years;
+  let y = '';
+  if (person.birthDate) {
+    const m = person.birthDate.match(/\d{4}/);
+    if (m) y = m[0];
+  }
+  y += ' —';
+  if (person.deathDate) {
+    const m = person.deathDate.match(/\d{4}/);
+    if (m) y = y.replace(' —', '') + ' — ' + m[0];
+  }
+  if (!y || y === ' —') return 'YYYY — YYYY';
+  return y;
+}
+
+// Global helper: split a full name into forename + <br> + surname for nameplate display
+// Defined at top level so both poster internals and data-tree integration can use it
+function formatNameplateName(fullName) {
+  if (!fullName || fullName === 'Name') return 'Name';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length < 2) return fullName;
+  const surname = parts.pop();
+  const forename = parts.join(' ');
+  return forename + '<br>' + surname;
+}
+
+// Short name for display (mimics heritage-poster shortName)
+// Gen 4+: aggressively abbreviate to fit tight outer-ring spacing
+function dtShortName(fullName, gen) {
+  if (!fullName || fullName === 'Name') return 'Name';
+  const parts = fullName.trim().split(/\s+/);
+  if (parts.length < 2) return fullName;
+  const surname = parts.pop();
+  const forename = parts.join(' ');
+  if (gen >= 4 && (fullName.length > 14 || forename.length > 7)) {
+    const initial = forename.charAt(0).toUpperCase();
+    return initial + '.<br>' + surname;
+  }
+  return forename + '<br>' + surname;
+}
+
+// Update heraldic banner from the subject (Gen 0) nameplate
+function updateBanner() {
+  const bannerName = document.getElementById('bannerName');
+  if (!bannerName) return;
+  const subjectPlate = document.querySelector('.nameplate[data-slot="subject"]');
+  const name = subjectPlate?.dataset.fullname || '';
+  if (!name || name === 'Name') {
+    bannerName.textContent = 'Family';
+    return;
+  }
+  bannerName.textContent = name;
+}
+
+let dtPeopleMap = new Map();
+let dtSubjectId = null;
+let dtModeActive = false;
+let subjectHistory = []; // Stack for back-navigation in data-tree mode
+
+// Populate all poster slots from a given subject person ID
+function populatePosterFromDataTree(subjectId) {
+  if (!dtPeopleMap.has(subjectId)) return;
+  // Push current subject to history before switching
+  if (dtSubjectId && dtSubjectId !== subjectId) {
+    subjectHistory.push(dtSubjectId);
+  }
+  dtSubjectId = subjectId;
+  dtModeActive = true;
+
+  // Clear existing
+  document.querySelectorAll('.nameplate').forEach(plate => {
+    plate.dataset.fullname = '';
+    plate.dataset.maiden = '';
+    plate.dataset.docs = '';
+    plate.querySelector('.name').innerHTML = 'Name';
+    plate.querySelector('.years').textContent = 'YYYY — YYYY';
+    plate.style.opacity = '1';
+  });
+
+  // Fill each slot
+  let filledCount = 0;
+  document.querySelectorAll('.nameplate').forEach(plate => {
+    const slot = plate.dataset.slot;
+    const path = slotToPath(slot);
+    const person = getPersonByPath(subjectId, path, dtPeopleMap);
+    if (!person) return;
+    const name = person.name || person.fullName || '';
+    if (!name || name === 'Name') return;
+
+    const years = formatPersonYears(person);
+    const gen = parseInt(plate.dataset.gen || '0', 10);
+
+    plate.dataset.fullname = name;
+    if (person.maidenName) plate.dataset.maiden = person.maidenName;
+
+    // Doc badges
+    if (person.docs && person.docs.length) {
+      const codes = [];
+      person.docs.forEach(d => {
+        const type = typeof d === 'string' ? d : d.type;
+        const code = type === 'birth' ? 'BC' : type === 'marriage' ? 'MC' : type === 'death' ? 'DC' : '';
+        if (code && !codes.includes(code)) codes.push(code);
+      });
+      if (codes.length) plate.dataset.docs = codes.join(',');
+    }
+
+    plate.querySelector('.name').innerHTML = dtShortName(name, gen);
+    if (gen < 4) {
+      plate.querySelector('.years').textContent = years;
+    } else {
+      plate.querySelector('.years').textContent = '';
+    }
+    filledCount++;
+  });
+  console.log('[DT POPULATE] filled slots:', filledCount);
+
+  // Hide blank gen-5 placeholders so outer ring isn't cluttered
+  document.querySelectorAll('.nameplate[data-gen="5"]').forEach(plate => {
+    const nameText = plate.querySelector('.name')?.textContent?.trim() || '';
+    if (nameText === 'Name' || !plate.dataset.fullname) {
+      plate.style.display = 'none';
+    } else {
+      plate.style.display = '';
+    }
+  });
+
+  // Show back button and prev-subject button
+  const backBtn = document.getElementById('backToTreeBtn');
+  if (backBtn) backBtn.style.display = 'inline-block';
+  const prevBtn = document.getElementById('prevSubjectBtn');
+  if (prevBtn) prevBtn.style.display = subjectHistory.length > 0 ? 'inline-block' : 'none';
+
+  // Update heraldic banner with subject surname
+  updateBanner();
+}
+
+// Load from data-tree localStorage key
+function loadFromDataTree() {
+  const raw = localStorage.getItem('familytree_data_v5');
+  console.log('[DT LOAD] raw exists:', !!raw);
+  if (!raw) return false;
+  let data;
+  try { data = JSON.parse(raw); } catch (e) { console.error('[DT LOAD] parse error', e); return false; }
+  if (!data.people || !Array.isArray(data.people)) { console.log('[DT LOAD] no people array'); return false; }
+
+  console.log('[DT LOAD] people count:', data.people.length);
+  dtPeopleMap = new Map();
+  data.people.forEach(p => dtPeopleMap.set(p.id, p));
+
+  // Find subject: gen 0, or status='you', or first confirmed, or first person
+  const subject = data.people.find(p => p.gen === 0) ||
+                  data.people.find(p => p.status === 'you') ||
+                  data.people.find(p => p.status === 'confirmed') ||
+                  data.people[0];
+  if (!subject) { console.log('[DT LOAD] no subject found'); return false; }
+
+  console.log('[DT LOAD] subject:', subject.name, 'id:', subject.id);
+  populatePosterFromDataTree(subject.id);
+  return true;
+}
+
+// Try loading from data-tree
+loadFromDataTree();
+updateBanner();
+
+// Hide blank gen-5 placeholders on initial load (no data-tree data)
+document.querySelectorAll('.nameplate[data-gen="5"]').forEach(plate => {
+  const nameText = plate.querySelector('.name')?.textContent?.trim() || '';
+  if (nameText === 'Name' || !plate.dataset.fullname) {
+    plate.style.display = 'none';
+  }
+});
+</script>
+
+</body>
+</html>

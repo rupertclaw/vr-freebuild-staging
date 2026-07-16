@@ -153,11 +153,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 
 /* Free Build cards */
 .fb-card {
-  position: absolute; width: 150px; background: #faf5eb;
+  position: absolute; width: 150px; height: 40px; background: #faf5eb;
   border: 1px solid #c9b896; border-radius: 4px; padding: 4px 8px;
   text-align: center; z-index: 2; cursor: pointer;
   box-shadow: 0 1px 4px var(--shadow-card);
-  min-height: 34px; transition: box-shadow 0.15s;
+  overflow: hidden; transition: box-shadow 0.15s;
 }
 .fb-card:hover { box-shadow: 0 2px 8px rgba(90, 60, 30, 0.20); }
 .fb-card .name {
@@ -181,6 +181,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .fb-card.blank:hover { transform: none; box-shadow: none; }
 .fb-card.blank .name, .fb-card.blank .years { color: #b8a88a; }
 .fb-card.selected { box-shadow: 0 0 0 3px #38bdf8, 0 2px 8px rgba(56,189,248,0.3); }
+.fb-card .doc-badges { position: absolute; top: 2px; right: 2px; display: flex; gap: 2px; }
+.fb-card .doc-badge { font-size: 7px; font-family: 'Cinzel Decorative', serif; padding: 1px 3px; border-radius: 3px; font-weight: 600; line-height: 1; }
+.fb-card .doc-badge.bc { background: #dcfce7; color: #166534; }
+.fb-card .doc-badge.mc { background: #dbeafe; color: #1e40af; }
+.fb-card .doc-badge.dc { background: #fee2e2; color: #991b1b; }
 
 /* Detail Panel */
 .detail-panel {
@@ -510,13 +515,34 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   .view-toggle button { padding: 4px 8px; font-size: 9px; }
   .gedcom-btn { padding: 5px 8px; font-size: 9px; }
   .header-btn { width: 30px; height: 28px; font-size: 14px; }
-  .fb-card { width: 120px; }
+  .fb-card { width: 120px; height: 34px; }
   .fb-card .name { font-size: 9px; }
   .fb-card .years { font-size: 8px; }
   .floating-toolbar { bottom: 8px; }
   .floating-toolbar .zoom-btn { font-size: 14px; padding: 2px 8px; min-width: 28px; }
 }
 </style>
+<script>
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('./sw.js')
+    .then(function(reg) {
+      console.log('[SW] Registered', reg.scope);
+      reg.onupdatefound = function() {
+        var newSW = reg.installing;
+        newSW.onstatechange = function() {
+          if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
+            console.log('[SW] New version activated \u2014 reloading');
+            location.reload();
+          }
+        };
+      };
+    })
+    .catch(function(err) { console.error('[SW] Failed', err); });
+  navigator.serviceWorker.addEventListener('controllerchange', function() {
+    location.reload();
+  });
+}
+</script>
 </head>
 <body>
 
@@ -536,12 +562,16 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <div class="fb-menu-wrap">
         <button class="help-btn" id="treeMenuBtn" title="Tree options">🌳 <span>Tree</span> ▾</button>
         <div class="fb-menu" id="treeMenu" role="menu">
-          <div class="fb-menu-item" role="menuitem" onclick="location.href='data-tree.html'"><span class="icon">🌲</span> Pedigree Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="autoSave(); location.href='data-tree.html?from=fb'"><span class="icon">🌲</span> Pedigree Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="location.href='family-builder.html'"><span class="icon">🌿</span> Family Builder</div>
+          <div class="fb-menu-item" role="menuitem" onclick="window.open('families.html','_blank')"><span class="icon">📋</span> Family Sheets</div>
+          <div class="fb-menu-item" role="menuitem" onclick="openPoster()"><span class="icon">🖼️</span> Heritage Poster</div>
+          <div class="fb-menu-item" role="menuitem" onclick="toggleHelp(); setTimeout(function(){var b=document.querySelector('.help-tab[data-tab=\"2\"]');if(b)b.click();},100)"><span class="icon">🔄</span> Import & Export GEDCOM</div>
           <div class="fb-menu-item" role="menuitem" onclick="saveSession()"><span class="icon">💾</span> Save Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('loadFileInput').click()"><span class="icon">📂</span> Load Backup</div>
           <div class="fb-menu-item" role="menuitem" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="openPrintDialog()"><span class="icon">🖨️</span> Print Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="location.href='data-tree.html'"><span class="icon">🌳</span> My Trees</div>
           <div class="fb-menu-item danger" role="menuitem" onclick="resetTree()"><span class="icon">🗑️</span> Reset Tree</div>
         </div>
       </div>
@@ -1056,11 +1086,47 @@ function parseGedcom(text) {
     }
   }
 
+  // Merge duplicate individuals (same name + same birth year)
+  // Ancestry sometimes exports the same person as two INDI records with different xrefs
+  const mergeKey = (ind) => {
+    const bY = (ind.birthDate || '').match(/\d{4}/);
+    return (ind.name || '').toLowerCase().trim() + '|' + (bY ? bY[0] : (ind.birthDate || ''));
+  };
+  const canonicalXref = {};  // dupXref -> canonicalXref
+  const seenByKey = {};      // mergeKey -> canonical xref
+  for (const [xref, ind] of Object.entries(indis)) {
+    const key = mergeKey(ind);
+    if (seenByKey[key]) {
+      const canonXref = seenByKey[key];
+      canonicalXref[xref] = canonXref;
+      const canon = indis[canonXref];
+      // Merge FAMS and FAMC
+      if (ind.famc && !canon.famc) canon.famc = ind.famc;
+      for (const fam of (ind.fams || [])) {
+        if (!canon.fams.includes(fam)) canon.fams.push(fam);
+      }
+      // Fill in missing fields
+      if (!canon.deathDate && ind.deathDate) canon.deathDate = ind.deathDate;
+      if (!canon.deathPlace && ind.deathPlace) canon.deathPlace = ind.deathPlace;
+      if (!canon.sex && ind.sex) canon.sex = ind.sex;
+    } else {
+      seenByKey[key] = xref;
+    }
+  }
+  // Remap FAM pointers to canonical xrefs
+  for (const fam of Object.values(fams)) {
+    if (fam.husb && canonicalXref[fam.husb]) fam.husb = canonicalXref[fam.husb];
+    if (fam.wife && canonicalXref[fam.wife]) fam.wife = canonicalXref[fam.wife];
+    fam.children = fam.children.map(c => canonicalXref[c] || c);
+  }
+
   const result = [];
   let nid = 1;
   const xrefMap = {};
 
   for (const [xref, gedIndi] of Object.entries(indis)) {
+    // Skip duplicates (they've been merged into canonical)
+    if (canonicalXref[xref]) continue;
     const id = nid++; xrefMap[xref] = id;
     let yearsStr = '?';
     const bY = (gedIndi.birthDate || '').match(/\d{4}/);
@@ -1179,11 +1245,26 @@ function parseGedcom(text) {
 // FREE BUILD LAYOUT ENGINE
 // ═══════════════════════════════════════════════════════════════
 
-const CARD_W = 150;
-const CARD_H = 40;
+// Card dimensions — must match CSS .fb-card width and height
+// Mobile media query (max-width: 600px) shrinks cards to 120x34
+let CARD_W = window.innerWidth <= 600 ? 120 : 150;
+let CARD_H = window.innerWidth <= 600 ? 34 : 40;
 const CARD_GAP_X = 30;
 const CARD_GAP_Y = 80;
 const COUPLE_GAP = 10;
+
+// Update card dimensions on viewport change
+function updateCardDimensions() {
+  const newW = window.innerWidth <= 600 ? 120 : 150;
+  const newH = window.innerWidth <= 600 ? 34 : 40;
+  if (newW !== CARD_W || newH !== CARD_H) {
+    CARD_W = newW;
+    CARD_H = newH;
+    renderFreeBuild();
+  }
+}
+
+window.addEventListener('resize', updateCardDimensions);
 
 function getVisiblePeople() {
   if (focusPersonId) {
@@ -1798,6 +1879,14 @@ function renderFreeBuild() {
     let h = '<div class="name">' + escapeHtml(displayName) + '</div>';
     if (cardYears) h += '<div class="years">' + escapeHtml(cardYears) + '</div>';
     if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
+    if (person.docs && person.docs.length) {
+      h += '<div class="doc-badges">';
+      person.docs.forEach(d => {
+        const t = (d.type || 'bc').toLowerCase();
+        h += '<span class="doc-badge ' + t + '">' + t.toUpperCase() + '</span>';
+      });
+      h += '</div>';
+    }
 
     el.innerHTML = h;
     el.onclick = () => { focusOnPerson(person.id); openDetail(person); };
@@ -1914,14 +2003,18 @@ document.addEventListener('touchmove', function(e) {
 }, { passive: false });
 
 // Mouse wheel zoom — scroll up to zoom in, scroll down to zoom out
-document.getElementById('treeScroll').addEventListener('wheel', function(e) {
-  e.preventDefault();
-  if (e.deltaY < 0) {
-    setZoom(zoom * 1.15);
-  } else {
-    setZoom(zoom / 1.15);
-  }
-}, { passive: false });
+(function setupWheelZoom() {
+  const scrollEl = document.getElementById('treeScroll');
+  if (!scrollEl) return;
+  scrollEl.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      setZoom(zoom * 1.15);
+    } else {
+      setZoom(zoom / 1.15);
+    }
+  }, { passive: false });
+})();
 
 // ═══════════════════════════════════════════════════════════════
 // DETAIL PANEL
@@ -1971,6 +2064,19 @@ function openDetail(person) {
       <button class="fb-add-btn" onclick="fbAddSibling()">👥 Add Sibling</button>
     </div>
 
+    <div class="detail-field" style="margin-top:8px;">
+      <label>Documents (${person.docs ? person.docs.length : 0})</label>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;">
+        ${(person.docs || []).map(d => {
+          const t = (d.type || 'bc').toUpperCase();
+          const color = d.type === 'bc' ? '#dcfce7' : d.type === 'mc' ? '#dbeafe' : d.type === 'dc' ? '#fee2e2' : '#e5e7eb';
+          const text = d.type === 'bc' ? '#166534' : d.type === 'mc' ? '#1e40af' : d.type === 'dc' ? '#991b1b' : '#374151';
+          return `<span style="font-size:11px;font-family:'Cinzel Decorative',serif;padding:2px 6px;border-radius:4px;background:${color};color:${text};font-weight:600;">${t}</span>`;
+        }).join('')}
+      </div>
+      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
+      <button class="fb-add-btn" onclick="closeDetail(); pendingDirectAttachId=${person.id}; document.getElementById('certFileInput').click();" style="background:var(--bg-btn);color:var(--text-logo);margin-top:4px;">📎 Attach Document</button>
+
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
       <button class="save-btn" onclick="saveDetail()">Save Changes</button>
@@ -2004,6 +2110,11 @@ function saveDetail() {
   person.birthplace = document.getElementById('d_birthplace').value;
   person.status = document.getElementById('d_status').value;
   person.notes = document.getElementById('d_notes').value;
+
+  // Auto-upgrade from 'blank' to 'probable' when user enters a real name
+  if (person.status === 'blank' && person.name && person.name.trim() !== '' && person.name !== 'Name') {
+    person.status = 'probable';
+  }
 
   // Recompute years display
   const bY = (person.birthDate || '').match(/\d{4}/);
@@ -2328,6 +2439,18 @@ function shareTree() {
   showToast('Tree file ready to share');
 }
 
+function openPoster() {
+  autoSave();
+  try {
+    const w = window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
+    if (!w || w.closed || typeof w.closed === 'undefined') {
+      location.href = 'heritage-poster.html?_t=' + Date.now();
+    }
+  } catch (e) {
+    location.href = 'heritage-poster.html?_t=' + Date.now();
+  }
+}
+
 function openPrintDialog() {
   closeDetail();
   const personCount = people.length;
@@ -2353,18 +2476,32 @@ function openPrintDialog() {
 }
 
 function autoSave() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ people, nextId })); }
+  try {
+    const data = JSON.stringify({ people, nextId });
+    localStorage.setItem(STORAGE_KEY, data);
+    // Also write to legacy key so data-tree (pedigree) can pick it up
+    localStorage.setItem('familytree_data_v5', data);
+  }
   catch (e) { console.error('[autoSave] failed', e); }
 }
 
 function autoRestore() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    // Check if arriving from data-tree (pedigree) — use familytree_data_v5 in that case
+    const fromDT = new URLSearchParams(window.location.search).get('from') === 'dt';
+    let saved = null;
+    if (fromDT) {
+      // Coming from data-tree: prefer the shared key
+      saved = localStorage.getItem('familytree_data_v5') || localStorage.getItem(STORAGE_KEY);
+    } else {
+      saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('familytree_data_v5');
+    }
     if (saved) {
       const data = JSON.parse(saved);
       if (data.people && data.people.length > 0) {
         people = data.people;
         nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+        if (fromDT) showToast('Loaded ' + people.length + ' people from Pedigree Tree');
         return true;
       }
     }
@@ -2463,21 +2600,66 @@ function showToast(msg, duration) {
 
 // PRIVACY MODAL
 function showPrivacyModal() {
-  const dlg = document.createElement('div');
-  dlg.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.65);z-index:20000;display:flex;justify-content:center;align-items:center;';
-  dlg.innerHTML = `
-    <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:10px;padding:24px;max-width:380px;width:90%;">
-      <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#3e2b1a;margin-bottom:14px;">🔒 Your Privacy</div>
-      <div style="font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;line-height:1.6;margin-bottom:16px;">
-        <p style="margin:0 0 10px;">Your family tree data is stored entirely in your browser's local storage. It never leaves your device.</p>
-        <p style="margin:0 0 10px;"><strong>No accounts.</strong> No server. No tracking.</p>
-        <p style="margin:0;">To protect your data: save a backup file regularly using 💾 Save or 🌳 Tree → Save Tree.</p>
-      </div>
-      <button onclick="this.closest('div[style*=\"fixed\"]').remove()" style="padding:8px 16px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;width:100%;">Close</button>
-    </div>
-  `;
-  document.body.appendChild(dlg);
-  dlg.addEventListener('click', (e) => { if (e.target === dlg) dlg.remove(); });
+  const modal = document.getElementById('privacyModal');
+  if (!modal) return;
+  modal.style.display = 'flex';
+  updateExpandGenBtn();
+}
+function showFeedbackModal() {
+  const modal = document.getElementById('feedbackModal');
+  if (!modal) return;
+  // Reset to feedback defaults in case founding form changed them
+  const title = modal.querySelector('[style*="font-size:18px"]');
+  if (title) title.textContent = 'Send Feedback';
+  const subtitle = modal.querySelector('[style*="font-size:13px"]');
+  if (subtitle) subtitle.textContent = "We'd love to hear your thoughts";
+  const subjectInput = document.getElementById('feedbackSubject');
+  if (subjectInput) subjectInput.value = 'New Vaulted Roots feedback';
+  const msgLabel = modal.querySelector('label[for="feedbackMessage"]');
+  if (msgLabel) msgLabel.textContent = 'Message';
+  const msgArea = modal.querySelector('textarea[name="message"]');
+  if (msgArea) msgArea.placeholder = "What's on your mind?";
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Send Feedback';
+  modal.style.display = 'flex';
+}
+
+function openFoundingForm() {
+  // Close member modal first
+  document.getElementById('memberModal').classList.remove('active');
+  // Open feedback modal repurposed as founding intent form
+  const modal = document.getElementById('feedbackModal');
+  if (!modal) return;
+  const title = modal.querySelector('[style*="font-size:18px"]');
+  if (title) title.textContent = 'Founding Member';
+  const subtitle = modal.querySelector('[style*="font-size:13px"]');
+  if (subtitle) subtitle.textContent = 'Be first in line when spots open';
+  const subjectInput = document.getElementById('feedbackSubject');
+  if (subjectInput) subjectInput.value = 'VR Founding Member Intent';
+  const msgArea = modal.querySelector('textarea[name="message"]');
+  if (msgArea) msgArea.placeholder = 'I want early access to founding membership ($19.99, first 100).';
+  const submitBtn = modal.querySelector('button[type="submit"]');
+  if (submitBtn) submitBtn.textContent = 'Join the list';
+  modal.style.display = 'flex';
+}
+document.getElementById('privacyModalOk').addEventListener('click', () => {
+  document.getElementById('privacyModal').style.display = 'none';
+  updateExpandGenBtn();
+});
+document.getElementById('privacyModalDismissForever').addEventListener('click', () => {
+  document.getElementById('privacyModal').style.display = 'none';
+  localStorage.setItem('vaultedRootsPrivacySeen', '1');
+  updateExpandGenBtn();
+});
+if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', () => showPrivacyModal());
+  } else {
+    showPrivacyModal();
+  }
+}
+
+
 }
 
 // FEEDBACK MODAL
@@ -2616,6 +2798,14 @@ function toggleCertPanel() {
   if (isOpening) {
     clearCertPanel();
   }
+}
+
+function openCertForPerson(personName) {
+  certPanel.classList.add('active');
+  clearCertPanel();
+  const headerTitle = certPanel.querySelector('.cert-header div');
+  if (headerTitle) headerTitle.textContent = '📷 Scan Certificate — ' + personName;
+  showToast('Select Upload (private), Venice, or Gemini for ' + personName);
 }
 
 function clearCertPanel() {
@@ -3956,5 +4146,9 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
   }
 })();
 </script>
+<div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:48px;margin-bottom:8px;">🔒</div>
 </body>
 </html>
