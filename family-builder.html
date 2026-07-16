@@ -181,6 +181,11 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .fb-card.blank:hover { transform: none; box-shadow: none; }
 .fb-card.blank .name, .fb-card.blank .years { color: #b8a88a; }
 .fb-card.selected { box-shadow: 0 0 0 3px #38bdf8, 0 2px 8px rgba(56,189,248,0.3); }
+.fb-card .doc-badges { position: absolute; top: 2px; right: 2px; display: flex; gap: 2px; }
+.fb-card .doc-badge { font-size: 7px; font-family: 'Cinzel Decorative', serif; padding: 1px 3px; border-radius: 3px; font-weight: 600; line-height: 1; }
+.fb-card .doc-badge.bc { background: #dcfce7; color: #166534; }
+.fb-card .doc-badge.mc { background: #dbeafe; color: #1e40af; }
+.fb-card .doc-badge.dc { background: #fee2e2; color: #991b1b; }
 
 /* Detail Panel */
 .detail-panel {
@@ -536,13 +541,16 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
       <div class="fb-menu-wrap">
         <button class="help-btn" id="treeMenuBtn" title="Tree options">🌳 <span>Tree</span> ▾</button>
         <div class="fb-menu" id="treeMenu" role="menu">
-          <div class="fb-menu-item" role="menuitem" onclick="location.href='data-tree.html'"><span class="icon">🌲</span> Pedigree Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="autoSave(); location.href='data-tree.html?from=fb'"><span class="icon">🌲</span> Pedigree Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="location.href='family-builder.html'"><span class="icon">🌿</span> Family Builder</div>
           <div class="fb-menu-item" role="menuitem" onclick="window.open('families.html','_blank')"><span class="icon">📋</span> Family Sheets</div>
+          <div class="fb-menu-item" role="menuitem" onclick="openPoster()"><span class="icon">🖼️</span> Heritage Poster</div>
+          <div class="fb-menu-item" role="menuitem" onclick="toggleHelp(); setTimeout(function(){var b=document.querySelector('.help-tab[data-tab=\"2\"]');if(b)b.click();},100)"><span class="icon">🔄</span> Import & Export GEDCOM</div>
           <div class="fb-menu-item" role="menuitem" onclick="saveSession()"><span class="icon">💾</span> Save Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('loadFileInput').click()"><span class="icon">📂</span> Load Backup</div>
           <div class="fb-menu-item" role="menuitem" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="openPrintDialog()"><span class="icon">🖨️</span> Print Tree</div>
+          <div class="fb-menu-item" role="menuitem" onclick="location.href='data-tree.html'"><span class="icon">🌳</span> My Trees</div>
           <div class="fb-menu-item danger" role="menuitem" onclick="resetTree()"><span class="icon">🗑️</span> Reset Tree</div>
         </div>
       </div>
@@ -1835,6 +1843,14 @@ function renderFreeBuild() {
     let h = '<div class="name">' + escapeHtml(displayName) + '</div>';
     if (cardYears) h += '<div class="years">' + escapeHtml(cardYears) + '</div>';
     if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
+    if (person.docs && person.docs.length) {
+      h += '<div class="doc-badges">';
+      person.docs.forEach(d => {
+        const t = (d.type || 'bc').toLowerCase();
+        h += '<span class="doc-badge ' + t + '">' + t.toUpperCase() + '</span>';
+      });
+      h += '</div>';
+    }
 
     el.innerHTML = h;
     el.onclick = () => { focusOnPerson(person.id); openDetail(person); };
@@ -2009,9 +2025,17 @@ function openDetail(person) {
     </div>
 
     <div class="detail-field" style="margin-top:8px;">
-      <label>Add Document</label>
-      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);">📷 Scan Certificate</button>
-    </div>
+      <label>Documents (${person.docs ? person.docs.length : 0})</label>
+      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;">
+        ${(person.docs || []).map(d => {
+          const t = (d.type || 'bc').toUpperCase();
+          const color = d.type === 'bc' ? '#dcfce7' : d.type === 'mc' ? '#dbeafe' : d.type === 'dc' ? '#fee2e2' : '#e5e7eb';
+          const text = d.type === 'bc' ? '#166534' : d.type === 'mc' ? '#1e40af' : d.type === 'dc' ? '#991b1b' : '#374151';
+          return `<span style="font-size:11px;font-family:'Cinzel Decorative',serif;padding:2px 6px;border-radius:4px;background:${color};color:${text};font-weight:600;">${t}</span>`;
+        }).join('')}
+      </div>
+      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
+      <button class="fb-add-btn" onclick="closeDetail(); pendingDirectAttachId=${person.id}; document.getElementById('certFileInput').click();" style="background:var(--bg-btn);color:var(--text-logo);margin-top:4px;">📎 Attach Document</button>
 
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
@@ -2375,6 +2399,18 @@ function shareTree() {
   showToast('Tree file ready to share');
 }
 
+function openPoster() {
+  autoSave();
+  try {
+    const w = window.open('heritage-poster.html?_t=' + Date.now(), '_blank');
+    if (!w || w.closed || typeof w.closed === 'undefined') {
+      location.href = 'heritage-poster.html?_t=' + Date.now();
+    }
+  } catch (e) {
+    location.href = 'heritage-poster.html?_t=' + Date.now();
+  }
+}
+
 function openPrintDialog() {
   closeDetail();
   const personCount = people.length;
@@ -2400,18 +2436,32 @@ function openPrintDialog() {
 }
 
 function autoSave() {
-  try { localStorage.setItem(STORAGE_KEY, JSON.stringify({ people, nextId })); }
+  try {
+    const data = JSON.stringify({ people, nextId });
+    localStorage.setItem(STORAGE_KEY, data);
+    // Also write to legacy key so data-tree (pedigree) can pick it up
+    localStorage.setItem('familytree_data_v5', data);
+  }
   catch (e) { console.error('[autoSave] failed', e); }
 }
 
 function autoRestore() {
   try {
-    const saved = localStorage.getItem(STORAGE_KEY);
+    // Check if arriving from data-tree (pedigree) — use familytree_data_v5 in that case
+    const fromDT = new URLSearchParams(window.location.search).get('from') === 'dt';
+    let saved = null;
+    if (fromDT) {
+      // Coming from data-tree: prefer the shared key
+      saved = localStorage.getItem('familytree_data_v5') || localStorage.getItem(STORAGE_KEY);
+    } else {
+      saved = localStorage.getItem(STORAGE_KEY) || localStorage.getItem('familytree_data_v5');
+    }
     if (saved) {
       const data = JSON.parse(saved);
       if (data.people && data.people.length > 0) {
         people = data.people;
         nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+        if (fromDT) showToast('Loaded ' + people.length + ' people from Pedigree Tree');
         return true;
       }
     }
