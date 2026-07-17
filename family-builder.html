@@ -180,6 +180,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   overflow: auto; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y;
   background: radial-gradient(ellipse at center, var(--bg-tree-start) 0%, var(--bg-tree-end) 100%);
 }
+/* Push tree area below taller mobile header */
+@media (max-width: 600px) {
+  .tree-scroll { top: 140px; }
+}
 .tree-wrap {
   position: relative; min-width: 100%; min-height: 100%;
   transform: scale(var(--zoom, 1)); transform-origin: top left;
@@ -4297,15 +4301,43 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
   renderFreeBuild();
 
   // Auto-center on focus person and fit to screen
+  // On mobile, offset the centering by the header height so the ME card isn't hidden behind the header
+  function centerOnPersonOffset(personId, extraOffsetY) {
+    const scrollArea = document.getElementById('treeScroll');
+    if (!scrollArea) return;
+    const target = people.find(p => p.id === personId);
+    if (!target) return;
+    const { positions } = layoutTree();
+    const targetPos = positions.get(personId);
+    if (!targetPos) return;
+    const cx = (targetPos.x + CARD_W / 2) * zoom;
+    const cy = (targetPos.y + CARD_H / 2) * zoom;
+    setTimeout(function() {
+      scrollArea.scrollTo({
+        left: Math.max(0, cx - scrollArea.clientWidth / 2),
+        top: Math.max(0, cy - scrollArea.clientHeight / 2 + (extraOffsetY || 0)),
+        behavior: 'auto'
+      });
+    }, 100);
+  }
+
+  // Calculate header height to offset centering on mobile
+  var headerEl = document.querySelector('.header');
+  var headerH = headerEl ? headerEl.offsetHeight : 90;
+  // On mobile, shift the card down by half the header overflow so it's visible
+  var offsetY = 0;
+  if (window.innerWidth <= 600) {
+    offsetY = (headerH - 90) / 2;
+  }
+
   if (focusPersonId) {
     setTimeout(function() {
       fitToScreen();
-      centerOnPerson(focusPersonId);
+      centerOnPersonOffset(focusPersonId, offsetY);
     }, 100);
   } else if (people.length > 0) {
-    // No focus person (e.g. just the ME node) — still center on the first person
     setTimeout(function() {
-      centerOnPerson(people[0].id);
+      centerOnPersonOffset(people[0].id, offsetY);
     }, 100);
   }
 })();
