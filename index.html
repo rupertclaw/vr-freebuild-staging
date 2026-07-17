@@ -66,8 +66,19 @@ html, body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  padding: 24px 16px;
+  padding: 24px 16px 48px;
   overflow: hidden;
+}
+.hero-section::after {
+  content: '';
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  height: 80px;
+  background: linear-gradient(to bottom, transparent, var(--bg-page));
+  pointer-events: none;
+  z-index: 2;
 }
 
 .tree-bg {
@@ -176,22 +187,55 @@ html, body {
   border-color: #6b8e5a;
 }
 
+/* Trust strip — compact icons below CTAs */
+.trust-strip {
+  display: flex;
+  justify-content: center;
+  gap: 20px;
+  margin-top: 22px;
+  flex-wrap: wrap;
+  padding: 12px 20px;
+  background: rgba(0, 0, 0, 0.35);
+  border: 1px solid rgba(196, 168, 117, 0.25);
+  border-radius: 10px;
+  backdrop-filter: blur(6px);
+}
+.trust-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+.trust-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+.trust-text {
+  font-size: 13px;
+  color: #d4c9b0;
+  font-family: 'Cormorant Garamond', serif;
+  font-weight: 700;
+  letter-spacing: 0.5px;
+}
+
 /* Scroll hint */
 .scroll-hint {
   position: absolute;
-  bottom: 20px;
+  bottom: 12px;
   left: 50%;
   transform: translateX(-50%);
-  color: var(--text-muted);
-  font-size: 13px;
-  opacity: 0.6;
-  z-index: 1;
-  animation: bounce 2s infinite;
+  z-index: 3;
+}
+.scroll-hint .chevron {
+  display: block;
+  font-size: 28px;
+  color: #c4a875;
+  opacity: 0.7;
+  animation: chevron-bounce 1.8s ease-in-out infinite;
 }
 
-@keyframes bounce {
-  0%, 100% { transform: translateX(-50%) translateY(0); }
-  50% { transform: translateX(-50%) translateY(6px); }
+@keyframes chevron-bounce {
+  0%, 100% { transform: translateY(0); opacity: 0.7; }
+  50% { transform: translateY(8px); opacity: 1; }
 }
 
 /* ─── Content sections (below fold) ─── */
@@ -323,6 +367,27 @@ html, body {
 }
 
 /* Mobile */
+/* Desktop / laptop — shrink hero so everything fits in one viewport */
+@media (min-width: 769px) {
+  .hero-section { padding: 16px 16px; min-height: 92vh; }
+  .logo-img { width: 220px; height: 220px; }
+  .logo-text { font-size: 52px; }
+  .biline { font-size: 32px; }
+  .cta-row { margin-top: 20px; gap: 14px; }
+  .cta-card { padding: 16px 14px; min-width: 150px; }
+  .cta-card .icon { font-size: 28px; }
+  .cta-card .label { font-size: 14px; }
+  .cta-card .desc { font-size: 12px; }
+}
+
+/* Tablet / small laptop in-between */
+@media (min-width: 421px) and (max-width: 768px) {
+  .logo-img { width: 260px; height: 260px; }
+  .logo-text { font-size: 42px; }
+  .biline { font-size: 22px; }
+  .cta-card { min-width: 140px; padding: 18px 14px; }
+}
+
 @media (max-width: 420px) {
   .logo-img { width: 200px; height: 200px; }
   .logo-text { font-size: 36px; }
@@ -382,8 +447,14 @@ if ('serviceWorker' in navigator) {
         <span class="desc">Free-form layout. Add anyone, connect families your way.</span>
       </a>
     </div>
+
+    <div class="trust-strip">
+      <div class="trust-item"><span class="trust-icon">📱</span><span class="trust-text">On your device</span></div>
+      <div class="trust-item"><span class="trust-icon">🔐</span><span class="trust-text">No account needed</span></div>
+      <div class="trust-item"><span class="trust-icon">📤</span><span class="trust-text">Export anytime</span></div>
+    </div>
   </div>
-  <div class="scroll-hint">vvv scroll ↓</div>
+  <div class="scroll-hint"><span class="chevron">▾</span></div>
 </div>
 
 <!-- Content below fold -->

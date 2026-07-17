@@ -114,11 +114,19 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   font-weight: 600; font-family: 'Cormorant Garamond', serif;
 }
 .header-bottom {
-  display: flex; align-items: center; justify-content: flex-end;
+  display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap;
   padding-top: 6px; border-top: 1px solid rgba(255,248,225,0.08);
   margin-top: 4px;
   gap: 6px;
+}
+.header-left-group {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+.zoom-controls {
+  display: flex; align-items: center; gap: 4px;
+  flex-shrink: 0;
 }
 .header-actions {
   display: flex; align-items: center; gap: 6px;
@@ -698,11 +706,15 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
   <div class="header-bottom">
+    <div class="header-left-group">
+      <div class="zoom-controls">
+        <button class="help-btn" onclick="setZoom(zoom / 1.2)" title="Zoom out">−</button>
+        <span class="help-btn" id="zoomLevel" style="cursor:default;min-width:36px;justify-content:center;">100%</span>
+        <button class="help-btn" onclick="setZoom(zoom * 1.2)" title="Zoom in">+</button>
+        <button class="help-btn" onclick="fitToScreen()" title="Fit to screen">Fit</button>
+      </div>
+    </div>
     <div class="header-actions">
-      <button class="help-btn" onclick="setZoom(zoom * 1.2)" title="Zoom in">+</button>
-      <span class="help-btn" id="zoomLevel" style="cursor:default;min-width:36px;justify-content:center;">100%</span>
-      <button class="help-btn" onclick="setZoom(zoom / 1.2)" title="Zoom out">−</button>
-      <button class="help-btn" onclick="fitToScreen()" title="Fit to screen">Fit</button>
       <button class="help-btn" onclick="exportGedcom()" title="Export GEDCOM">⬇</button>
     </div>
   </div>
@@ -3790,7 +3802,15 @@ function _applyCertToPersonResolved(entry, type, docImage, resolveName, resolveI
   if (type === 'birth') applyBirthEntry(entry, changed, docImage, resolveId);
   else if (type === 'marriage') applyMarriageEntry(entry, changed, docImage, resolveName, resolveId);
   else if (type === 'death') applyDeathEntry(entry, changed, docImage, resolveId);
-  if (changed.length) { renderFreeBuild(); autoSave(); showToast('Applied to ' + changed.length + ' people'); }
+  if (changed.length) {
+    // Focus on the first changed person so new family members are visible
+    focusPersonId = changed[0].id;
+    viewHistory = [];
+    renderFreeBuild();
+    autoSave();
+    showToast('Applied to ' + changed.length + ' people');
+    setTimeout(function() { fitToScreen(); centerOnPerson(changed[0].id); }, 100);
+  }
   else { showToast('No matching people found'); }
 }
 
@@ -4135,7 +4155,13 @@ document.getElementById('certConfirm').addEventListener('click', () => {
     if (type === 'birth') applyBirthEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
     else if (type === 'marriage') applyMarriageEntry(entry, changed, pendingDocImage, null, pendingDirectAttachId);
     else if (type === 'death') applyDeathEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
-    if (changed.length) { renderFreeBuild(); autoSave(); showToast('Document attached to ' + changed[0].name); }
+    if (changed.length) {
+      focusPersonId = changed[0].id;
+      viewHistory = [];
+      renderFreeBuild(); autoSave();
+      showToast('Document attached to ' + changed[0].name);
+      setTimeout(function() { fitToScreen(); centerOnPerson(changed[0].id); }, 100);
+    }
     pendingDirectAttachId = null;
     certPanel.classList.remove('active');
     certPanel.classList.remove('has-results');
