@@ -252,6 +252,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .fb-card .doc-badge.bc { background: #dcfce7; color: #166534; }
 .fb-card .doc-badge.mc { background: #dbeafe; color: #1e40af; }
 .fb-card .doc-badge.dc { background: #fee2e2; color: #991b1b; }
+.fb-card .doc-badge.doc { background: #e5e7eb; color: #374151; }
 
 /* Detail Panel */
 .detail-panel {
@@ -1093,6 +1094,7 @@ if ('serviceWorker' in navigator) {
     </div>
     <input type="file" id="certFileInput" accept="image/*" style="display:none">
     <input type="file" id="certCameraInput" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="directAttachInput" accept="image/*" style="display:none">
     <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
     <div class="cert-status" id="certStatus"></div>
     <div id="certResults"></div>
@@ -2959,16 +2961,66 @@ function openCertForPerson(personName) {
 
 function openDirectAttach(personId, personName) {
   pendingDirectAttachId = personId;
-  certPanel.classList.add('active');
-  clearCertPanel();
-  const headerTitle = certPanel.querySelector('.cert-header div');
-  if (headerTitle) headerTitle.textContent = '📎 Attach Document — ' + personName;
   showToast('Select a document for ' + personName);
-  // reset value so onchange fires even if same file re-selected
-  const input = document.getElementById('certFileInput');
+  const input = document.getElementById('directAttachInput');
   input.value = '';
   input.click();
 }
+
+// ── Direct attach handler (no transcription, just store the file) ──
+document.getElementById('directAttachInput')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) { pendingDirectAttachId = null; return; }
+  const personId = pendingDirectAttachId;
+  if (!personId) return;
+  const person = people.find(p => p.id === personId);
+  if (!person) { pendingDirectAttachId = null; return; }
+
+  showToast('Attaching document...');
+  try {
+    // Read file as base64
+    const base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = (ev) => resolve(ev.target.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+    // Compress if large (same logic as cert scanning)
+    let finalImage = base64;
+    const sizeKB = Math.round(base64.length * 0.75 / 1024);
+    if (sizeKB > 800) {
+      finalImage = await resizeAndCompressImage(file, 1600, 0.90);
+      const kb2 = Math.round(finalImage.length * 0.75 / 1024);
+      if (kb2 > 800) {
+        finalImage = await resizeAndCompressImage(file, 1200, 0.85);
+      }
+    }
+
+    // Add doc to person
+    const docEntry = { type: 'doc', date: '', docId: null, filename: file.name || '' };
+    person.docs = person.docs || [];
+    person.docs.push(docEntry);
+
+    // Save image to IndexedDB
+    saveDocToDB(person.id, 'doc', finalImage, { personName: person.name, filename: file.name || '' }).then(id => {
+      if (id) {
+        const lastDoc = person.docs[person.docs.length - 1];
+        if (lastDoc) lastDoc.docId = id;
+        autoSave();
+      }
+    });
+
+    autoSave();
+    renderFreeBuild();
+    showToast('Document attached to ' + person.name);
+  } catch (err) {
+    console.error('[ATTACH ERROR]', err);
+    showToast('Error attaching document: ' + (err.message || 'Unknown error'));
+  }
+  pendingDirectAttachId = null;
+  e.target.value = '';
+});
 
 function clearCertPanel() {
   lastTranscription = null;
