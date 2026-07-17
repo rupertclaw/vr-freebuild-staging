@@ -3917,7 +3917,9 @@ function applyCertToPerson(entry, type, docImage) {
     const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
     if (matches.length >= 2) {
       const top2ScoreDiff = matches[0].score - matches[1].score;
-      if (top2ScoreDiff < 30 || matches[0].person.status === 'confirmed') {
+      // Only show ambiguity dialog if scores are close AND top match isn't a clear winner
+      // A score >= 80 with a 30+ point gap is a clear match, not ambiguous
+      if (top2ScoreDiff < 30 && matches[0].score < 80) {
         openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
         return;
       }
