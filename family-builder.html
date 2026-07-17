@@ -4017,7 +4017,7 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
     people.push(child);
   }
 
-  if (child.name === 'Name' || child.status === 'blank') {
+  if (child.name === 'Name' || child.name === 'Me' || child.name === 'You' || child.status === 'blank' || child.status === 'you') {
     child.name = childName;
   }
   child.fullName = childName;
