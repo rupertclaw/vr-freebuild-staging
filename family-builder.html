@@ -1671,31 +1671,86 @@ function layoutTree() {
     const myPos = positions.get(personId);
     if (!myPos) return;
 
-    const parentTotalWidth = parentEntries.length * CARD_W + (parentEntries.length - 1) * CARD_GAP_X;
+    const parentY = 50 + (depth - 1) * GEN_HEIGHT;
+
+    // Helper: find the rightmost card edge at a given Y level (excluding specific ids)
+    function getRightmostAtY(y, excludeIds) {
+      let max = -Infinity;
+      for (const [id, pos] of positions) {
+        if (excludeIds.has(id)) continue;
+        if (Math.abs(pos.y - y) < GEN_HEIGHT / 2) {
+          const right = pos.x + CARD_W;
+          if (right > max) max = right;
+        }
+      }
+      return max === -Infinity ? null : max;
+    }
+
+    // Helper: find the leftmost card edge at a given Y level (excluding specific ids)
+    function getLeftmostAtY(y, excludeIds) {
+      let min = Infinity;
+      for (const [id, pos] of positions) {
+        if (excludeIds.has(id)) continue;
+        if (Math.abs(pos.y - y) < GEN_HEIGHT / 2) {
+          if (pos.x < min) min = pos.x;
+        }
+      }
+      return min === Infinity ? null : min;
+    }
+
+    // Compute desired parent pair layout
+    const isCouple = parentEntries.length === 2;
+    let parentTotalWidth;
+    if (isCouple) {
+      parentTotalWidth = 2 * CARD_W + COUPLE_GAP;
+    } else {
+      parentTotalWidth = parentEntries.length * CARD_W + (parentEntries.length - 1) * CARD_GAP_X;
+    }
     let parentLeftX = myPos.x + CARD_W / 2 - parentTotalWidth / 2;
 
-    for (const pid of parentEntries) {
+    // Collision detection: check if this parent pair overlaps existing cards at parentY
+    const excludeForCheck = new Set([personId]);
+    const rightmost = getRightmostAtY(parentY, excludeForCheck);
+    const leftmost = getLeftmostAtY(parentY, excludeForCheck);
+
+    const GAP = CARD_GAP_X; // minimum gap between card groups
+    if (rightmost !== null && parentLeftX < rightmost + GAP) {
+      // Would overlap on the left — shift right
+      parentLeftX = rightmost + GAP;
+    }
+    // Also check if we'd push past the left edge
+    if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost && parentLeftX < leftmost) {
+      // Our right edge would overlap something on our right — try shifting left
+      if (parentLeftX - (leftmost - parentTotalWidth - GAP) > 0) {
+        // Would still overlap on left, just place as-is
+      } else {
+        parentLeftX = leftmost - parentTotalWidth - GAP;
+      }
+    }
+
+    // Place parents
+    for (let i = 0; i < parentEntries.length; i++) {
+      const pid = parentEntries[i];
       if (visited.has(pid)) continue;
       visited.add(pid);
       const parent = getP(pid);
       if (!parent) continue;
 
-      const parentY = 50 + (depth - 1) * GEN_HEIGHT;
-      positions.set(pid, { x: Math.round(parentLeftX), y: parentY });
+      let cardX;
+      if (isCouple && i === 1) {
+        cardX = Math.round(parentLeftX + CARD_W + COUPLE_GAP);
+      } else {
+        cardX = Math.round(parentLeftX + i * (CARD_W + CARD_GAP_X));
+      }
+      positions.set(pid, { x: cardX, y: parentY });
 
-      // Check if parent has a spouse that's also a parent
-      const parentSpouseId = parent.spouseId;
-      if (parentSpouseId && viewSet.has(parentSpouseId) && !visited.has(parentSpouseId) && parentEntries.includes(parentSpouseId)) {
-        visited.add(parentSpouseId);
-        positions.set(parentSpouseId, { x: Math.round(parentLeftX + CARD_W + COUPLE_GAP), y: parentY });
+      // Spouse line for couple
+      if (isCouple && i === 1) {
         connections.push({
           type: 'spouse',
           x1: parentLeftX + CARD_W, y1: parentY + CARD_H / 2,
-          x2: parentLeftX + CARD_W + COUPLE_GAP, y2: parentY + CARD_H / 2
+          x2: cardX, y2: parentY + CARD_H / 2
         });
-        parentLeftX += CARD_W + COUPLE_GAP + CARD_W + CARD_GAP_X;
-      } else {
-        parentLeftX += CARD_W + CARD_GAP_X;
       }
 
       // Parent-child connector
@@ -1730,6 +1785,12 @@ function layoutTree() {
     assignPositions(rootId, currentX, 0, visited);
     // Also lay out ancestors upward
     assignParents(rootId, 0, visited);
+    // Also lay out ancestors of the focus person's spouse (in-laws)
+    // so they get connector lines instead of appearing as disconnected cards
+    const rootPerson = getP(rootId);
+    if (rootPerson && rootPerson.spouseId && visited.has(rootPerson.spouseId)) {
+      assignParents(rootPerson.spouseId, 0, visited);
+    }
     currentX += w + CARD_GAP_X * 2;
   }
 
