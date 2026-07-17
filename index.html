@@ -323,6 +323,27 @@ html, body {
 }
 
 /* Mobile */
+/* Desktop / laptop — shrink hero so everything fits in one viewport */
+@media (min-width: 769px) {
+  .hero-section { padding: 16px 16px; min-height: 92vh; }
+  .logo-img { width: 220px; height: 220px; }
+  .logo-text { font-size: 52px; }
+  .biline { font-size: 32px; }
+  .cta-row { margin-top: 20px; gap: 14px; }
+  .cta-card { padding: 16px 14px; min-width: 150px; }
+  .cta-card .icon { font-size: 28px; }
+  .cta-card .label { font-size: 14px; }
+  .cta-card .desc { font-size: 12px; }
+}
+
+/* Tablet / small laptop in-between */
+@media (min-width: 421px) and (max-width: 768px) {
+  .logo-img { width: 260px; height: 260px; }
+  .logo-text { font-size: 42px; }
+  .biline { font-size: 22px; }
+  .cta-card { min-width: 140px; padding: 18px 14px; }
+}
+
 @media (max-width: 420px) {
   .logo-img { width: 200px; height: 200px; }
   .logo-text { font-size: 36px; }
