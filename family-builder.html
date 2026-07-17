@@ -3079,6 +3079,7 @@ function clearCertPanel() {
   lastTranscription = null;
   pendingDocFile = null;
   pendingDocImage = null;
+  // Reset all inline display styles that processDocFile may have set
   document.getElementById('certPreviewImg').src = '';
   document.getElementById('certPreviewArea').style.display = 'none';
   document.getElementById('certStatus').style.display = 'none';
@@ -3086,10 +3087,16 @@ function clearCertPanel() {
   document.getElementById('certStatus').className = 'cert-status';
   document.getElementById('certResults').innerHTML = '';
   document.getElementById('certMethodSelect').style.display = 'flex';
-  document.getElementById('uploadSection')?.classList.remove('active');
-  document.getElementById('veniceSection')?.classList.remove('active');
+  // Reset inline display on sections (processDocFile sets style.display directly)
+  const upload = document.getElementById('uploadSection');
+  if (upload) { upload.classList.remove('active'); upload.style.display = ''; }
+  const venice = document.getElementById('veniceSection');
+  if (venice) { venice.classList.remove('active'); venice.style.display = ''; }
+  const gemini = document.getElementById('geminiSection');
+  if (gemini) { gemini.classList.remove('active'); gemini.style.display = ''; }
+  const uploadArea = document.getElementById('certUploadArea');
+  if (uploadArea) { uploadArea.style.display = ''; }
   document.getElementById('venicePasteBox').value = '';
-  document.getElementById('geminiSection').classList.remove('active');
   document.getElementById('geminiPasteBox').value = '';
   certPanel.classList.remove('has-results');
 }
@@ -3147,7 +3154,7 @@ async function processDocFile(file) {
       document.getElementById('certPreviewImg').src = e.target.result;
       document.getElementById('certPreviewArea').style.display = 'block';
       document.getElementById('certMethodSelect').style.display = 'none';
-      document.getElementById('uploadSection').style.display = 'none';
+      document.getElementById('uploadSection').classList.remove('active');
       document.getElementById('certUploadArea').style.display = 'none';
       resolve(e.target.result);
     };
