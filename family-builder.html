@@ -1087,13 +1087,14 @@ if ('serviceWorker' in navigator) {
       </div>
     </div>
 
-    <div class="cert-upload-area" id="certUploadArea" style="display:none">
+    <div class="cert-upload-area" id="certUploadArea" style="display:none" onclick="document.getElementById('certAttachInput').click()">
       <div style="font-size:24px;margin-bottom:8px;">📄</div>
       <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#4a3a22;">Tap to upload cert</div>
       <div style="font-size:11px;color:#8a7a5a;margin-top:4px;">Birth, marriage, or death record</div>
     </div>
     <input type="file" id="certFileInput" accept="image/*" style="display:none">
     <input type="file" id="certCameraInput" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="certAttachInput" accept="image/*" style="display:none">
     <input type="file" id="directAttachInput" accept="image/*" style="display:none">
     <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
     <div class="cert-status" id="certStatus"></div>
@@ -3095,7 +3096,7 @@ function clearCertPanel() {
   const gemini = document.getElementById('geminiSection');
   if (gemini) { gemini.classList.remove('active'); gemini.style.display = ''; }
   const uploadArea = document.getElementById('certUploadArea');
-  if (uploadArea) { uploadArea.style.display = ''; }
+  if (uploadArea) { uploadArea.style.display = 'none'; }
   document.getElementById('venicePasteBox').value = '';
   document.getElementById('geminiPasteBox').value = '';
   certPanel.classList.remove('has-results');
@@ -3123,6 +3124,44 @@ document.getElementById('certFileInput')?.addEventListener('change', async (e) =
     document.getElementById('certRetry').style.display = 'block';
   }
   // reset so selecting the same file again still fires onchange
+  e.target.value = '';
+});
+
+// ── Attach-only handler (Gemini/Venice parsed data, no transcription) ──
+document.getElementById('certAttachInput')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const cs = document.getElementById('certStatus');
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Reading image...';
+  cs.style.display = 'block';
+  try {
+    let base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = (ev) => resolve(ev.target.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+    // Compress if large
+    const sizeKB = Math.round(base64.length * 0.75 / 1024);
+    if (sizeKB > 800) {
+      base64 = await resizeAndCompressImage(file, 1600, 0.90);
+      const kb2 = Math.round(base64.length * 0.75 / 1024);
+      if (kb2 > 800) {
+        base64 = await resizeAndCompressImage(file, 1200, 0.85);
+      }
+    }
+    pendingDocImage = base64;
+    document.getElementById('certPreviewImg').src = base64;
+    document.getElementById('certPreviewArea').style.display = 'block';
+    document.getElementById('certUploadArea').style.display = 'none';
+    cs.className = 'cert-status success';
+    cs.textContent = '\u2713 Certificate image attached';
+  } catch (err) {
+    console.error('[ATTACH IMAGE ERROR]', err);
+    cs.className = 'cert-status error';
+    cs.textContent = 'Error: ' + (err.message || 'Could not read image');
+  }
   e.target.value = '';
 });
 
@@ -3631,6 +3670,8 @@ function parseVeniceResult() {
   cs.textContent = '\u2713 Parsed ' + veniceCertType + ' certificate';
   renderTranscriptionResults(lastTranscription);
   certPanel.classList.add('has-results');
+  // Show the "Tap to upload cert" area so the user can attach the cert image
+  document.getElementById('certUploadArea').style.display = 'block';
 }
 
 function transformGeminiToNested(flat, type) {
@@ -3717,6 +3758,8 @@ function parseGeminiResult() {
   cs.textContent = '\u2713 Parsed ' + geminiCertType + ' certificate';
   renderTranscriptionResults(lastTranscription);
   certPanel.classList.add('has-results');
+  // Show the "Tap to upload cert" area so the user can attach the cert image
+  document.getElementById('certUploadArea').style.display = 'block';
 }
 
 // ── Name matching helpers (ported from data-tree) ──
