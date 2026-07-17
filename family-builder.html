@@ -3079,6 +3079,7 @@ function clearCertPanel() {
   lastTranscription = null;
   pendingDocFile = null;
   pendingDocImage = null;
+  // Reset all inline display styles that processDocFile may have set
   document.getElementById('certPreviewImg').src = '';
   document.getElementById('certPreviewArea').style.display = 'none';
   document.getElementById('certStatus').style.display = 'none';
@@ -3086,10 +3087,16 @@ function clearCertPanel() {
   document.getElementById('certStatus').className = 'cert-status';
   document.getElementById('certResults').innerHTML = '';
   document.getElementById('certMethodSelect').style.display = 'flex';
-  document.getElementById('uploadSection')?.classList.remove('active');
-  document.getElementById('veniceSection')?.classList.remove('active');
+  // Reset inline display on sections (processDocFile sets style.display directly)
+  const upload = document.getElementById('uploadSection');
+  if (upload) { upload.classList.remove('active'); upload.style.display = ''; }
+  const venice = document.getElementById('veniceSection');
+  if (venice) { venice.classList.remove('active'); venice.style.display = ''; }
+  const gemini = document.getElementById('geminiSection');
+  if (gemini) { gemini.classList.remove('active'); gemini.style.display = ''; }
+  const uploadArea = document.getElementById('certUploadArea');
+  if (uploadArea) { uploadArea.style.display = ''; }
   document.getElementById('venicePasteBox').value = '';
-  document.getElementById('geminiSection').classList.remove('active');
   document.getElementById('geminiPasteBox').value = '';
   certPanel.classList.remove('has-results');
 }
@@ -3147,7 +3154,7 @@ async function processDocFile(file) {
       document.getElementById('certPreviewImg').src = e.target.result;
       document.getElementById('certPreviewArea').style.display = 'block';
       document.getElementById('certMethodSelect').style.display = 'none';
-      document.getElementById('uploadSection').style.display = 'none';
+      document.getElementById('uploadSection').classList.remove('active');
       document.getElementById('certUploadArea').style.display = 'none';
       resolve(e.target.result);
     };
@@ -3917,7 +3924,9 @@ function applyCertToPerson(entry, type, docImage) {
     const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
     if (matches.length >= 2) {
       const top2ScoreDiff = matches[0].score - matches[1].score;
-      if (top2ScoreDiff < 30 || matches[0].person.status === 'confirmed') {
+      // Only show ambiguity dialog if scores are close AND top match isn't a clear winner
+      // A score >= 80 with a 30+ point gap is a clear match, not ambiguous
+      if (top2ScoreDiff < 30 && matches[0].score < 80) {
         openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
         return;
       }
@@ -4017,7 +4026,7 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
     people.push(child);
   }
 
-  if (child.name === 'Name' || child.status === 'blank') {
+  if (child.name === 'Name' || child.name === 'Me' || child.name === 'You' || child.status === 'blank' || child.status === 'you') {
     child.name = childName;
   }
   child.fullName = childName;
