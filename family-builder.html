@@ -1101,6 +1101,14 @@ if ('serviceWorker' in navigator) {
   </div>
 </div>
 
+<!-- Document Viewer Modal -->
+<div id="docViewerModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
+  <div style="position:relative;max-width:90%;max-height:90%;">
+    <button onclick="closeDocViewer()" style="position:absolute;top:-40px;right:0;background:#f5eedc;border:2px solid #4a3a22;border-radius:4px;padding:4px 12px;font-family:'Cinzel Decorative',serif;font-size:12px;color:#4a3a22;cursor:pointer;">✕ Close</button>
+    <img id="docViewerImg" style="max-width:85vw;max-height:80vh;border:3px solid #4a3a22;border-radius:4px;display:block;" />
+  </div>
+</div>
+
 <!-- Ambiguity Resolution Modal -->
 <div id="ambigModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.75);z-index:10002;justify-content:center;align-items:center;">
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;">
@@ -2203,12 +2211,14 @@ function openDetail(person) {
 
     <div class="detail-field" style="margin-top:8px;">
       <label>Documents (${person.docs ? person.docs.length : 0})</label>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;">
-        ${(person.docs || []).map(d => {
+      <div id="docThumbs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px;">
+        ${(person.docs || []).map((d, i) => {
           const t = (d.type || 'bc').toUpperCase();
           const color = d.type === 'bc' ? '#dcfce7' : d.type === 'mc' ? '#dbeafe' : d.type === 'dc' ? '#fee2e2' : '#e5e7eb';
           const text = d.type === 'bc' ? '#166534' : d.type === 'mc' ? '#1e40af' : d.type === 'dc' ? '#991b1b' : '#374151';
-          return `<span style="font-size:11px;font-family:'Cinzel Decorative',serif;padding:2px 6px;border-radius:4px;background:${color};color:${text};font-weight:600;">${t}</span>`;
+          return `<div class="doc-thumb" data-doc-id="${d.docId || ''}" data-person-id="${person.id}" data-doc-index="${i}" style="position:relative;width:60px;height:60px;border:1px solid #8a7a5a;border-radius:4px;overflow:hidden;cursor:pointer;background:#f0e6d2;">
+            <div class="doc-thumb-label" style="position:absolute;bottom:0;left:0;right:0;font-size:8px;font-family:'Cinzel Decorative',serif;text-align:center;padding:1px;background:${color};color:${text};font-weight:600;">${t}</div>
+          </div>`;
         }).join('')}
       </div>
       <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
@@ -2225,7 +2235,52 @@ function openDetail(person) {
   detailPanel.classList.add('active');
 
   renderFreeBuild(); // re-render to show selection highlight
+  loadDocThumbnails(person);
 }
+
+// ── Load doc thumbnails into detail panel ──
+async function loadDocThumbnails(person) {
+  const thumbs = document.querySelectorAll('#docThumbs .doc-thumb');
+  for (let i = 0; i < thumbs.length; i++) {
+    const thumb = thumbs[i];
+    const docId = thumb.dataset.docId;
+    if (!docId) continue;
+    try {
+      const doc = await getDocById(docId);
+      if (doc && doc.image) {
+        const img = document.createElement('img');
+        img.src = doc.image;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        thumb.insertBefore(img, thumb.firstChild);
+        thumb.addEventListener('click', () => openDocViewer(doc.image, person.name));
+      }
+    } catch (e) { /* skip */ }
+  }
+}
+
+// ── Document viewer modal ──
+function openDocViewer(imageSrc, personName) {
+  const modal = document.getElementById('docViewerModal');
+  const img = document.getElementById('docViewerImg');
+  img.src = imageSrc;
+  modal.style.display = 'flex';
+}
+
+function closeDocViewer() {
+  const modal = document.getElementById('docViewerModal');
+  modal.style.display = 'none';
+  document.getElementById('docViewerImg').src = '';
+}
+
+// Click outside image to close
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('docViewerModal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeDocViewer();
+    });
+  }
+});
 
 function closeDetail() {
   detailPanel.classList.remove('active');
