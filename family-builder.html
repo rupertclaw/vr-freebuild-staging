@@ -4296,6 +4296,11 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
       fitToScreen();
       centerOnPerson(focusPersonId);
     }, 100);
+  } else if (people.length > 0) {
+    // No focus person (e.g. just the ME node) — still center on the first person
+    setTimeout(function() {
+      centerOnPerson(people[0].id);
+    }, 100);
   }
 })();
 </script>
