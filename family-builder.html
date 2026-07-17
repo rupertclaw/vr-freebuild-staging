@@ -34,6 +34,10 @@
   --bg-detail-actions: #f5eedc;
   --bg-detail-header: #2a1f15;
   --text-detail-header: #e8dcc8;
+  --bg-stat: rgba(56, 189, 248, 0.10);
+  --border-stat: rgba(56, 189, 248, 0.20);
+  --text-stat-label: #93c5fd;
+  --text-stat-value: #38bdf8;
 }
 
 [data-theme="dark"] {
@@ -57,6 +61,10 @@
   --bg-detail-actions: #f5eedc;
   --bg-detail-header: #2a1f15;
   --text-detail-header: #e8dcc8;
+  --bg-stat: rgba(80, 140, 220, 0.08);
+  --border-stat: rgba(80, 140, 220, 0.15);
+  --text-stat-label: #5a8aaa;
+  --text-stat-value: #4db8ff;
 }
 
 html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-family: 'Cormorant Garamond', serif; }
@@ -86,6 +94,24 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .header-tagline {
   font-size: 14px; color: var(--text-tagline); font-weight: 700;
   letter-spacing: 2px; margin-top: 3px;
+}
+.header-stats {
+  display: flex; gap: 10px; align-items: center;
+}
+.header-stat {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg-stat);
+  border: 1px solid var(--border-stat);
+  padding: 6px 12px; border-radius: 6px;
+  min-width: 68px;
+}
+.header-stat .stat-label {
+  font-size: 11px; color: var(--text-stat-label);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.header-stat .stat-value {
+  font-size: 18px; color: var(--text-stat-value);
+  font-weight: 600; font-family: 'Cormorant Garamond', serif;
 }
 .header-bottom {
   display: flex; align-items: center; justify-content: flex-end;
@@ -613,6 +639,20 @@ if ('serviceWorker' in navigator) {
     <div class="header-brand">
       <div class="header-logo">Vaulted Roots</div>
       <div class="header-tagline">Your legacy. Secure.</div>
+    </div>
+    <div class="header-stats">
+      <div class="header-stat">
+        <div class="stat-label">Nodes</div>
+        <div class="stat-value" id="statPeople">0</div>
+      </div>
+      <div class="header-stat">
+        <div class="stat-label">Documented</div>
+        <div class="stat-value" id="statConfirmed">0</div>
+      </div>
+      <div class="header-stat">
+        <div class="stat-label">Brick Walls</div>
+        <div class="stat-value" id="statWalls">0</div>
+      </div>
     </div>
     <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
     <div class="header-actions">
@@ -1949,7 +1989,7 @@ function renderFreeBuild() {
       });
       h += '</div>';
     }
-    if (person.status === 'you' && person.name === 'Me' && !person.birthDate) {
+    if (person.status === 'you' && (person.name === 'Me' || person.name === 'You' || person.isYou) && !person.birthDate) {
       h += '<div class="tap-hint">tap to start</div>';
     }
 
@@ -1961,6 +2001,14 @@ function renderFreeBuild() {
   // Apply zoom
   wrap.style.setProperty('--zoom', zoom);
   wrap.style.transform = 'scale(' + zoom + ')';
+
+  // Update header stats
+  const statPeople = document.getElementById('statPeople');
+  const statConfirmed = document.getElementById('statConfirmed');
+  const statWalls = document.getElementById('statWalls');
+  if (statPeople) statPeople.textContent = people.filter(p => p.status !== 'blank' || p.isYou).length;
+  if (statConfirmed) statConfirmed.textContent = people.filter(p => p.status === 'confirmed' || p.status === 'you').length;
+  if (statWalls) statWalls.textContent = people.filter(p => p.status === 'brickwall').length;
 
   // Auto-scroll to center on focus person
   setTimeout(() => {
@@ -2568,7 +2616,7 @@ function autoRestore() {
         people = data.people;
         // Upgrade old 'blank' Me card to 'you' status
         people.forEach(p => {
-          if (p.name === 'Me' && p.status === 'blank') p.status = 'you';
+          if (p.status === 'blank' && (p.isYou || p.name === 'Me' || p.name === 'You')) p.status = 'you';
         });
         nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
         if (fromDT) showToast('Loaded ' + people.length + ' people from Pedigree Tree');
