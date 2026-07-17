@@ -168,13 +168,13 @@ html, body {
 
 .cta-card .label {
   font-family: 'Cinzel Decorative', serif;
-  font-size: 16px;
+  font-size: 18px;
   color: var(--text-light);
 }
 
 .cta-card .desc {
   font-size: 13px;
-  color: var(--text-muted);
+  color: #d4c4a8;
   line-height: 1.5;
 }
 
@@ -369,15 +369,19 @@ html, body {
 /* Mobile */
 /* Desktop / laptop — shrink hero so everything fits in one viewport */
 @media (min-width: 769px) {
-  .hero-section { padding: 16px 16px; min-height: 92vh; }
-  .logo-img { width: 220px; height: 220px; }
-  .logo-text { font-size: 52px; }
-  .biline { font-size: 32px; }
-  .cta-row { margin-top: 20px; gap: 14px; }
-  .cta-card { padding: 16px 14px; min-width: 150px; }
-  .cta-card .icon { font-size: 28px; }
-  .cta-card .label { font-size: 14px; }
-  .cta-card .desc { font-size: 12px; }
+  .hero-section { padding: 10px 16px 40px; min-height: 88vh; justify-content: flex-start; }
+  .logo-wrap { margin-bottom: 8px; }
+  .logo-img { width: 160px; height: 160px; }
+  .logo-text { font-size: 42px; margin-bottom: 2px; }
+  .biline { font-size: 24px; }
+  .cta-row { margin-top: 14px; gap: 14px; }
+  .cta-card { padding: 12px 12px; min-width: 150px; }
+  .cta-card .icon { font-size: 24px; }
+  .cta-card .label { font-size: 15px; }
+  .cta-card .desc { font-size: 20px; }
+  .trust-strip { margin-top: 14px; padding: 8px 16px; gap: 18px; }
+  .trust-icon { font-size: 17px; }
+  .trust-text { font-size: 12px; }
 }
 
 /* Tablet / small laptop in-between */
@@ -391,7 +395,7 @@ html, body {
 @media (max-width: 420px) {
   .logo-img { width: 200px; height: 200px; }
   .logo-text { font-size: 36px; }
-  .biline { font-size: 16px; }
+  .biline { font-size: 18px; }
   .cta-card { min-width: 130px; padding: 18px 14px; }
   .cta-card .label { font-size: 14px; }
   .features-grid { grid-template-columns: 1fr; }
@@ -526,9 +530,9 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
-  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
-    <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:48px;margin-bottom:8px;">🔒</div>
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:16px 20px;max-width:400px;width:92%;max-height:90vh;overflow-y:auto;">
+    <div style="text-align:center;margin-bottom:10px;">
+      <div style="font-size:36px;margin-bottom:4px;">🔒</div>
 <script>
 function showPrivacyModal() {
   const modal = document.getElementById('privacyModal');
