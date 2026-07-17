@@ -578,5 +578,15 @@ if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
     <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:48px;margin-bottom:8px;">🔒</div>
+<!-- Auto-select input field text on focus for instant typing -->
+<script>
+document.addEventListener('focusin', function(e) {
+  var el = e.target;
+  if (el.tagName === 'INPUT' && (el.type === 'text' || el.type === 'email' || el.type === 'url') || el.tagName === 'TEXTAREA') {
+    el.select();
+  }
+});
+</script>
+
 </body>
 </html>
