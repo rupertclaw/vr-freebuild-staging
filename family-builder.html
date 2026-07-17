@@ -2210,7 +2210,7 @@ function openDetail(person) {
         }).join('')}
       </div>
       <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
-      <button class="fb-add-btn" onclick="closeDetail(); pendingDirectAttachId=${person.id}; document.getElementById('certFileInput').click();" style="background:var(--bg-btn);color:var(--text-logo);margin-top:4px;">📎 Attach Document</button>
+      <button class="fb-add-btn" onclick="closeDetail(); openDirectAttach(${person.id}, '${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:4px;">📎 Attach Document</button>
 
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
@@ -2957,6 +2957,19 @@ function openCertForPerson(personName) {
   showToast('Select Upload (private), Venice, or Gemini for ' + personName);
 }
 
+function openDirectAttach(personId, personName) {
+  pendingDirectAttachId = personId;
+  certPanel.classList.add('active');
+  clearCertPanel();
+  const headerTitle = certPanel.querySelector('.cert-header div');
+  if (headerTitle) headerTitle.textContent = '📎 Attach Document — ' + personName;
+  showToast('Select a document for ' + personName);
+  // reset value so onchange fires even if same file re-selected
+  const input = document.getElementById('certFileInput');
+  input.value = '';
+  input.click();
+}
+
 function clearCertPanel() {
   lastTranscription = null;
   pendingDocFile = null;
@@ -2997,6 +3010,8 @@ document.getElementById('certFileInput')?.addEventListener('change', async (e) =
     cs.innerHTML = 'Error: ' + escapeHtml(err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
     document.getElementById('certRetry').style.display = 'block';
   }
+  // reset so selecting the same file again still fires onchange
+  e.target.value = '';
 });
 
 document.getElementById('certCameraInput')?.addEventListener('change', async (e) => {
