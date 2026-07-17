@@ -1731,6 +1731,12 @@ function layoutTree() {
     assignPositions(rootId, currentX, 0, visited);
     // Also lay out ancestors upward
     assignParents(rootId, 0, visited);
+    // Also lay out ancestors of the focus person's spouse (in-laws)
+    // so they get connector lines instead of appearing as disconnected cards
+    const rootPerson = getP(rootId);
+    if (rootPerson && rootPerson.spouseId && visited.has(rootPerson.spouseId)) {
+      assignParents(rootPerson.spouseId, 0, visited);
+    }
     currentX += w + CARD_GAP_X * 2;
   }
 
