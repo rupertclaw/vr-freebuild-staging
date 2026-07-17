@@ -2212,7 +2212,7 @@ function openDetail(person) {
         }).join('')}
       </div>
       <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
-      <button class="fb-add-btn" onclick="closeDetail(); openDirectAttach(${person.id}, '${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:4px;">📎 Attach Document</button>
+      <button class="fb-add-btn" onclick="openDirectAttach(${person.id}, '${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:4px;">📎 Attach Document</button>
 
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
@@ -2967,7 +2967,7 @@ function openDirectAttach(personId, personName) {
   input.click();
 }
 
-// ── Direct attach handler (no transcription, just store the file) ──
+// ── Direct attach handler (no transcription, just attach file) ──
 document.getElementById('directAttachInput')?.addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) { pendingDirectAttachId = null; return; }
@@ -2986,7 +2986,7 @@ document.getElementById('directAttachInput')?.addEventListener('change', async (
       r.readAsDataURL(file);
     });
 
-    // Compress if large (same logic as cert scanning)
+    // Compress if large
     let finalImage = base64;
     const sizeKB = Math.round(base64.length * 0.75 / 1024);
     if (sizeKB > 800) {
@@ -2997,23 +2997,21 @@ document.getElementById('directAttachInput')?.addEventListener('change', async (
       }
     }
 
-    // Add doc to person
+    // Add doc entry to person (not saved yet — user clicks Save Changes)
     const docEntry = { type: 'doc', date: '', docId: null, filename: file.name || '' };
     person.docs = person.docs || [];
     person.docs.push(docEntry);
 
-    // Save image to IndexedDB
+    // Store image in IndexedDB so it survives
     saveDocToDB(person.id, 'doc', finalImage, { personName: person.name, filename: file.name || '' }).then(id => {
-      if (id) {
-        const lastDoc = person.docs[person.docs.length - 1];
-        if (lastDoc) lastDoc.docId = id;
-        autoSave();
+      if (id && person.docs.length) {
+        person.docs[person.docs.length - 1].docId = id;
       }
     });
 
-    autoSave();
-    renderFreeBuild();
-    showToast('Document attached to ' + person.name);
+    // Re-open detail panel so the new DOC badge shows
+    openDetail(person);
+    showToast('Document attached. Click Save Changes to save.');
   } catch (err) {
     console.error('[ATTACH ERROR]', err);
     showToast('Error attaching document: ' + (err.message || 'Unknown error'));
