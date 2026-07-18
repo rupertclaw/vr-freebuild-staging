@@ -2283,7 +2283,7 @@ function openDetail(person) {
           </div>`;
         }).join('')}
       </div>
-      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
+      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson(${person.id}, '${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
       <button class="fb-add-btn" onclick="openDirectAttach(${person.id}, '${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:4px;">📎 Attach Document</button>
 
     <div class="detail-actions">
@@ -3113,7 +3113,8 @@ function toggleCertPanel() {
   }
 }
 
-function openCertForPerson(personName) {
+function openCertForPerson(personId, personName) {
+  pendingDirectAttachId = personId;
   certPanel.classList.add('active');
   clearCertPanel();
   const headerTitle = certPanel.querySelector('.cert-header div');
@@ -4065,25 +4066,29 @@ function applyCertToPerson(entry, type, docImage) {
   }
   if (type === 'death' && entry.deceased?.name) primaryNames.push({ name: entry.deceased.name, certKey: 'deceased.name' });
 
-  for (const pn of primaryNames) {
-    const refYear = type === 'marriage' ? (extractYear(entry.date) ? extractYear(entry.date) - parseInt(entry.groom?.age || entry.bride?.age || 0) : null)
-      : type === 'birth' ? (extractYear(entry.child?.birthDate) || null)
-      : type === 'death' ? (extractYear(entry.deathDate) ? extractYear(entry.deathDate) - parseInt(entry.deceased?.age || 0) : null)
-      : null;
-    const certYear = extractYear(entry.date || entry.deathDate || entry.child?.birthDate);
-    const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
-    if (matches.length >= 2) {
-      const top2ScoreDiff = matches[0].score - matches[1].score;
-      // Only show ambiguity dialog if scores are close AND top match isn't a clear winner
-      // A score >= 80 with a 30+ point gap is a clear match, not ambiguous
-      if (top2ScoreDiff < 30 && matches[0].score < 80) {
-        openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
-        return;
+  // If user opened cert panel from a specific person's detail (pendingDirectAttachId set),
+  // skip ambiguity detection and trust their choice.
+  if (!pendingDirectAttachId) {
+    for (const pn of primaryNames) {
+      const refYear = type === 'marriage' ? (extractYear(entry.date) ? extractYear(entry.date) - parseInt(entry.groom?.age || entry.bride?.age || 0) : null)
+        : type === 'birth' ? (extractYear(entry.child?.birthDate) || null)
+        : type === 'death' ? (extractYear(entry.deathDate) ? extractYear(entry.deathDate) - parseInt(entry.deceased?.age || 0) : null)
+        : null;
+      const certYear = extractYear(entry.date || entry.deathDate || entry.child?.birthDate);
+      const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
+      if (matches.length >= 2) {
+        const top2ScoreDiff = matches[0].score - matches[1].score;
+        // Only show ambiguity dialog if scores are close AND top match isn't a clear winner
+        // A score >= 80 with a 30+ point gap is a clear match, not ambiguous
+        if (top2ScoreDiff < 30 && matches[0].score < 80) {
+          openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
+          return;
+        }
       }
     }
   }
 
-  _applyCertToPersonResolved(entry, type, docImage, null, null);
+  _applyCertToPersonResolved(entry, type, docImage, null, pendingDirectAttachId);
 }
 
 function _applyCertToPersonResolved(entry, type, docImage, resolveName, resolveId) {
