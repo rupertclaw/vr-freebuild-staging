@@ -659,20 +659,6 @@ if ('serviceWorker' in navigator) {
       <div class="header-tagline">Your legacy. Secure.</div>
       <div class="header-pagename">Family Builder</div>
     </div>
-    <div class="header-stats">
-      <div class="header-stat">
-        <div class="stat-label">Nodes</div>
-        <div class="stat-value" id="statPeople">0</div>
-      </div>
-      <div class="header-stat">
-        <div class="stat-label">Documented</div>
-        <div class="stat-value" id="statConfirmed">0</div>
-      </div>
-      <div class="header-stat">
-        <div class="stat-label">Brick Walls</div>
-        <div class="stat-value" id="statWalls">0</div>
-      </div>
-    </div>
     <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
     <div class="header-actions">
       <!-- Primary labeled buttons -->
@@ -723,6 +709,20 @@ if ('serviceWorker' in navigator) {
         <span class="help-btn" id="zoomLevel" style="cursor:default;min-width:36px;justify-content:center;">100%</span>
         <button class="help-btn" onclick="setZoom(zoom * 1.2)" title="Zoom in">+</button>
         <button class="help-btn" onclick="fitToScreen()" title="Fit to screen">Fit</button>
+      </div>
+      <div class="header-stats">
+        <div class="header-stat">
+          <div class="stat-label">Nodes</div>
+          <div class="stat-value" id="statPeople">0</div>
+        </div>
+        <div class="header-stat">
+          <div class="stat-label">Documented</div>
+          <div class="stat-value" id="statConfirmed">0</div>
+        </div>
+        <div class="header-stat">
+          <div class="stat-label">Brick Walls</div>
+          <div class="stat-value" id="statWalls">0</div>
+        </div>
       </div>
     </div>
     <div class="header-actions">
@@ -2663,17 +2663,18 @@ function exportGedcom() {
 const STORAGE_KEY = 'vr_freebuild_data_v1';
 
 // SAVE / LOAD / SHARE (matching data-tree.html functionality)
-function saveSession() {
-  const payload = { version: 5, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
+async function saveSession() {
+  const docs = await getAllDocsFromDB();
+  const payload = { version: 6, exportedAt: new Date().toISOString(), people: people, nextId: nextId, docs: docs };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
   a.click(); URL.revokeObjectURL(url);
-  showToast('Session saved');
+  showToast('Session saved' + (docs.length ? ' (' + docs.length + ' document images)' : ''));
 }
 
-function loadSession(file) {
+async function loadSession(file) {
   file.text().then(text => {
     try {
       const data = JSON.parse(text);
@@ -2681,11 +2682,42 @@ function loadSession(file) {
       people = data.people;
       nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
       focusPersonId = null; viewHistory = [];
-      autoSave();
-      renderFreeBuild();
-      showToast('Loaded ' + people.length + ' people from file');
+      // Restore document images to IndexedDB (v6+ save files)
+      if (data.docs && Array.isArray(data.docs) && data.docs.length) {
+        restoreDocsToDB(data.docs).then(restoredCount => {
+          autoSave();
+          renderFreeBuild();
+          showToast('Loaded ' + people.length + ' people from file' + (restoredCount ? ' (' + restoredCount + ' docs restored)' : ''));
+        });
+      } else {
+        autoSave();
+        renderFreeBuild();
+        showToast('Loaded ' + people.length + ' people from file');
+      }
     } catch (e) { showToast('Invalid session file'); }
   });
+}
+
+async function restoreDocsToDB(docs) {
+  try {
+    if (!_docDB) await openDocDB();
+    let restored = 0;
+    for (const doc of docs) {
+      if (!doc.id || !doc.image) continue;
+      // Only restore if not already present (don't overwrite newer IndexedDB state)
+      const existing = await getDocById(doc.id);
+      if (existing) continue;
+      const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(DOC_STORE_NAME);
+      await new Promise((resolve, reject) => {
+        const req = store.put(doc);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+      restored++;
+    }
+    return restored;
+  } catch (e) { console.warn('[restoreDocsToDB] failed', e); return 0; }
 }
 
 function shareTree() {
@@ -2985,6 +3017,19 @@ function openDocDB() {
       }
     };
   });
+}
+
+async function getAllDocsFromDB() {
+  try {
+    if (!_docDB) await openDocDB();
+    const tx = _docDB.transaction(DOC_STORE_NAME, 'readonly');
+    const store = tx.objectStore(DOC_STORE_NAME);
+    return new Promise((resolve, reject) => {
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) { return []; }
 }
 
 async function saveDocToDB(personId, type, base64Image, meta) {
@@ -3445,11 +3490,12 @@ function extractEntryFields(entry, type) {
     if (entry.groom?.age) fields.push({ label: 'Groom Age', value: entry.groom.age, key: 'groom.age' });
     if (entry.bride?.name) fields.push({ label: 'Bride', value: entry.bride.name, key: 'bride.name' });
     if (entry.bride?.age) fields.push({ label: 'Bride Age', value: entry.bride.age, key: 'bride.age' });
-    if (entry.groomFather?.name) fields.push({ label: "Groom's Father", value: entry.groomFather.name, key: 'groomFather.name' });
-    if (entry.groomMother?.name) fields.push({ label: "Groom's Mother", value: entry.groomMother.name + (entry.groomMother.maidenName ? ' (m.s. ' + entry.groomMother.maidenName + ')' : ''), key: 'groomMother.name' });
+    // Always show parent fields — users can fill them in if the AI missed them
+    fields.push({ label: "Groom's Father", value: entry.groomFather?.name || '', key: 'groomFather.name' });
+    fields.push({ label: "Groom's Mother", value: (entry.groomMother?.name || '') + (entry.groomMother?.maidenName ? ' (m.s. ' + entry.groomMother.maidenName + ')' : ''), key: 'groomMother.name' });
     if (entry.groomMother?.maidenName) fields.push({ label: "Groom's Mother m.s.", value: entry.groomMother.maidenName, key: 'groomMother.maidenName' });
-    if (entry.brideFather?.name) fields.push({ label: "Bride's Father", value: entry.brideFather.name, key: 'brideFather.name' });
-    if (entry.brideMother?.name) fields.push({ label: "Bride's Mother", value: entry.brideMother.name + (entry.brideMother.maidenName ? ' (m.s. ' + entry.brideMother.maidenName + ')' : ''), key: 'brideMother.name' });
+    fields.push({ label: "Bride's Father", value: entry.brideFather?.name || '', key: 'brideFather.name' });
+    fields.push({ label: "Bride's Mother", value: (entry.brideMother?.name || '') + (entry.brideMother?.maidenName ? ' (m.s. ' + entry.brideMother.maidenName + ')' : ''), key: 'brideMother.name' });
     if (entry.brideMother?.maidenName) fields.push({ label: "Bride's Mother m.s.", value: entry.brideMother.maidenName, key: 'brideMother.maidenName' });
     if (entry.date) fields.push({ label: 'Date', value: entry.date, key: 'date' });
   } else if (type === 'birth') {
