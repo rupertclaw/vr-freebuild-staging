@@ -659,20 +659,6 @@ if ('serviceWorker' in navigator) {
       <div class="header-tagline">Your legacy. Secure.</div>
       <div class="header-pagename">Family Builder</div>
     </div>
-    <div class="header-stats">
-      <div class="header-stat">
-        <div class="stat-label">Nodes</div>
-        <div class="stat-value" id="statPeople">0</div>
-      </div>
-      <div class="header-stat">
-        <div class="stat-label">Documented</div>
-        <div class="stat-value" id="statConfirmed">0</div>
-      </div>
-      <div class="header-stat">
-        <div class="stat-label">Brick Walls</div>
-        <div class="stat-value" id="statWalls">0</div>
-      </div>
-    </div>
     <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
     <div class="header-actions">
       <!-- Primary labeled buttons -->
@@ -723,6 +709,20 @@ if ('serviceWorker' in navigator) {
         <span class="help-btn" id="zoomLevel" style="cursor:default;min-width:36px;justify-content:center;">100%</span>
         <button class="help-btn" onclick="setZoom(zoom * 1.2)" title="Zoom in">+</button>
         <button class="help-btn" onclick="fitToScreen()" title="Fit to screen">Fit</button>
+      </div>
+      <div class="header-stats">
+        <div class="header-stat">
+          <div class="stat-label">Nodes</div>
+          <div class="stat-value" id="statPeople">0</div>
+        </div>
+        <div class="header-stat">
+          <div class="stat-label">Documented</div>
+          <div class="stat-value" id="statConfirmed">0</div>
+        </div>
+        <div class="header-stat">
+          <div class="stat-label">Brick Walls</div>
+          <div class="stat-value" id="statWalls">0</div>
+        </div>
       </div>
     </div>
     <div class="header-actions">
