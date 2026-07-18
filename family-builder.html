@@ -710,6 +710,10 @@ if ('serviceWorker' in navigator) {
         <button class="help-btn" onclick="setZoom(zoom * 1.2)" title="Zoom in">+</button>
         <button class="help-btn" onclick="fitToScreen()" title="Fit to screen">Fit</button>
       </div>
+      <div class="view-toggle">
+        <button id="viewModeFocus" class="active" onclick="setViewMode('focus')">Focus</button>
+        <button id="viewModeOverview" onclick="setViewMode('overview')">Overview</button>
+      </div>
       <div class="header-stats">
         <div class="header-stat">
           <div class="stat-label">Nodes</div>
@@ -1146,6 +1150,7 @@ let zoom = 0.75;
 let selectedPersonId = null;
 let focusPersonId = null;
 let viewHistory = [];
+let viewMode = 'focus'; // 'focus' (default) or 'overview'
 
 // ═══════════════════════════════════════════════════════════════
 // GEDCOM PARSER — copied from data-tree.html
@@ -1402,6 +1407,8 @@ function updateCardDimensions() {
 window.addEventListener('resize', updateCardDimensions);
 
 function getVisiblePeople() {
+  // Overview mode: render the entire tree (huge layout), ignore focusPersonId
+  if (viewMode === 'overview') return people;
   if (focusPersonId) {
     const focus = people.find(p => p.id === focusPersonId);
     if (!focus) return people;
@@ -2088,7 +2095,14 @@ function renderFreeBuild() {
     }
 
     el.innerHTML = h;
-    el.onclick = () => { focusOnPerson(person.id); openDetail(person); };
+    el.onclick = () => { 
+      if (viewMode === 'overview') {
+        openDetail(person);
+      } else {
+        focusOnPerson(person.id); 
+        openDetail(person); 
+      }
+    };
     wrap.appendChild(el);
   }
 
@@ -2538,7 +2552,37 @@ function fbDeletePerson() {
 // ═══════════════════════════════════════════════════════════════
 // FOCUS MODE
 // ═══════════════════════════════════════════════════════════════
+function setViewMode(mode) {
+  viewMode = mode;
+  const f = document.getElementById('viewModeFocus');
+  const o = document.getElementById('viewModeOverview');
+  if (f) f.classList.toggle('active', mode === 'focus');
+  if (o) o.classList.toggle('active', mode === 'overview');
+  const back = document.getElementById('focusBack');
+  if (mode === 'overview') {
+    if (back) back.classList.remove('visible');
+    renderFreeBuild();
+    setTimeout(function() { fitToScreen(); }, 50);
+  } else {
+    if (focusPersonId && back) back.classList.add('visible');
+    renderFreeBuild();
+    if (focusPersonId) {
+      setTimeout(function() { fitToScreen(); centerOnPerson(focusPersonId); }, 100);
+    } else {
+      setTimeout(function() { fitToScreen(); }, 100);
+    }
+  }
+}
+
 function focusOnPerson(id) {
+  if (viewMode === 'overview') {
+    // Clicking a person in Overview switches to Focus mode on that person
+    viewMode = 'focus';
+    const f = document.getElementById('viewModeFocus');
+    const o = document.getElementById('viewModeOverview');
+    if (f) f.classList.add('active');
+    if (o) o.classList.remove('active');
+  }
   if (focusPersonId) viewHistory.push(focusPersonId);
   focusPersonId = id;
   document.getElementById('focusBack').classList.add('visible');
