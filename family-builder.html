@@ -2283,7 +2283,7 @@ function openDetail(person) {
           </div>`;
         }).join('')}
       </div>
-      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
+      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson(${person.id}, '${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
       <button class="fb-add-btn" onclick="openDirectAttach(${person.id}, '${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:4px;">📎 Attach Document</button>
 
     <div class="detail-actions">
@@ -3113,7 +3113,8 @@ function toggleCertPanel() {
   }
 }
 
-function openCertForPerson(personName) {
+function openCertForPerson(personId, personName) {
+  pendingDirectAttachId = personId;
   certPanel.classList.add('active');
   clearCertPanel();
   const headerTitle = certPanel.querySelector('.cert-header div');
@@ -4065,25 +4066,29 @@ function applyCertToPerson(entry, type, docImage) {
   }
   if (type === 'death' && entry.deceased?.name) primaryNames.push({ name: entry.deceased.name, certKey: 'deceased.name' });
 
-  for (const pn of primaryNames) {
-    const refYear = type === 'marriage' ? (extractYear(entry.date) ? extractYear(entry.date) - parseInt(entry.groom?.age || entry.bride?.age || 0) : null)
-      : type === 'birth' ? (extractYear(entry.child?.birthDate) || null)
-      : type === 'death' ? (extractYear(entry.deathDate) ? extractYear(entry.deathDate) - parseInt(entry.deceased?.age || 0) : null)
-      : null;
-    const certYear = extractYear(entry.date || entry.deathDate || entry.child?.birthDate);
-    const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
-    if (matches.length >= 2) {
-      const top2ScoreDiff = matches[0].score - matches[1].score;
-      // Only show ambiguity dialog if scores are close AND top match isn't a clear winner
-      // A score >= 80 with a 30+ point gap is a clear match, not ambiguous
-      if (top2ScoreDiff < 30 && matches[0].score < 80) {
-        openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
-        return;
+  // If user opened cert panel from a specific person's detail (pendingDirectAttachId set),
+  // skip ambiguity detection and trust their choice.
+  if (!pendingDirectAttachId) {
+    for (const pn of primaryNames) {
+      const refYear = type === 'marriage' ? (extractYear(entry.date) ? extractYear(entry.date) - parseInt(entry.groom?.age || entry.bride?.age || 0) : null)
+        : type === 'birth' ? (extractYear(entry.child?.birthDate) || null)
+        : type === 'death' ? (extractYear(entry.deathDate) ? extractYear(entry.deathDate) - parseInt(entry.deceased?.age || 0) : null)
+        : null;
+      const certYear = extractYear(entry.date || entry.deathDate || entry.child?.birthDate);
+      const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
+      if (matches.length >= 2) {
+        const top2ScoreDiff = matches[0].score - matches[1].score;
+        // Only show ambiguity dialog if scores are close AND top match isn't a clear winner
+        // A score >= 80 with a 30+ point gap is a clear match, not ambiguous
+        if (top2ScoreDiff < 30 && matches[0].score < 80) {
+          openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
+          return;
+        }
       }
     }
   }
 
-  _applyCertToPersonResolved(entry, type, docImage, null, null);
+  _applyCertToPersonResolved(entry, type, docImage, null, pendingDirectAttachId);
 }
 
 function _applyCertToPersonResolved(entry, type, docImage, resolveName, resolveId) {
@@ -4261,19 +4266,39 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   const marriageYear = extractYear(entry.date);
 
   let groom = null;
-  if (forceResolveId && forceResolveName === groomName) {
-    groom = people.find(p => p.id === forceResolveId);
+  let bride = null;
+  // Direct-attach path: pendingDirectAttachId is the person the user attached
+  // the cert to. Match against cert's groom OR bride name; assign to the right
+  // one. forceResolveName may be null when called from pendingDirectAttachId,
+  // so we compare the resolved person's name against the cert names.
+  if (forceResolveId) {
+    const resolved = people.find(p => p.id === forceResolveId);
+    if (resolved) {
+      const resolvedNorm = normalizeName(resolved.name);
+      const resolvedFirst = resolved.name.split(/\s+/)[0]?.toLowerCase();
+      const groomFirst = groomName.split(/\s+/)[0]?.toLowerCase();
+      const brideFirst = brideName.split(/\s+/)[0]?.toLowerCase();
+      // Prefer an exact first-name match to avoid ambiguity (e.g. Joseph Sr vs Jr)
+      if (resolvedFirst === groomFirst && resolvedFirst !== brideFirst) {
+        groom = resolved;
+      } else if (resolvedFirst === brideFirst && resolvedFirst !== groomFirst) {
+        bride = resolved;
+      } else if (forceResolveName) {
+        // Fall back to forceResolveName if explicitly provided
+        if (normalizeName(forceResolveName) === normalizeName(groomName)) groom = resolved;
+        else if (normalizeName(forceResolveName) === normalizeName(brideName)) bride = resolved;
+      } else {
+        // First-name clash (or no first name); match by normalized full name
+        if (resolvedNorm === normalizeName(groomName)) groom = resolved;
+        else if (resolvedNorm === normalizeName(brideName)) bride = resolved;
+      }
+    }
   }
   if (!groom) {
     groom = findPersonGenAware(groomName, { certType: 'marriage', certYear: marriageYear });
     if (!groom) {
       groom = findPersonBySurname(groomName, { certType: 'marriage', certYear: marriageYear });
     }
-  }
-
-  let bride = null;
-  if (forceResolveId && forceResolveName === brideName) {
-    bride = people.find(p => p.id === forceResolveId);
   }
   if (!bride && groom && groom.spouseId) {
     const spouse = people.find(p => p.id === groom.spouseId);
@@ -4326,13 +4351,27 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   // Update parents
   function updateParents(person, fatherName, motherName, motherMaiden) {
     if (!person) return;
-    if (!person.parents || person.parents.length < 2) {
+    // Ensure person.parents is an array; fix partial state where only one parent
+    // is set. Never orphan existing parents by recreating both.
+    if (!person.parents || person.parents.length === 0) {
       const parentGen = (person.gen || 0) + 1;
       const father = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
       const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
       father.spouseId = mother.id; mother.spouseId = father.id;
       people.push(father); people.push(mother);
       person.parents = [father.id, mother.id];
+    } else if (person.parents.length === 1) {
+      // Only one parent exists; create the missing mother slot if the first is
+      // treated as the father. Mirror the createPerson pattern.
+      const parentGen = (person.gen || 0) + 1;
+      const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+      const existingFather = people.find(p => p.id === person.parents[0]);
+      if (existingFather) {
+        existingFather.spouseId = mother.id; mother.spouseId = existingFather.id;
+        existingFather.spouseName = mother.name; mother.spouseName = existingFather.name;
+      }
+      people.push(mother);
+      person.parents.push(mother.id);
     }
     const father = people.find(p => p.id === person.parents[0]);
     const mother = people.find(p => p.id === person.parents[1]);
