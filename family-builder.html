@@ -4266,24 +4266,39 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   const marriageYear = extractYear(entry.date);
 
   let groom = null;
+  let bride = null;
   // Direct-attach path: pendingDirectAttachId is the person the user attached
-  // the cert to. Prefer that ID for the groom if the cert's groom name matches
-  // (case-insensitive) the person's name. Falls through to normal search if not.
-  if (forceResolveId && (!forceResolveName || normalizeName(forceResolveName) === normalizeName(groomName))) {
+  // the cert to. Match against cert's groom OR bride name; assign to the right
+  // one. forceResolveName may be null when called from pendingDirectAttachId,
+  // so we compare the resolved person's name against the cert names.
+  if (forceResolveId) {
     const resolved = people.find(p => p.id === forceResolveId);
-    if (resolved) groom = resolved;
+    if (resolved) {
+      const resolvedNorm = normalizeName(resolved.name);
+      const resolvedFirst = resolved.name.split(/\s+/)[0]?.toLowerCase();
+      const groomFirst = groomName.split(/\s+/)[0]?.toLowerCase();
+      const brideFirst = brideName.split(/\s+/)[0]?.toLowerCase();
+      // Prefer an exact first-name match to avoid ambiguity (e.g. Joseph Sr vs Jr)
+      if (resolvedFirst === groomFirst && resolvedFirst !== brideFirst) {
+        groom = resolved;
+      } else if (resolvedFirst === brideFirst && resolvedFirst !== groomFirst) {
+        bride = resolved;
+      } else if (forceResolveName) {
+        // Fall back to forceResolveName if explicitly provided
+        if (normalizeName(forceResolveName) === normalizeName(groomName)) groom = resolved;
+        else if (normalizeName(forceResolveName) === normalizeName(brideName)) bride = resolved;
+      } else {
+        // First-name clash (or no first name); match by normalized full name
+        if (resolvedNorm === normalizeName(groomName)) groom = resolved;
+        else if (resolvedNorm === normalizeName(brideName)) bride = resolved;
+      }
+    }
   }
   if (!groom) {
     groom = findPersonGenAware(groomName, { certType: 'marriage', certYear: marriageYear });
     if (!groom) {
       groom = findPersonBySurname(groomName, { certType: 'marriage', certYear: marriageYear });
     }
-  }
-
-  let bride = null;
-  if (forceResolveId && (!forceResolveName || normalizeName(forceResolveName) === normalizeName(brideName))) {
-    const resolved = people.find(p => p.id === forceResolveId);
-    if (resolved) bride = resolved;
   }
   if (!bride && groom && groom.spouseId) {
     const spouse = people.find(p => p.id === groom.spouseId);
