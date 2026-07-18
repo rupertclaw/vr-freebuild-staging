@@ -4261,8 +4261,12 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   const marriageYear = extractYear(entry.date);
 
   let groom = null;
-  if (forceResolveId && forceResolveName === groomName) {
-    groom = people.find(p => p.id === forceResolveId);
+  // Direct-attach path: pendingDirectAttachId is the person the user attached
+  // the cert to. Prefer that ID for the groom if the cert's groom name matches
+  // (case-insensitive) the person's name. Falls through to normal search if not.
+  if (forceResolveId && (!forceResolveName || normalizeName(forceResolveName) === normalizeName(groomName))) {
+    const resolved = people.find(p => p.id === forceResolveId);
+    if (resolved) groom = resolved;
   }
   if (!groom) {
     groom = findPersonGenAware(groomName, { certType: 'marriage', certYear: marriageYear });
@@ -4272,8 +4276,9 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   }
 
   let bride = null;
-  if (forceResolveId && forceResolveName === brideName) {
-    bride = people.find(p => p.id === forceResolveId);
+  if (forceResolveId && (!forceResolveName || normalizeName(forceResolveName) === normalizeName(brideName))) {
+    const resolved = people.find(p => p.id === forceResolveId);
+    if (resolved) bride = resolved;
   }
   if (!bride && groom && groom.spouseId) {
     const spouse = people.find(p => p.id === groom.spouseId);
@@ -4326,13 +4331,27 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   // Update parents
   function updateParents(person, fatherName, motherName, motherMaiden) {
     if (!person) return;
-    if (!person.parents || person.parents.length < 2) {
+    // Ensure person.parents is an array; fix partial state where only one parent
+    // is set. Never orphan existing parents by recreating both.
+    if (!person.parents || person.parents.length === 0) {
       const parentGen = (person.gen || 0) + 1;
       const father = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
       const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
       father.spouseId = mother.id; mother.spouseId = father.id;
       people.push(father); people.push(mother);
       person.parents = [father.id, mother.id];
+    } else if (person.parents.length === 1) {
+      // Only one parent exists; create the missing mother slot if the first is
+      // treated as the father. Mirror the createPerson pattern.
+      const parentGen = (person.gen || 0) + 1;
+      const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+      const existingFather = people.find(p => p.id === person.parents[0]);
+      if (existingFather) {
+        existingFather.spouseId = mother.id; mother.spouseId = existingFather.id;
+        existingFather.spouseName = mother.name; mother.spouseName = existingFather.name;
+      }
+      people.push(mother);
+      person.parents.push(mother.id);
     }
     const father = people.find(p => p.id === person.parents[0]);
     const mother = people.find(p => p.id === person.parents[1]);
