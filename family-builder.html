@@ -2848,8 +2848,9 @@ async function loadSession(file) {
           p.children = myChildren;
         }
       }
-      // Infer sex for legacy files (pre-v7) that have no sex field
-      if (!data.version || data.version < 7) {
+      // Infer sex for legacy files (pre-v7) or any file where most people lack sex
+      const noSexCount = people.filter(p => !p.sex).length;
+      if (!data.version || data.version < 7 || noSexCount > people.length / 2) {
         inferSex();
       }
       nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
@@ -2977,8 +2978,9 @@ function autoRestore() {
         people.forEach(p => {
           if (p.status === 'blank' && (p.isYou || p.name === 'Me' || p.name === 'You')) p.status = 'you';
         });
-        // Infer sex for legacy files (pre-v7) that have no sex field
-        if (!data.version || data.version < 7) {
+        // Infer sex for legacy files (pre-v7) or any file where most people lack sex
+        const noSexCount = people.filter(p => !p.sex).length;
+        if (!data.version || data.version < 7 || noSexCount > people.length / 2) {
           inferSex();
         }
         nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
