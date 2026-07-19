@@ -2052,6 +2052,43 @@ function layoutTree() {
     }
   }
 
+  // ── MISSING CONNECTOR PASS ──
+  // Each root family gets laid out as a self-contained block, so when two
+  // roots are linked via a marriage (e.g. Andrew Craigie's daughter Rose
+  // married Joseph Mooney — Andrew is in root #3, Joseph is in Edward
+  // Lynch's root block), the parent→child line between Andrew and Rose is
+  // never drawn. Scan every placed person: if their parents are also placed
+  // but no parent-child connector exists, draw one.
+  const existingParentChild = new Set();
+  for (const c of connections) {
+    if (c.type === 'parent-child') {
+      existingParentChild.add(Math.round(c.midX) + ',' + Math.round(c.parentY) + ',' + Math.round(c.childX) + ',' + Math.round(c.childY));
+    }
+  }
+  for (const p of viewPeople) {
+    const childPos = positions.get(p.id);
+    if (!childPos) continue;
+    const parents = p.parents || [];
+    if (parents.length === 0) continue;
+    for (const pid of parents) {
+      if (!viewSet.has(pid)) continue;
+      const parentPos = positions.get(pid);
+      if (!parentPos) continue;
+      // Skip if the parent is at the SAME y as the child (would draw a flat line)
+      if (Math.abs(parentPos.y - childPos.y) < GEN_HEIGHT / 4) continue;
+      // Skip if child is ABOVE the parent (parent below child doesn't make sense in top-down)
+      if (childPos.y < parentPos.y) continue;
+      const parentMidX = parentPos.x + CARD_W / 2;
+      const parentY = parentPos.y + CARD_H;
+      const childX = childPos.x + CARD_W / 2;
+      const childY = childPos.y;
+      const key = Math.round(parentMidX) + ',' + Math.round(parentY) + ',' + Math.round(childX) + ',' + Math.round(childY);
+      if (existingParentChild.has(key)) continue;
+      existingParentChild.add(key);
+      connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+    }
+  }
+
   // Normalize: shift all y values so minimum y is 120 (clears header banner)
   let minY = Infinity;
   for (const [id, pos] of positions) {
