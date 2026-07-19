@@ -2164,8 +2164,17 @@ function renderFreeBuild() {
     } else if (conn.type === 'parent-child') {
       // L-shaped: vertical down from midpoint, horizontal to child, vertical down to child top
       const midY = (conn.parentY + conn.childY) / 2;
-      svgContent += `<path d="M ${conn.midX} ${conn.parentY} L ${conn.midX} ${midY} L ${conn.childX} ${midY} L ${conn.childX} ${conn.childY}"
-                    fill="none" stroke="var(--line-stroke)" stroke-width="1.5" />`;
+      const dx = Math.abs(conn.childX - conn.midX);
+      // For long-distance connectors (across separate root blocks), use a
+      // smooth Bézier curve so the line is visually distinct from local
+      // parent-child L-paths and doesn't visually slice through cards.
+      if (dx > CARD_W * 4) {
+        const cy1 = conn.parentY + 40;
+        const cy2 = conn.childY - 40;
+        svgContent += `<path d="M ${conn.midX} ${conn.parentY} C ${conn.midX} ${cy1}, ${conn.childX} ${cy2}, ${conn.childX} ${conn.childY}" fill="none" stroke="var(--line-stroke)" stroke-width="1.5" stroke-dasharray="4 3" opacity="0.6" />`;
+      } else {
+        svgContent += `<path d="M ${conn.midX} ${conn.parentY} L ${conn.midX} ${midY} L ${conn.childX} ${midY} L ${conn.childX} ${conn.childY}" fill="none" stroke="var(--line-stroke)" stroke-width="1.5" />`;
+      }
     }
   }
   svg.innerHTML = svgContent;
