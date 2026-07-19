@@ -1642,7 +1642,16 @@ function layoutTree() {
       return child.parents.includes(personId) && (spouseId ? child.parents.includes(spouseId) : child.parents.length === 1);
     });
     if (childEntries.length > 0) {
-      let childLeftX = leftX;
+      // CENTER children under the parent couple, not at parent's leftX.
+      // The parent's leftX is the left edge of their allocated block, but if the
+      // couple is narrower than their children's total width, the couple gets
+      // centered within that block — leaving children misaligned (either shifted
+      // left of the couple, or right of it). Centering children on the couple's
+      // midpoint keeps the visual hierarchy aligned.
+      let totalChildrenWidth = 0;
+      for (const cid of childEntries) totalChildrenWidth += computeWidth(cid);
+      totalChildrenWidth += CARD_GAP_X * (childEntries.length - 1);
+      let childLeftX = centerX - totalChildrenWidth / 2;
       for (const cid of childEntries) {
         const cw = computeWidth(cid);
         assignPositions(cid, childLeftX, depth + 1, visited);
