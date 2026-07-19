@@ -1787,6 +1787,22 @@ function layoutTree() {
     layoutRoots = viewPeople
       .filter(p => !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid)))
       .map(p => p.id);
+    // Filter out in-married spouses: if a person has no parents in the tree but their
+    // spouse DOES have parents (or is otherwise connected), the spouse's layout will
+    // place them. Keeping them as a separate root would split families across the diagram.
+    layoutRoots = layoutRoots.filter(rid => {
+      const p = getP(rid);
+      if (!p) return true;
+      if (!p.spouseId || !viewSet.has(p.spouseId)) return true;
+      const spouse = getP(p.spouseId);
+      if (!spouse) return true;
+      // If spouse has parents in the visible set, spouse's family will handle layout
+      const spouseHasParents = spouse.parents && spouse.parents.some(pid => viewSet.has(pid));
+      if (spouseHasParents) return false;
+      // Both have no parents — keep the one with the lower ID to avoid duplicates
+      // (the other will be placed as a spouse during layout)
+      return rid < p.spouseId;
+    });
   }
 
   const visited = new Set();
@@ -1964,7 +1980,48 @@ function layoutTree() {
     }
   }
 
-  // Layout any unplaced people (disconnected)
+  // Layout siblings and their families (unplaced people who share parents with placed people)
+  // These aren't ancestors or descendants of any root, so the main traversal misses them.
+  // Place them at the same depth as their placed sibling, then walk down through their children.
+  for (const p of viewPeople) {
+    if (visited.has(p.id)) continue;
+    // Find a placed sibling (shares at least one parent)
+    const myParents = p.parents || [];
+    let siblingPos = null;
+    let siblingDepth = null;
+    for (const pid of myParents) {
+      // Find anyone placed who shares this parent
+      for (const [ placedId, pos ] of positions) {
+        const placed = getP(placedId);
+        if (placed && placed.parents && placed.parents.includes(pid) && placedId !== p.id) {
+          siblingPos = pos;
+          siblingDepth = Math.round((pos.y - 120) / GEN_HEIGHT);
+          break;
+        }
+      }
+      if (siblingPos) break;
+    }
+    if (siblingPos) {
+      // Place at same depth, to the right of the rightmost card at that depth
+      const targetY = siblingPos.y;
+      let rightmost = 0;
+      for (const [ , pos ] of positions) {
+        if (Math.abs(pos.y - targetY) < GEN_HEIGHT / 2) {
+          rightmost = Math.max(rightmost, pos.x + CARD_W);
+        }
+      }
+      const startX = rightmost + CARD_GAP_X * 2;
+      const w = computeWidth(p.id);
+      assignPositions(p.id, startX, siblingDepth, visited);
+      // Lay out their spouse's ancestors too if any
+      if (p.spouseId && viewSet.has(p.spouseId) && !visited.has(p.spouseId)) {
+        assignParents(p.spouseId, siblingDepth, visited);
+      }
+      currentX = Math.max(currentX, startX + w + CARD_GAP_X);
+    }
+  }
+
+  // Layout any remaining unplaced people (truly disconnected)
   for (const p of viewPeople) {
     if (!visited.has(p.id)) {
       positions.set(p.id, { x: currentX, y: 50 });
@@ -2750,6 +2807,24 @@ async function saveSession() {
   showToast('Session saved' + (docs.length ? ' (' + docs.length + ' document images)' : ''));
 }
 
+// Infer sex for legacy files (pre-v7) based on parent order in children's parents[] arrays.
+// Convention: first parent ID = father (M), second parent ID = mother (F).
+// Only sets sex if it's currently empty/missing. Does not override existing values.
+function inferSex() {
+  for (const p of people) {
+    if (p.sex) continue; // already set, skip
+    const parents = p.parents || [];
+    if (parents.length >= 1) {
+      const father = people.find(q => q.id === parents[0]);
+      if (father && !father.sex) father.sex = 'M';
+    }
+    if (parents.length >= 2) {
+      const mother = people.find(q => q.id === parents[1]);
+      if (mother && !mother.sex) mother.sex = 'F';
+    }
+  }
+}
+
 async function loadSession(file) {
   file.text().then(text => {
     try {
@@ -2772,6 +2847,10 @@ async function loadSession(file) {
           const myChildren = childMap.get(p.id) || [];
           p.children = myChildren;
         }
+      }
+      // Infer sex for legacy files (pre-v7) that have no sex field
+      if (!data.version || data.version < 7) {
+        inferSex();
       }
       nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
       focusPersonId = null; viewHistory = [];
@@ -2898,6 +2977,10 @@ function autoRestore() {
         people.forEach(p => {
           if (p.status === 'blank' && (p.isYou || p.name === 'Me' || p.name === 'You')) p.status = 'you';
         });
+        // Infer sex for legacy files (pre-v7) that have no sex field
+        if (!data.version || data.version < 7) {
+          inferSex();
+        }
         nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
         if (fromDT) showToast('Loaded ' + people.length + ' people from Pedigree Tree');
         return true;
