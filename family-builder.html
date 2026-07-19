@@ -2812,7 +2812,6 @@ async function saveSession() {
 // Only sets sex if it's currently empty/missing. Does not override existing values.
 function inferSex() {
   for (const p of people) {
-    if (p.sex) continue; // already set, skip
     const parents = p.parents || [];
     if (parents.length >= 1) {
       const father = people.find(q => q.id === parents[0]);
