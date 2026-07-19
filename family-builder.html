@@ -1407,7 +1407,7 @@ function updateCardDimensions() {
 window.addEventListener('resize', updateCardDimensions);
 
 // Placeholder cards: created when user clicks "add parent" but leaves the name
-// empty. These inflate the people array but carry no real data. We never render,
+// empty. They inflate the people array but carry no real data. We never render,
 // count, or export them.
 function isPlaceholder(p) {
   if (!p) return true;
@@ -1541,6 +1541,19 @@ function buildFamilyUnits(viewPeople) {
         const children = p.children.filter(cid => viewSet.has(cid));
         if (coParent) {
           const coParentPerson = viewPeople.find(sp => sp.id === coParent);
+          if (coParentPerson && coParentPerson.children) {
+            for (const cid of coParentPerson.children) {
+              if (!children.includes(cid) && viewSet.has(cid)) children.push(cid);
+            }
+          }
+        }
+        units.push({ parents, children, marriageDate: p.marriageDate || '' });
+      }
+    }
+  }
+  return units;
+}
+
 function layoutTree() {
   const viewPeople = getVisiblePeople();
   if (viewPeople.length === 0) return { positions: new Map(), width: 100, height: 100, connections: [] };
@@ -2050,55 +2063,6 @@ function renderFreeBuild() {
       const midY = (conn.parentY + conn.childY) / 2;
       svgContent += `<path d="M ${conn.midX} ${conn.parentY} L ${conn.midX} ${midY} L ${conn.childX} ${midY} L ${conn.childX} ${conn.childY}"
                     fill="none" stroke="var(--line-stroke)" stroke-width="1.5" />`;
-    }
-  }
-  svg.innerHTML = svgContent;
-
-  // Draw cards
-  const viewPeople = getVisiblePeople();
-  for (const person of viewPeople) {
-    const pos = positions.get(person.id);
-    if (!pos) continue;
-
-    const el = document.createElement('div');
-    el.className = 'fb-card ' + person.status + (person.id === selectedPersonId ? ' selected' : '');
-    el.dataset.id = person.id;
-    el.style.left = pos.x + 'px';
-    el.style.top = pos.y + 'px';
-
-    const bYear = (person.birthDate || person.years || '').match(/\d{4}/);
-    const dYear = (person.deathDate || '').match(/\d{4}/);
-    const mYear = (person.marriageDate || '').match(/\d{4}/);
-    let cardYears = '';
-    if (bYear && dYear) cardYears = bYear[0] + ' — ' + dYear[0];
-    else if (bYear) cardYears = 'b. ' + bYear[0];
-    else if (dYear) cardYears = 'd. ' + dYear[0];
-    else cardYears = person.years || '?';
-
-function renderFreeBuild() {
-  const { positions, width, height, connections } = layoutTree();
-  const wrap = document.getElementById('treeWrap');
-  const svg = document.getElementById('fbSvg');
-
-  // Remove existing cards
-  wrap.querySelectorAll('.fb-card').forEach(el => el.remove());
-
-  // Set SVG size
-  svg.setAttribute('width', width);
-  svg.setAttribute('height', height);
-  wrap.style.width = width + 'px';
-  wrap.style.height = height + 'px';
-
-  // Draw connections
-  let svgContent = '';
-  for (const conn of connections) {
-    if (conn.type === 'spouse') {
-      svgContent += `<line x1="${conn.x1}" y1="${conn.y1}" x2="${conn.x2}" y2="${conn.y2}"
-                    stroke="var(--line-stroke)" stroke-width="2" />`;
-    } else if (conn.type === 'parent-child') {
-      // L-shaped: vertical down from midpoint, horizontal to child, vertical down to child top
-      const midY = (conn.parentY + conn.childY) / 2;
-      svgContent += `<path d="M ${conn.midX} ${conn.parentY} L ${conn.midX} ${midY} L ${conn.childX} ${midY} L ${conn.childX} ${conn.childY}" fill="none" stroke="var(--line-stroke)" stroke-width="1.5" />`;
     }
   }
   svg.innerHTML = svgContent;
@@ -2791,17 +2755,14 @@ const STORAGE_KEY = 'vr_freebuild_data_v1';
 // SAVE / LOAD / SHARE (matching data-tree.html functionality)
 async function saveSession() {
   const docs = await getAllDocsFromDB();
-  // Filter out placeholder cards (name='Name' with status='blank') — they're
-  // created when user clicks "add parent" but doesn't fill it in. They carry
-  // no data, bloat the file, and break layout for anyone who loads it later.
-  // Also scrub any parent/child/spouse refs to those placeholders so the saved
-  // file doesn't have dangling IDs pointing at people who no longer exist.
+  // Filter out placeholder cards (name='Name', status='blank') — they bloat
+  // the file and break layout for anyone who loads it later. Also scrub
+  // dangling parent/child/spouse refs to removed placeholders.
   const keptIds = new Set(people.filter(p => !isPlaceholder(p)).map(p => p.id));
   const payloadPeople = JSON.parse(JSON.stringify(people.filter(p => !isPlaceholder(p))));
   for (const p of payloadPeople) {
     if (!p.children) p.children = [];
     if (!p.sex) p.sex = '';
-    // Scrub dangling references to placeholders we just removed
     if (p.parents) p.parents = p.parents.filter(pid => keptIds.has(pid));
     if (p.children) p.children = p.children.filter(cid => keptIds.has(cid));
     if (p.spouseId && !keptIds.has(p.spouseId)) p.spouseId = null;
@@ -2819,6 +2780,9 @@ async function saveSession() {
 // Infer sex for legacy files (pre-v7) based on parent order in children's parents[] arrays.
 // Convention: first parent ID = father (M), second parent ID = mother (F).
 // Only sets sex if it's currently empty/missing. Does not override existing values.
+// NOTE: This is a heteronormative heuristic. Same-sex couples where both parents
+// are listed will get the second-listed parent tagged 'F' incorrectly. Users can
+// manually correct the sex on any card; manual values are never overwritten.
 function inferSex() {
   for (const p of people) {
     const parents = p.parents || [];
@@ -2839,7 +2803,7 @@ async function loadSession(file) {
       const data = JSON.parse(text);
       if (!data.people) { showToast('Invalid session file'); return; }
       people = data.people;
-      // Strip placeholder cards from legacy files (name='Name', status='blank').
+      // Strip placeholder cards (name='Name', status='blank') from legacy files.
       // Also scrub dangling parent/child/spouse refs so layout doesn't break.
       const keptIds = new Set(people.filter(p => !isPlaceholder(p)).map(p => p.id));
       const hadPlaceholders = people.length > keptIds.size;
@@ -2869,12 +2833,12 @@ async function loadSession(file) {
           p.children = myChildren;
         }
       }
+      nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
       // Infer sex for legacy files (pre-v7) or any file where most people lack sex
       const noSexCount = people.filter(p => !p.sex).length;
       if (!data.version || data.version < 7 || noSexCount > people.length / 2) {
         inferSex();
       }
-      nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
       focusPersonId = null; viewHistory = [];
       // Restore document images to IndexedDB (v6+ save files)
       if (data.docs && Array.isArray(data.docs) && data.docs.length) {
@@ -3005,11 +2969,6 @@ function autoRestore() {
         people.forEach(p => {
           if (p.status === 'blank' && (p.isYou || p.name === 'Me' || p.name === 'You')) p.status = 'you';
         });
-        // Infer sex for legacy files (pre-v7) or any file where most people lack sex
-        const noSexCount = people.filter(p => !p.sex).length;
-        if (!data.version || data.version < 7 || noSexCount > people.length / 2) {
-          inferSex();
-        }
         nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
         if (fromDT) showToast('Loaded ' + people.length + ' people from Pedigree Tree');
         return true;
