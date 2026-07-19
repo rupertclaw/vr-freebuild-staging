@@ -1823,6 +1823,26 @@ function layoutTree() {
     currentX += w + CARD_GAP_X * 2;
   }
 
+  // ── IN-MARRIED SPOUSE ANCESTOR PASS ──
+  // For every placed couple, walk UPWARD through the spouse's parents so
+  // in-laws (married-in branch) get connector lines and ancestor cards.
+  // Without this, spouses who married INTO the tree (descendants of the root)
+  // have their ancestors dropped as disconnected cards on the right.
+  for (const p of viewPeople) {
+    if (!positions.has(p.id)) continue;
+    if (!p.spouseId || !viewSet.has(p.spouseId)) continue;
+    if (!visited.has(p.spouseId)) continue;  // spouse must be placed already
+    // Skip if spouse's parents are already visited (root-spouse case handled above)
+    const spouse = getP(p.spouseId);
+    if (!spouse || !spouse.parents) continue;
+    const hasUnplacedParents = spouse.parents.some(pid => viewSet.has(pid) && !visited.has(pid));
+    if (!hasUnplacedParents) continue;
+    // Compute the spouse's depth from their current y position
+    const spousePos = positions.get(p.spouseId);
+    const spouseDepth = Math.round((spousePos.y - 50) / GEN_HEIGHT);
+    assignParents(p.spouseId, spouseDepth, visited);
+  }
+
   // ── MULTI-MARRIAGE PASS: place additional spouses and their children ──
   // Must run BEFORE the disconnected pass so secondary spouses and their
   // children aren't grabbed as disconnected cards.
