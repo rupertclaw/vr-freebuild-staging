@@ -1406,11 +1406,24 @@ function updateCardDimensions() {
 
 window.addEventListener('resize', updateCardDimensions);
 
+// Placeholder cards: created when user clicks "add parent" but leaves the name
+// empty. They inflate the people array but carry no real data. We never render,
+// count, or export them.
+function isPlaceholder(p) {
+  if (!p) return true;
+  if (p.isYou) return false;
+  const name = (p.name || '').trim();
+  if (!name) return true;
+  if (name === 'Name' || name === 'Me' || name === 'You') return p.status === 'blank';
+  return false;
+}
+
 function getVisiblePeople() {
-  // Overview mode: render the entire tree (huge layout), ignore focusPersonId
-  // But filter out empty placeholder cards (name === 'Name' with no real data)
+  // Always exclude placeholder cards (name === 'Name' with status blank).
+  // In Overview: full tree minus placeholders.
+  // In Focus: subset around the focus person, minus placeholders.
   if (viewMode === 'overview') {
-    return people.filter(p => p.name && p.name !== 'Name');
+    return people.filter(p => !isPlaceholder(p));
   }
   if (focusPersonId) {
     const focus = people.find(p => p.id === focusPersonId);
@@ -1476,9 +1489,9 @@ function getVisiblePeople() {
       const child = getP(cid);
       if (child && child.spouseId) visible.add(child.spouseId);
     }
-    return people.filter(p => visible.has(p.id));
+    return people.filter(p => visible.has(p.id) && !isPlaceholder(p));
   }
-  return people;
+  return people.filter(p => !isPlaceholder(p));
 }
 
 function buildFamilyUnits(viewPeople) {
@@ -2112,7 +2125,7 @@ function renderFreeBuild() {
   const statPeople = document.getElementById('statPeople');
   const statConfirmed = document.getElementById('statConfirmed');
   const statWalls = document.getElementById('statWalls');
-  if (statPeople) statPeople.textContent = people.filter(p => p.status !== 'blank' || p.isYou).length;
+  if (statPeople) statPeople.textContent = people.filter(p => !isPlaceholder(p)).length;
   if (statConfirmed) statConfirmed.textContent = people.filter(p => p.status === 'confirmed' || p.status === 'you').length;
   if (statWalls) statWalls.textContent = people.filter(p => p.status === 'brickwall').length;
 
@@ -2587,7 +2600,14 @@ function setViewMode(mode) {
   if (mode === 'overview') {
     if (back) back.classList.remove('visible');
     renderFreeBuild();
-    setTimeout(function() { fitToScreen(); }, 50);
+    // Don't auto-zoom to fit the whole tree — for a wide tree that means zooming
+    // out to 8% where nothing is readable. Keep the current zoom level so cards
+    // stay at the same size the user was viewing. Scroll to top-left so the
+    // earliest ancestor (root) is visible. User can scroll/zoom from there.
+    setTimeout(function() {
+      const sa = document.getElementById('treeScroll');
+      if (sa) { sa.scrollTo({ left: 0, top: 0, behavior: 'auto' }); }
+    }, 50);
   } else {
     if (focusPersonId && back) back.classList.add('visible');
     renderFreeBuild();
@@ -2735,11 +2755,18 @@ const STORAGE_KEY = 'vr_freebuild_data_v1';
 // SAVE / LOAD / SHARE (matching data-tree.html functionality)
 async function saveSession() {
   const docs = await getAllDocsFromDB();
-  // Ensure every person has children[] and sex before saving (v7 schema)
-  const payloadPeople = JSON.parse(JSON.stringify(people));
+  // Filter out placeholder cards (name='Name', status='blank') — they bloat
+  // the file and break layout for anyone who loads it later. Also scrub
+  // dangling parent/child/spouse refs to removed placeholders.
+  const keptIds = new Set(people.filter(p => !isPlaceholder(p)).map(p => p.id));
+  const payloadPeople = JSON.parse(JSON.stringify(people.filter(p => !isPlaceholder(p))));
   for (const p of payloadPeople) {
     if (!p.children) p.children = [];
     if (!p.sex) p.sex = '';
+    if (p.parents) p.parents = p.parents.filter(pid => keptIds.has(pid));
+    if (p.children) p.children = p.children.filter(cid => keptIds.has(cid));
+    if (p.spouseId && !keptIds.has(p.spouseId)) p.spouseId = null;
+    if (p.families) p.families = p.families.filter(f => !f.spouseId || keptIds.has(f.spouseId));
   }
   const payload = { version: 7, exportedAt: new Date().toISOString(), people: payloadPeople, nextId: nextId, docs: docs };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -2750,12 +2777,45 @@ async function saveSession() {
   showToast('Session saved' + (docs.length ? ' (' + docs.length + ' document images)' : ''));
 }
 
+// Infer sex for legacy files (pre-v7) based on parent order in children's parents[] arrays.
+// Convention: first parent ID = father (M), second parent ID = mother (F).
+// Only sets sex if it's currently empty/missing. Does not override existing values.
+// NOTE: This is a heteronormative heuristic. Same-sex couples where both parents
+// are listed will get the second-listed parent tagged 'F' incorrectly. Users can
+// manually correct the sex on any card; manual values are never overwritten.
+function inferSex() {
+  for (const p of people) {
+    const parents = p.parents || [];
+    if (parents.length >= 1) {
+      const father = people.find(q => q.id === parents[0]);
+      if (father && !father.sex) father.sex = 'M';
+    }
+    if (parents.length >= 2) {
+      const mother = people.find(q => q.id === parents[1]);
+      if (mother && !mother.sex) mother.sex = 'F';
+    }
+  }
+}
+
 async function loadSession(file) {
   file.text().then(text => {
     try {
       const data = JSON.parse(text);
       if (!data.people) { showToast('Invalid session file'); return; }
       people = data.people;
+      // Strip placeholder cards (name='Name', status='blank') from legacy files.
+      // Also scrub dangling parent/child/spouse refs so layout doesn't break.
+      const keptIds = new Set(people.filter(p => !isPlaceholder(p)).map(p => p.id));
+      const hadPlaceholders = people.length > keptIds.size;
+      if (hadPlaceholders) {
+        people = people.filter(p => !isPlaceholder(p));
+        for (const p of people) {
+          if (p.parents) p.parents = p.parents.filter(pid => keptIds.has(pid));
+          if (p.children) p.children = p.children.filter(cid => keptIds.has(cid));
+          if (p.spouseId && !keptIds.has(p.spouseId)) p.spouseId = null;
+          if (p.families) p.families = p.families.filter(f => !f.spouseId || keptIds.has(f.spouseId));
+        }
+      }
       // Rebuild children[] arrays from parents[] if they're empty
       // (files exported from data-tree.html don't populate children arrays)
       const hasChildren = people.some(p => p.children && p.children.length > 0);
@@ -2774,18 +2834,29 @@ async function loadSession(file) {
         }
       }
       nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+      // Infer sex for legacy files (pre-v7) or any file where most people lack sex
+      const noSexCount = people.filter(p => !p.sex).length;
+      if (!data.version || data.version < 7 || noSexCount > people.length / 2) {
+        inferSex();
+      }
       focusPersonId = null; viewHistory = [];
       // Restore document images to IndexedDB (v6+ save files)
       if (data.docs && Array.isArray(data.docs) && data.docs.length) {
         restoreDocsToDB(data.docs).then(restoredCount => {
           autoSave();
           renderFreeBuild();
-          showToast('Loaded ' + people.length + ' people from file' + (restoredCount ? ' (' + restoredCount + ' docs restored)' : ''));
+          const msg = hadPlaceholders
+            ? `Loaded ${people.length} people (${data.people.length - people.length} placeholders removed)`
+            : 'Loaded ' + people.length + ' people from file';
+          showToast(msg + (restoredCount ? ' (' + restoredCount + ' docs restored)' : ''));
         });
       } else {
         autoSave();
         renderFreeBuild();
-        showToast('Loaded ' + people.length + ' people from file');
+        const msg = hadPlaceholders
+          ? `Loaded ${people.length} people (${data.people.length - people.length} placeholders removed)`
+          : 'Loaded ' + people.length + ' people from file';
+        showToast(msg);
       }
     } catch (e) { showToast('Invalid session file'); }
   });
