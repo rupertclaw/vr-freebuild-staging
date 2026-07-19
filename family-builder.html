@@ -1408,7 +1408,10 @@ window.addEventListener('resize', updateCardDimensions);
 
 function getVisiblePeople() {
   // Overview mode: render the entire tree (huge layout), ignore focusPersonId
-  if (viewMode === 'overview') return people;
+  // But filter out empty placeholder cards (name === 'Name' with no real data)
+  if (viewMode === 'overview') {
+    return people.filter(p => p.name && p.name !== 'Name');
+  }
   if (focusPersonId) {
     const focus = people.find(p => p.id === focusPersonId);
     if (!focus) return people;
@@ -1633,7 +1636,8 @@ function layoutTree() {
         childLeftX += cw + CARD_GAP_X;
       }
 
-      // Parent-child connectors — route from mother's card center
+      // Parent-child connectors — route from couple center
+      // (mother's card if sex is known, otherwise midpoint between the two cards)
       let parentMidX = centerX;
       if (hasSpouse) {
         // Identify mother: person is F → person's card, spouse is F → spouse's card
@@ -1644,7 +1648,8 @@ function layoutTree() {
         } else if (motherIsSpouse) {
           parentMidX = myX + CARD_W + COUPLE_GAP + CARD_W / 2;
         } else {
-          parentMidX = myX + CARD_W + COUPLE_GAP / 2; // fallback to couple center
+          // No sex field — route from midpoint between the two parent cards
+          parentMidX = myX + CARD_W + COUPLE_GAP / 2;
         }
       } else {
         parentMidX = myX + CARD_W / 2;
@@ -2718,6 +2723,23 @@ async function loadSession(file) {
       const data = JSON.parse(text);
       if (!data.people) { showToast('Invalid session file'); return; }
       people = data.people;
+      // Rebuild children[] arrays from parents[] if they're empty
+      // (files exported from data-tree.html don't populate children arrays)
+      const hasChildren = people.some(p => p.children && p.children.length > 0);
+      if (!hasChildren) {
+        const childMap = new Map();
+        for (const p of people) {
+          const parents = p.parents || [];
+          for (const pid of parents) {
+            if (!childMap.has(pid)) childMap.set(pid, []);
+            childMap.get(pid).push(p.id);
+          }
+        }
+        for (const p of people) {
+          const myChildren = childMap.get(p.id) || [];
+          p.children = myChildren;
+        }
+      }
       nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
       focusPersonId = null; viewHistory = [];
       // Restore document images to IndexedDB (v6+ save files)
@@ -2824,6 +2846,21 @@ function autoRestore() {
       const data = JSON.parse(saved);
       if (data.people && data.people.length > 0) {
         people = data.people;
+        // Rebuild children[] arrays from parents[] if they're empty
+        const hasChildren = people.some(p => p.children && p.children.length > 0);
+        if (!hasChildren) {
+          const childMap = new Map();
+          for (const p of people) {
+            const parents = p.parents || [];
+            for (const pid of parents) {
+              if (!childMap.has(pid)) childMap.set(pid, []);
+              childMap.get(pid).push(p.id);
+            }
+          }
+          for (const p of people) {
+            p.children = childMap.get(p.id) || [];
+          }
+        }
         // Upgrade old 'blank' Me card to 'you' status
         people.forEach(p => {
           if (p.status === 'blank' && (p.isYou || p.name === 'Me' || p.name === 'You')) p.status = 'you';
