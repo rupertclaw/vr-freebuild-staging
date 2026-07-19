@@ -1968,14 +1968,14 @@ function layoutTree() {
     }
   }
 
-  // Normalize: shift all y values so minimum y is 50 (no negative offsets)
+  // Normalize: shift all y values so minimum y is 120 (clears header banner)
   let minY = Infinity;
   for (const [id, pos] of positions) {
     if (pos.y < minY) minY = pos.y;
   }
   let yShift = 0;
-  if (minY < 50) {
-    yShift = 50 - minY;
+  if (minY < 120) {
+    yShift = 120 - minY;
     for (const [id, pos] of positions) {
       pos.y += yShift;
     }
@@ -1997,24 +1997,6 @@ function layoutTree() {
       pos.x += xShift;
     }
     maxX += xShift;
-  }
-
-  // Add vertical breathing room so the top generation isn't jammed under
-  // the header banner. The tree-scroll top is at 90px (140px mobile); top
-  // cards at y=50 only have ~50px gap to the banner edge at deploy zoom.
-  // Bump the minimum Y to 120 so top cards have visible clearance.
-  const MIN_TOP_Y = 120;
-  let yShift = 0;
-  let minY = Infinity;
-  for (const [id, pos] of positions) {
-    if (pos.y < minY) minY = pos.y;
-  }
-  if (minY < MIN_TOP_Y) {
-    yShift = MIN_TOP_Y - minY;
-    for (const [id, pos] of positions) {
-      pos.y += yShift;
-    }
-    maxY += yShift;
   }
 
   // Apply the same shifts to connection coordinates
