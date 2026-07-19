@@ -2261,8 +2261,10 @@ function openDetail(person) {
     </div>
     <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${escapeHtml(person.birthDate)}" placeholder="e.g. 1950 or 1950-03-15"></div>
     <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${escapeHtml(person.deathDate || '')}" placeholder="e.g. 2020 or 2020-06-10"></div>
+    <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${escapeHtml(person.ageAtDeath || '')}" placeholder="e.g. 75"></div>
     <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${escapeHtml(person.marriageDate || '')}" placeholder="e.g. 1975 or 1975-06-01"></div>
     <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${escapeHtml(person.maidenName)}" placeholder="Enter maiden name"></div>
+    <div class="detail-field"><label>Married Name</label><input type="text" id="d_marriedName" value="${escapeHtml(person.marriedName || '')}" placeholder="Enter married name"></div>
     <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${escapeHtml(person.spouseName)}" placeholder="Enter spouse name"></div>
     <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${escapeHtml(person.occupation)}" placeholder="Enter occupation"></div>
     <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${escapeHtml(person.birthplace)}" placeholder="Enter birthplace"></div>
@@ -2379,8 +2381,10 @@ function saveDetail() {
   if (sexEl) person.sex = sexEl.value;
   person.birthDate = document.getElementById('d_birthDate').value;
   person.deathDate = document.getElementById('d_deathDate').value;
+  person.ageAtDeath = document.getElementById('d_ageAtDeath').value;
   person.marriageDate = document.getElementById('d_marriageDate').value;
   person.maidenName = document.getElementById('d_maidenName').value;
+  person.marriedName = document.getElementById('d_marriedName').value;
   person.spouseName = document.getElementById('d_spouseName').value;
   person.occupation = document.getElementById('d_occupation').value;
   person.birthplace = document.getElementById('d_birthplace').value;
