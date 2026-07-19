@@ -2114,9 +2114,8 @@ function renderFreeBuild() {
     } else if (conn.type === 'parent-child' || conn.type === 'parent-child-cross') {
       // L-shaped: vertical down from midpoint, horizontal to child, vertical down to child top
       const midY = (conn.parentY + conn.childY) / 2;
-      const dashAttr = conn.type === 'parent-child-cross' ? 'stroke-dasharray="4,3"' : '';
       svgContent += `<path d="M ${conn.midX} ${conn.parentY} L ${conn.midX} ${midY} L ${conn.childX} ${midY} L ${conn.childX} ${conn.childY}"
-                    fill="none" stroke="var(--line-stroke)" stroke-width="1.5" ${dashAttr} />`;
+                    fill="none" stroke="var(--line-stroke)" stroke-width="1.5" />`;
     }
   }
   svg.innerHTML = svgContent;
