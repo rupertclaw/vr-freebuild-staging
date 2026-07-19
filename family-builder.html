@@ -1968,14 +1968,14 @@ function layoutTree() {
     }
   }
 
-  // Normalize: shift all y values so minimum y is 50 (no negative offsets)
+  // Normalize: shift all y values so minimum y is 120 (clears header banner)
   let minY = Infinity;
   for (const [id, pos] of positions) {
     if (pos.y < minY) minY = pos.y;
   }
   let yShift = 0;
-  if (minY < 50) {
-    yShift = 50 - minY;
+  if (minY < 120) {
+    yShift = 120 - minY;
     for (const [id, pos] of positions) {
       pos.y += yShift;
     }
