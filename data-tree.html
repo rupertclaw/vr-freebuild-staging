@@ -2668,6 +2668,13 @@ function openDetail(person) {
       <div class="acc-body">
         <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${escapeHtml(person.fullName && person.fullName !== person.name ? person.fullName : '')}" placeholder="Enter full name"></div>
         <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${escapeHtml(person.name && person.name !== 'Me' && person.name !== 'Name' ? person.name : '')}" placeholder="Enter display name"></div>
+        <div class="detail-field"><label>Sex</label>
+          <select id="d_sex" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:13px;">
+            <option value="" ${!person.sex ? 'selected' : ''}>—</option>
+            <option value="M" ${person.sex === 'M' ? 'selected' : ''}>Male</option>
+            <option value="F" ${person.sex === 'F' ? 'selected' : ''}>Female</option>
+          </select>
+        </div>
         <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${escapeHtml(person.maidenName)}" placeholder="Enter maiden name"></div>
         <div class="detail-field"><label>Married Name</label><input type="text" id="d_marriedName" value="${escapeHtml(person.marriedName || '')}" placeholder="Enter married name"></div>
         <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${escapeHtml(person.spouseName)}" placeholder="Enter spouse name"></div>
@@ -2957,6 +2964,8 @@ function saveDetail() {
   pushUndo();
   person.fullName = document.getElementById('d_fullName').value;
   person.name = document.getElementById('d_name').value || (person.status === 'you' ? 'Me' : 'Name');
+  const sexEl = document.getElementById('d_sex');
+  if (sexEl) person.sex = sexEl.value;
   person.birthDate = document.getElementById('d_birthDate').value;
   person.deathDate = document.getElementById('d_deathDate').value;
   person.ageAtDeath = document.getElementById('d_ageAtDeath').value;
@@ -5175,7 +5184,12 @@ async function saveSession() {
       }
     }
   }
-  const payload = { version: 5, exportedAt: new Date().toISOString(), people: payloadPeople, nextId: nextId, visibleMaxGen: visibleMaxGen };
+  // Ensure every person has children[] and sex before saving (v7 schema)
+  for (const p of payloadPeople) {
+    if (!p.children) p.children = [];
+    if (!p.sex) p.sex = '';
+  }
+  const payload = { version: 7, exportedAt: new Date().toISOString(), people: payloadPeople, nextId: nextId, visibleMaxGen: visibleMaxGen };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -5190,6 +5204,21 @@ async function loadSession(file) {
     if (!data.people) { showToast('Invalid session file'); return; }
     pushUndo();
     people = data.people;
+    // Rebuild children[] arrays from parents[] for legacy files (v5/v6)
+    const hasChildren = people.some(p => p.children && p.children.length > 0);
+    if (!hasChildren) {
+      const childMap = new Map();
+      for (const p of people) {
+        const parents = p.parents || [];
+        for (const pid of parents) {
+          if (!childMap.has(pid)) childMap.set(pid, []);
+          childMap.get(pid).push(p.id);
+        }
+      }
+      for (const p of people) {
+        p.children = childMap.get(p.id) || [];
+      }
+    }
     nextId = data.nextId || maxGen(people, p => p.id) + 1;
     gedcomFamilies = null; // loading a .familytree file clears GEDCOM FAM records
     visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
@@ -5593,12 +5622,14 @@ function addParentsForPerson(person) {
   }
   pushUndo();
   const parentGen = person.gen + 1;
-  const father = createPerson(nextId++, parentGen, '', '', 'blank', {});
-  const mother = createPerson(nextId++, parentGen, '', '', 'blank', {});
+  const father = createPerson(nextId++, parentGen, '', '', 'blank', { sex: 'M' });
+  const mother = createPerson(nextId++, parentGen, '', '', 'blank', { sex: 'F' });
   father.spouseId = mother.id;
   mother.spouseId = father.id;
   father.spouseName = mother.name;
   mother.spouseName = father.name;
+  father.children = [person.id];
+  mother.children = [person.id];
   people.push(father);
   people.push(mother);
   person.parents = [father.id, mother.id];
