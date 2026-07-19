@@ -1474,6 +1474,20 @@ function getVisiblePeople() {
         }
       }
     }
+    // Children of siblings (nieces/nephews) + their spouses
+    if (focus.parents && focus.parents.length > 0) {
+      for (const p of people) {
+        if (p.id === focusPersonId) continue;
+        if (p.parents && p.parents.some(pid => focus.parents.includes(pid))) {
+          // This is a sibling — add their children
+          for (const cid of (p.children || [])) {
+            visible.add(cid);
+            const nibling = getP(cid);
+            if (nibling && nibling.spouseId) visible.add(nibling.spouseId);
+          }
+        }
+      }
+    }
     // Parents of spouse (in-laws)
     if (focus.spouseId) {
       const spouse = getP(focus.spouseId);
@@ -1585,7 +1599,10 @@ function layoutTree() {
       if (!viewSet.has(cid)) return false;
       const child = getP(cid);
       if (!child || !child.parents) return true;
-      return child.parents.includes(personId) && (spouseId ? child.parents.includes(spouseId) : child.parents.length === 1);
+      // Child belongs to this couple if they have EITHER parent in their array.
+      // Requiring BOTH parents to be listed orphans children whose data only has
+      // one parent recorded (common in partial research / GEDCOM imports).
+      return child.parents.includes(personId) || (spouseId && child.parents.includes(spouseId));
     });
     let childrenTotal = 0;
     for (const cid of childEntries) {
@@ -1634,12 +1651,12 @@ function layoutTree() {
       const spouse = getP(spouseId);
       if (spouse) (spouse.children || []).filter(cid => viewSet.has(cid)).forEach(cid => allChildren.add(cid));
     }
-    // Only include children whose parents are exactly this couple
+    // Only include children whose parents are this couple (or one of them)
     const childEntries = [...allChildren].filter(cid => {
       if (visited.has(cid)) return false;
       const child = getP(cid);
       if (!child || !child.parents) return true; // fallback: orphan/no-parent child stays with first family
-      return child.parents.includes(personId) && (spouseId ? child.parents.includes(spouseId) : child.parents.length === 1);
+      return child.parents.includes(personId) || (spouseId && child.parents.includes(spouseId));
     });
     if (childEntries.length > 0) {
       let childLeftX = leftX;
@@ -1986,6 +2003,45 @@ function layoutTree() {
     }
   }
 
+  // ── CROSS-BLOCK CONNECTOR PASS ──
+  // After all blocks are laid out, check for parent-child relationships where
+  // both cards are positioned but no connector was drawn (because they ended
+  // up in different layout root blocks). Draw a connector so the relationship
+  // is visually represented.
+  const existingConns = new Set();
+  for (const c of connections) {
+    if (c.type === 'parent-child') {
+      existingConns.add(c.childX + ',' + c.childY);
+    }
+  }
+  for (const p of viewPeople) {
+    if (!p.parents || p.parents.length === 0) continue;
+    const childPos = positions.get(p.id);
+    if (!childPos) continue;
+    const childX = childPos.x + CARD_W / 2;
+    const childY = childPos.y;
+    // Skip if a connector to this child already exists
+    if (existingConns.has(childX + ',' + childY)) continue;
+    // Find any parent that is positioned
+    for (const pid of p.parents) {
+      if (!viewSet.has(pid)) continue;
+      const parentPos = positions.get(pid);
+      if (!parentPos) continue;
+      // Draw connector from parent's bottom-center to child's top-center
+      const parentMidX = parentPos.x + CARD_W / 2;
+      const parentY = parentPos.y + CARD_H;
+      // Use a dashed line to distinguish cross-block connectors from
+      // the main layout's solid L-shapes
+      connections.push({
+        type: 'parent-child-cross',
+        midX: parentMidX, parentY,
+        childX, childY
+      });
+      existingConns.add(childX + ',' + childY);
+      break; // Only need one connector
+    }
+  }
+
   // Normalize: shift all y values so minimum y is 120 (clears header banner)
   let minY = Infinity;
   for (const [id, pos] of positions) {
@@ -2023,7 +2079,7 @@ function layoutTree() {
       if (conn.type === 'spouse') {
         conn.x1 += xShift; conn.x2 += xShift;
         conn.y1 += yShift; conn.y2 += yShift;
-      } else if (conn.type === 'parent-child') {
+      } else if (conn.type === 'parent-child' || conn.type === 'parent-child-cross') {
         conn.midX += xShift; conn.parentY += yShift;
         conn.childX += xShift; conn.childY += yShift;
       }
@@ -2058,7 +2114,7 @@ function renderFreeBuild() {
     if (conn.type === 'spouse') {
       svgContent += `<line x1="${conn.x1}" y1="${conn.y1}" x2="${conn.x2}" y2="${conn.y2}"
                     stroke="var(--line-stroke)" stroke-width="2" />`;
-    } else if (conn.type === 'parent-child') {
+    } else if (conn.type === 'parent-child' || conn.type === 'parent-child-cross') {
       // L-shaped: vertical down from midpoint, horizontal to child, vertical down to child top
       const midY = (conn.parentY + conn.childY) / 2;
       svgContent += `<path d="M ${conn.midX} ${conn.parentY} L ${conn.midX} ${midY} L ${conn.childX} ${midY} L ${conn.childX} ${conn.childY}"
