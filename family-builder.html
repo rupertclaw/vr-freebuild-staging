@@ -1406,11 +1406,24 @@ function updateCardDimensions() {
 
 window.addEventListener('resize', updateCardDimensions);
 
+// Placeholder cards: created when user clicks "add parent" but leaves the name
+// empty. These inflate the people array but carry no real data. We never render,
+// count, or export them.
+function isPlaceholder(p) {
+  if (!p) return true;
+  if (p.isYou) return false;
+  const name = (p.name || '').trim();
+  if (!name) return true;
+  if (name === 'Name' || name === 'Me' || name === 'You') return p.status === 'blank';
+  return false;
+}
+
 function getVisiblePeople() {
-  // Overview mode: render the entire tree (huge layout), ignore focusPersonId
-  // But filter out empty placeholder cards (name === 'Name' with no real data)
+  // Always exclude placeholder cards (name === 'Name' with status blank).
+  // In Overview: full tree minus placeholders.
+  // In Focus: subset around the focus person, minus placeholders.
   if (viewMode === 'overview') {
-    return people.filter(p => p.name && p.name !== 'Name');
+    return people.filter(p => !isPlaceholder(p));
   }
   if (focusPersonId) {
     const focus = people.find(p => p.id === focusPersonId);
@@ -1476,9 +1489,9 @@ function getVisiblePeople() {
       const child = getP(cid);
       if (child && child.spouseId) visible.add(child.spouseId);
     }
-    return people.filter(p => visible.has(p.id));
+    return people.filter(p => visible.has(p.id) && !isPlaceholder(p));
   }
-  return people;
+  return people.filter(p => !isPlaceholder(p));
 }
 
 function buildFamilyUnits(viewPeople) {
@@ -2189,7 +2202,7 @@ function renderFreeBuild() {
   const statPeople = document.getElementById('statPeople');
   const statConfirmed = document.getElementById('statConfirmed');
   const statWalls = document.getElementById('statWalls');
-  if (statPeople) statPeople.textContent = people.filter(p => p.status !== 'blank' || p.isYou).length;
+  if (statPeople) statPeople.textContent = people.filter(p => !isPlaceholder(p)).length;
   if (statConfirmed) statConfirmed.textContent = people.filter(p => p.status === 'confirmed' || p.status === 'you').length;
   if (statWalls) statWalls.textContent = people.filter(p => p.status === 'brickwall').length;
 
@@ -2812,11 +2825,21 @@ const STORAGE_KEY = 'vr_freebuild_data_v1';
 // SAVE / LOAD / SHARE (matching data-tree.html functionality)
 async function saveSession() {
   const docs = await getAllDocsFromDB();
-  // Ensure every person has children[] and sex before saving (v7 schema)
-  const payloadPeople = JSON.parse(JSON.stringify(people));
+  // Filter out placeholder cards (name='Name' with status='blank') — they're
+  // created when user clicks "add parent" but doesn't fill it in. They carry
+  // no data, bloat the file, and break layout for anyone who loads it later.
+  // Also scrub any parent/child/spouse refs to those placeholders so the saved
+  // file doesn't have dangling IDs pointing at people who no longer exist.
+  const keptIds = new Set(people.filter(p => !isPlaceholder(p)).map(p => p.id));
+  const payloadPeople = JSON.parse(JSON.stringify(people.filter(p => !isPlaceholder(p))));
   for (const p of payloadPeople) {
     if (!p.children) p.children = [];
     if (!p.sex) p.sex = '';
+    // Scrub dangling references to placeholders we just removed
+    if (p.parents) p.parents = p.parents.filter(pid => keptIds.has(pid));
+    if (p.children) p.children = p.children.filter(cid => keptIds.has(cid));
+    if (p.spouseId && !keptIds.has(p.spouseId)) p.spouseId = null;
+    if (p.families) p.families = p.families.filter(f => !f.spouseId || keptIds.has(f.spouseId));
   }
   const payload = { version: 7, exportedAt: new Date().toISOString(), people: payloadPeople, nextId: nextId, docs: docs };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
@@ -2850,6 +2873,19 @@ async function loadSession(file) {
       const data = JSON.parse(text);
       if (!data.people) { showToast('Invalid session file'); return; }
       people = data.people;
+      // Strip placeholder cards from legacy files (name='Name', status='blank').
+      // Also scrub dangling parent/child/spouse refs so layout doesn't break.
+      const keptIds = new Set(people.filter(p => !isPlaceholder(p)).map(p => p.id));
+      const hadPlaceholders = people.length > keptIds.size;
+      if (hadPlaceholders) {
+        people = people.filter(p => !isPlaceholder(p));
+        for (const p of people) {
+          if (p.parents) p.parents = p.parents.filter(pid => keptIds.has(pid));
+          if (p.children) p.children = p.children.filter(cid => keptIds.has(cid));
+          if (p.spouseId && !keptIds.has(p.spouseId)) p.spouseId = null;
+          if (p.families) p.families = p.families.filter(f => !f.spouseId || keptIds.has(f.spouseId));
+        }
+      }
       // Rebuild children[] arrays from parents[] if they're empty
       // (files exported from data-tree.html don't populate children arrays)
       const hasChildren = people.some(p => p.children && p.children.length > 0);
@@ -2879,12 +2915,18 @@ async function loadSession(file) {
         restoreDocsToDB(data.docs).then(restoredCount => {
           autoSave();
           renderFreeBuild();
-          showToast('Loaded ' + people.length + ' people from file' + (restoredCount ? ' (' + restoredCount + ' docs restored)' : ''));
+          const msg = hadPlaceholders
+            ? `Loaded ${people.length} people (${data.people.length - people.length} placeholders removed)`
+            : 'Loaded ' + people.length + ' people from file';
+          showToast(msg + (restoredCount ? ' (' + restoredCount + ' docs restored)' : ''));
         });
       } else {
         autoSave();
         renderFreeBuild();
-        showToast('Loaded ' + people.length + ' people from file');
+        const msg = hadPlaceholders
+          ? `Loaded ${people.length} people (${data.people.length - people.length} placeholders removed)`
+          : 'Loaded ' + people.length + ' people from file';
+        showToast(msg);
       }
     } catch (e) { showToast('Invalid session file'); }
   });
