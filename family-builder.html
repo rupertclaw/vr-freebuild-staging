@@ -2666,7 +2666,14 @@ function setViewMode(mode) {
   if (mode === 'overview') {
     if (back) back.classList.remove('visible');
     renderFreeBuild();
-    setTimeout(function() { fitToScreen(); }, 50);
+    // Don't auto-zoom to fit the whole tree — for a wide tree that means zooming
+    // out to 8% where nothing is readable. Keep the current zoom level so cards
+    // stay at the same size the user was viewing. Scroll to top-left so the
+    // earliest ancestor (root) is visible. User can scroll/zoom from there.
+    setTimeout(function() {
+      const sa = document.getElementById('treeScroll');
+      if (sa) { sa.scrollTo({ left: 0, top: 0, behavior: 'auto' }); }
+    }, 50);
   } else {
     if (focusPersonId && back) back.classList.add('visible');
     renderFreeBuild();
