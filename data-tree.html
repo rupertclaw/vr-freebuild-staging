@@ -942,7 +942,7 @@ details.acc .acc-body { padding: 6px 12px; }
         <div class="tb-menu-item" id="shareBtn" role="menuitem" tabindex="0" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
         <div class="tb-menu-item" role="menuitem" tabindex="0" onclick="openPrintDialog()"><span class="icon">🖨️</span> Print Tree</div>
         <div class="tb-menu-item" id="treeManagerToggle" role="menuitem" tabindex="0" onclick="toggleTreeManager()"><span class="icon">🌳</span> My Trees</div>
-        <div class="tb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0">🗑️ Reset Tree</div>
+        <div class="tb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0" onclick="doResetTree()">🗑️ Reset Tree</div>
       </div>
       <!-- More menu -->
       <button class="tb-btn" id="moreMenuBtn" title="More options" aria-label="More options menu" aria-haspopup="true" aria-expanded="false">⋯ <span>More</span> ▾</button>
@@ -5287,6 +5287,7 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
   const file = e.target.files[0]; if (file) loadSession(file); e.target.value = '';
 });
 function doResetTree() {
+  closeAllMenus();
   const dlg = document.getElementById('confirmDialog');
   dlg.style.display = 'flex';
   document.getElementById('confirmOk').onclick = async () => {
@@ -5325,7 +5326,14 @@ function doResetTree() {
     dlg.style.display = 'none';
   };
 }
-document.getElementById('resetBtn').addEventListener('click', doResetTree);
+// Keep addEventListener as backup; onclick="doResetTree()" on the menu item is primary
+var _rb = document.getElementById('resetBtn');
+if (_rb) _rb.addEventListener('click', doResetTree);
+
+// Close all open dropdown menus (used by inline onclick handlers)
+function closeAllMenus() {
+  document.querySelectorAll('.tb-menu.open').forEach(m => m.classList.remove('open'));
+}
 
 // Progressive expansion button
 function expandNextGen() {
