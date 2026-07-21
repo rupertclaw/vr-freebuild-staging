@@ -5462,6 +5462,22 @@ async function autoRestore() {
         if (data.people && data.people.length > 0) {
           people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
           visibleMaxGen = maxGen(people, p => p.gen);
+          // Rebuild children[] arrays from parents[] if missing (v5/v6 files
+          // from family-builder don't include children arrays)
+          const hasChildren = people.some(p => p.children && p.children.length > 0);
+          if (!hasChildren) {
+            const childMap = new Map();
+            for (const p of people) {
+              const parents = p.parents || [];
+              for (const pid of parents) {
+                if (!childMap.has(pid)) childMap.set(pid, []);
+                childMap.get(pid).push(p.id);
+              }
+            }
+            for (const p of people) {
+              p.children = childMap.get(p.id) || [];
+            }
+          }
           // Save to IndexedDB so it persists for future visits
           const treeId = 'tree_' + Date.now();
           currentTreeId = treeId;
@@ -5556,6 +5572,21 @@ async function autoRestore() {
         if (data.people && data.people.length > 0) {
           people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
           visibleMaxGen = maxGen(people, p => p.gen);
+          // Rebuild children[] arrays from parents[] if missing
+          const hasChildren = people.some(p => p.children && p.children.length > 0);
+          if (!hasChildren) {
+            const childMap = new Map();
+            for (const p of people) {
+              const parents = p.parents || [];
+              for (const pid of parents) {
+                if (!childMap.has(pid)) childMap.set(pid, []);
+                childMap.get(pid).push(p.id);
+              }
+            }
+            for (const p of people) {
+              p.children = childMap.get(p.id) || [];
+            }
+          }
           const treeId = 'tree_' + Date.now();
           await saveTreeData(treeId, { people, nextId, visibleMaxGen });
           const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
@@ -5741,9 +5772,15 @@ function backfillComputedFields() {
     treesList = await loadAllTreeMetas();
     updateTreeManagerUI();
   }
-  // If the restored tree has fewer than 9 gens (e.g. old 31-node save from
-  // before gen 5-8 existed), replace with the full 9-gen (511-node) tree.
-  if (people.length <= 1 || maxGen(people, p => p.gen) < 8) {
+  // If the restored tree is just placeholder cards (no real named people),
+  // replace with the full 9-gen (511-node) skeleton. But don't nuke real
+  // data that happens to have fewer than 8 generations — family-builder
+  // trees legitimately stop at gen 5, 6, 7, etc.
+  const realCount = people.filter(p => {
+    const n = (p.name || '').trim();
+    return n && n !== 'Name' && n !== 'You' && p.status !== 'blank';
+  }).length;
+  if (people.length <= 1 || realCount === 0) {
     initDefaultData();
     visibleMaxGen = 4;
     if (currentTreeId) {
@@ -5897,9 +5934,18 @@ function toggleDarkMode() {
 
 // Save tree to localStorage (for Tree menu Save button)
 function saveTreeToStorage() {
-  localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
-  // Also write to family builder key for cross-page sync
-  localStorage.setItem('vr_freebuild_data_v1', JSON.stringify({people: people, nextId: nextId}));
+  // Don't overwrite the shared localStorage keys with placeholder-only data.
+  // If pedigree has no real named people (just the 511-node skeleton), writing
+  // to localStorage would wipe family-builder's real data on the return trip.
+  const hasRealPeople = people.some(p => {
+    const n = (p.name || '').trim();
+    return n && n !== 'Name' && n !== 'You' && p.status !== 'blank';
+  });
+  if (hasRealPeople) {
+    localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
+    // Also write to family builder key for cross-page sync
+    localStorage.setItem('vr_freebuild_data_v1', JSON.stringify({people: people, nextId: nextId}));
+  }
   if (currentTreeId) saveTreeData(currentTreeId, { people, nextId, visibleMaxGen });
   showToast('Tree saved');
 }
