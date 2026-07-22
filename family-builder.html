@@ -2155,9 +2155,10 @@ function layoutTree() {
     const w = computeWidth(rootId);
     assignPositions(rootId, currentX, 0, visited);
 
-    // Compute the paternal/maternal divider: the midpoint between the
-    // root person and their spouse. All paternal ancestors go left of
-    // this line, all maternal ancestors go right.
+    // Compute the paternal/maternal divider: hard boundary at each gen-1
+    // parent's card edge. Paternal ancestors (father's side) cannot cross
+    // right of the father's right edge. Maternal ancestors (mother's side)
+    // cannot cross left of the mother's left edge.
     const rootPerson = getP(rootId);
     let sideDivideX = null;
     let rootSide = null;
@@ -2166,15 +2167,16 @@ function layoutTree() {
       const rootPos = positions.get(rootId);
       const spousePos = positions.get(rootPerson.spouseId);
       if (rootPos && spousePos) {
-        sideDivideX = (Math.min(rootPos.x, spousePos.x) + CARD_W +
-                       Math.max(rootPos.x, spousePos.x)) / 2;
-        // Determine which side the root is on
+        // Use the gen-1 couple's inner edges as the hard boundary.
+        // Father's right edge for paternal side, mother's left edge for maternal.
         if (rootPos.x < spousePos.x) {
-          rootSide = 'left';   // root (father) is on left
-          spouseSide = 'right'; // spouse (mother) is on right
+          rootSide = 'left';      // root (father) on left
+          spouseSide = 'right';   // spouse (mother) on right
+          sideDivideX = rootPos.x + CARD_W;  // father's right edge
         } else {
           rootSide = 'right';
           spouseSide = 'left';
+          sideDivideX = spousePos.x + CARD_W;  // mother's right edge (she's on left)
         }
       }
     }
