@@ -1818,7 +1818,7 @@ function layoutTree() {
     // This is a HARD constraint: left-side ancestors cannot cross right
     // of the divider, right-side cannot cross left. The canvas expands
     // to accommodate wide trees.
-    const CENTER_GAP = CARD_GAP_X * 4; // 120px minimum no-man's-land
+    const CENTER_GAP = CARD_GAP_X; // 30px gap between paternal/maternal lines
     let minAllowedX = -Infinity, maxAllowedX = Infinity;
     if (sideDivideX !== null) {
       if (isLeftSide) {
@@ -1901,7 +1901,9 @@ function layoutTree() {
       // The FIRST parent (father, male) keeps the same side.
       // The SECOND parent (mother, female) gets the OPPOSITE side.
       // This ensures paternal ancestors go left, maternal ancestors go right.
-      // If sex isn't set, use index: i=0 keeps side, i=1 flips.
+      // BUT: the couple itself stays together (placed on the same side).
+      // Only the recursion direction changes — the mother's ancestors go to
+      // the opposite side without moving the mother's card there.
       let childSide = side;
       if (i === 1) {
         childSide = (side === 'left') ? 'right' : (side === 'right') ? 'left' : null;
