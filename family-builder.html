@@ -1629,19 +1629,54 @@ function layoutTree() {
     // Center this couple in its allocated space
     const myWidth = computeWidth(personId);
     const centerX = leftX + myWidth / 2;
-    const myX = centerX - coupleWidth / 2;
+    let myX = centerX - coupleWidth / 2;
 
-    positions.set(personId, { x: Math.round(myX), y });
+    // Stable spouse ordering: male on left, female on right.
+    // This prevents couples from swapping visual positions depending on
+    // which person is the focus root. If sexes aren't set, use lower id
+    // on the left (stable, deterministic).
+    let personOnLeft = true;
+    if (hasSpouse) {
+      const spouse = getP(person.spouseId);
+      if (spouse) {
+        if (person.sex === 'F' && spouse.sex === 'M') personOnLeft = false;
+        else if (person.sex === 'M' && spouse.sex === 'F') personOnLeft = true;
+        else personOnLeft = personId < person.spouseId; // fallback: lower id left
+      }
+    }
+
+    let personX, spouseX;
+    if (hasSpouse) {
+      if (personOnLeft) {
+        personX = Math.round(myX);
+        spouseX = Math.round(myX + CARD_W + COUPLE_GAP);
+      } else {
+        // Person goes on the right, spouse on the left
+        spouseX = Math.round(myX);
+        personX = Math.round(myX + CARD_W + COUPLE_GAP);
+      }
+    } else {
+      personX = Math.round(myX);
+    }
+
+    positions.set(personId, { x: personX, y });
 
     if (hasSpouse) {
       visited.add(person.spouseId);
-      positions.set(person.spouseId, { x: Math.round(myX + CARD_W + COUPLE_GAP), y });
+      positions.set(person.spouseId, { x: spouseX, y });
       // Spouse line
+      const lineLeftX = Math.min(personX, spouseX) + CARD_W;
+      const lineRightX = Math.max(personX, spouseX);
       connections.push({
         type: 'spouse',
-        x1: myX + CARD_W, y1: y + CARD_H / 2,
-        x2: myX + CARD_W + COUPLE_GAP, y2: y + CARD_H / 2
+        x1: lineLeftX, y1: y + CARD_H / 2,
+        x2: lineRightX, y2: y + CARD_H / 2
       });
+      // NOTE: We do NOT call assignParents for the spouse here.
+      // Ancestor placement is handled by the main layout loop (which knows
+      // the correct side: paternal=left, maternal=right) and by
+      // assignSiblingsDown. Calling it here with side=null would place
+      // in-law ancestors on the wrong side.
     }
 
     // Children: only those belonging to this specific couple (person + spouseId), not all marriages
@@ -1674,15 +1709,15 @@ function layoutTree() {
         const motherIsPerson = person.sex === 'F';
         const motherIsSpouse = !motherIsPerson && getP(person.spouseId)?.sex === 'F';
         if (motherIsPerson) {
-          parentMidX = myX + CARD_W / 2;
+          parentMidX = personX + CARD_W / 2;
         } else if (motherIsSpouse) {
-          parentMidX = myX + CARD_W + COUPLE_GAP + CARD_W / 2;
+          parentMidX = spouseX + CARD_W / 2;
         } else {
           // No sex field — route from midpoint between the two parent cards
-          parentMidX = myX + CARD_W + COUPLE_GAP / 2;
+          parentMidX = (personX + spouseX + CARD_W) / 2;
         }
       } else {
-        parentMidX = myX + CARD_W / 2;
+        parentMidX = personX + CARD_W / 2;
       }
       const parentY = y + CARD_H;
       for (const cid of childEntries) {
@@ -1703,7 +1738,18 @@ function layoutTree() {
   }
 
   // ── LAYOUT PARENTS (upward from focus/root) ──
-  function assignParents(personId, depth, visited) {
+  // side: 'left' = this is the paternal line. On collision, push further LEFT.
+  //       'right' = this is the maternal line. On collision, push further RIGHT.
+  //       null = use tree-center heuristic (for in-law ancestors).
+  // The side is determined by the root couple's sex ordering (male=left,
+  // female=right) and passed recursively up the ancestor chain. This is
+  // deterministic — it doesn't shift as cards are placed, unlike the old
+  // tree-center heuristic. But we don't use a fixed X divider because that
+  // would bunch everything near the root's starting position.
+  function assignParents(personId, depth, visited, sideDivideX, side, splitRoot) {
+    // splitRoot: true only for the root couple's parents. Causes the mother's
+    // ancestors to go to the opposite side. At all deeper levels, no flip —
+    // both parents' ancestors inherit the same side as their child.
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
 
@@ -1751,24 +1797,75 @@ function layoutTree() {
     }
     let parentLeftX = myPos.x + CARD_W / 2 - parentTotalWidth / 2;
 
-    // Collision detection: check if this parent pair overlaps existing cards at parentY
+    // Directional bias based on the hard divider, not soft tree center.
+    // If we have a divider and a side, bias strongly away from the divider.
+    // If no divider, fall back to tree-center heuristic.
+    let isLeftSide;
+    if (side === 'left') {
+      isLeftSide = true;
+    } else if (side === 'right') {
+      isLeftSide = false;
+    } else {
+      let treeCenterX = 0, treeCardCount = 0;
+      for (const [, pos] of positions) {
+        treeCenterX += pos.x + CARD_W / 2;
+        treeCardCount++;
+      }
+      if (treeCardCount > 0) treeCenterX /= treeCardCount;
+      isLeftSide = (myPos.x + CARD_W / 2) < treeCenterX;
+    }
+
+    const GAP = CARD_GAP_X;
+
+    // Calculate the minimum gap to the center divider (if any).
+    // This is a HARD constraint: left-side ancestors cannot cross right
+    // of the divider, right-side cannot cross left. The canvas expands
+    // to accommodate wide trees.
+    const CENTER_GAP = CARD_GAP_X; // 30px gap between paternal/maternal lines
+    let minAllowedX = -Infinity, maxAllowedX = Infinity;
+    if (sideDivideX !== null) {
+      if (isLeftSide) {
+        // Left-side: parents must end at or before the divider minus CENTER_GAP
+        maxAllowedX = sideDivideX - parentTotalWidth - CENTER_GAP;
+      } else {
+        // Right-side: parents must start at or after the divider plus CENTER_GAP
+        minAllowedX = sideDivideX + CENTER_GAP;
+      }
+    }
+
+    // Small nudge to help ancestors start on the correct side of center
+    const BIAS = CARD_GAP_X * 3;
+    if (isLeftSide) {
+      parentLeftX -= BIAS;
+    } else {
+      parentLeftX += BIAS;
+    }
+
+    // Collision detection: push further away from center, never toward it.
     const excludeForCheck = new Set([personId]);
     const rightmost = getRightmostAtY(parentY, excludeForCheck);
     const leftmost = getLeftmostAtY(parentY, excludeForCheck);
 
-    const GAP = CARD_GAP_X; // minimum gap between card groups
-    if (rightmost !== null && parentLeftX < rightmost + GAP) {
-      // Would overlap on the left — shift right
-      parentLeftX = rightmost + GAP;
-    }
-    // Also check if we'd push past the left edge
-    if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost && parentLeftX < leftmost) {
-      // Our right edge would overlap something on our right — try shifting left
-      if (parentLeftX - (leftmost - parentTotalWidth - GAP) > 0) {
-        // Would still overlap on left, just place as-is
-      } else {
+    if (isLeftSide) {
+      // Left-side ancestor: on collision, push further LEFT
+      if (rightmost !== null && parentLeftX < rightmost + GAP) {
+        parentLeftX = (leftmost !== null ? leftmost : rightmost - CARD_W) - parentTotalWidth - GAP;
+      }
+      if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost && parentLeftX >= leftmost) {
         parentLeftX = leftmost - parentTotalWidth - GAP;
       }
+      // Hard clamp: do not cross center gap
+      if (parentLeftX > maxAllowedX) parentLeftX = maxAllowedX;
+    } else {
+      // Right-side ancestor: on collision, push further RIGHT
+      if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost) {
+        parentLeftX = (rightmost !== null ? rightmost : leftmost + CARD_W) + GAP;
+      }
+      if (rightmost !== null && parentLeftX < rightmost + GAP && parentLeftX <= rightmost) {
+        parentLeftX = rightmost + GAP;
+      }
+      // Hard clamp: do not cross center gap
+      if (parentLeftX < minAllowedX) parentLeftX = minAllowedX;
     }
 
     // Place parents
@@ -1803,20 +1900,257 @@ function layoutTree() {
       const childY = myPos.y;
       connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX, childY });
 
-      // Recurse upward for grandparents
-      assignParents(pid, depth - 1, visited);
+      // Recurse upward for grandparents.
+      // All ancestors of a parent stay on the SAME side as that parent.
+      // The ONLY exception is the root couple: the father's parents go left,
+      // the mother's parents go right. After that, all deeper ancestors
+      // inherit their parent's side — no more flipping.
+      let childSide = side;
+      let childSplitRoot = false;
+      if (splitRoot && i === 1) {
+        childSide = (side === 'left') ? 'right' : (side === 'right') ? 'left' : null;
+      }
+      assignParents(pid, depth - 1, visited, sideDivideX, childSide, childSplitRoot);
+    }
+  }
+
+  // ── SIBLING LAYOUT PASS ──
+  // After the root + ancestors are placed (assignParents goes upward),
+  // there may be unvisited siblings at every ancestor level: Gavin's
+  // siblings at gen 0, Joseph's siblings at gen -1, Thomas Harrow's
+  // siblings at gen -2, etc. This pass scans every placed parent for
+  // unvisited children and cascades them downward at the correct depth.
+  // assignPositions recursively lays out each sibling's full descendant
+  // subtree, so grandchildren and great-grandchildren of siblings are
+  // placed in a single call. The outer loop re-runs to catch siblings
+  // at progressively higher ancestor levels (up to 10 generations).
+  //
+  // PLACEMENT STRATEGY: sibling subtrees are placed OUTSIDE existing
+  // content — to the left of the leftmost card or right of the rightmost
+  // card at the child's depth. This prevents collisions with existing
+  // descendants (e.g. Tom Fenwick's son Bramwell overlapping Rose's children).
+  // The direction is determined by which side of the tree center the
+  // parent sits: left-side ancestors get left-side siblings, right-side
+  // ancestors get right-side siblings.
+  function assignSiblingsDown(visited) {
+    let changed = true;
+    let passCount = 0;
+    while (changed && passCount < 10) {
+      changed = false;
+      passCount++;
+      for (const [pid, pos] of positions) {
+        const person = getP(pid);
+        if (!person) continue;
+        // Find unvisited children in the view
+        const unvisitedChildren = (person.children || []).filter(cid => {
+          if (!viewSet.has(cid) || visited.has(cid)) return false;
+          const child = getP(cid);
+          if (!child || !child.parents) return true;
+          // Child must belong to this person (either parent)
+          return child.parents.includes(pid);
+        });
+        if (unvisitedChildren.length === 0) continue;
+
+        // Determine the spouse for this couple
+        const spouseId = person.spouseId;
+        const hasSpousePlaced = spouseId && viewSet.has(spouseId) && positions.has(spouseId);
+
+        // Calculate the depth for children from this person's y position
+        const childDepth = Math.round((pos.y - 50) / GEN_HEIGHT) + 1;
+        const childY = 50 + childDepth * GEN_HEIGHT;
+
+        // Compute total width needed for these children
+        const childWidths = unvisitedChildren.map(cid => computeWidth(cid));
+        const totalW = childWidths.reduce((a, b) => a + b, 0)  +
+          CARD_GAP_X * (unvisitedChildren.length - 1);
+
+        // Find the parent midpoint (mother if known, else person center)
+        let parentMidX = pos.x + CARD_W / 2;
+        if (hasSpousePlaced) {
+          const spousePos = positions.get(spouseId);
+          const motherIsPerson = person.sex === 'F';
+          const motherIsSpouse = !motherIsPerson && getP(spouseId)?.sex === 'F';
+          if (motherIsPerson) {
+            parentMidX = pos.x + CARD_W / 2;
+          } else if (motherIsSpouse) {
+            parentMidX = spousePos.x + CARD_W / 2;
+          } else {
+            parentMidX = (pos.x + spousePos.x + CARD_W) / 2;
+          }
+        }
+
+        // Determine placement direction: which side of tree center?
+        let treeCenterX = 0, treeCardCount = 0;
+        for (const [, p] of positions) {
+          treeCenterX += p.x + CARD_W / 2;
+          treeCardCount++;
+        }
+        if (treeCardCount > 0) treeCenterX /= treeCardCount;
+        const placeOnLeft = parentMidX < treeCenterX;
+
+        // Compute how deep this sibling subtree goes (max descendant depth)
+        function maxDescendantDepth(cid, curDepth, seen) {
+          if (seen.has(cid)) return curDepth;
+          seen.add(cid);
+          const cp = getP(cid);
+          if (!cp) return curDepth;
+          let maxD = curDepth;
+          for (const gc of (cp.children || [])) {
+            if (!viewSet.has(gc) || seen.has(gc)) continue;
+            maxD = Math.max(maxD, maxDescendantDepth(gc, curDepth + 1, seen));
+          }
+          return maxD;
+        }
+        let maxDepth = childDepth;
+        for (const cid of unvisitedChildren) {
+          maxDepth = Math.max(maxDepth, maxDescendantDepth(cid, childDepth, new Set()));
+        }
+
+        // Find the outermost card edge across ALL depths the subtree will span.
+        // This prevents deeper descendants (e.g. Bramwell at depth+1) from
+        // overlapping existing cards (e.g. Rose's children at the same depth).
+        let childLeftX;
+        if (placeOnLeft) {
+          // Find leftmost card across all depths from childDepth to maxDepth
+          let leftmostX = Infinity;
+          for (const [, p] of positions) {
+            const pDepth = Math.round((p.y - 50) / GEN_HEIGHT);
+            if (pDepth >= childDepth && pDepth <= maxDepth) {
+              if (p.x < leftmostX) leftmostX = p.x;
+            }
+          }
+          // Place to the left of leftmost, with a separator gap
+          const SEPARATOR = CARD_GAP_X * 2;
+          if (leftmostX !== Infinity) {
+            childLeftX = leftmostX - totalW - SEPARATOR;
+          } else {
+            childLeftX = Math.round(parentMidX - totalW / 2);
+          }
+        } else {
+          // Find rightmost card across all depths from childDepth to maxDepth
+          let rightmostEdge = -Infinity;
+          for (const [, p] of positions) {
+            const pDepth = Math.round((p.y - 50) / GEN_HEIGHT);
+            if (pDepth >= childDepth && pDepth <= maxDepth) {
+              if (p.x + CARD_W > rightmostEdge) rightmostEdge = p.x + CARD_W;
+            }
+          }
+          const SEPARATOR = CARD_GAP_X * 2;
+          if (rightmostEdge !== -Infinity) {
+            childLeftX = rightmostEdge + SEPARATOR;
+          } else {
+            childLeftX = Math.round(parentMidX - totalW / 2);
+          }
+        }
+
+        // Don't go negative — normalization at end will shift right
+        // childLeftX = Math.max(0, childLeftX);
+
+        const parentY = pos.y + CARD_H;
+        for (let i = 0; i < unvisitedChildren.length; i++) {
+          const cid = unvisitedChildren[i];
+          const cw = childWidths[i];
+          const child = getP(cid);
+
+          // Place child using assignPositions for proper subtree layout
+          const childHasSpouse = child?.spouseId && viewSet.has(child.spouseId);
+          const childCoupleW = childHasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+          const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
+          assignPositions(cid, adjustedLeftX, childDepth, visited);
+
+          const placed = positions.get(cid);
+          if (placed) {
+            const childX = placed.x + CARD_W / 2;
+            connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+          }
+          childLeftX += cw + CARD_GAP_X;
+        }
+
+        changed = true; // we placed children, loop again to catch their children
+      }
     }
   }
 
   // ── MAIN: choose roots and run ──
+  // In overview mode, group people into connected components (linked by
+  // parent/child/spouse) and lay out each component as a single tree from
+  // its best root. This prevents 20+ rootless ancestors from being scattered
+  // as independent blocks across the canvas.
   let layoutRoots;
   if (focusPersonId && viewSet.has(focusPersonId)) {
     layoutRoots = [focusPersonId];
   } else {
-    // People with no parents in the visible set
-    layoutRoots = viewPeople
-      .filter(p => !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid)))
-      .map(p => p.id);
+    // Find connected components via BFS over parent/child/spouse edges
+    const componentOf = new Map(); // personId -> component index
+    const components = []; // array of Set<personId>
+    for (const p of viewPeople) {
+      if (componentOf.has(p.id)) continue;
+      const comp = new Set();
+      const queue = [p.id];
+      while (queue.length > 0) {
+        const pid = queue.shift();
+        if (comp.has(pid)) continue;
+        comp.add(pid);
+        componentOf.set(pid, components.length);
+        const person = getP(pid);
+        if (!person) continue;
+        // Traverse parents, children, spouse
+        for (const x of (person.parents || [])) if (viewSet.has(x) && !comp.has(x)) queue.push(x);
+        for (const x of (person.children || [])) if (viewSet.has(x) && !comp.has(x)) queue.push(x);
+        if (person.spouseId && viewSet.has(person.spouseId) && !comp.has(person.spouseId)) queue.push(person.spouseId);
+      }
+      components.push(comp);
+    }
+
+    // For each component, find the best root: the person who sits at the
+    // junction of the most ancestral lines. This is typically the "you"
+    // person or the youngest generation — they have ancestors going up
+    // both paternal and maternal sides. We score by ancestor count, not
+    // descendant count, because the deepest ancestor (no parents) would
+    // win by descendant count but would lay out the tree upside down.
+    layoutRoots = [];
+    for (const comp of components) {
+      let bestRoot = null, bestScore = -1;
+      for (const pid of comp) {
+        const person = getP(pid);
+        if (!person) continue;
+        // Score: ancestor count (traverse parents upward, 8 hops)
+        let ancScore = 0;
+        const ancSeen = new Set([pid]);
+        let ancFrontier = [pid];
+        for (let hop = 0; hop < 8; hop++) {
+          const next = [];
+          for (const fid of ancFrontier) {
+            const fp = getP(fid);
+            if (!fp) continue;
+            for (const parId of (fp.parents || [])) {
+              if (viewSet.has(parId) && !ancSeen.has(parId)) { ancSeen.add(parId); ancScore++; next.push(parId); }
+            }
+          }
+          ancFrontier = next;
+        }
+        // Bonus for having a spouse with ancestors (in-laws add width)
+        if (person.spouseId && viewSet.has(person.spouseId)) {
+          const spouse = getP(person.spouseId);
+          if (spouse) {
+            for (const parId of (spouse.parents || [])) {
+              if (viewSet.has(parId)) { ancScore += 5; break; }
+            }
+          }
+          ancScore += 2; // small bonus for having a spouse at all
+        }
+        // Penalty for having no parents — these are leaf ancestors, not good roots
+        if (!person.parents || person.parents.length === 0 || !person.parents.some(x => viewSet.has(x))) {
+          ancScore -= 50;
+        }
+        // Strong preference for gen 0 (the "you" person) or lowest gen
+        // This is the conventional root of a family tree in overview mode.
+        if (person.gen === 0) ancScore += 10;
+        if (person.isYou || person.status === 'you') ancScore += 100;
+        if (ancScore > bestScore) { bestScore = ancScore; bestRoot = pid; }
+      }
+      if (bestRoot) layoutRoots.push(bestRoot);
+    }
   }
 
   const visited = new Set();
@@ -1826,15 +2160,84 @@ function layoutTree() {
     if (visited.has(rootId)) continue;
     const w = computeWidth(rootId);
     assignPositions(rootId, currentX, 0, visited);
-    // Also lay out ancestors upward
-    assignParents(rootId, 0, visited);
-    // Also lay out ancestors of the focus person's spouse (in-laws)
-    // so they get connector lines instead of appearing as disconnected cards
+
+    // Compute the paternal/maternal divider from the root couple's positions.
+    // The root person is on one side, their spouse on the other.
+    // Paternal ancestors (root person's father's line) stay on rootSide.
+    // Maternal ancestors (root person's mother's line) stay on spouseSide.
+    // The divider is the root person's card edge — paternal ancestors cannot
+    // cross past the root person's outer edge, maternal ancestors cannot cross
+    // past the spouse's outer edge.
     const rootPerson = getP(rootId);
+    let sideDivideX = null;
+    let rootSide = null;
+    let spouseSide = null;
     if (rootPerson && rootPerson.spouseId && visited.has(rootPerson.spouseId)) {
-      assignParents(rootPerson.spouseId, 0, visited);
+      const rootPos = positions.get(rootId);
+      const spousePos = positions.get(rootPerson.spouseId);
+      if (rootPos && spousePos) {
+        if (rootPos.x < spousePos.x) {
+          rootSide = 'left';
+          spouseSide = 'right';
+          sideDivideX = rootPos.x + CARD_W; // root's right edge
+        } else {
+          rootSide = 'right';
+          spouseSide = 'left';
+          sideDivideX = spousePos.x + CARD_W; // spouse's right edge
+        }
+      }
+    }
+
+    // Lay out ancestors upward from the root person.
+    // assignParents(rootId, 0, ...) looks up root's position (already placed
+    // by assignPositions), then places root's PARENTS and recurses upward.
+    // The side determines which direction ancestors are pushed on collision.
+    // We need father's ancestors on left, mother's on right.
+    // Since assignParents places BOTH parents as a couple and assigns them all
+    // to the same side, we use rootSide for the root's parents.
+    // The father/mother split within each couple is handled by card ordering
+    // (male left, female right within the couple's allocated space).
+    if (rootPerson.parents && rootPerson.parents.length > 0) {
+      assignParents(rootId, 0, visited, sideDivideX, rootSide, true);
+    }
+    // Also lay out ancestors of the focus person's spouse (in-laws)
+    if (rootPerson && rootPerson.spouseId && visited.has(rootPerson.spouseId)) {
+      const spouseP = getP(rootPerson.spouseId);
+      if (spouseP && spouseP.parents && spouseP.parents.length > 0) {
+        // Start from the spouse (already placed) and recurse upward.
+        // Use spouseSide for direction, null divider for in-laws.
+        assignParents(rootPerson.spouseId, 0, visited, null, spouseSide, false);
+      }
     }
     currentX += w + CARD_GAP_X * 2;
+  }
+
+  // ── SIBLING CASCADE PASS ──
+  // After the root + ancestors are placed, cascade downward from any placed
+  // parent whose children haven't been visited yet (siblings of the root,
+  // and their descendants). This must run BEFORE the multi-marriage pass
+  // and the disconnected pass so siblings get proper subtree layout.
+  assignSiblingsDown(visited);
+
+  // ── IN-LAW ANCESTOR PASS ──
+  // After root ancestors and siblings are placed, there may be spouses
+  // of children/siblings whose parents haven't been placed yet. These
+  // are in-law ancestors (e.g. Greg Nettleton's parents). Place them using
+  // the tree-center heuristic since they're not on the main paternal/
+  // maternal line.
+  for (const [pid, pos] of positions) {
+    const person = getP(pid);
+    if (!person) continue;
+    if (person.spouseId && viewSet.has(person.spouseId) && positions.has(person.spouseId)) {
+      // Check if spouse's parents are unvisited
+      const spouse = getP(person.spouseId);
+      if (spouse && spouse.parents) {
+        const unvisitedParents = spouse.parents.filter(p => viewSet.has(p) && !visited.has(p));
+        if (unvisitedParents.length > 0) {
+          assignParents(person.spouseId, Math.round((pos.y - 50) / GEN_HEIGHT), visited, null, null);
+        }
+      }
+    }
   }
 
   // ── MULTI-MARRIAGE PASS: place additional spouses and their children ──
@@ -2042,21 +2445,22 @@ function layoutTree() {
     }
   }
 
-  // Normalize: shift all y values so minimum y is 120 (clears header banner)
+  // Normalize: shift all y values so minimum y is 160 (clears header banner with breathing room)
   let minY = Infinity;
   for (const [id, pos] of positions) {
     if (pos.y < minY) minY = pos.y;
   }
   let yShift = 0;
-  if (minY < 120) {
-    yShift = 120 - minY;
+  if (minY < 160) {
+    yShift = 160 - minY;
     for (const [id, pos] of positions) {
       pos.y += yShift;
     }
   }
 
-  // Calculate bounds
-  let maxX = 0, maxY = 0, minX = Infinity;
+  // Calculate bounds. With hard divider enforcement, paternal ancestors
+  // may extend to negative X. Canvas width must include this span.
+  let maxX = -Infinity, maxY = 0, minX = Infinity;
   for (const [id, pos] of positions) {
     maxX = Math.max(maxX, pos.x + CARD_W);
     maxY = Math.max(maxY, pos.y + CARD_H);
@@ -2085,7 +2489,6 @@ function layoutTree() {
       }
     }
   }
-
   return {
     positions,
     width: Math.max(maxX + 100, 200),
