@@ -1629,18 +1629,48 @@ function layoutTree() {
     // Center this couple in its allocated space
     const myWidth = computeWidth(personId);
     const centerX = leftX + myWidth / 2;
-    const myX = centerX - coupleWidth / 2;
+    let myX = centerX - coupleWidth / 2;
 
-    positions.set(personId, { x: Math.round(myX), y });
+    // Stable spouse ordering: male on left, female on right.
+    // This prevents couples from swapping visual positions depending on
+    // which person is the focus root. If sexes aren't set, use lower id
+    // on the left (stable, deterministic).
+    let personOnLeft = true;
+    if (hasSpouse) {
+      const spouse = getP(person.spouseId);
+      if (spouse) {
+        if (person.sex === 'F' && spouse.sex === 'M') personOnLeft = false;
+        else if (person.sex === 'M' && spouse.sex === 'F') personOnLeft = true;
+        else personOnLeft = personId < person.spouseId; // fallback: lower id left
+      }
+    }
+
+    let personX, spouseX;
+    if (hasSpouse) {
+      if (personOnLeft) {
+        personX = Math.round(myX);
+        spouseX = Math.round(myX + CARD_W + COUPLE_GAP);
+      } else {
+        // Person goes on the right, spouse on the left
+        spouseX = Math.round(myX);
+        personX = Math.round(myX + CARD_W + COUPLE_GAP);
+      }
+    } else {
+      personX = Math.round(myX);
+    }
+
+    positions.set(personId, { x: personX, y });
 
     if (hasSpouse) {
       visited.add(person.spouseId);
-      positions.set(person.spouseId, { x: Math.round(myX + CARD_W + COUPLE_GAP), y });
+      positions.set(person.spouseId, { x: spouseX, y });
       // Spouse line
+      const lineLeftX = Math.min(personX, spouseX) + CARD_W;
+      const lineRightX = Math.max(personX, spouseX);
       connections.push({
         type: 'spouse',
-        x1: myX + CARD_W, y1: y + CARD_H / 2,
-        x2: myX + CARD_W + COUPLE_GAP, y2: y + CARD_H / 2
+        x1: lineLeftX, y1: y + CARD_H / 2,
+        x2: lineRightX, y2: y + CARD_H / 2
       });
       // Lay out ancestors of the spouse upward (in-laws)
       assignParents(person.spouseId, depth, visited);
@@ -1676,15 +1706,15 @@ function layoutTree() {
         const motherIsPerson = person.sex === 'F';
         const motherIsSpouse = !motherIsPerson && getP(person.spouseId)?.sex === 'F';
         if (motherIsPerson) {
-          parentMidX = myX + CARD_W / 2;
+          parentMidX = personX + CARD_W / 2;
         } else if (motherIsSpouse) {
-          parentMidX = myX + CARD_W + COUPLE_GAP + CARD_W / 2;
+          parentMidX = spouseX + CARD_W / 2;
         } else {
           // No sex field — route from midpoint between the two parent cards
-          parentMidX = myX + CARD_W + COUPLE_GAP / 2;
+          parentMidX = (personX + spouseX + CARD_W) / 2;
         }
       } else {
-        parentMidX = myX + CARD_W / 2;
+        parentMidX = personX + CARD_W / 2;
       }
       const parentY = y + CARD_H;
       for (const cid of childEntries) {
@@ -1765,7 +1795,7 @@ function layoutTree() {
     if (treeCardCount > 0) treeCenterX /= treeCardCount;
     const personCenterX = myPos.x + CARD_W / 2;
     const isLeftSide = personCenterX < treeCenterX;
-    const BIAS = CARD_GAP_X * 4; // nudge amount — push ancestors outward strongly
+    const BIAS = CARD_GAP_X * 2; // nudge amount — push ancestors outward
     if (isLeftSide) {
       parentLeftX -= BIAS;
     } else {
@@ -1903,14 +1933,34 @@ function layoutTree() {
         if (treeCardCount > 0) treeCenterX /= treeCardCount;
         const placeOnLeft = parentMidX < treeCenterX;
 
-        // Find the outermost card edge at childY in the placement direction.
-        // Place siblings OUTSIDE existing content to avoid collisions.
+        // Compute how deep this sibling subtree goes (max descendant depth)
+        function maxDescendantDepth(cid, curDepth, seen) {
+          if (seen.has(cid)) return curDepth;
+          seen.add(cid);
+          const cp = getP(cid);
+          if (!cp) return curDepth;
+          let maxD = curDepth;
+          for (const gc of (cp.children || [])) {
+            if (!viewSet.has(gc) || seen.has(gc)) continue;
+            maxD = Math.max(maxD, maxDescendantDepth(gc, curDepth + 1, seen));
+          }
+          return maxD;
+        }
+        let maxDepth = childDepth;
+        for (const cid of unvisitedChildren) {
+          maxDepth = Math.max(maxDepth, maxDescendantDepth(cid, childDepth, new Set()));
+        }
+
+        // Find the outermost card edge across ALL depths the subtree will span.
+        // This prevents deeper descendants (e.g. Bramwell at depth+1) from
+        // overlapping existing cards (e.g. Rose's children at the same depth).
         let childLeftX;
         if (placeOnLeft) {
-          // Find leftmost card at childY
+          // Find leftmost card across all depths from childDepth to maxDepth
           let leftmostX = Infinity;
           for (const [, p] of positions) {
-            if (Math.abs(p.y - childY) < GEN_HEIGHT / 2) {
+            const pDepth = Math.round((p.y - 50) / GEN_HEIGHT);
+            if (pDepth >= childDepth && pDepth <= maxDepth) {
               if (p.x < leftmostX) leftmostX = p.x;
             }
           }
@@ -1922,10 +1972,11 @@ function layoutTree() {
             childLeftX = Math.round(parentMidX - totalW / 2);
           }
         } else {
-          // Find rightmost card at childY
+          // Find rightmost card across all depths from childDepth to maxDepth
           let rightmostEdge = -Infinity;
           for (const [, p] of positions) {
-            if (Math.abs(p.y - childY) < GEN_HEIGHT / 2) {
+            const pDepth = Math.round((p.y - 50) / GEN_HEIGHT);
+            if (pDepth >= childDepth && pDepth <= maxDepth) {
               if (p.x + CARD_W > rightmostEdge) rightmostEdge = p.x + CARD_W;
             }
           }
