@@ -1802,23 +1802,46 @@ function layoutTree() {
       parentLeftX += BIAS;
     }
 
-    // Collision detection: check if this parent pair overlaps existing cards at parentY
+    // Collision detection: check if this parent pair overlaps existing cards at parentY.
+    // CRITICAL: collision resolution must respect the directional bias.
+    // Left-side ancestors should be pushed further LEFT (away from center).
+    // Right-side ancestors should be pushed further RIGHT (away from center).
+    // This prevents paternal and maternal lines from colliding at the center.
     const excludeForCheck = new Set([personId]);
     const rightmost = getRightmostAtY(parentY, excludeForCheck);
     const leftmost = getLeftmostAtY(parentY, excludeForCheck);
 
     const GAP = CARD_GAP_X; // minimum gap between card groups
-    if (rightmost !== null && parentLeftX < rightmost + GAP) {
-      // Would overlap on the left — shift right
-      parentLeftX = rightmost + GAP;
-    }
-    // Also check if we'd push past the left edge
-    if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost && parentLeftX < leftmost) {
-      // Our right edge would overlap something on our right — try shifting left
-      if (parentLeftX - (leftmost - parentTotalWidth - GAP) > 0) {
-        // Would still overlap on left, just place as-is
-      } else {
+    if (isLeftSide) {
+      // Left-side ancestor: prefer to shift LEFT on collision
+      if (rightmost !== null && parentLeftX < rightmost + GAP) {
+        // Would overlap something on our left — try going further left
+        if (leftmost !== null) {
+          parentLeftX = leftmost - parentTotalWidth - GAP;
+        } else if (rightmost !== null) {
+          parentLeftX = rightmost - parentTotalWidth - GAP;
+        }
+        // If still negative, that's fine — normalization shifts everything right later
+      }
+      // Also check: would our right edge overlap something on our right?
+      if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost && parentLeftX >= leftmost) {
+        // We're overlapping on the right — we need to go further left
         parentLeftX = leftmost - parentTotalWidth - GAP;
+      }
+    } else {
+      // Right-side ancestor: prefer to shift RIGHT on collision
+      if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost) {
+        // Would overlap something on our right — try going further right
+        if (rightmost !== null) {
+          parentLeftX = rightmost + GAP;
+        } else if (leftmost !== null) {
+          parentLeftX = leftmost + CARD_W + GAP;
+        }
+      }
+      // Also check: would our left edge overlap something on our left?
+      if (rightmost !== null && parentLeftX < rightmost + GAP && parentLeftX <= rightmost) {
+        // We're overlapping on the left — we need to go further right
+        parentLeftX = rightmost + GAP;
       }
     }
 
