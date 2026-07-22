@@ -1753,6 +1753,25 @@ function layoutTree() {
     }
     let parentLeftX = myPos.x + CARD_W / 2 - parentTotalWidth / 2;
 
+    // Directional bias: keep ancestor subtrees growing outward.
+    // If this person is left of the tree center, bias parents left.
+    // If right of center, bias parents right. This prevents the left
+    // and right ancestor lines from comimgling in the middle.
+    let treeCenterX = 0, treeCardCount = 0;
+    for (const [id, pos] of positions) {
+      treeCenterX += pos.x + CARD_W / 2;
+      treeCardCount++;
+    }
+    if (treeCardCount > 0) treeCenterX /= treeCardCount;
+    const personCenterX = myPos.x + CARD_W / 2;
+    const isLeftSide = personCenterX < treeCenterX;
+    const BIAS = CARD_GAP_X * 2; // nudge amount
+    if (isLeftSide) {
+      parentLeftX -= BIAS;
+    } else {
+      parentLeftX += BIAS;
+    }
+
     // Collision detection: check if this parent pair overlaps existing cards at parentY
     const excludeForCheck = new Set([personId]);
     const rightmost = getRightmostAtY(parentY, excludeForCheck);
