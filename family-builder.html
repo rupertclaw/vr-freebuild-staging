@@ -1794,9 +1794,9 @@ function layoutTree() {
     }
     let parentLeftX = myPos.x + CARD_W / 2 - parentTotalWidth / 2;
 
-    // Determine which side this ancestor line is on.
-    // If we have an explicit side from the root couple, use it.
-    // Otherwise fall back to tree-center heuristic.
+    // Directional bias based on the hard divider, not soft tree center.
+    // If we have a divider and a side, bias strongly away from the divider.
+    // If no divider, fall back to tree-center heuristic.
     let isLeftSide;
     if (side === 'left') {
       isLeftSide = true;
@@ -1812,8 +1812,26 @@ function layoutTree() {
       isLeftSide = (myPos.x + CARD_W / 2) < treeCenterX;
     }
 
-    // Small bias nudge to start ancestors on the correct side
-    const BIAS = CARD_GAP_X;
+    const GAP = CARD_GAP_X;
+
+    // Calculate the minimum gap to the center divider (if any).
+    // This is a HARD constraint: left-side ancestors cannot cross right
+    // of the divider, right-side cannot cross left. The canvas expands
+    // to accommodate wide trees.
+    const CENTER_GAP = CARD_GAP_X * 4; // 120px minimum no-man's-land
+    let minAllowedX = -Infinity, maxAllowedX = Infinity;
+    if (sideDivideX !== null) {
+      if (isLeftSide) {
+        // Left-side: parents must end at or before the divider minus CENTER_GAP
+        maxAllowedX = sideDivideX - parentTotalWidth - CENTER_GAP;
+      } else {
+        // Right-side: parents must start at or after the divider plus CENTER_GAP
+        minAllowedX = sideDivideX + CENTER_GAP;
+      }
+    }
+
+    // Small nudge to help ancestors start on the correct side of center
+    const BIAS = CARD_GAP_X * 3;
     if (isLeftSide) {
       parentLeftX -= BIAS;
     } else {
@@ -1821,13 +1839,10 @@ function layoutTree() {
     }
 
     // Collision detection: push further away from center, never toward it.
-    // This is the key fix: left-side ancestors only go LEFT on collision,
-    // right-side ancestors only go RIGHT. They never cross through center.
     const excludeForCheck = new Set([personId]);
     const rightmost = getRightmostAtY(parentY, excludeForCheck);
     const leftmost = getLeftmostAtY(parentY, excludeForCheck);
 
-    const GAP = CARD_GAP_X;
     if (isLeftSide) {
       // Left-side ancestor: on collision, push further LEFT
       if (rightmost !== null && parentLeftX < rightmost + GAP) {
@@ -1836,6 +1851,8 @@ function layoutTree() {
       if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost && parentLeftX >= leftmost) {
         parentLeftX = leftmost - parentTotalWidth - GAP;
       }
+      // Hard clamp: do not cross center gap
+      if (parentLeftX > maxAllowedX) parentLeftX = maxAllowedX;
     } else {
       // Right-side ancestor: on collision, push further RIGHT
       if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost) {
@@ -1844,6 +1861,8 @@ function layoutTree() {
       if (rightmost !== null && parentLeftX < rightmost + GAP && parentLeftX <= rightmost) {
         parentLeftX = rightmost + GAP;
       }
+      // Hard clamp: do not cross center gap
+      if (parentLeftX < minAllowedX) parentLeftX = minAllowedX;
     }
 
     // Place parents
@@ -2432,37 +2451,29 @@ function layoutTree() {
     }
   }
 
-  // Calculate bounds
-  let maxX = 0, maxY = 0, minX = Infinity;
+  // Calculate bounds. With hard divider enforcement, paternal ancestors
+  // may extend to negative X. Canvas width must include this span.
+  let maxX = -Infinity, maxY = 0, minX = Infinity;
   for (const [id, pos] of positions) {
     maxX = Math.max(maxX, pos.x + CARD_W);
     maxY = Math.max(maxY, pos.y + CARD_H);
     minX = Math.min(minX, pos.x);
   }
 
-  // Shift everything right so minX is at least 50
-  let xShift = 0;
-  if (minX < 50) {
-    xShift = 50 - minX;
-    for (const [id, pos] of positions) {
-      pos.x += xShift;
-    }
-    maxX += xShift;
-  }
+  // No rightward normalization — let left-side ancestors stay at negative X
+  // and scroll horizontally to see them. The canvas width includes the full span.
+  // (Only y normalization for the header banner remains.)
 
-  // Apply the same shifts to connection coordinates
-  if (yShift !== 0 || xShift !== 0) {
+  // Apply y normalization shifts to connection coordinates
+  if (yShift !== 0) {
     for (const conn of connections) {
       if (conn.type === 'spouse') {
-        conn.x1 += xShift; conn.x2 += xShift;
         conn.y1 += yShift; conn.y2 += yShift;
       } else if (conn.type === 'parent-child' || conn.type === 'parent-child-cross') {
-        conn.midX += xShift; conn.parentY += yShift;
-        conn.childX += xShift; conn.childY += yShift;
+        conn.parentY += yShift;
+        conn.childY += yShift;
       }
     }
-  }
-
   return {
     positions,
     width: Math.max(maxX + 100, 200),
