@@ -1898,13 +1898,15 @@ function layoutTree() {
       connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX, childY });
 
       // Recurse upward for grandparents.
-      // The side does NOT alternate at each couple. The entire ancestor
-      // line of the root person stays on the root's side (e.g. all of
-      // Joseph Harrow's ancestors stay LEFT, all of Rose Fenwick's
-      // ancestors stay RIGHT). The father/mother split within each couple
-      // is handled by the card placement (father left, mother right within
-      // the couple's allocated space), not by changing the side direction.
-      assignParents(pid, depth - 1, visited, sideDivideX, side);
+      // The FIRST parent (father, male) keeps the same side.
+      // The SECOND parent (mother, female) gets the OPPOSITE side.
+      // This ensures paternal ancestors go left, maternal ancestors go right.
+      // If sex isn't set, use index: i=0 keeps side, i=1 flips.
+      let childSide = side;
+      if (i === 1) {
+        childSide = (side === 'left') ? 'right' : (side === 'right') ? 'left' : null;
+      }
+      assignParents(pid, depth - 1, visited, sideDivideX, childSide);
     }
   }
 
@@ -2155,10 +2157,13 @@ function layoutTree() {
     const w = computeWidth(rootId);
     assignPositions(rootId, currentX, 0, visited);
 
-    // Compute the paternal/maternal divider: hard boundary at each gen-1
-    // parent's card edge. Paternal ancestors (father's side) cannot cross
-    // right of the father's right edge. Maternal ancestors (mother's side)
-    // cannot cross left of the mother's left edge.
+    // Compute the paternal/maternal divider from the root couple's positions.
+    // The root person is on one side, their spouse on the other.
+    // Paternal ancestors (root person's father's line) stay on rootSide.
+    // Maternal ancestors (root person's mother's line) stay on spouseSide.
+    // The divider is the root person's card edge — paternal ancestors cannot
+    // cross past the root person's outer edge, maternal ancestors cannot cross
+    // past the spouse's outer edge.
     const rootPerson = getP(rootId);
     let sideDivideX = null;
     let rootSide = null;
@@ -2167,41 +2172,37 @@ function layoutTree() {
       const rootPos = positions.get(rootId);
       const spousePos = positions.get(rootPerson.spouseId);
       if (rootPos && spousePos) {
-        // Use the gen-1 couple's inner edges as the hard boundary.
-        // Father's right edge for paternal side, mother's left edge for maternal.
         if (rootPos.x < spousePos.x) {
-          rootSide = 'left';      // root (father) on left
-          spouseSide = 'right';   // spouse (mother) on right
-          sideDivideX = rootPos.x + CARD_W;  // father's right edge
+          rootSide = 'left';
+          spouseSide = 'right';
+          sideDivideX = rootPos.x + CARD_W; // root's right edge
         } else {
           rootSide = 'right';
           spouseSide = 'left';
-          sideDivideX = spousePos.x + CARD_W;  // mother's right edge (she's on left)
+          sideDivideX = spousePos.x + CARD_W; // spouse's right edge
         }
       }
     }
 
-    // Lay out ancestors upward.
-    // The side split happens HERE, not inside assignParents.
-    // The root's father gets rootSide, the root's mother gets spouseSide.
-    // Inside assignParents, the side stays constant for all recursion —
-    // all of Joseph's ancestors stay LEFT, all of Rose's ancestors stay RIGHT.
-    // The father/mother visual split within each couple is handled by card
-    // X positioning (father left, mother right within the couple's space).
-    const rootParents = (rootPerson.parents || []).filter(pid => viewSet.has(pid) && !visited.has(pid));
-    for (let i = 0; i < rootParents.length; i++) {
-      const parentSide = (i === 0) ? rootSide : spouseSide;
-      assignParents(rootParents[i], -1, visited, sideDivideX, parentSide);
+    // Lay out ancestors upward from the root person.
+    // assignParents(rootId, 0, ...) looks up root's position (already placed
+    // by assignPositions), then places root's PARENTS and recurses upward.
+    // The side determines which direction ancestors are pushed on collision.
+    // We need father's ancestors on left, mother's on right.
+    // Since assignParents places BOTH parents as a couple and assigns them all
+    // to the same side, we use rootSide for the root's parents.
+    // The father/mother split within each couple is handled by card ordering
+    // (male left, female right within the couple's allocated space).
+    if (rootPerson.parents && rootPerson.parents.length > 0) {
+      assignParents(rootId, 0, visited, sideDivideX, rootSide);
     }
     // Also lay out ancestors of the focus person's spouse (in-laws)
     if (rootPerson && rootPerson.spouseId && visited.has(rootPerson.spouseId)) {
       const spouseP = getP(rootPerson.spouseId);
-      if (spouseP) {
-        const spouseParents = (spouseP.parents || []).filter(pid => viewSet.has(pid) && !visited.has(pid));
-        for (let i = 0; i < spouseParents.length; i++) {
-          const parentSide = (i === 0) ? spouseSide : rootSide;
-          assignParents(spouseParents[i], -1, visited, sideDivideX, parentSide);
-        }
+      if (spouseP && spouseP.parents && spouseP.parents.length > 0) {
+        // Start from the spouse (already placed) and recurse upward.
+        // Use spouseSide for direction, null divider for in-laws.
+        assignParents(rootPerson.spouseId, 0, visited, null, spouseSide);
       }
     }
     currentX += w + CARD_GAP_X * 2;
