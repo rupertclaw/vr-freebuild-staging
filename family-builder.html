@@ -1642,6 +1642,8 @@ function layoutTree() {
         x1: myX + CARD_W, y1: y + CARD_H / 2,
         x2: myX + CARD_W + COUPLE_GAP, y2: y + CARD_H / 2
       });
+      // Lay out ancestors of the spouse upward (in-laws)
+      assignParents(person.spouseId, depth, visited);
     }
 
     // Children: only those belonging to this specific couple (person + spouseId), not all marriages
