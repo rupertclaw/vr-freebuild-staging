@@ -1735,12 +1735,14 @@ function layoutTree() {
   }
 
   // ── LAYOUT PARENTS (upward from focus/root) ──
-  // sideDivideX: the vertical divider that separates paternal (left) from
-  //   maternal (right) ancestor lines. null = no divider (overview mode with
-  //   multiple components, or no spouse to establish a divider).
-  // side: 'left' = this is the paternal line, constrain to left of divider.
-  //       'right' = this is the maternal line, constrain to right of divider.
-  //       null = no constraint.
+  // side: 'left' = this is the paternal line. On collision, push further LEFT.
+  //       'right' = this is the maternal line. On collision, push further RIGHT.
+  //       null = use tree-center heuristic (for in-law ancestors).
+  // The side is determined by the root couple's sex ordering (male=left,
+  // female=right) and passed recursively up the ancestor chain. This is
+  // deterministic — it doesn't shift as cards are placed, unlike the old
+  // tree-center heuristic. But we don't use a fixed X divider because that
+  // would bunch everything near the root's starting position.
   function assignParents(personId, depth, visited, sideDivideX, side) {
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
@@ -1789,39 +1791,35 @@ function layoutTree() {
     }
     let parentLeftX = myPos.x + CARD_W / 2 - parentTotalWidth / 2;
 
-    // Directional bias based on the hard divider, not soft tree center.
-    // If we have a divider and a side, bias strongly away from the divider.
-    // If no divider, fall back to tree-center heuristic.
+    // Determine which side this ancestor line is on.
+    // If we have an explicit side from the root couple, use it.
+    // Otherwise fall back to tree-center heuristic.
     let isLeftSide;
     if (side === 'left') {
       isLeftSide = true;
-      // Bias: push left of the divider
-      const maxRight = sideDivideX - CARD_GAP_X - parentTotalWidth;
-      if (parentLeftX > maxRight) parentLeftX = maxRight;
     } else if (side === 'right') {
       isLeftSide = false;
-      // Bias: push right of the divider
-      const minLeft = sideDivideX + CARD_GAP_X;
-      if (parentLeftX < minLeft) parentLeftX = minLeft;
     } else {
-      // No divider — use tree center heuristic
       let treeCenterX = 0, treeCardCount = 0;
       for (const [, pos] of positions) {
         treeCenterX += pos.x + CARD_W / 2;
         treeCardCount++;
       }
       if (treeCardCount > 0) treeCenterX /= treeCardCount;
-      const personCenterX = myPos.x + CARD_W / 2;
-      isLeftSide = personCenterX < treeCenterX;
-      const BIAS = CARD_GAP_X * 2;
-      if (isLeftSide) {
-        parentLeftX -= BIAS;
-      } else {
-        parentLeftX += BIAS;
-      }
+      isLeftSide = (myPos.x + CARD_W / 2) < treeCenterX;
+    }
+
+    // Small bias nudge to start ancestors on the correct side
+    const BIAS = CARD_GAP_X;
+    if (isLeftSide) {
+      parentLeftX -= BIAS;
+    } else {
+      parentLeftX += BIAS;
     }
 
     // Collision detection: push further away from center, never toward it.
+    // This is the key fix: left-side ancestors only go LEFT on collision,
+    // right-side ancestors only go RIGHT. They never cross through center.
     const excludeForCheck = new Set([personId]);
     const rightmost = getRightmostAtY(parentY, excludeForCheck);
     const leftmost = getLeftmostAtY(parentY, excludeForCheck);
@@ -1830,30 +1828,18 @@ function layoutTree() {
     if (isLeftSide) {
       // Left-side ancestor: on collision, push further LEFT
       if (rightmost !== null && parentLeftX < rightmost + GAP) {
-        // Overlap on left — go further left
         parentLeftX = (leftmost !== null ? leftmost : rightmost - CARD_W) - parentTotalWidth - GAP;
       }
-      // If overlapping on right, also go left
       if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost && parentLeftX >= leftmost) {
         parentLeftX = leftmost - parentTotalWidth - GAP;
-      }
-      // Hard constraint: never cross the divider
-      if (sideDivideX !== null && parentLeftX + parentTotalWidth + GAP > sideDivideX) {
-        parentLeftX = sideDivideX - parentTotalWidth - GAP;
       }
     } else {
       // Right-side ancestor: on collision, push further RIGHT
       if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost) {
-        // Overlap on right — go further right
         parentLeftX = (rightmost !== null ? rightmost : leftmost + CARD_W) + GAP;
       }
-      // If overlapping on left, also go right
       if (rightmost !== null && parentLeftX < rightmost + GAP && parentLeftX <= rightmost) {
         parentLeftX = rightmost + GAP;
-      }
-      // Hard constraint: never cross the divider
-      if (sideDivideX !== null && parentLeftX < sideDivideX + GAP) {
-        parentLeftX = sideDivideX + GAP;
       }
     }
 
