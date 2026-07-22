@@ -1839,6 +1839,14 @@ function layoutTree() {
   // subtree, so grandchildren and great-grandchildren of siblings are
   // placed in a single call. The outer loop re-runs to catch siblings
   // at progressively higher ancestor levels (up to 10 generations).
+  //
+  // PLACEMENT STRATEGY: sibling subtrees are placed OUTSIDE existing
+  // content — to the left of the leftmost card or right of the rightmost
+  // card at the child's depth. This prevents collisions with existing
+  // descendants (e.g. Tom Fenwick's son Bramwell overlapping Rose's children).
+  // The direction is determined by which side of the tree center the
+  // parent sits: left-side ancestors get left-side siblings, right-side
+  // ancestors get right-side siblings.
   function assignSiblingsDown(visited) {
     let changed = true;
     let passCount = 0;
@@ -1868,7 +1876,8 @@ function layoutTree() {
 
         // Compute total width needed for these children
         const childWidths = unvisitedChildren.map(cid => computeWidth(cid));
-        const totalW = childWidths.reduce((a, b) => a + b, 0) + CARD_GAP_X * (unvisitedChildren.length - 1);
+        const totalW = childWidths.reduce((a, b) => a + b, 0)  +
+          CARD_GAP_X * (unvisitedChildren.length - 1);
 
         // Find the parent midpoint (mother if known, else person center)
         let parentMidX = pos.x + CARD_W / 2;
@@ -1885,36 +1894,47 @@ function layoutTree() {
           }
         }
 
-        // Place children centered under the parent, but check for collisions
-        let childLeftX = Math.round(parentMidX - totalW / 2);
+        // Determine placement direction: which side of tree center?
+        let treeCenterX = 0, treeCardCount = 0;
+        for (const [, p] of positions) {
+          treeCenterX += p.x + CARD_W / 2;
+          treeCardCount++;
+        }
+        if (treeCardCount > 0) treeCenterX /= treeCardCount;
+        const placeOnLeft = parentMidX < treeCenterX;
 
-        // Collision check: find rightmost card at childY that's to our left
-        let leftBound = -Infinity;
-        for (const [id, p] of positions) {
-          if (id === pid) continue;
-          if (Math.abs(p.y - childY) < GEN_HEIGHT / 2) {
-            if (p.x + CARD_W < parentMidX && p.x + CARD_W > leftBound) {
-              leftBound = p.x + CARD_W;
+        // Find the outermost card edge at childY in the placement direction.
+        // Place siblings OUTSIDE existing content to avoid collisions.
+        let childLeftX;
+        if (placeOnLeft) {
+          // Find leftmost card at childY
+          let leftmostX = Infinity;
+          for (const [, p] of positions) {
+            if (Math.abs(p.y - childY) < GEN_HEIGHT / 2) {
+              if (p.x < leftmostX) leftmostX = p.x;
             }
           }
-        }
-        if (leftBound !== -Infinity && childLeftX < leftBound + CARD_GAP_X) {
-          childLeftX = Math.round(leftBound + CARD_GAP_X);
-        }
-
-        // Also check right side collision
-        let rightBound = Infinity;
-        for (const [id, p] of positions) {
-          if (id === pid) continue;
-          if (Math.abs(p.y - childY) < GEN_HEIGHT / 2) {
-            if (p.x > parentMidX && p.x < rightBound) {
-              rightBound = p.x;
+          // Place to the left of leftmost, with a separator gap
+          const SEPARATOR = CARD_GAP_X * 2;
+          if (leftmostX !== Infinity) {
+            childLeftX = leftmostX - totalW - SEPARATOR;
+          } else {
+            childLeftX = Math.round(parentMidX - totalW / 2);
+          }
+        } else {
+          // Find rightmost card at childY
+          let rightmostEdge = -Infinity;
+          for (const [, p] of positions) {
+            if (Math.abs(p.y - childY) < GEN_HEIGHT / 2) {
+              if (p.x + CARD_W > rightmostEdge) rightmostEdge = p.x + CARD_W;
             }
           }
-        }
-        if (rightBound !== Infinity && childLeftX + totalW + CARD_GAP_X > rightBound) {
-          // Shift left to fit
-          childLeftX = Math.round(rightBound - totalW - CARD_GAP_X);
+          const SEPARATOR = CARD_GAP_X * 2;
+          if (rightmostEdge !== -Infinity) {
+            childLeftX = rightmostEdge + SEPARATOR;
+          } else {
+            childLeftX = Math.round(parentMidX - totalW / 2);
+          }
         }
 
         // Don't go negative — normalization at end will shift right
