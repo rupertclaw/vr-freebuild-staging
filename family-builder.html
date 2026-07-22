@@ -2328,14 +2328,14 @@ function layoutTree() {
     }
   }
 
-  // Normalize: shift all y values so minimum y is 120 (clears header banner)
+  // Normalize: shift all y values so minimum y is 160 (clears header banner with breathing room)
   let minY = Infinity;
   for (const [id, pos] of positions) {
     if (pos.y < minY) minY = pos.y;
   }
   let yShift = 0;
-  if (minY < 120) {
-    yShift = 120 - minY;
+  if (minY < 160) {
+    yShift = 160 - minY;
     for (const [id, pos] of positions) {
       pos.y += yShift;
     }
