@@ -1673,7 +1673,7 @@ function layoutTree() {
         x2: lineRightX, y2: y + CARD_H / 2
       });
       // Lay out ancestors of the spouse upward (in-laws)
-      assignParents(person.spouseId, depth, visited);
+      assignParents(person.spouseId, depth, visited, null, null);
     }
 
     // Children: only those belonging to this specific couple (person + spouseId), not all marriages
@@ -1735,7 +1735,13 @@ function layoutTree() {
   }
 
   // ── LAYOUT PARENTS (upward from focus/root) ──
-  function assignParents(personId, depth, visited) {
+  // sideDivideX: the vertical divider that separates paternal (left) from
+  //   maternal (right) ancestor lines. null = no divider (overview mode with
+  //   multiple components, or no spouse to establish a divider).
+  // side: 'left' = this is the paternal line, constrain to left of divider.
+  //       'right' = this is the maternal line, constrain to right of divider.
+  //       null = no constraint.
+  function assignParents(personId, depth, visited, sideDivideX, side) {
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
 
@@ -1783,65 +1789,71 @@ function layoutTree() {
     }
     let parentLeftX = myPos.x + CARD_W / 2 - parentTotalWidth / 2;
 
-    // Directional bias: keep ancestor subtrees growing outward.
-    // If this person is left of the tree center, bias parents left.
-    // If right of center, bias parents right. This prevents the left
-    // and right ancestor lines from comimgling in the middle.
-    let treeCenterX = 0, treeCardCount = 0;
-    for (const [id, pos] of positions) {
-      treeCenterX += pos.x + CARD_W / 2;
-      treeCardCount++;
-    }
-    if (treeCardCount > 0) treeCenterX /= treeCardCount;
-    const personCenterX = myPos.x + CARD_W / 2;
-    const isLeftSide = personCenterX < treeCenterX;
-    const BIAS = CARD_GAP_X * 2; // nudge amount — push ancestors outward
-    if (isLeftSide) {
-      parentLeftX -= BIAS;
+    // Directional bias based on the hard divider, not soft tree center.
+    // If we have a divider and a side, bias strongly away from the divider.
+    // If no divider, fall back to tree-center heuristic.
+    let isLeftSide;
+    if (side === 'left') {
+      isLeftSide = true;
+      // Bias: push left of the divider
+      const maxRight = sideDivideX - CARD_GAP_X - parentTotalWidth;
+      if (parentLeftX > maxRight) parentLeftX = maxRight;
+    } else if (side === 'right') {
+      isLeftSide = false;
+      // Bias: push right of the divider
+      const minLeft = sideDivideX + CARD_GAP_X;
+      if (parentLeftX < minLeft) parentLeftX = minLeft;
     } else {
-      parentLeftX += BIAS;
+      // No divider — use tree center heuristic
+      let treeCenterX = 0, treeCardCount = 0;
+      for (const [, pos] of positions) {
+        treeCenterX += pos.x + CARD_W / 2;
+        treeCardCount++;
+      }
+      if (treeCardCount > 0) treeCenterX /= treeCardCount;
+      const personCenterX = myPos.x + CARD_W / 2;
+      isLeftSide = personCenterX < treeCenterX;
+      const BIAS = CARD_GAP_X * 2;
+      if (isLeftSide) {
+        parentLeftX -= BIAS;
+      } else {
+        parentLeftX += BIAS;
+      }
     }
 
-    // Collision detection: check if this parent pair overlaps existing cards at parentY.
-    // CRITICAL: collision resolution must respect the directional bias.
-    // Left-side ancestors should be pushed further LEFT (away from center).
-    // Right-side ancestors should be pushed further RIGHT (away from center).
-    // This prevents paternal and maternal lines from colliding at the center.
+    // Collision detection: push further away from center, never toward it.
     const excludeForCheck = new Set([personId]);
     const rightmost = getRightmostAtY(parentY, excludeForCheck);
     const leftmost = getLeftmostAtY(parentY, excludeForCheck);
 
-    const GAP = CARD_GAP_X; // minimum gap between card groups
+    const GAP = CARD_GAP_X;
     if (isLeftSide) {
-      // Left-side ancestor: prefer to shift LEFT on collision
+      // Left-side ancestor: on collision, push further LEFT
       if (rightmost !== null && parentLeftX < rightmost + GAP) {
-        // Would overlap something on our left — try going further left
-        if (leftmost !== null) {
-          parentLeftX = leftmost - parentTotalWidth - GAP;
-        } else if (rightmost !== null) {
-          parentLeftX = rightmost - parentTotalWidth - GAP;
-        }
-        // If still negative, that's fine — normalization shifts everything right later
+        // Overlap on left — go further left
+        parentLeftX = (leftmost !== null ? leftmost : rightmost - CARD_W) - parentTotalWidth - GAP;
       }
-      // Also check: would our right edge overlap something on our right?
+      // If overlapping on right, also go left
       if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost && parentLeftX >= leftmost) {
-        // We're overlapping on the right — we need to go further left
         parentLeftX = leftmost - parentTotalWidth - GAP;
       }
-    } else {
-      // Right-side ancestor: prefer to shift RIGHT on collision
-      if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost) {
-        // Would overlap something on our right — try going further right
-        if (rightmost !== null) {
-          parentLeftX = rightmost + GAP;
-        } else if (leftmost !== null) {
-          parentLeftX = leftmost + CARD_W + GAP;
-        }
+      // Hard constraint: never cross the divider
+      if (sideDivideX !== null && parentLeftX + parentTotalWidth + GAP > sideDivideX) {
+        parentLeftX = sideDivideX - parentTotalWidth - GAP;
       }
-      // Also check: would our left edge overlap something on our left?
+    } else {
+      // Right-side ancestor: on collision, push further RIGHT
+      if (leftmost !== null && parentLeftX + parentTotalWidth + GAP > leftmost) {
+        // Overlap on right — go further right
+        parentLeftX = (rightmost !== null ? rightmost : leftmost + CARD_W) + GAP;
+      }
+      // If overlapping on left, also go right
       if (rightmost !== null && parentLeftX < rightmost + GAP && parentLeftX <= rightmost) {
-        // We're overlapping on the left — we need to go further right
         parentLeftX = rightmost + GAP;
+      }
+      // Hard constraint: never cross the divider
+      if (sideDivideX !== null && parentLeftX < sideDivideX + GAP) {
+        parentLeftX = sideDivideX + GAP;
       }
     }
 
@@ -1877,8 +1889,8 @@ function layoutTree() {
       const childY = myPos.y;
       connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX, childY });
 
-      // Recurse upward for grandparents
-      assignParents(pid, depth - 1, visited);
+      // Recurse upward for grandparents — pass divider and side down
+      assignParents(pid, depth - 1, visited, sideDivideX, side);
     }
   }
 
@@ -2128,13 +2140,35 @@ function layoutTree() {
     if (visited.has(rootId)) continue;
     const w = computeWidth(rootId);
     assignPositions(rootId, currentX, 0, visited);
-    // Also lay out ancestors upward
-    assignParents(rootId, 0, visited);
-    // Also lay out ancestors of the focus person's spouse (in-laws)
-    // so they get connector lines instead of appearing as disconnected cards
+
+    // Compute the paternal/maternal divider: the midpoint between the
+    // root person and their spouse. All paternal ancestors go left of
+    // this line, all maternal ancestors go right.
     const rootPerson = getP(rootId);
+    let sideDivideX = null;
+    let rootSide = null;
+    let spouseSide = null;
     if (rootPerson && rootPerson.spouseId && visited.has(rootPerson.spouseId)) {
-      assignParents(rootPerson.spouseId, 0, visited);
+      const rootPos = positions.get(rootId);
+      const spousePos = positions.get(rootPerson.spouseId);
+      if (rootPos && spousePos) {
+        sideDivideX = (Math.min(rootPos.x, spousePos.x) + CARD_W +
+                       Math.max(rootPos.x, spousePos.x)) / 2;
+        // Determine which side the root is on
+        if (rootPos.x < spousePos.x) {
+          rootSide = 'left';   // root (father) is on left
+          spouseSide = 'right'; // spouse (mother) is on right
+        } else {
+          rootSide = 'right';
+          spouseSide = 'left';
+        }
+      }
+    }
+
+    // Lay out ancestors upward — root's parents on root's side, spouse's parents on spouse's side
+    assignParents(rootId, 0, visited, sideDivideX, rootSide);
+    if (rootPerson && rootPerson.spouseId && visited.has(rootPerson.spouseId)) {
+      assignParents(rootPerson.spouseId, 0, visited, sideDivideX, spouseSide);
     }
     currentX += w + CARD_GAP_X * 2;
   }
