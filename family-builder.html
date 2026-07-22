@@ -1809,14 +1809,68 @@ function layoutTree() {
   }
 
   // ── MAIN: choose roots and run ──
+  // In overview mode, group people into connected components (linked by
+  // parent/child/spouse) and lay out each component as a single tree from
+  // its best root. This prevents 20+ rootless ancestors from being scattered
+  // as independent blocks across the canvas.
   let layoutRoots;
   if (focusPersonId && viewSet.has(focusPersonId)) {
     layoutRoots = [focusPersonId];
   } else {
-    // People with no parents in the visible set
-    layoutRoots = viewPeople
-      .filter(p => !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid)))
-      .map(p => p.id);
+    // Find connected components via BFS over parent/child/spouse edges
+    const componentOf = new Map(); // personId -> component index
+    const components = []; // array of Set<personId>
+    for (const p of viewPeople) {
+      if (componentOf.has(p.id)) continue;
+      const comp = new Set();
+      const queue = [p.id];
+      while (queue.length > 0) {
+        const pid = queue.shift();
+        if (comp.has(pid)) continue;
+        comp.add(pid);
+        componentOf.set(pid, components.length);
+        const person = getP(pid);
+        if (!person) continue;
+        // Traverse parents, children, spouse
+        for (const x of (person.parents || [])) if (viewSet.has(x) && !comp.has(x)) queue.push(x);
+        for (const x of (person.children || [])) if (viewSet.has(x) && !comp.has(x)) queue.push(x);
+        if (person.spouseId && viewSet.has(person.spouseId) && !comp.has(person.spouseId)) queue.push(person.spouseId);
+      }
+      components.push(comp);
+    }
+
+    // For each component, find the best root: the person with the most
+    // descendants in the visible set. Prefer someone with no parents
+    // (true ancestor), but fall back to whoever has the widest subtree.
+    layoutRoots = [];
+    for (const comp of components) {
+      let bestRoot = null, bestScore = -1;
+      for (const pid of comp) {
+        const person = getP(pid);
+        if (!person) continue;
+        // Score: descendant count (via children traversal, 3 hops)
+        let score = 0;
+        const seen = new Set([pid]);
+        let frontier = [pid];
+        for (let hop = 0; hop < 4; hop++) {
+          const next = [];
+          for (const fid of frontier) {
+            const fp = getP(fid);
+            if (!fp) continue;
+            for (const cid of (fp.children || [])) {
+              if (viewSet.has(cid) && !seen.has(cid)) { seen.add(cid); score++; next.push(cid); }
+            }
+          }
+          frontier = next;
+        }
+        // Bonus for having no parents (true root of a lineage)
+        if (!person.parents || person.parents.length === 0 || !person.parents.some(x => viewSet.has(x))) score += 100;
+        // Bonus for having a spouse in the set (couples make better roots)
+        if (person.spouseId && viewSet.has(person.spouseId)) score += 50;
+        if (score > bestScore) { bestScore = score; bestRoot = pid; }
+      }
+      if (bestRoot) layoutRoots.push(bestRoot);
+    }
   }
 
   const visited = new Set();
