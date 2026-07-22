@@ -1746,7 +1746,10 @@ function layoutTree() {
   // deterministic — it doesn't shift as cards are placed, unlike the old
   // tree-center heuristic. But we don't use a fixed X divider because that
   // would bunch everything near the root's starting position.
-  function assignParents(personId, depth, visited, sideDivideX, side) {
+  function assignParents(personId, depth, visited, sideDivideX, side, splitRoot) {
+    // splitRoot: true only for the root couple's parents. Causes the mother's
+    // ancestors to go to the opposite side. At all deeper levels, no flip —
+    // both parents' ancestors inherit the same side as their child.
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
 
@@ -1898,17 +1901,16 @@ function layoutTree() {
       connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX, childY });
 
       // Recurse upward for grandparents.
-      // The FIRST parent (father, male) keeps the same side.
-      // The SECOND parent (mother, female) gets the OPPOSITE side.
-      // This ensures paternal ancestors go left, maternal ancestors go right.
-      // BUT: the couple itself stays together (placed on the same side).
-      // Only the recursion direction changes — the mother's ancestors go to
-      // the opposite side without moving the mother's card there.
+      // All ancestors of a parent stay on the SAME side as that parent.
+      // The ONLY exception is the root couple: the father's parents go left,
+      // the mother's parents go right. After that, all deeper ancestors
+      // inherit their parent's side — no more flipping.
       let childSide = side;
-      if (i === 1) {
+      let childSplitRoot = false;
+      if (splitRoot && i === 1) {
         childSide = (side === 'left') ? 'right' : (side === 'right') ? 'left' : null;
       }
-      assignParents(pid, depth - 1, visited, sideDivideX, childSide);
+      assignParents(pid, depth - 1, visited, sideDivideX, childSide, childSplitRoot);
     }
   }
 
@@ -2196,7 +2198,7 @@ function layoutTree() {
     // The father/mother split within each couple is handled by card ordering
     // (male left, female right within the couple's allocated space).
     if (rootPerson.parents && rootPerson.parents.length > 0) {
-      assignParents(rootId, 0, visited, sideDivideX, rootSide);
+      assignParents(rootId, 0, visited, sideDivideX, rootSide, true);
     }
     // Also lay out ancestors of the focus person's spouse (in-laws)
     if (rootPerson && rootPerson.spouseId && visited.has(rootPerson.spouseId)) {
@@ -2204,7 +2206,7 @@ function layoutTree() {
       if (spouseP && spouseP.parents && spouseP.parents.length > 0) {
         // Start from the spouse (already placed) and recurse upward.
         // Use spouseSide for direction, null divider for in-laws.
-        assignParents(rootPerson.spouseId, 0, visited, null, spouseSide);
+        assignParents(rootPerson.spouseId, 0, visited, null, spouseSide, false);
       }
     }
     currentX += w + CARD_GAP_X * 2;
