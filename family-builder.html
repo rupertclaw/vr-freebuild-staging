@@ -1672,8 +1672,11 @@ function layoutTree() {
         x1: lineLeftX, y1: y + CARD_H / 2,
         x2: lineRightX, y2: y + CARD_H / 2
       });
-      // Lay out ancestors of the spouse upward (in-laws)
-      assignParents(person.spouseId, depth, visited, null, null);
+      // NOTE: We do NOT call assignParents for the spouse here.
+      // Ancestor placement is handled by the main layout loop (which knows
+      // the correct side: paternal=left, maternal=right) and by
+      // assignSiblingsDown. Calling it here with side=null would place
+      // in-law ancestors on the wrong side.
     }
 
     // Children: only those belonging to this specific couple (person + spouseId), not all marriages
@@ -1875,8 +1878,15 @@ function layoutTree() {
       const childY = myPos.y;
       connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX, childY });
 
-      // Recurse upward for grandparents — pass divider and side down
-      assignParents(pid, depth - 1, visited, sideDivideX, side);
+      // Recurse upward for grandparents.
+      // CRITICAL: split the side at each couple. The first parent (father)
+      // continues on the current side. The second parent (mother) gets the
+      // OPPOSITE side. This is what keeps paternal and maternal lines on
+      // opposite sides of the tree at every generation level.
+      const childSide = (isCouple && i === 1)
+        ? (side === 'left' ? 'right' : side === 'right' ? 'left' : null)
+        : side;
+      assignParents(pid, depth - 1, visited, sideDivideX, childSide);
     }
   }
 
@@ -2165,6 +2175,27 @@ function layoutTree() {
   // and their descendants). This must run BEFORE the multi-marriage pass
   // and the disconnected pass so siblings get proper subtree layout.
   assignSiblingsDown(visited);
+
+  // ── IN-LAW ANCESTOR PASS ──
+  // After root ancestors and siblings are placed, there may be spouses
+  // of children/siblings whose parents haven't been placed yet. These
+  // are in-law ancestors (e.g. Greg Nettleton's parents). Place them using
+  // the tree-center heuristic since they're not on the main paternal/
+  // maternal line.
+  for (const [pid, pos] of positions) {
+    const person = getP(pid);
+    if (!person) continue;
+    if (person.spouseId && viewSet.has(person.spouseId) && positions.has(person.spouseId)) {
+      // Check if spouse's parents are unvisited
+      const spouse = getP(person.spouseId);
+      if (spouse && spouse.parents) {
+        const unvisitedParents = spouse.parents.filter(p => viewSet.has(p) && !visited.has(p));
+        if (unvisitedParents.length > 0) {
+          assignParents(person.spouseId, Math.round((pos.y - 50) / GEN_HEIGHT), visited, null, null);
+        }
+      }
+    }
+  }
 
   // ── MULTI-MARRIAGE PASS: place additional spouses and their children ──
   // Must run BEFORE the disconnected pass so secondary spouses and their
