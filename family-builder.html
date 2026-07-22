@@ -2445,6 +2445,217 @@ function layoutTree() {
     }
   }
 
+  // ── ANCESTOR RE-CENTERING PASS ──
+  // After all ancestor placement and collision resolution is done, re-center
+  // parent couples above their children for cleaner vertical alignment.
+  // Works top-down (deepest ancestors first) so that when we re-center a
+  // child under its parents, any subtree below has already been re-centered.
+  //
+  // For each person who has placed parents:
+  //   1. Compute the parent couple's midpoint X
+  //   2. Compute the child's center X
+  //   3. Shift the parents (and their entire ancestor subtree) by the delta
+  //   4. Re-check collisions at the parents' Y level; if overlap, abort shift
+  //
+  // Constraints:
+  //   - Only shift within the same side (left/right of divider)
+  //   - Don't break the hard divider
+  //   - Shift the entire subtree above the parents, not just the parent cards
+
+  function recenterAncestors() {
+    // Build a map: childId -> [parentIds that are placed]
+    const childToParents = new Map();
+    for (const [pid, pos] of positions) {
+      const person = getP(pid);
+      if (!person || !person.parents) continue;
+      const placedParents = person.parents.filter(ppid => viewSet.has(ppid) && positions.has(ppid));
+      if (placedParents.length > 0) {
+        childToParents.set(pid, placedParents);
+      }
+    }
+
+    // Sort children by Y descending (deepest = first to process)
+    // so we re-center from the top of the tree downward
+    const sortedChildren = [...childToParents.keys()].sort((a, b) => {
+      const pa = positions.get(a), pb = positions.get(b);
+      return (pb?.y || 0) - (pa?.y || 0);
+    });
+
+    function getSubtreeIds(rootId, seen) {
+      // Walk upward: collect this person + all their ancestors chain
+      if (seen.has(rootId)) return;
+      seen.add(rootId);
+      const person = getP(rootId);
+      if (!person || !person.parents) return;
+      for (const ppid of person.parents) {
+        if (viewSet.has(ppid) && positions.has(ppid)) {
+          getSubtreeIds(ppid, seen);
+        }
+      }
+    }
+
+    function shiftSubtree(ids, delta) {
+      for (const id of ids) {
+        const pos = positions.get(id);
+        if (pos) pos.x += delta;
+      }
+    }
+
+    function checkCollision(personIds, y) {
+      const exclude = new Set(personIds);
+      for (const [id, pos] of positions) {
+        if (exclude.has(id)) continue;
+        if (Math.abs(pos.y - y) > GEN_HEIGHT / 2) continue;
+        // Check each person card for overlap with any other card at this Y
+        for (const pid of personIds) {
+          const ppos = positions.get(pid);
+          if (!ppos) continue;
+          // Overlap if card X ranges intersect with less than GAP
+          const leftA = ppos.x, rightA = ppos.x + CARD_W;
+          const leftB = pos.x, rightB = pos.x + CARD_W;
+          if (leftA < rightB + CARD_GAP_X && rightA > leftB - CARD_GAP_X) {
+            return true;
+          }
+        }
+      }
+      return false;
+    }
+
+    for (const childId of sortedChildren) {
+      const parentIds = childToParents.get(childId);
+      const childPos = positions.get(childId);
+      if (!childPos) continue;
+
+      // Compute parent couple midpoint
+      let parentMidX;
+      if (parentIds.length === 2) {
+        const p1 = positions.get(parentIds[0]);
+        const p2 = positions.get(parentIds[1]);
+        if (!p1 || !p2) continue;
+        parentMidX = (p1.x + p2.x + CARD_W) / 2;
+      } else {
+        const p1 = positions.get(parentIds[0]);
+        if (!p1) continue;
+        parentMidX = p1.x + CARD_W / 2;
+      }
+
+      const childCenterX = childPos.x + CARD_W / 2;
+      const delta = childCenterX - parentMidX;
+
+      if (Math.abs(delta) < 5) continue; // already close enough
+
+      // Gather all ancestor subtree IDs to shift together
+      const subtreeIds = new Set();
+      for (const pid of parentIds) {
+        getSubtreeIds(pid, subtreeIds);
+      }
+      // Don't include the child itself
+      subtreeIds.delete(childId);
+
+      // Check if the shift would cause collisions at the parent Y level
+      // (and all ancestor Y levels)
+      const allYs = new Set();
+      for (const id of subtreeIds) {
+        const pos = positions.get(id);
+        if (pos) allYs.add(pos.y);
+      }
+
+      // Save original positions in case we need to abort
+      const origPositions = new Map();
+      for (const id of subtreeIds) {
+        const pos = positions.get(id);
+        if (pos) origPositions.set(id, pos.x);
+      }
+
+      // Apply the shift
+      shiftSubtree(subtreeIds, delta);
+
+      // Check collisions at each Y level
+      let collision = false;
+      for (const y of allYs) {
+        const idsAtY = [...subtreeIds].filter(id => {
+          const pos = positions.get(id);
+          return pos && Math.abs(pos.y - y) < GEN_HEIGHT / 2;
+        });
+        if (checkCollision(idsAtY, y)) {
+          collision = true;
+          break;
+        }
+      }
+
+      if (collision) {
+        // Abort the shift
+        for (const [id, origX] of origPositions) {
+          const pos = positions.get(id);
+          if (pos) pos.x = origX;
+        }
+      }
+    }
+  }
+
+  recenterAncestors();
+
+  // Rebuild connections after re-centering
+  // Clear existing parent-child and spouse connections and rebuild from final positions
+  // so connector lines match the re-centered card positions
+  for (let i = connections.length - 1; i >= 0; i--) {
+    if (connections[i].type === 'parent-child' || connections[i].type === 'spouse') {
+      const conn = connections[i];
+      // Re-compute parent-child connector from current positions
+      // Find which child this connector belongs to by matching childX/childY
+      // Since we're rebuilding, remove all and re-add
+    }
+    connections.splice(i, 1);
+  }
+
+  // Rebuild all connectors from final positions
+  for (const person of viewPeople) {
+    const pos = positions.get(person.id);
+    if (!pos) continue;
+
+    // Spouse connector
+    if (person.spouseId && viewSet.has(person.spouseId)) {
+      const spousePos = positions.get(person.spouseId);
+      if (spousePos && person.id < person.spouseId) {
+        const leftX = Math.min(pos.x, spousePos.x) + CARD_W;
+        const rightX = Math.max(pos.x, spousePos.x);
+        const y = pos.y + CARD_H / 2;
+        connections.push({ type: 'spouse', x1: leftX, y1: y, x2: rightX, y2: y });
+      }
+    }
+
+    // Parent-child connector: this person IS the child, draw from parents
+    if (person.parents && person.parents.length > 0) {
+      const placedParents = person.parents.filter(ppid => viewSet.has(ppid) && positions.has(ppid));
+      if (placedParents.length === 0) continue;
+
+      const childX = pos.x + CARD_W / 2;
+      const childY = pos.y;
+
+      let parentMidX;
+      if (placedParents.length === 2) {
+        const p1 = positions.get(placedParents[0]);
+        const p2 = positions.get(placedParents[1]);
+        // Route from mother if sex is known
+        const person0 = getP(placedParents[0]);
+        const person1 = getP(placedParents[1]);
+        if (person0?.sex === 'F') {
+          parentMidX = p1.x + CARD_W / 2;
+        } else if (person1?.sex === 'F') {
+          parentMidX = p2.x + CARD_W / 2;
+        } else {
+          parentMidX = (p1.x + p2.x + CARD_W) / 2;
+        }
+      } else {
+        const p1 = positions.get(placedParents[0]);
+        parentMidX = p1.x + CARD_W / 2;
+      }
+
+      const parentY = positions.get(placedParents[0]).y + CARD_H;
+      connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+    }
+  }
+
   // Normalize: shift all y values so minimum y is 160 (clears header banner with breathing room)
   let minY = Infinity;
   for (const [id, pos] of positions) {
