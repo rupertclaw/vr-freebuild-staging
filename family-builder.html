@@ -1765,7 +1765,7 @@ function layoutTree() {
     if (treeCardCount > 0) treeCenterX /= treeCardCount;
     const personCenterX = myPos.x + CARD_W / 2;
     const isLeftSide = personCenterX < treeCenterX;
-    const BIAS = CARD_GAP_X * 2; // nudge amount
+    const BIAS = CARD_GAP_X * 4; // nudge amount — push ancestors outward strongly
     if (isLeftSide) {
       parentLeftX -= BIAS;
     } else {
@@ -1860,35 +1860,52 @@ function layoutTree() {
       components.push(comp);
     }
 
-    // For each component, find the best root: the person with the most
-    // descendants in the visible set. Prefer someone with no parents
-    // (true ancestor), but fall back to whoever has the widest subtree.
+    // For each component, find the best root: the person who sits at the
+    // junction of the most ancestral lines. This is typically the "you"
+    // person or the youngest generation — they have ancestors going up
+    // both paternal and maternal sides. We score by ancestor count, not
+    // descendant count, because the deepest ancestor (no parents) would
+    // win by descendant count but would lay out the tree upside down.
     layoutRoots = [];
     for (const comp of components) {
       let bestRoot = null, bestScore = -1;
       for (const pid of comp) {
         const person = getP(pid);
         if (!person) continue;
-        // Score: descendant count (via children traversal, 3 hops)
-        let score = 0;
-        const seen = new Set([pid]);
-        let frontier = [pid];
-        for (let hop = 0; hop < 4; hop++) {
+        // Score: ancestor count (traverse parents upward, 8 hops)
+        let ancScore = 0;
+        const ancSeen = new Set([pid]);
+        let ancFrontier = [pid];
+        for (let hop = 0; hop < 8; hop++) {
           const next = [];
-          for (const fid of frontier) {
+          for (const fid of ancFrontier) {
             const fp = getP(fid);
             if (!fp) continue;
-            for (const cid of (fp.children || [])) {
-              if (viewSet.has(cid) && !seen.has(cid)) { seen.add(cid); score++; next.push(cid); }
+            for (const parId of (fp.parents || [])) {
+              if (viewSet.has(parId) && !ancSeen.has(parId)) { ancSeen.add(parId); ancScore++; next.push(parId); }
             }
           }
-          frontier = next;
+          ancFrontier = next;
         }
-        // Bonus for having no parents (true root of a lineage)
-        if (!person.parents || person.parents.length === 0 || !person.parents.some(x => viewSet.has(x))) score += 100;
-        // Bonus for having a spouse in the set (couples make better roots)
-        if (person.spouseId && viewSet.has(person.spouseId)) score += 50;
-        if (score > bestScore) { bestScore = score; bestRoot = pid; }
+        // Bonus for having a spouse with ancestors (in-laws add width)
+        if (person.spouseId && viewSet.has(person.spouseId)) {
+          const spouse = getP(person.spouseId);
+          if (spouse) {
+            for (const parId of (spouse.parents || [])) {
+              if (viewSet.has(parId)) { ancScore += 5; break; }
+            }
+          }
+          ancScore += 2; // small bonus for having a spouse at all
+        }
+        // Penalty for having no parents — these are leaf ancestors, not good roots
+        if (!person.parents || person.parents.length === 0 || !person.parents.some(x => viewSet.has(x))) {
+          ancScore -= 50;
+        }
+        // Strong preference for gen 0 (the "you" person) or lowest gen
+        // This is the conventional root of a family tree in overview mode.
+        if (person.gen === 0) ancScore += 10;
+        if (person.isYou || person.status === 'you') ancScore += 100;
+        if (ancScore > bestScore) { bestScore = ancScore; bestRoot = pid; }
       }
       if (bestRoot) layoutRoots.push(bestRoot);
     }
