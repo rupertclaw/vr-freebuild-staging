@@ -2460,18 +2460,25 @@ function layoutTree() {
     minX = Math.min(minX, pos.x);
   }
 
-  // No rightward normalization — let left-side ancestors stay at negative X
-  // and scroll horizontally to see them. The canvas width includes the full span.
-  // (Only y normalization for the header banner remains.)
+  // Shift everything right so minX is at least 50
+  let xShift = 0;
+  if (minX < 50) {
+    xShift = 50 - minX;
+    for (const [id, pos] of positions) {
+      pos.x += xShift;
+    }
+    maxX += xShift;
+  }
 
-  // Apply y normalization shifts to connection coordinates
-  if (yShift !== 0) {
+  // Apply the same shifts to connection coordinates
+  if (yShift !== 0 || xShift !== 0) {
     for (const conn of connections) {
       if (conn.type === 'spouse') {
+        conn.x1 += xShift; conn.x2 += xShift;
         conn.y1 += yShift; conn.y2 += yShift;
       } else if (conn.type === 'parent-child' || conn.type === 'parent-child-cross') {
-        conn.parentY += yShift;
-        conn.childY += yShift;
+        conn.midX += xShift; conn.parentY += yShift;
+        conn.childX += xShift; conn.childY += yShift;
       }
     }
   }
