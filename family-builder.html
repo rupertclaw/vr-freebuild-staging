@@ -1879,14 +1879,13 @@ function layoutTree() {
       connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX, childY });
 
       // Recurse upward for grandparents.
-      // CRITICAL: split the side at each couple. The first parent (father)
-      // continues on the current side. The second parent (mother) gets the
-      // OPPOSITE side. This is what keeps paternal and maternal lines on
-      // opposite sides of the tree at every generation level.
-      const childSide = (isCouple && i === 1)
-        ? (side === 'left' ? 'right' : side === 'right' ? 'left' : null)
-        : side;
-      assignParents(pid, depth - 1, visited, sideDivideX, childSide);
+      // The side does NOT alternate at each couple. The entire ancestor
+      // line of the root person stays on the root's side (e.g. all of
+      // Joseph Harrow's ancestors stay LEFT, all of Rose Fenwick's
+      // ancestors stay RIGHT). The father/mother split within each couple
+      // is handled by the card placement (father left, mother right within
+      // the couple's allocated space), not by changing the side direction.
+      assignParents(pid, depth - 1, visited, sideDivideX, side);
     }
   }
 
@@ -2161,10 +2160,28 @@ function layoutTree() {
       }
     }
 
-    // Lay out ancestors upward — root's parents on root's side, spouse's parents on spouse's side
-    assignParents(rootId, 0, visited, sideDivideX, rootSide);
+    // Lay out ancestors upward.
+    // The side split happens HERE, not inside assignParents.
+    // The root's father gets rootSide, the root's mother gets spouseSide.
+    // Inside assignParents, the side stays constant for all recursion —
+    // all of Joseph's ancestors stay LEFT, all of Rose's ancestors stay RIGHT.
+    // The father/mother visual split within each couple is handled by card
+    // X positioning (father left, mother right within the couple's space).
+    const rootParents = (rootPerson.parents || []).filter(pid => viewSet.has(pid) && !visited.has(pid));
+    for (let i = 0; i < rootParents.length; i++) {
+      const parentSide = (i === 0) ? rootSide : spouseSide;
+      assignParents(rootParents[i], -1, visited, sideDivideX, parentSide);
+    }
+    // Also lay out ancestors of the focus person's spouse (in-laws)
     if (rootPerson && rootPerson.spouseId && visited.has(rootPerson.spouseId)) {
-      assignParents(rootPerson.spouseId, 0, visited, sideDivideX, spouseSide);
+      const spouseP = getP(rootPerson.spouseId);
+      if (spouseP) {
+        const spouseParents = (spouseP.parents || []).filter(pid => viewSet.has(pid) && !visited.has(pid));
+        for (let i = 0; i < spouseParents.length; i++) {
+          const parentSide = (i === 0) ? spouseSide : rootSide;
+          assignParents(spouseParents[i], -1, visited, sideDivideX, parentSide);
+        }
+      }
     }
     currentX += w + CARD_GAP_X * 2;
   }
