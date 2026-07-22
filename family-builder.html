@@ -1830,15 +1830,19 @@ function layoutTree() {
   }
 
   // ── SIBLING LAYOUT PASS ──
-  // When the root is a gen-0 person (e.g. Gavin), assignPositions walks
-  // down to his children (none) and assignParents walks up to his parents.
-  // But his siblings (other children of Joseph+Rose) are never reached.
-  // This pass finds any placed person whose children exist in the view but
-  // haven't been visited yet, and cascades them downward at the correct depth.
+  // After the root + ancestors are placed (assignParents goes upward),
+  // there may be unvisited siblings at every ancestor level: Gavin's
+  // siblings at gen 0, Joseph's siblings at gen -1, Thomas Harrow's
+  // siblings at gen -2, etc. This pass scans every placed parent for
+  // unvisited children and cascades them downward at the correct depth.
+  // assignPositions recursively lays out each sibling's full descendant
+  // subtree, so grandchildren and great-grandchildren of siblings are
+  // placed in a single call. The outer loop re-runs to catch siblings
+  // at progressively higher ancestor levels (up to 10 generations).
   function assignSiblingsDown(visited) {
     let changed = true;
     let passCount = 0;
-    while (changed && passCount < 5) {
+    while (changed && passCount < 10) {
       changed = false;
       passCount++;
       for (const [pid, pos] of positions) {
