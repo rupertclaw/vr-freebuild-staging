@@ -1829,6 +1829,118 @@ function layoutTree() {
     }
   }
 
+  // ── SIBLING LAYOUT PASS ──
+  // When the root is a gen-0 person (e.g. Gavin), assignPositions walks
+  // down to his children (none) and assignParents walks up to his parents.
+  // But his siblings (other children of Joseph+Rose) are never reached.
+  // This pass finds any placed person whose children exist in the view but
+  // haven't been visited yet, and cascades them downward at the correct depth.
+  function assignSiblingsDown(visited) {
+    let changed = true;
+    let passCount = 0;
+    while (changed && passCount < 5) {
+      changed = false;
+      passCount++;
+      for (const [pid, pos] of positions) {
+        const person = getP(pid);
+        if (!person) continue;
+        // Find unvisited children in the view
+        const unvisitedChildren = (person.children || []).filter(cid => {
+          if (!viewSet.has(cid) || visited.has(cid)) return false;
+          const child = getP(cid);
+          if (!child || !child.parents) return true;
+          // Child must belong to this person (either parent)
+          return child.parents.includes(pid);
+        });
+        if (unvisitedChildren.length === 0) continue;
+
+        // Determine the spouse for this couple
+        const spouseId = person.spouseId;
+        const hasSpousePlaced = spouseId && viewSet.has(spouseId) && positions.has(spouseId);
+
+        // Calculate the depth for children from this person's y position
+        const childDepth = Math.round((pos.y - 50) / GEN_HEIGHT) + 1;
+        const childY = 50 + childDepth * GEN_HEIGHT;
+
+        // Compute total width needed for these children
+        const childWidths = unvisitedChildren.map(cid => computeWidth(cid));
+        const totalW = childWidths.reduce((a, b) => a + b, 0) + CARD_GAP_X * (unvisitedChildren.length - 1);
+
+        // Find the parent midpoint (mother if known, else person center)
+        let parentMidX = pos.x + CARD_W / 2;
+        if (hasSpousePlaced) {
+          const spousePos = positions.get(spouseId);
+          const motherIsPerson = person.sex === 'F';
+          const motherIsSpouse = !motherIsPerson && getP(spouseId)?.sex === 'F';
+          if (motherIsPerson) {
+            parentMidX = pos.x + CARD_W / 2;
+          } else if (motherIsSpouse) {
+            parentMidX = spousePos.x + CARD_W / 2;
+          } else {
+            parentMidX = (pos.x + spousePos.x + CARD_W) / 2;
+          }
+        }
+
+        // Place children centered under the parent, but check for collisions
+        let childLeftX = Math.round(parentMidX - totalW / 2);
+
+        // Collision check: find rightmost card at childY that's to our left
+        let leftBound = -Infinity;
+        for (const [id, p] of positions) {
+          if (id === pid) continue;
+          if (Math.abs(p.y - childY) < GEN_HEIGHT / 2) {
+            if (p.x + CARD_W < parentMidX && p.x + CARD_W > leftBound) {
+              leftBound = p.x + CARD_W;
+            }
+          }
+        }
+        if (leftBound !== -Infinity && childLeftX < leftBound + CARD_GAP_X) {
+          childLeftX = Math.round(leftBound + CARD_GAP_X);
+        }
+
+        // Also check right side collision
+        let rightBound = Infinity;
+        for (const [id, p] of positions) {
+          if (id === pid) continue;
+          if (Math.abs(p.y - childY) < GEN_HEIGHT / 2) {
+            if (p.x > parentMidX && p.x < rightBound) {
+              rightBound = p.x;
+            }
+          }
+        }
+        if (rightBound !== Infinity && childLeftX + totalW + CARD_GAP_X > rightBound) {
+          // Shift left to fit
+          childLeftX = Math.round(rightBound - totalW - CARD_GAP_X);
+        }
+
+        // Don't go negative — normalization at end will shift right
+        // childLeftX = Math.max(0, childLeftX);
+
+        const parentY = pos.y + CARD_H;
+        for (let i = 0; i < unvisitedChildren.length; i++) {
+          const cid = unvisitedChildren[i];
+          const cw = childWidths[i];
+          const child = getP(cid);
+
+          // Place child using assignPositions for proper subtree layout
+          const childHasSpouse = child?.spouseId && viewSet.has(child.spouseId);
+          const childCoupleW = childHasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+          const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
+          assignPositions(cid, adjustedLeftX, childDepth, visited);
+
+          const placed = positions.get(cid);
+          if (placed) {
+            const childX = placed.x + CARD_W / 2;
+            connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+          }
+          childLeftX += cw + CARD_GAP_X;
+        }
+
+        changed = true; // we placed children, loop again to catch their children
+      }
+    }
+  }
+
   // ── MAIN: choose roots and run ──
   // In overview mode, group people into connected components (linked by
   // parent/child/spouse) and lay out each component as a single tree from
@@ -1928,6 +2040,13 @@ function layoutTree() {
     }
     currentX += w + CARD_GAP_X * 2;
   }
+
+  // ── SIBLING CASCADE PASS ──
+  // After the root + ancestors are placed, cascade downward from any placed
+  // parent whose children haven't been visited yet (siblings of the root,
+  // and their descendants). This must run BEFORE the multi-marriage pass
+  // and the disconnected pass so siblings get proper subtree layout.
+  assignSiblingsDown(visited);
 
   // ── MULTI-MARRIAGE PASS: place additional spouses and their children ──
   // Must run BEFORE the disconnected pass so secondary spouses and their
