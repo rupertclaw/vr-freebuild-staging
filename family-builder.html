@@ -1578,17 +1578,26 @@ function layoutTree() {
   const placed = new Set();
   const GEN_HEIGHT = CARD_H + CARD_GAP_Y;
 
-  // Helper: get person by id from full people array
-  function getP(id) { return people.find(p => p.id === id); }
+  // Helper: get person by id — O(1) Map lookup, not Array.find
+  const personMap = new Map();
+  for (const p of people) personMap.set(p.id, p);
+  function getP(id) { return personMap.get(id); }
 
   // ── PASS 1: compute subtree widths ──
   // For each person, compute the total width needed for them + their spouse + children subtrees
   const widthCache = new Map();
+  const computingWidth = new Set(); // cycle guard for computeWidth
 
   function computeWidth(personId) {
     if (widthCache.has(personId)) return widthCache.get(personId);
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return 0;
+
+    // Cycle detection: if we're already computing this person's width,
+    // return 0 to break the cycle (can happen with pedigree collapse or
+    // GED parser creating circular child references)
+    if (computingWidth.has(personId)) return 0;
+    computingWidth.add(personId);
 
     const hasSpouse = person.spouseId && viewSet.has(person.spouseId);
     const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
@@ -1611,6 +1620,7 @@ function layoutTree() {
     if (childrenTotal > 0) childrenTotal -= CARD_GAP_X; // remove trailing gap
 
     const w = Math.max(coupleWidth, childrenTotal);
+    computingWidth.delete(personId);
     widthCache.set(personId, w);
     return w;
   }
@@ -1618,9 +1628,9 @@ function layoutTree() {
   // ── PASS 2: assign positions (top-down, centered) ──
   function assignPositions(personId, leftX, depth, visited) {
     if (visited.has(personId)) return;
+    visited.add(personId);
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
-    visited.add(personId);
 
     const y = 50 + depth * GEN_HEIGHT;
     const hasSpouse = person.spouseId && viewSet.has(person.spouseId) && !visited.has(person.spouseId);
@@ -2125,15 +2135,15 @@ function layoutTree() {
       const queue = [p.id];
       while (queue.length > 0) {
         const pid = queue.shift();
-        if (comp.has(pid)) continue;
+        if (comp.has(pid) || componentOf.has(pid)) continue;
         comp.add(pid);
         componentOf.set(pid, components.length);
         const person = getP(pid);
         if (!person) continue;
-        // Traverse parents, children, spouse
-        for (const x of (person.parents || [])) if (viewSet.has(x) && !comp.has(x)) queue.push(x);
-        for (const x of (person.children || [])) if (viewSet.has(x) && !comp.has(x)) queue.push(x);
-        if (person.spouseId && viewSet.has(person.spouseId) && !comp.has(person.spouseId)) queue.push(person.spouseId);
+        // Traverse parents, children, spouse — skip already-claimed people
+        for (const x of (person.parents || [])) if (viewSet.has(x) && !comp.has(x) && !componentOf.has(x)) queue.push(x);
+        for (const x of (person.children || [])) if (viewSet.has(x) && !comp.has(x) && !componentOf.has(x)) queue.push(x);
+        if (person.spouseId && viewSet.has(person.spouseId) && !comp.has(person.spouseId) && !componentOf.has(person.spouseId)) queue.push(person.spouseId);
       }
       components.push(comp);
     }
@@ -2346,14 +2356,50 @@ function layoutTree() {
         // letting the collision resolver fling the spouse to the far edge.
         spouseX = personPos.x + CARD_W + COUPLE_GAP;
 
-        // Push overlapping cards right at this Y level
+        // Push overlapping cards right at this Y level — AND their subtrees
+        // so children move with parents and no gaps open up
         const pushW = CARD_W + COUPLE_GAP;
+        const pushedIds = new Set();
         for (const [id, pos] of positions) {
           if (id === p.id || id === spouseId) continue;
           if (Math.abs(pos.y - spouseY) > GEN_HEIGHT / 2) continue;
           // If this card is at or to the right of the spouse placement, push it right
           if (pos.x >= spouseX - CARD_GAP_X) {
-            pos.x += pushW;
+            pushedIds.add(id);
+          }
+        }
+        // Push each overlapping card AND its descendant subtree
+        // Snapshot the initial set — we add __pushed_ entries below and
+        // mutating a Set during for...of iteration causes an infinite loop
+        const initialPushedIds = [...pushedIds];
+        for (const pushId of initialPushedIds) {
+          // Only push if not already pushed as part of another card's subtree
+          if (pushedIds.has('__pushed_' + pushId)) continue;
+          const subtreeIds = new Set();
+          // Reuse the getDescendants logic from the collision resolver context
+          // but we're in a different scope, so inline it
+          (function collect(id, seen) {
+            if (seen.has(id)) return;
+            seen.add(id);
+            const person = getP(id);
+            if (!person) return;
+            for (const cid of (person.children || [])) {
+              if (viewSet.has(cid) && positions.has(cid)) collect(cid, seen);
+            }
+            if (person.spouseId && viewSet.has(person.spouseId) && positions.has(person.spouseId) && !seen.has(person.spouseId)) {
+              seen.add(person.spouseId);
+              const spouse = getP(person.spouseId);
+              if (spouse) {
+                for (const cid of (spouse.children || [])) {
+                  if (viewSet.has(cid) && positions.has(cid)) collect(cid, seen);
+                }
+              }
+            }
+          })(pushId, subtreeIds);
+          for (const sid of subtreeIds) {
+            const pos = positions.get(sid);
+            if (pos) pos.x += pushW;
+            pushedIds.add('__pushed_' + sid);
           }
         }
       }
@@ -2536,13 +2582,149 @@ function layoutTree() {
     });
   }
 
-  // Layout any unplaced people (disconnected)
+  // ── UNPLACED PARENT PASS ──
+  // Some people have no parents (root ancestors) but their children were
+  // already placed by the sibling cascade or multi-marriage passes. These
+  // people were never visited because layout only recurses downward from
+  // roots, not upward from placed children. Place them adjacent to their
+  // children at the correct parent Y level.
+  // Run in a loop so that placing one parent can trigger placing another
+  // (e.g. a grandparent whose child was just placed by this pass).
+  let parentPassChanged = true;
+  let parentPassCount = 0;
+  while (parentPassChanged && parentPassCount < 10) {
+    parentPassChanged = false;
+    parentPassCount++;
   for (const p of viewPeople) {
-    if (!visited.has(p.id)) {
-      positions.set(p.id, { x: currentX, y: 50 });
-      visited.add(p.id);
-      currentX += CARD_W + CARD_GAP_X;
+    if (visited.has(p.id)) continue;
+    // Check if this person has any placed children
+    const placedChildren = (p.children || []).filter(cid => viewSet.has(cid) && positions.has(cid));
+    if (placedChildren.length === 0) continue;
+
+    // Find the Y level one generation above the youngest child
+    // and the median child X position (not average — average is skewed
+    // by outlier children placed far away by other passes)
+    const childYs = placedChildren.map(cid => positions.get(cid).y).sort((a, b) => a - b);
+    const childXs = placedChildren.map(cid => positions.get(cid).x).sort((a, b) => a - b);
+    const childMinY = childYs[0];
+    // Median X: middle value, not average
+    const medianX = childXs[Math.floor(childXs.length / 2)];
+    const parentY = childMinY - GEN_HEIGHT;
+    const childCenterX = medianX + CARD_W / 2;
+
+    // Place this person (and spouse if any) centered above children
+    const hasSpouse = p.spouseId && viewSet.has(p.spouseId) && !visited.has(p.spouseId);
+    const coupleW = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+    const personX = Math.round(childCenterX - coupleW / 2);
+
+    // Male left, female right
+    let personOnLeft = true;
+    if (hasSpouse) {
+      const spouse = getP(p.spouseId);
+      if (spouse) {
+        if (p.sex === 'F' && spouse.sex === 'M') personOnLeft = false;
+        else if (p.sex === 'M' && spouse.sex === 'F') personOnLeft = true;
+        else personOnLeft = p.id < p.spouseId;
+      }
     }
+
+    if (personOnLeft) {
+      positions.set(p.id, { x: personX, y: parentY });
+      if (hasSpouse) {
+        positions.set(p.spouseId, { x: personX + CARD_W + COUPLE_GAP, y: parentY });
+        visited.add(p.spouseId);
+        connections.push({ type: 'spouse', x1: personX + CARD_W, y1: parentY + CARD_H/2, x2: personX + CARD_W + COUPLE_GAP, y2: parentY + CARD_H/2 });
+      }
+    } else {
+      positions.set(p.id, { x: personX + CARD_W + COUPLE_GAP, y: parentY });
+      if (hasSpouse) {
+        positions.set(p.spouseId, { x: personX, y: parentY });
+        visited.add(p.spouseId);
+        connections.push({ type: 'spouse', x1: personX + CARD_W, y1: parentY + CARD_H/2, x2: personX + CARD_W + COUPLE_GAP, y2: parentY + CARD_H/2 });
+      }
+    }
+    visited.add(p.id);
+
+    // Connect to children
+    const parentMidX = positions.get(p.id).x + CARD_W / 2;
+    const parentY2 = parentY + CARD_H;
+    for (const cid of placedChildren) {
+      const cpos = positions.get(cid);
+      connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX: cpos.x + CARD_W/2, childY: cpos.y });
+    }
+    parentPassChanged = true;
+  }
+  } // end while (parentPassChanged)
+
+  // ── PARENT REPOSITION PASS ──
+  // Some parents were placed by the in-law pass above ONE of their children,
+  // which may be far from the median of ALL their children. Reposition them
+  // to be centered above the median child. Only applies to parents with
+  // 3+ placed children (with 1-2 children, the original placement is fine).
+  for (const p of viewPeople) {
+    if (!positions.has(p.id)) continue;
+    const placedChildren = (p.children || []).filter(cid => viewSet.has(cid) && positions.has(cid));
+    if (placedChildren.length < 3) continue;
+
+    const childXs = placedChildren.map(cid => positions.get(cid).x).sort((a, b) => a - b);
+    const medianX = childXs[Math.floor(childXs.length / 2)];
+    const desiredCenterX = medianX + CARD_W / 2;
+
+    const myPos = positions.get(p.id);
+    const myCenterX = myPos.x + CARD_W / 2;
+    const delta = desiredCenterX - myCenterX;
+
+    if (Math.abs(delta) < 50) continue; // already close enough
+
+    // Shift this person AND their spouse (if placed at same Y) by delta
+    myPos.x += delta;
+    if (p.spouseId && viewSet.has(p.spouseId) && positions.has(p.spouseId)) {
+      const spos = positions.get(p.spouseId);
+      if (Math.abs(spos.y - myPos.y) < 10) spos.x += delta;
+    }
+  }
+
+  // Layout any unplaced people (disconnected)
+  // Smart placement: if an unplaced person has a placed relative (parent,
+  // child, or spouse), place them near that relative rather than at the
+  // far right edge. This keeps disconnected family members close to their
+  // connected kin instead of flinging them to the edge of the canvas.
+  for (const p of viewPeople) {
+    if (visited.has(p.id)) continue;
+
+    let placeX = currentX;
+    let placeY = 50;
+
+    // Try to find a placed relative
+    // 1. Placed spouse
+    if (p.spouseId && viewSet.has(p.spouseId) && positions.has(p.spouseId)) {
+      const spos = positions.get(p.spouseId);
+      placeX = spos.x + CARD_W + COUPLE_GAP;
+      placeY = spos.y;
+    }
+    // 2. Placed children
+    else {
+      const placedChildren = (p.children || []).filter(cid => viewSet.has(cid) && positions.has(cid));
+      if (placedChildren.length > 0) {
+        const childYs = placedChildren.map(cid => positions.get(cid).y).sort((a, b) => a - b);
+        const childXs = placedChildren.map(cid => positions.get(cid).x).sort((a, b) => a - b);
+        placeY = childYs[0] - GEN_HEIGHT;
+        placeX = childXs[Math.floor(childXs.length / 2)] + CARD_W / 2 - CARD_W / 2;
+      }
+      // 3. Placed parents
+      else {
+        const placedParents = (p.parents || []).filter(pid => viewSet.has(pid) && positions.has(pid));
+        if (placedParents.length > 0) {
+          const parentPos = positions.get(placedParents[0]);
+          placeX = parentPos.x + CARD_W + CARD_GAP_X;
+          placeY = parentPos.y + GEN_HEIGHT;
+        }
+      }
+    }
+
+    positions.set(p.id, { x: placeX, y: placeY });
+    visited.add(p.id);
+    if (placeX + CARD_W > currentX) currentX = placeX + CARD_W + CARD_GAP_X;
   }
 
   // ── CROSS-BLOCK CONNECTOR PASS ──
@@ -2667,11 +2849,31 @@ function layoutTree() {
 
       // Compute parent couple midpoint
       let parentMidX;
+      let recenterIds = parentIds; // which parents to move
       if (parentIds.length === 2) {
         const p1 = positions.get(parentIds[0]);
         const p2 = positions.get(parentIds[1]);
         if (!p1 || !p2) continue;
-        parentMidX = (p1.x + p2.x + CARD_W) / 2;
+        // If parents are far apart, they're from different marriages
+        // (e.g. one is the child's father, the other is the mother who
+        // remarried and is placed with her second husband). Only recenter
+        // the parent who is closest to the child to avoid dragging the
+        // far parent's subtree across the canvas.
+        const parentDist = Math.abs(p1.x - p2.x);
+        if (parentDist > CARD_W * 3) {
+          // Parents not a couple — recenter only the nearest parent
+          const d1 = Math.abs(p1.x - childPos.x);
+          const d2 = Math.abs(p2.x - childPos.x);
+          if (d1 <= d2) {
+            parentMidX = p1.x + CARD_W / 2;
+            recenterIds = [parentIds[0]];
+          } else {
+            parentMidX = p2.x + CARD_W / 2;
+            recenterIds = [parentIds[1]];
+          }
+        } else {
+          parentMidX = (p1.x + p2.x + CARD_W) / 2;
+        }
       } else {
         const p1 = positions.get(parentIds[0]);
         if (!p1) continue;
@@ -2685,7 +2887,7 @@ function layoutTree() {
 
       // Gather all ancestor subtree IDs to shift together
       const subtreeIds = new Set();
-      for (const pid of parentIds) {
+      for (const pid of recenterIds) {
         getSubtreeIds(pid, subtreeIds);
       }
       // Don't include the child itself
@@ -2736,8 +2938,9 @@ function layoutTree() {
   // After all layout passes (root, ancestors, siblings, in-laws, multi-marriage,
   // disconnected), cards from different subtrees may overlap at the same Y level.
   // This pass scans each Y level for overlapping cards and shifts the later-placed
-  // card (higher ID = placed later) to the right until the overlap is resolved.
-  // It preserves the layout order within each subtree (earlier-placed cards stay put).
+  // card to the right until the overlap is resolved.
+  // After collision resolution, a gap-closing pass shifts children towards their
+  // parents to avoid large gaps caused by parents being pushed right.
   function resolveCollisions() {
     const MIN_GAP = 5; // minimum pixels between cards at the same Y
     let changed = true;
@@ -2767,6 +2970,74 @@ function layoutTree() {
             changed = true;
           }
         }
+      }
+    }
+
+    // ── GAP CLOSING PASS ──
+    // After collision resolution, parents may have been shifted right while their
+    // children stayed in place, creating gaps. For each parent-child pair where
+    // the child is at the next generation down, check if the child can be shifted
+    // right to close the gap without overlapping its neighbour.
+    // Only shift children that are far left of where their parent's connector
+    // midpoint lands, and only if the shift doesn't cause a new overlap.
+    function canShiftRight(id, delta) {
+      const pos = positions.get(id);
+      if (!pos) return false;
+      const newX = pos.x + delta;
+      const yKey = Math.round(pos.y / GEN_HEIGHT) * GEN_HEIGHT;
+      for (const [otherId, otherPos] of positions) {
+        if (otherId === id) continue;
+        if (Math.abs(otherPos.y - pos.y) > GEN_HEIGHT / 2) continue;
+        // Check if new position overlaps with this card
+        const otherLeft = otherPos.x;
+        const otherRight = otherPos.x + CARD_W;
+        if (newX < otherRight + MIN_GAP && newX + CARD_W > otherLeft - MIN_GAP) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // Process children depth-first (youngest generation first, working up)
+    // so that shifting a child doesn't break a grandchild's alignment
+    const childToParents = new Map();
+    for (const p of viewPeople) {
+      if (p.children) {
+        for (const cid of p.children) {
+          if (!childToParents.has(cid)) childToParents.set(cid, []);
+          childToParents.get(cid).push(p.id);
+        }
+      }
+    }
+
+    // Sort by generation descending (youngest first)
+    const sortedChildren = [...childToParents.keys()].sort((a, b) => {
+      const pa = positions.get(a), pb = positions.get(b);
+      return (pb?.y || 0) - (pa?.y || 0);
+    });
+
+    for (const cid of sortedChildren) {
+      const childPos = positions.get(cid);
+      if (!childPos) continue;
+      const parentIds = childToParents.get(cid);
+      if (!parentIds || parentIds.length === 0) continue;
+
+      // Get parent midpoint X
+      let parentMidX = 0, count = 0;
+      for (const pid of parentIds) {
+        const ppos = positions.get(pid);
+        if (ppos) { parentMidX += ppos.x + CARD_W / 2; count++; }
+      }
+      if (count === 0) continue;
+      parentMidX /= count;
+
+      const childCenterX = childPos.x + CARD_W / 2;
+      const gap = parentMidX - childCenterX;
+
+      // If child is more than one card-width left of parent midpoint, try to shift right
+      // Only shift if it closes the gap without causing overlap
+      if (gap > CARD_W + CARD_GAP_X && canShiftRight(cid, gap / 2)) {
+        childPos.x += Math.round(gap / 2);
       }
     }
   }
@@ -2835,14 +3106,17 @@ function layoutTree() {
     }
   }
 
-  // Normalize: shift all y values so minimum y is 160 (clears header banner with breathing room)
+  // Normalize: shift all y values so minimum y clears the header with breathing room.
+  // The tree-scroll container starts below the header (dynamic top), so we just
+  // need padding within the scroll container itself.
+  const Y_PADDING = 40; // breathing room above the first card
   let minY = Infinity;
   for (const [id, pos] of positions) {
     if (pos.y < minY) minY = pos.y;
   }
   let yShift = 0;
-  if (minY < 160) {
-    yShift = 160 - minY;
+  if (minY < Y_PADDING) {
+    yShift = Y_PADDING - minY;
     for (const [id, pos] of positions) {
       pos.y += yShift;
     }
@@ -5665,6 +5939,21 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
       });
     }, 100);
   }
+
+  // Dynamic header offset: measure actual header height and set tree-scroll top
+  // so cards never hide behind the banner. Runs once on load + on resize.
+  function syncHeaderOffset() {
+    var headerEl = document.querySelector('.header');
+    var scrollEl = document.getElementById('treeScroll');
+    if (!headerEl || !scrollEl) return;
+    var headerH = headerEl.offsetHeight;
+    scrollEl.style.top = headerH + 'px';
+  }
+  syncHeaderOffset();
+  window.addEventListener('resize', syncHeaderOffset);
+  // Also sync after fonts/Cinzel load (can change header height)
+  setTimeout(syncHeaderOffset, 200);
+  setTimeout(syncHeaderOffset, 1000);
 
   // Calculate header height to offset centering on mobile
   var headerEl = document.querySelector('.header');
