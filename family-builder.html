@@ -673,7 +673,7 @@ if ('serviceWorker' in navigator) {
           <div class="fb-menu-item" role="menuitem" onclick="location.href='family-builder.html'"><span class="icon">🌿</span> Family Builder</div>
           <div class="fb-menu-item" role="menuitem" onclick="window.open('families.html','_blank')"><span class="icon">📋</span> Family Sheets</div>
           <div class="fb-menu-item" role="menuitem" onclick="openPoster()"><span class="icon">🖼️</span> Heritage Poster</div>
-          <div class="fb-menu-item" role="menuitem" onclick="toggleHelp(); setTimeout(function(){var b=document.querySelector('.help-tab[data-tab=\"2\"]');if(b)b.click();},100)"><span class="icon">🔄</span> Import & Export GEDCOM</div>
+          <div class="fb-menu-item" role="menuitem" onclick="toggleHelp(); switchHelpTab(2, document.querySelectorAll('.help-tab')[2])"><span class="icon">🔄</span> Import & Export GEDCOM</div>
           <div class="fb-menu-item" role="menuitem" onclick="saveSession()"><span class="icon">💾</span> Save Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('loadFileInput').click()"><span class="icon">📂</span> Load Backup</div>
           <div class="fb-menu-item" role="menuitem" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
