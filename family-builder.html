@@ -2377,7 +2377,10 @@ function layoutTree() {
           }
         }
         // Push each overlapping card AND its descendant subtree
-        for (const pushId of pushedIds) {
+        // Snapshot the initial set — we add __pushed_ entries below and
+        // mutating a Set during for...of iteration causes an infinite loop
+        const initialPushedIds = [...pushedIds];
+        for (const pushId of initialPushedIds) {
           // Only push if not already pushed as part of another card's subtree
           if (pushedIds.has('__pushed_' + pushId)) continue;
           const subtreeIds = new Set();
