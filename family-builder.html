@@ -2448,6 +2448,83 @@ function layoutTree() {
     }
   }
 
+  // ── UNPLACED SPOUSE PASS ──
+  // After all ancestor/sibling/multi-marriage passes, there may be people
+  // who were placed by assignParents as single parent cards (not via
+  // assignPositions which handles couples). Their spouseId was never
+  // placed because assignParents doesn't check for spouses. This pass
+  // finds any placed person with an unplaced spouse and places the spouse
+  // adjacent to them, with a spouse connector line.
+  for (const p of viewPeople) {
+    if (!positions.has(p.id)) continue;
+    if (!p.spouseId || !viewSet.has(p.spouseId) || visited.has(p.spouseId)) continue;
+
+    const personPos = positions.get(p.id);
+    const spouse = getP(p.spouseId);
+    if (!spouse) continue;
+
+    // Determine placement side: check which side has more room
+    const spouseY = personPos.y;
+    let spouseX;
+
+    // Check if there's room on the right (preferred for female spouse)
+    const rightEdge = personPos.x + CARD_W;
+    const rightmostAtY = getRightmostAt(spouseY, p.id);
+    const rightGap = rightmostAtY > 0 ? rightmostAtY - rightEdge : Infinity;
+
+    // Check if there's room on the left
+    let leftmostAtY = Infinity;
+    for (const [id, pos] of positions) {
+      if (id === p.id) continue;
+      if (Math.abs(pos.y - spouseY) < GEN_HEIGHT / 2) {
+        if (pos.x < leftmostAtY) leftmostAtY = pos.x;
+      }
+    }
+    const leftGap = leftmostAtY !== Infinity ? personPos.x - leftmostAtY : Infinity;
+
+    // Prefer placing spouse on the side with more room
+    // Male goes left, female goes right (consistent with assignPositions)
+    const spouseIsFemale = spouse.sex === 'F';
+    const personIsMale = p.sex === 'M';
+
+    if (personIsMale && spouseIsFemale) {
+      // Male is placed, female spouse goes right
+      spouseX = rightEdge + COUPLE_GAP;
+      if (rightmostAtY >= spouseX) {
+        // Collision on right - try left
+        spouseX = personPos.x - CARD_W - COUPLE_GAP;
+        if (leftmostAtY !== Infinity && spouseX < leftmostAtY + CARD_W + CARD_GAP_X) {
+          // No room on left either - place right and let collision resolver handle it
+          spouseX = rightmostAtY + CARD_GAP_X;
+        }
+      }
+    } else {
+      // Place on whichever side has more room
+      if (rightGap >= leftGap) {
+        spouseX = rightEdge + COUPLE_GAP;
+        if (rightmostAtY >= spouseX) spouseX = rightmostAtY + CARD_GAP_X;
+      } else {
+        spouseX = personPos.x - CARD_W - COUPLE_GAP;
+        if (leftmostAtY !== Infinity && spouseX < leftmostAtY + CARD_W + CARD_GAP_X) {
+          spouseX = rightEdge + COUPLE_GAP;
+          if (rightmostAtY >= spouseX) spouseX = rightmostAtY + CARD_GAP_X;
+        }
+      }
+    }
+
+    positions.set(p.spouseId, { x: Math.round(spouseX), y: spouseY });
+    visited.add(p.spouseId);
+
+    // Spouse line
+    const leftX = Math.min(personPos.x, spouseX) + CARD_W;
+    const rightX = Math.max(personPos.x, spouseX);
+    connections.push({
+      type: 'spouse',
+      x1: leftX, y1: spouseY + CARD_H / 2,
+      x2: rightX, y2: spouseY + CARD_H / 2
+    });
+  }
+
   // Layout any unplaced people (disconnected)
   for (const p of viewPeople) {
     if (!visited.has(p.id)) {
