@@ -2346,14 +2346,47 @@ function layoutTree() {
         // letting the collision resolver fling the spouse to the far edge.
         spouseX = personPos.x + CARD_W + COUPLE_GAP;
 
-        // Push overlapping cards right at this Y level
+        // Push overlapping cards right at this Y level — AND their subtrees
+        // so children move with parents and no gaps open up
         const pushW = CARD_W + COUPLE_GAP;
+        const pushedIds = new Set();
         for (const [id, pos] of positions) {
           if (id === p.id || id === spouseId) continue;
           if (Math.abs(pos.y - spouseY) > GEN_HEIGHT / 2) continue;
           // If this card is at or to the right of the spouse placement, push it right
           if (pos.x >= spouseX - CARD_GAP_X) {
-            pos.x += pushW;
+            pushedIds.add(id);
+          }
+        }
+        // Push each overlapping card AND its descendant subtree
+        for (const pushId of pushedIds) {
+          // Only push if not already pushed as part of another card's subtree
+          if (pushedIds.has('__pushed_' + pushId)) continue;
+          const subtreeIds = new Set();
+          // Reuse the getDescendants logic from the collision resolver context
+          // but we're in a different scope, so inline it
+          (function collect(id, seen) {
+            if (seen.has(id)) return;
+            seen.add(id);
+            const person = getP(id);
+            if (!person) return;
+            for (const cid of (person.children || [])) {
+              if (viewSet.has(cid) && positions.has(cid)) collect(cid, seen);
+            }
+            if (person.spouseId && viewSet.has(person.spouseId) && positions.has(person.spouseId) && !seen.has(person.spouseId)) {
+              seen.add(person.spouseId);
+              const spouse = getP(person.spouseId);
+              if (spouse) {
+                for (const cid of (spouse.children || [])) {
+                  if (viewSet.has(cid) && positions.has(cid)) collect(cid, seen);
+                }
+              }
+            }
+          })(pushId, subtreeIds);
+          for (const sid of subtreeIds) {
+            const pos = positions.get(sid);
+            if (pos) pos.x += pushW;
+            pushedIds.add('__pushed_' + sid);
           }
         }
       }
@@ -2738,8 +2771,47 @@ function layoutTree() {
   // This pass scans each Y level for overlapping cards and shifts the later-placed
   // card (higher ID = placed later) to the right until the overlap is resolved.
   // It preserves the layout order within each subtree (earlier-placed cards stay put).
+  // When shifting a card, its entire descendant subtree shifts with it so that
+  // families stay together and no gaps open up between parents and children.
   function resolveCollisions() {
     const MIN_GAP = 5; // minimum pixels between cards at the same Y
+
+    // Build child->parent map for subtree walking (descendants only, not ancestors)
+    function getDescendants(rootId, seen) {
+      if (seen.has(rootId)) return;
+      seen.add(rootId);
+      const person = getP(rootId);
+      if (!person) return;
+      // Walk children
+      for (const cid of (person.children || [])) {
+        if (viewSet.has(cid) && positions.has(cid)) {
+          getDescendants(cid, seen);
+        }
+      }
+      // Also walk spouse — spouse should move with the card
+      if (person.spouseId && viewSet.has(person.spouseId) && positions.has(person.spouseId)) {
+        if (!seen.has(person.spouseId)) {
+          seen.add(person.spouseId);
+          // Walk spouse's children too (may overlap with above, that's fine — Set dedupes)
+          const spouse = getP(person.spouseId);
+          if (spouse) {
+            for (const cid of (spouse.children || [])) {
+              if (viewSet.has(cid) && positions.has(cid)) {
+                getDescendants(cid, seen);
+              }
+            }
+          }
+        }
+      }
+    }
+
+    function shiftSubtree(ids, delta) {
+      for (const id of ids) {
+        const pos = positions.get(id);
+        if (pos) pos.x += delta;
+      }
+    }
+
     let changed = true;
     let iterations = 0;
     while (changed && iterations < 20) {
@@ -2761,9 +2833,11 @@ function layoutTree() {
           const prevRight = prevPos.x + CARD_W;
           const curLeft = curPos.x;
           if (curLeft < prevRight + MIN_GAP) {
-            // Overlap: shift current card right
+            // Overlap: shift current card AND its entire descendant subtree right
             const shift = (prevRight + MIN_GAP) - curLeft;
-            curPos.x += shift;
+            const subtreeIds = new Set();
+            getDescendants(ids[i], subtreeIds);
+            shiftSubtree(subtreeIds, shift);
             changed = true;
           }
         }
