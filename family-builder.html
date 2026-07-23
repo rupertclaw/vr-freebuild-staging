@@ -2009,7 +2009,42 @@ function layoutTree() {
         // Find the outermost card edge across ALL depths the subtree will span.
         // This prevents deeper descendants (e.g. Gordon at depth+1) from
         // overlapping existing cards (e.g. Rose's children at the same depth).
+        //
+        // ADJACENCY PRIORITY: Before falling back to the outermost-edge strategy,
+        // check if a sibling from the SAME parent is already placed at the
+        // child's depth. If so, place the new sibling adjacent to that sibling
+        // rather than at the far edge of the canvas. This keeps siblings
+        // clustered together (e.g. Lloyd next to Jolene, not off in the weeds).
         let childLeftX;
+        let placedAdjacent = false;
+
+        // Check for already-placed siblings at childDepth
+        let adjacentLeftEdge = Infinity, adjacentRightEdge = -Infinity;
+        for (const cid of (person.children || [])) {
+          if (visited.has(cid)) {
+            // This is an already-placed sibling — check its position
+            const sibPos = positions.get(cid);
+            if (sibPos) {
+              const sibDepth = Math.round((sibPos.y - 50) / GEN_HEIGHT);
+              if (sibDepth === childDepth) {
+                if (sibPos.x < adjacentLeftEdge) adjacentLeftEdge = sibPos.x;
+                if (sibPos.x + CARD_W > adjacentRightEdge) adjacentRightEdge = sibPos.x + CARD_W;
+              }
+            }
+          }
+        }
+
+        if (adjacentLeftEdge !== Infinity) {
+          // Siblings exist at this depth — place adjacent to them
+          if (placeOnLeft) {
+            childLeftX = adjacentLeftEdge - totalW - CARD_GAP_X;
+          } else {
+            childLeftX = adjacentRightEdge + CARD_GAP_X;
+          }
+          placedAdjacent = true;
+        }
+
+        if (!placedAdjacent) {
         if (placeOnLeft) {
           // Find leftmost card across all depths from childDepth to maxDepth
           let leftmostX = Infinity;
@@ -2042,6 +2077,7 @@ function layoutTree() {
             childLeftX = Math.round(parentMidX - totalW / 2);
           }
         }
+        } // end if (!placedAdjacent)
 
         // Don't go negative — normalization at end will shift right
         // childLeftX = Math.max(0, childLeftX);
@@ -2267,13 +2303,28 @@ function layoutTree() {
       const personPos = positions.get(p.id);
       const spouseY = personPos.y;
 
-      // Place secondary spouse on the LEFT side to avoid crossing through primary spouse
-      // Primary spouse (spouseId) is already placed to the right by the main layout
+      // Place secondary spouse on the opposite side of any already-placed spouse.
+      // Check ALL families for an already-placed spouse, not just p.spouseId.
+      // This handles the case where the parser-assigned primary spouse (spouseId)
+      // is NOT the one placed by the ancestor layout (e.g. Margaret Craigie's
+      // spouseId = Thomas Burns, but Robert Alexander was placed by assignParents
+      // because he's Karen's father).
+      let placedSpousePos = null;
+      for (const otherFam of p.families) {
+        if (otherFam.spouseId === spouseId) continue; // skip the one we're placing
+        if (otherFam.spouseId && positions.has(otherFam.spouseId)) {
+          placedSpousePos = positions.get(otherFam.spouseId);
+          break;
+        }
+      }
+      // Fall back to p.spouseId if no other placed spouse found
+      if (!placedSpousePos && p.spouseId && p.spouseId !== spouseId) {
+        placedSpousePos = positions.get(p.spouseId);
+      }
+
       let spouseX;
-      // Check if primary spouse is to the right of person
-      const primarySpousePos = positions.get(p.spouseId);
-      if (primarySpousePos && primarySpousePos.x > personPos.x) {
-        // Primary is on right, place secondary on left
+      if (placedSpousePos && placedSpousePos.x > personPos.x) {
+        // Already-placed spouse is on right, place new spouse on left
         spouseX = personPos.x - CARD_W - COUPLE_GAP;
         // Ensure doesn't overlap with anything on the left
         if (spouseX < 0) {
@@ -2288,11 +2339,22 @@ function layoutTree() {
           }
         }
       } else {
-        // Primary is on left (or no primary), place secondary on right
+        // Already-placed spouse is on left (or no placed spouse), place new on right
+        // Place ADJACENT to the person. If this overlaps existing cards, push
+        // those cards (and everything to their right at the same Y) further right
+        // to make room. This keeps the spouse next to the person instead of
+        // letting the collision resolver fling the spouse to the far edge.
         spouseX = personPos.x + CARD_W + COUPLE_GAP;
-        const existingRight = getRightmostAt(spouseY, p.id);
-        if (existingRight >= spouseX) {
-          spouseX = existingRight + CARD_GAP_X;
+
+        // Push overlapping cards right at this Y level
+        const pushW = CARD_W + COUPLE_GAP;
+        for (const [id, pos] of positions) {
+          if (id === p.id || id === spouseId) continue;
+          if (Math.abs(pos.y - spouseY) > GEN_HEIGHT / 2) continue;
+          // If this card is at or to the right of the spouse placement, push it right
+          if (pos.x >= spouseX - CARD_GAP_X) {
+            pos.x += pushW;
+          }
         }
       }
 
@@ -2395,6 +2457,83 @@ function layoutTree() {
         }
       }
     }
+  }
+
+  // ── UNPLACED SPOUSE PASS ──
+  // After all ancestor/sibling/multi-marriage passes, there may be people
+  // who were placed by assignParents as single parent cards (not via
+  // assignPositions which handles couples). Their spouseId was never
+  // placed because assignParents doesn't check for spouses. This pass
+  // finds any placed person with an unplaced spouse and places the spouse
+  // adjacent to them, with a spouse connector line.
+  for (const p of viewPeople) {
+    if (!positions.has(p.id)) continue;
+    if (!p.spouseId || !viewSet.has(p.spouseId) || visited.has(p.spouseId)) continue;
+
+    const personPos = positions.get(p.id);
+    const spouse = getP(p.spouseId);
+    if (!spouse) continue;
+
+    // Determine placement side: check which side has more room
+    const spouseY = personPos.y;
+    let spouseX;
+
+    // Check if there's room on the right (preferred for female spouse)
+    const rightEdge = personPos.x + CARD_W;
+    const rightmostAtY = getRightmostAt(spouseY, p.id);
+    const rightGap = rightmostAtY > 0 ? rightmostAtY - rightEdge : Infinity;
+
+    // Check if there's room on the left
+    let leftmostAtY = Infinity;
+    for (const [id, pos] of positions) {
+      if (id === p.id) continue;
+      if (Math.abs(pos.y - spouseY) < GEN_HEIGHT / 2) {
+        if (pos.x < leftmostAtY) leftmostAtY = pos.x;
+      }
+    }
+    const leftGap = leftmostAtY !== Infinity ? personPos.x - leftmostAtY : Infinity;
+
+    // Prefer placing spouse on the side with more room
+    // Male goes left, female goes right (consistent with assignPositions)
+    const spouseIsFemale = spouse.sex === 'F';
+    const personIsMale = p.sex === 'M';
+
+    if (personIsMale && spouseIsFemale) {
+      // Male is placed, female spouse goes right
+      spouseX = rightEdge + COUPLE_GAP;
+      if (rightmostAtY >= spouseX) {
+        // Collision on right - try left
+        spouseX = personPos.x - CARD_W - COUPLE_GAP;
+        if (leftmostAtY !== Infinity && spouseX < leftmostAtY + CARD_W + CARD_GAP_X) {
+          // No room on left either - place right and let collision resolver handle it
+          spouseX = rightmostAtY + CARD_GAP_X;
+        }
+      }
+    } else {
+      // Place on whichever side has more room
+      if (rightGap >= leftGap) {
+        spouseX = rightEdge + COUPLE_GAP;
+        if (rightmostAtY >= spouseX) spouseX = rightmostAtY + CARD_GAP_X;
+      } else {
+        spouseX = personPos.x - CARD_W - COUPLE_GAP;
+        if (leftmostAtY !== Infinity && spouseX < leftmostAtY + CARD_W + CARD_GAP_X) {
+          spouseX = rightEdge + COUPLE_GAP;
+          if (rightmostAtY >= spouseX) spouseX = rightmostAtY + CARD_GAP_X;
+        }
+      }
+    }
+
+    positions.set(p.spouseId, { x: Math.round(spouseX), y: spouseY });
+    visited.add(p.spouseId);
+
+    // Spouse line
+    const leftX = Math.min(personPos.x, spouseX) + CARD_W;
+    const rightX = Math.max(personPos.x, spouseX);
+    connections.push({
+      type: 'spouse',
+      x1: leftX, y1: spouseY + CARD_H / 2,
+      x2: rightX, y2: spouseY + CARD_H / 2
+    });
   }
 
   // Layout any unplaced people (disconnected)
@@ -2592,6 +2731,46 @@ function layoutTree() {
       }
     }
   }
+
+  // ── COLLISION RESOLUTION PASS ──
+  // After all layout passes (root, ancestors, siblings, in-laws, multi-marriage,
+  // disconnected), cards from different subtrees may overlap at the same Y level.
+  // This pass scans each Y level for overlapping cards and shifts the later-placed
+  // card (higher ID = placed later) to the right until the overlap is resolved.
+  // It preserves the layout order within each subtree (earlier-placed cards stay put).
+  function resolveCollisions() {
+    const MIN_GAP = 5; // minimum pixels between cards at the same Y
+    let changed = true;
+    let iterations = 0;
+    while (changed && iterations < 20) {
+      changed = false;
+      iterations++;
+      // Group cards by Y level
+      const yLevels = new Map();
+      for (const [id, pos] of positions) {
+        const yKey = Math.round(pos.y / GEN_HEIGHT) * GEN_HEIGHT;
+        if (!yLevels.has(yKey)) yLevels.set(yKey, []);
+        yLevels.get(yKey).push(id);
+      }
+      // Sort each level by X and check for overlaps
+      for (const [yKey, ids] of yLevels) {
+        ids.sort((a, b) => positions.get(a).x - positions.get(b).x);
+        for (let i = 1; i < ids.length; i++) {
+          const prevPos = positions.get(ids[i - 1]);
+          const curPos = positions.get(ids[i]);
+          const prevRight = prevPos.x + CARD_W;
+          const curLeft = curPos.x;
+          if (curLeft < prevRight + MIN_GAP) {
+            // Overlap: shift current card right
+            const shift = (prevRight + MIN_GAP) - curLeft;
+            curPos.x += shift;
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+  resolveCollisions();
 
   recenterAncestors();
 
