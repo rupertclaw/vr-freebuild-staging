@@ -2118,6 +2118,9 @@ function layoutTree() {
   }
 
   // ── MAIN: choose roots and run ──
+  console.time('layoutTree.total');
+  console.time('layoutTree.components');
+  console.time('layoutTree.roots');
   // In overview mode, group people into connected components (linked by
   // parent/child/spouse) and lay out each component as a single tree from
   // its best root. This prevents 20+ rootless ancestors from being scattered
@@ -2198,6 +2201,8 @@ function layoutTree() {
       if (bestRoot) layoutRoots.push(bestRoot);
     }
   }
+  console.timeEnd('layoutTree.components');
+  console.log('layoutRoots:', layoutRoots.length, 'roots:', layoutRoots.slice(0, 5).join(','));
 
   const visited = new Set();
   let currentX = 50;
@@ -2257,6 +2262,8 @@ function layoutTree() {
     }
     currentX += w + CARD_GAP_X * 2;
   }
+  console.timeEnd('layoutTree.roots');
+  console.log('after roots: ' + positions.size + ' placed');
 
   // ── SIBLING CASCADE PASS ──
   // After the root + ancestors are placed, cascade downward from any placed
@@ -2264,6 +2271,7 @@ function layoutTree() {
   // and their descendants). This must run BEFORE the multi-marriage pass
   // and the disconnected pass so siblings get proper subtree layout.
   assignSiblingsDown(visited);
+  console.log('after siblings: ' + positions.size + ' placed');
 
   // ── IN-LAW ANCESTOR PASS ──
   // After root ancestors and siblings are placed, there may be spouses
@@ -2882,9 +2890,14 @@ function layoutTree() {
       }
     }
   }
+  console.time('layoutTree.collisions');
   resolveCollisions();
+  console.timeEnd('layoutTree.collisions');
+  console.log('after collisions: ' + positions.size + ' placed');
 
+  console.time('layoutTree.recenter');
   recenterAncestors();
+  console.timeEnd('layoutTree.recenter');
 
   // Rebuild connections after re-centering
   // Clear existing parent-child and spouse connections and rebuild from final positions
@@ -2991,6 +3004,7 @@ function layoutTree() {
       }
     }
   }
+  console.timeEnd('layoutTree.total');
   return {
     positions,
     width: Math.max(maxX + 100, 200),
