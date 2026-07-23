@@ -2340,10 +2340,21 @@ function layoutTree() {
         }
       } else {
         // Already-placed spouse is on left (or no placed spouse), place new on right
+        // Place ADJACENT to the person. If this overlaps existing cards, push
+        // those cards (and everything to their right at the same Y) further right
+        // to make room. This keeps the spouse next to the person instead of
+        // letting the collision resolver fling the spouse to the far edge.
         spouseX = personPos.x + CARD_W + COUPLE_GAP;
-        const existingRight = getRightmostAt(spouseY, p.id);
-        if (existingRight >= spouseX) {
-          spouseX = existingRight + CARD_GAP_X;
+
+        // Push overlapping cards right at this Y level
+        const pushW = CARD_W + COUPLE_GAP;
+        for (const [id, pos] of positions) {
+          if (id === p.id || id === spouseId) continue;
+          if (Math.abs(pos.y - spouseY) > GEN_HEIGHT / 2) continue;
+          // If this card is at or to the right of the spouse placement, push it right
+          if (pos.x >= spouseX - CARD_GAP_X) {
+            pos.x += pushW;
+          }
         }
       }
 
