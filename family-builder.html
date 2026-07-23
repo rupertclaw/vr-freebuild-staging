@@ -2776,36 +2776,53 @@ function layoutTree() {
   function resolveCollisions() {
     const MIN_GAP = 5; // minimum pixels between cards at the same Y
 
-    // Build child->parent map for subtree walking (descendants only, not ancestors)
-    function getDescendants(rootId, seen) {
-      if (seen.has(rootId)) return;
-      seen.add(rootId);
-      const person = getP(rootId);
-      if (!person) return;
-      // Walk children
-      for (const cid of (person.children || [])) {
-        if (viewSet.has(cid) && positions.has(cid)) {
-          getDescendants(cid, seen);
+    // Pre-build child->parent map for fast subtree lookup (descendants only)
+    const childrenOf = new Map();
+    for (const p of viewPeople) {
+      if (p.children) {
+        for (const cid of p.children) {
+          if (!childrenOf.has(cid)) childrenOf.set(cid, []);
+          childrenOf.get(cid).push(p.id);
         }
       }
-      // Also walk spouse — spouse should move with the card
-      if (person.spouseId && viewSet.has(person.spouseId) && positions.has(person.spouseId)) {
-        if (!seen.has(person.spouseId)) {
+    }
+
+    // Pre-compute descendant sets for each person (shift group = this person + all descendants + spouse)
+    const shiftGroupCache = new Map();
+    function getShiftGroup(rootId) {
+      if (shiftGroupCache.has(rootId)) return shiftGroupCache.get(rootId);
+      const seen = new Set();
+      const queue = [rootId];
+      while (queue.length > 0) {
+        const id = queue.shift();
+        if (seen.has(id)) continue;
+        seen.add(id);
+        const person = getP(id);
+        if (!person) continue;
+        // Add children
+        for (const cid of (person.children || [])) {
+          if (viewSet.has(cid) && positions.has(cid) && !seen.has(cid)) {
+            queue.push(cid);
+          }
+        }
+        // Add spouse
+        if (person.spouseId && viewSet.has(person.spouseId) && positions.has(person.spouseId) && !seen.has(person.spouseId)) {
           seen.add(person.spouseId);
-          // Walk spouse's children too (may overlap with above, that's fine — Set dedupes)
           const spouse = getP(person.spouseId);
           if (spouse) {
             for (const cid of (spouse.children || [])) {
-              if (viewSet.has(cid) && positions.has(cid)) {
-                getDescendants(cid, seen);
+              if (viewSet.has(cid) && positions.has(cid) && !seen.has(cid)) {
+                queue.push(cid);
               }
             }
           }
         }
       }
+      shiftGroupCache.set(rootId, seen);
+      return seen;
     }
 
-    function shiftSubtree(ids, delta) {
+    function shiftGroup(ids, delta) {
       for (const id of ids) {
         const pos = positions.get(id);
         if (pos) pos.x += delta;
@@ -2835,9 +2852,8 @@ function layoutTree() {
           if (curLeft < prevRight + MIN_GAP) {
             // Overlap: shift current card AND its entire descendant subtree right
             const shift = (prevRight + MIN_GAP) - curLeft;
-            const subtreeIds = new Set();
-            getDescendants(ids[i], subtreeIds);
-            shiftSubtree(subtreeIds, shift);
+            const group = getShiftGroup(ids[i]);
+            shiftGroup(group, shift);
             changed = true;
           }
         }
