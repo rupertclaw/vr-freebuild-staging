@@ -1597,7 +1597,7 @@ function layoutTree() {
     // return 0 to break the cycle (can happen with pedigree collapse or
     // GED parser creating circular child references)
     if (computingWidth.has(personId)) return 0;
-    computingWidth.set(personId, true);
+    computingWidth.add(personId);
 
     const hasSpouse = person.spouseId && viewSet.has(person.spouseId);
     const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
