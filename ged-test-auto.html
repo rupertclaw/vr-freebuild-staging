@@ -9,26 +9,33 @@ window.addEventListener('load', function() {
   iframe.addEventListener('load', function() {
     // Wait for the inner page to fully initialize
     setTimeout(function() {
-      fetch('mooney-test.ged')
-        .then(function(r) { return r.text(); })
-        .then(function(text) {
-          var iframeDoc = iframe.contentWindow.document;
-          var input = iframeDoc.getElementById('gedcomInput');
-          if (!input) {
-            document.getElementById('status').textContent = 'No gedcomInput in iframe';
-            return;
-          }
-          var blob = new Blob([text], {type: 'text/plain'});
-          var file = new File([blob], '2025_mooney.ged', {type: 'text/plain'});
-          var dt = new DataTransfer();
-          dt.items.add(file);
-          input.files = dt.files;
-          input.dispatchEvent(new Event('change', {bubbles: true}));
-          document.getElementById('status').textContent = 'GED loaded: ' + text.length + ' chars';
-        })
-        .catch(function(e) {
-          document.getElementById('status').textContent = 'Error: ' + e.message;
-        });
+      var iframeDoc = iframe.contentWindow.document;
+      // Dismiss privacy modal first
+      var dismissBtn = Array.from(iframeDoc.querySelectorAll('button')).find(function(b) { return b.textContent.includes('Dismiss forever'); });
+      if (dismissBtn) dismissBtn.click();
+      
+      // Wait a bit for modal dismissal to settle, then load GED
+      setTimeout(function() {
+        fetch('mooney-test.ged')
+          .then(function(r) { return r.text(); })
+          .then(function(text) {
+            var input = iframeDoc.getElementById('gedcomInput');
+            if (!input) {
+              document.getElementById('status').textContent = 'No gedcomInput in iframe';
+              return;
+            }
+            var blob = new Blob([text], {type: 'text/plain'});
+            var file = new File([blob], '2025_mooney.ged', {type: 'text/plain'});
+            var dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+            input.dispatchEvent(new Event('change', {bubbles: true}));
+            document.getElementById('status').textContent = 'GED loaded: ' + text.length + ' chars';
+          })
+          .catch(function(e) {
+            document.getElementById('status').textContent = 'Error: ' + e.message;
+          });
+      }, 2000);
     }, 3000);
   });
   iframe.src = 'family-builder.html';
