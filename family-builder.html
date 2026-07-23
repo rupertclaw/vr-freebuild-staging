@@ -2009,7 +2009,42 @@ function layoutTree() {
         // Find the outermost card edge across ALL depths the subtree will span.
         // This prevents deeper descendants (e.g. Gordon at depth+1) from
         // overlapping existing cards (e.g. Rose's children at the same depth).
+        //
+        // ADJACENCY PRIORITY: Before falling back to the outermost-edge strategy,
+        // check if a sibling from the SAME parent is already placed at the
+        // child's depth. If so, place the new sibling adjacent to that sibling
+        // rather than at the far edge of the canvas. This keeps siblings
+        // clustered together (e.g. Lloyd next to Jolene, not off in the weeds).
         let childLeftX;
+        let placedAdjacent = false;
+
+        // Check for already-placed siblings at childDepth
+        let adjacentLeftEdge = Infinity, adjacentRightEdge = -Infinity;
+        for (const cid of (person.children || [])) {
+          if (cid === unvisitedChildren[0] || visited.has(cid)) {
+            // This is an already-placed sibling
+            const sibPos = positions.get(cid);
+            if (sibPos) {
+              const sibDepth = Math.round((sibPos.y - 50) / GEN_HEIGHT);
+              if (sibDepth === childDepth) {
+                if (sibPos.x < adjacentLeftEdge) adjacentLeftEdge = sibPos.x;
+                if (sibPos.x + CARD_W > adjacentRightEdge) adjacentRightEdge = sibPos.x + CARD_W;
+              }
+            }
+          }
+        }
+
+        if (adjacentLeftEdge !== Infinity) {
+          // Siblings exist at this depth — place adjacent to them
+          if (placeOnLeft) {
+            childLeftX = adjacentLeftEdge - totalW - CARD_GAP_X;
+          } else {
+            childLeftX = adjacentRightEdge + CARD_GAP_X;
+          }
+          placedAdjacent = true;
+        }
+
+        if (!placedAdjacent) {
         if (placeOnLeft) {
           // Find leftmost card across all depths from childDepth to maxDepth
           let leftmostX = Infinity;
@@ -2042,6 +2077,7 @@ function layoutTree() {
             childLeftX = Math.round(parentMidX - totalW / 2);
           }
         }
+        } // end if (!placedAdjacent)
 
         // Don't go negative — normalization at end will shift right
         // childLeftX = Math.max(0, childLeftX);
