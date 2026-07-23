@@ -2021,8 +2021,8 @@ function layoutTree() {
         // Check for already-placed siblings at childDepth
         let adjacentLeftEdge = Infinity, adjacentRightEdge = -Infinity;
         for (const cid of (person.children || [])) {
-          if (cid === unvisitedChildren[0] || visited.has(cid)) {
-            // This is an already-placed sibling
+          if (visited.has(cid)) {
+            // This is an already-placed sibling — check its position
             const sibPos = positions.get(cid);
             if (sibPos) {
               const sibDepth = Math.round((sibPos.y - 50) / GEN_HEIGHT);
@@ -2628,6 +2628,46 @@ function layoutTree() {
       }
     }
   }
+
+  // ── COLLISION RESOLUTION PASS ──
+  // After all layout passes (root, ancestors, siblings, in-laws, multi-marriage,
+  // disconnected), cards from different subtrees may overlap at the same Y level.
+  // This pass scans each Y level for overlapping cards and shifts the later-placed
+  // card (higher ID = placed later) to the right until the overlap is resolved.
+  // It preserves the layout order within each subtree (earlier-placed cards stay put).
+  function resolveCollisions() {
+    const MIN_GAP = 5; // minimum pixels between cards at the same Y
+    let changed = true;
+    let iterations = 0;
+    while (changed && iterations < 20) {
+      changed = false;
+      iterations++;
+      // Group cards by Y level
+      const yLevels = new Map();
+      for (const [id, pos] of positions) {
+        const yKey = Math.round(pos.y / GEN_HEIGHT) * GEN_HEIGHT;
+        if (!yLevels.has(yKey)) yLevels.set(yKey, []);
+        yLevels.get(yKey).push(id);
+      }
+      // Sort each level by X and check for overlaps
+      for (const [yKey, ids] of yLevels) {
+        ids.sort((a, b) => positions.get(a).x - positions.get(b).x);
+        for (let i = 1; i < ids.length; i++) {
+          const prevPos = positions.get(ids[i - 1]);
+          const curPos = positions.get(ids[i]);
+          const prevRight = prevPos.x + CARD_W;
+          const curLeft = curPos.x;
+          if (curLeft < prevRight + MIN_GAP) {
+            // Overlap: shift current card right
+            const shift = (prevRight + MIN_GAP) - curLeft;
+            curPos.x += shift;
+            changed = true;
+          }
+        }
+      }
+    }
+  }
+  resolveCollisions();
 
   recenterAncestors();
 
