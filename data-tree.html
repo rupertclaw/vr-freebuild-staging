@@ -243,6 +243,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   background: #f5eedc; border: 1px solid #c4b89a; border-radius: 8px;
   width: 240px; padding: 6px; z-index: 10000;
   box-shadow: 0 6px 18px rgba(0,0,0,0.25);
+  max-height: calc(100vh - 200px); overflow-y: auto;
 }
 .tb-menu.open { display: block; }
 .tb-menu-item {
@@ -2642,6 +2643,20 @@ function fitZoomToViewport() {
 
   scrollArea.addEventListener('touchend', endPinch);
   scrollArea.addEventListener('touchcancel', endPinch);
+})();
+
+// Mouse wheel zoom on tree scroll area — scroll up = zoom in, scroll down = zoom out
+(function setupWheelZoom() {
+  const scrollArea = document.getElementById('treeScroll');
+  if (!scrollArea) return;
+  scrollArea.addEventListener('wheel', function(e) {
+    e.preventDefault();
+    if (e.deltaY < 0) {
+      setZoom(zoom * 1.15);
+    } else {
+      setZoom(zoom / 1.15);
+    }
+  }, { passive: false });
 })();
 
 // Block browser page-level pinch zoom everywhere except our tree handler
