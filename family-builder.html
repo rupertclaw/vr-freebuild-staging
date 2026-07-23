@@ -2135,15 +2135,15 @@ function layoutTree() {
       const queue = [p.id];
       while (queue.length > 0) {
         const pid = queue.shift();
-        if (comp.has(pid)) continue;
+        if (comp.has(pid) || componentOf.has(pid)) continue;
         comp.add(pid);
         componentOf.set(pid, components.length);
         const person = getP(pid);
         if (!person) continue;
-        // Traverse parents, children, spouse
-        for (const x of (person.parents || [])) if (viewSet.has(x) && !comp.has(x)) queue.push(x);
-        for (const x of (person.children || [])) if (viewSet.has(x) && !comp.has(x)) queue.push(x);
-        if (person.spouseId && viewSet.has(person.spouseId) && !comp.has(person.spouseId)) queue.push(person.spouseId);
+        // Traverse parents, children, spouse — skip already-claimed people
+        for (const x of (person.parents || [])) if (viewSet.has(x) && !comp.has(x) && !componentOf.has(x)) queue.push(x);
+        for (const x of (person.children || [])) if (viewSet.has(x) && !comp.has(x) && !componentOf.has(x)) queue.push(x);
+        if (person.spouseId && viewSet.has(person.spouseId) && !comp.has(person.spouseId) && !componentOf.has(person.spouseId)) queue.push(person.spouseId);
       }
       components.push(comp);
     }
@@ -2588,6 +2588,13 @@ function layoutTree() {
   // people were never visited because layout only recurses downward from
   // roots, not upward from placed children. Place them adjacent to their
   // children at the correct parent Y level.
+  // Run in a loop so that placing one parent can trigger placing another
+  // (e.g. a grandparent whose child was just placed by this pass).
+  let parentPassChanged = true;
+  let parentPassCount = 0;
+  while (parentPassChanged && parentPassCount < 10) {
+    parentPassChanged = false;
+    parentPassCount++;
   for (const p of viewPeople) {
     if (visited.has(p.id)) continue;
     // Check if this person has any placed children
@@ -2595,15 +2602,15 @@ function layoutTree() {
     if (placedChildren.length === 0) continue;
 
     // Find the Y level one generation above the youngest child
-    let childMinY = Infinity, childCenterSum = 0, childCount = 0;
-    for (const cid of placedChildren) {
-      const cpos = positions.get(cid);
-      if (cpos.y < childMinY) childMinY = cpos.y;
-      childCenterSum += cpos.x + 90; // CARD_W/2 approx
-      childCount++;
-    }
+    // and the median child X position (not average — average is skewed
+    // by outlier children placed far away by other passes)
+    const childYs = placedChildren.map(cid => positions.get(cid).y).sort((a, b) => a - b);
+    const childXs = placedChildren.map(cid => positions.get(cid).x).sort((a, b) => a - b);
+    const childMinY = childYs[0];
+    // Median X: middle value, not average
+    const medianX = childXs[Math.floor(childXs.length / 2)];
     const parentY = childMinY - GEN_HEIGHT;
-    const childCenterX = childCenterSum / childCount;
+    const childCenterX = medianX + CARD_W / 2;
 
     // Place this person (and spouse if any) centered above children
     const hasSpouse = p.spouseId && viewSet.has(p.spouseId) && !visited.has(p.spouseId);
@@ -2645,15 +2652,79 @@ function layoutTree() {
       const cpos = positions.get(cid);
       connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX: cpos.x + CARD_W/2, childY: cpos.y });
     }
+    parentPassChanged = true;
+  }
+  } // end while (parentPassChanged)
+
+  // ── PARENT REPOSITION PASS ──
+  // Some parents were placed by the in-law pass above ONE of their children,
+  // which may be far from the median of ALL their children. Reposition them
+  // to be centered above the median child. Only applies to parents with
+  // 3+ placed children (with 1-2 children, the original placement is fine).
+  for (const p of viewPeople) {
+    if (!positions.has(p.id)) continue;
+    const placedChildren = (p.children || []).filter(cid => viewSet.has(cid) && positions.has(cid));
+    if (placedChildren.length < 3) continue;
+
+    const childXs = placedChildren.map(cid => positions.get(cid).x).sort((a, b) => a - b);
+    const medianX = childXs[Math.floor(childXs.length / 2)];
+    const desiredCenterX = medianX + CARD_W / 2;
+
+    const myPos = positions.get(p.id);
+    const myCenterX = myPos.x + CARD_W / 2;
+    const delta = desiredCenterX - myCenterX;
+
+    if (Math.abs(delta) < 50) continue; // already close enough
+
+    // Shift this person AND their spouse (if placed at same Y) by delta
+    myPos.x += delta;
+    if (p.spouseId && viewSet.has(p.spouseId) && positions.has(p.spouseId)) {
+      const spos = positions.get(p.spouseId);
+      if (Math.abs(spos.y - myPos.y) < 10) spos.x += delta;
+    }
   }
 
   // Layout any unplaced people (disconnected)
+  // Smart placement: if an unplaced person has a placed relative (parent,
+  // child, or spouse), place them near that relative rather than at the
+  // far right edge. This keeps disconnected family members close to their
+  // connected kin instead of flinging them to the edge of the canvas.
   for (const p of viewPeople) {
-    if (!visited.has(p.id)) {
-      positions.set(p.id, { x: currentX, y: 50 });
-      visited.add(p.id);
-      currentX += CARD_W + CARD_GAP_X;
+    if (visited.has(p.id)) continue;
+
+    let placeX = currentX;
+    let placeY = 50;
+
+    // Try to find a placed relative
+    // 1. Placed spouse
+    if (p.spouseId && viewSet.has(p.spouseId) && positions.has(p.spouseId)) {
+      const spos = positions.get(p.spouseId);
+      placeX = spos.x + CARD_W + COUPLE_GAP;
+      placeY = spos.y;
     }
+    // 2. Placed children
+    else {
+      const placedChildren = (p.children || []).filter(cid => viewSet.has(cid) && positions.has(cid));
+      if (placedChildren.length > 0) {
+        const childYs = placedChildren.map(cid => positions.get(cid).y).sort((a, b) => a - b);
+        const childXs = placedChildren.map(cid => positions.get(cid).x).sort((a, b) => a - b);
+        placeY = childYs[0] - GEN_HEIGHT;
+        placeX = childXs[Math.floor(childXs.length / 2)] + CARD_W / 2 - CARD_W / 2;
+      }
+      // 3. Placed parents
+      else {
+        const placedParents = (p.parents || []).filter(pid => viewSet.has(pid) && positions.has(pid));
+        if (placedParents.length > 0) {
+          const parentPos = positions.get(placedParents[0]);
+          placeX = parentPos.x + CARD_W + CARD_GAP_X;
+          placeY = parentPos.y + GEN_HEIGHT;
+        }
+      }
+    }
+
+    positions.set(p.id, { x: placeX, y: placeY });
+    visited.add(p.id);
+    if (placeX + CARD_W > currentX) currentX = placeX + CARD_W + CARD_GAP_X;
   }
 
   // ── CROSS-BLOCK CONNECTOR PASS ──
