@@ -1586,11 +1586,18 @@ function layoutTree() {
   // ── PASS 1: compute subtree widths ──
   // For each person, compute the total width needed for them + their spouse + children subtrees
   const widthCache = new Map();
+  const computingWidth = new Set(); // cycle guard for computeWidth
 
   function computeWidth(personId) {
     if (widthCache.has(personId)) return widthCache.get(personId);
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return 0;
+
+    // Cycle detection: if we're already computing this person's width,
+    // return 0 to break the cycle (can happen with pedigree collapse or
+    // GED parser creating circular child references)
+    if (computingWidth.has(personId)) return 0;
+    computingWidth.set(personId, true);
 
     const hasSpouse = person.spouseId && viewSet.has(person.spouseId);
     const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
@@ -1613,6 +1620,7 @@ function layoutTree() {
     if (childrenTotal > 0) childrenTotal -= CARD_GAP_X; // remove trailing gap
 
     const w = Math.max(coupleWidth, childrenTotal);
+    computingWidth.delete(personId);
     widthCache.set(personId, w);
     return w;
   }
@@ -1620,9 +1628,9 @@ function layoutTree() {
   // ── PASS 2: assign positions (top-down, centered) ──
   function assignPositions(personId, leftX, depth, visited) {
     if (visited.has(personId)) return;
+    visited.add(personId);
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
-    visited.add(personId);
 
     const y = 50 + depth * GEN_HEIGHT;
     const hasSpouse = person.spouseId && viewSet.has(person.spouseId) && !visited.has(person.spouseId);
@@ -2992,7 +3000,10 @@ function layoutTree() {
 }
 
 function renderFreeBuild() {
+  const t0 = performance.now();
   const { positions, width, height, connections } = layoutTree();
+  const t1 = performance.now();
+  console.log('layoutTree: ' + Math.round(t1 - t0) + 'ms, ' + positions.size + ' positions');
   const wrap = document.getElementById('treeWrap');
   const svg = document.getElementById('fbSvg');
 
@@ -3073,6 +3084,8 @@ function renderFreeBuild() {
   // Apply zoom
   wrap.style.setProperty('--zoom', zoom);
   wrap.style.transform = 'scale(' + zoom + ')';
+  const t2 = performance.now();
+  console.log('DOM render: ' + Math.round(t2 - t1) + 'ms (cards + svg)');
 
   // Update header stats
   const statPeople = document.getElementById('statPeople');
