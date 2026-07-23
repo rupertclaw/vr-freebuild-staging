@@ -1578,8 +1578,10 @@ function layoutTree() {
   const placed = new Set();
   const GEN_HEIGHT = CARD_H + CARD_GAP_Y;
 
-  // Helper: get person by id from full people array
-  function getP(id) { return people.find(p => p.id === id); }
+  // Helper: get person by id — O(1) Map lookup, not Array.find
+  const personMap = new Map();
+  for (const p of people) personMap.set(p.id, p);
+  function getP(id) { return personMap.get(id); }
 
   // ── PASS 1: compute subtree widths ──
   // For each person, compute the total width needed for them + their spouse + children subtrees
