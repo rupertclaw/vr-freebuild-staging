@@ -2769,66 +2769,11 @@ function layoutTree() {
   // After all layout passes (root, ancestors, siblings, in-laws, multi-marriage,
   // disconnected), cards from different subtrees may overlap at the same Y level.
   // This pass scans each Y level for overlapping cards and shifts the later-placed
-  // card (higher ID = placed later) to the right until the overlap is resolved.
-  // It preserves the layout order within each subtree (earlier-placed cards stay put).
-  // When shifting a card, its entire descendant subtree shifts with it so that
-  // families stay together and no gaps open up between parents and children.
+  // card to the right until the overlap is resolved.
+  // After collision resolution, a gap-closing pass shifts children towards their
+  // parents to avoid large gaps caused by parents being pushed right.
   function resolveCollisions() {
     const MIN_GAP = 5; // minimum pixels between cards at the same Y
-
-    // Pre-build child->parent map for fast subtree lookup (descendants only)
-    const childrenOf = new Map();
-    for (const p of viewPeople) {
-      if (p.children) {
-        for (const cid of p.children) {
-          if (!childrenOf.has(cid)) childrenOf.set(cid, []);
-          childrenOf.get(cid).push(p.id);
-        }
-      }
-    }
-
-    // Pre-compute descendant sets for each person (shift group = this person + all descendants + spouse)
-    const shiftGroupCache = new Map();
-    function getShiftGroup(rootId) {
-      if (shiftGroupCache.has(rootId)) return shiftGroupCache.get(rootId);
-      const seen = new Set();
-      const queue = [rootId];
-      while (queue.length > 0) {
-        const id = queue.shift();
-        if (seen.has(id)) continue;
-        seen.add(id);
-        const person = getP(id);
-        if (!person) continue;
-        // Add children
-        for (const cid of (person.children || [])) {
-          if (viewSet.has(cid) && positions.has(cid) && !seen.has(cid)) {
-            queue.push(cid);
-          }
-        }
-        // Add spouse
-        if (person.spouseId && viewSet.has(person.spouseId) && positions.has(person.spouseId) && !seen.has(person.spouseId)) {
-          seen.add(person.spouseId);
-          const spouse = getP(person.spouseId);
-          if (spouse) {
-            for (const cid of (spouse.children || [])) {
-              if (viewSet.has(cid) && positions.has(cid) && !seen.has(cid)) {
-                queue.push(cid);
-              }
-            }
-          }
-        }
-      }
-      shiftGroupCache.set(rootId, seen);
-      return seen;
-    }
-
-    function shiftGroup(ids, delta) {
-      for (const id of ids) {
-        const pos = positions.get(id);
-        if (pos) pos.x += delta;
-      }
-    }
-
     let changed = true;
     let iterations = 0;
     while (changed && iterations < 20) {
@@ -2850,13 +2795,80 @@ function layoutTree() {
           const prevRight = prevPos.x + CARD_W;
           const curLeft = curPos.x;
           if (curLeft < prevRight + MIN_GAP) {
-            // Overlap: shift current card AND its entire descendant subtree right
+            // Overlap: shift current card right
             const shift = (prevRight + MIN_GAP) - curLeft;
-            const group = getShiftGroup(ids[i]);
-            shiftGroup(group, shift);
+            curPos.x += shift;
             changed = true;
           }
         }
+      }
+    }
+
+    // ── GAP CLOSING PASS ──
+    // After collision resolution, parents may have been shifted right while their
+    // children stayed in place, creating gaps. For each parent-child pair where
+    // the child is at the next generation down, check if the child can be shifted
+    // right to close the gap without overlapping its neighbour.
+    // Only shift children that are far left of where their parent's connector
+    // midpoint lands, and only if the shift doesn't cause a new overlap.
+    function canShiftRight(id, delta) {
+      const pos = positions.get(id);
+      if (!pos) return false;
+      const newX = pos.x + delta;
+      const yKey = Math.round(pos.y / GEN_HEIGHT) * GEN_HEIGHT;
+      for (const [otherId, otherPos] of positions) {
+        if (otherId === id) continue;
+        if (Math.abs(otherPos.y - pos.y) > GEN_HEIGHT / 2) continue;
+        // Check if new position overlaps with this card
+        const otherLeft = otherPos.x;
+        const otherRight = otherPos.x + CARD_W;
+        if (newX < otherRight + MIN_GAP && newX + CARD_W > otherLeft - MIN_GAP) {
+          return false;
+        }
+      }
+      return true;
+    }
+
+    // Process children depth-first (youngest generation first, working up)
+    // so that shifting a child doesn't break a grandchild's alignment
+    const childToParents = new Map();
+    for (const p of viewPeople) {
+      if (p.children) {
+        for (const cid of p.children) {
+          if (!childToParents.has(cid)) childToParents.set(cid, []);
+          childToParents.get(cid).push(p.id);
+        }
+      }
+    }
+
+    // Sort by generation descending (youngest first)
+    const sortedChildren = [...childToParents.keys()].sort((a, b) => {
+      const pa = positions.get(a), pb = positions.get(b);
+      return (pb?.y || 0) - (pa?.y || 0);
+    });
+
+    for (const cid of sortedChildren) {
+      const childPos = positions.get(cid);
+      if (!childPos) continue;
+      const parentIds = childToParents.get(cid);
+      if (!parentIds || parentIds.length === 0) continue;
+
+      // Get parent midpoint X
+      let parentMidX = 0, count = 0;
+      for (const pid of parentIds) {
+        const ppos = positions.get(pid);
+        if (ppos) { parentMidX += ppos.x + CARD_W / 2; count++; }
+      }
+      if (count === 0) continue;
+      parentMidX /= count;
+
+      const childCenterX = childPos.x + CARD_W / 2;
+      const gap = parentMidX - childCenterX;
+
+      // If child is more than one card-width left of parent midpoint, try to shift right
+      // Only shift if it closes the gap without causing overlap
+      if (gap > CARD_W + CARD_GAP_X && canShiftRight(cid, gap / 2)) {
+        childPos.x += Math.round(gap / 2);
       }
     }
   }
