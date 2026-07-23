@@ -2582,6 +2582,71 @@ function layoutTree() {
     });
   }
 
+  // ── UNPLACED PARENT PASS ──
+  // Some people have no parents (root ancestors) but their children were
+  // already placed by the sibling cascade or multi-marriage passes. These
+  // people were never visited because layout only recurses downward from
+  // roots, not upward from placed children. Place them adjacent to their
+  // children at the correct parent Y level.
+  for (const p of viewPeople) {
+    if (visited.has(p.id)) continue;
+    // Check if this person has any placed children
+    const placedChildren = (p.children || []).filter(cid => viewSet.has(cid) && positions.has(cid));
+    if (placedChildren.length === 0) continue;
+
+    // Find the Y level one generation above the youngest child
+    let childMinY = Infinity, childCenterSum = 0, childCount = 0;
+    for (const cid of placedChildren) {
+      const cpos = positions.get(cid);
+      if (cpos.y < childMinY) childMinY = cpos.y;
+      childCenterSum += cpos.x + 90; // CARD_W/2 approx
+      childCount++;
+    }
+    const parentY = childMinY - GEN_HEIGHT;
+    const childCenterX = childCenterSum / childCount;
+
+    // Place this person (and spouse if any) centered above children
+    const hasSpouse = p.spouseId && viewSet.has(p.spouseId) && !visited.has(p.spouseId);
+    const coupleW = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+    const personX = Math.round(childCenterX - coupleW / 2);
+
+    // Male left, female right
+    let personOnLeft = true;
+    if (hasSpouse) {
+      const spouse = getP(p.spouseId);
+      if (spouse) {
+        if (p.sex === 'F' && spouse.sex === 'M') personOnLeft = false;
+        else if (p.sex === 'M' && spouse.sex === 'F') personOnLeft = true;
+        else personOnLeft = p.id < p.spouseId;
+      }
+    }
+
+    if (personOnLeft) {
+      positions.set(p.id, { x: personX, y: parentY });
+      if (hasSpouse) {
+        positions.set(p.spouseId, { x: personX + CARD_W + COUPLE_GAP, y: parentY });
+        visited.add(p.spouseId);
+        connections.push({ type: 'spouse', x1: personX + CARD_W, y1: parentY + CARD_H/2, x2: personX + CARD_W + COUPLE_GAP, y2: parentY + CARD_H/2 });
+      }
+    } else {
+      positions.set(p.id, { x: personX + CARD_W + COUPLE_GAP, y: parentY });
+      if (hasSpouse) {
+        positions.set(p.spouseId, { x: personX, y: parentY });
+        visited.add(p.spouseId);
+        connections.push({ type: 'spouse', x1: personX + CARD_W, y1: parentY + CARD_H/2, x2: personX + CARD_W + COUPLE_GAP, y2: parentY + CARD_H/2 });
+      }
+    }
+    visited.add(p.id);
+
+    // Connect to children
+    const parentMidX = positions.get(p.id).x + CARD_W / 2;
+    const parentY2 = parentY + CARD_H;
+    for (const cid of placedChildren) {
+      const cpos = positions.get(cid);
+      connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX: cpos.x + CARD_W/2, childY: cpos.y });
+    }
+  }
+
   // Layout any unplaced people (disconnected)
   for (const p of viewPeople) {
     if (!visited.has(p.id)) {
@@ -2950,14 +3015,17 @@ function layoutTree() {
     }
   }
 
-  // Normalize: shift all y values so minimum y is 160 (clears header banner with breathing room)
+  // Normalize: shift all y values so minimum y clears the header with breathing room.
+  // The tree-scroll container starts below the header (dynamic top), so we just
+  // need padding within the scroll container itself.
+  const Y_PADDING = 40; // breathing room above the first card
   let minY = Infinity;
   for (const [id, pos] of positions) {
     if (pos.y < minY) minY = pos.y;
   }
   let yShift = 0;
-  if (minY < 160) {
-    yShift = 160 - minY;
+  if (minY < Y_PADDING) {
+    yShift = Y_PADDING - minY;
     for (const [id, pos] of positions) {
       pos.y += yShift;
     }
@@ -5780,6 +5848,21 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
       });
     }, 100);
   }
+
+  // Dynamic header offset: measure actual header height and set tree-scroll top
+  // so cards never hide behind the banner. Runs once on load + on resize.
+  function syncHeaderOffset() {
+    var headerEl = document.querySelector('.header');
+    var scrollEl = document.getElementById('treeScroll');
+    if (!headerEl || !scrollEl) return;
+    var headerH = headerEl.offsetHeight;
+    scrollEl.style.top = headerH + 'px';
+  }
+  syncHeaderOffset();
+  window.addEventListener('resize', syncHeaderOffset);
+  // Also sync after fonts/Cinzel load (can change header height)
+  setTimeout(syncHeaderOffset, 200);
+  setTimeout(syncHeaderOffset, 1000);
 
   // Calculate header height to offset centering on mobile
   var headerEl = document.querySelector('.header');
