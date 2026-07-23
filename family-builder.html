@@ -821,7 +821,7 @@ if ('serviceWorker' in navigator) {
           <li><strong>Review.</strong> Large trees auto-focus on the most connected person. Tap any card to explore or edit.</li>
         </ol>
         <div style="margin:14px 0;text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-          <button onclick="document.getElementById('gedcomInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
+          <button onclick="toggleHelp(); document.getElementById('gedcomInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
           <button onclick="exportGedcom()" style="padding:10px 16px;border:2px solid #4a5a8a;border-radius:4px;background:#4a5a8a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">📤 Export GEDCOM</button>
         </div>
         <p style="font-style:italic;font-size:13px;">Export creates a standard <code>.ged</code> file that any genealogy software can read. Your data never leaves your device.</p>
