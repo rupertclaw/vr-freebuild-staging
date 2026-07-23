@@ -2303,13 +2303,28 @@ function layoutTree() {
       const personPos = positions.get(p.id);
       const spouseY = personPos.y;
 
-      // Place secondary spouse on the LEFT side to avoid crossing through primary spouse
-      // Primary spouse (spouseId) is already placed to the right by the main layout
+      // Place secondary spouse on the opposite side of any already-placed spouse.
+      // Check ALL families for an already-placed spouse, not just p.spouseId.
+      // This handles the case where the parser-assigned primary spouse (spouseId)
+      // is NOT the one placed by the ancestor layout (e.g. Margaret Fenwick's
+      // spouseId = Thomas Orchard, but Robert Alexander was placed by assignParents
+      // because he's Karen's father).
+      let placedSpousePos = null;
+      for (const otherFam of p.families) {
+        if (otherFam.spouseId === spouseId) continue; // skip the one we're placing
+        if (otherFam.spouseId && positions.has(otherFam.spouseId)) {
+          placedSpousePos = positions.get(otherFam.spouseId);
+          break;
+        }
+      }
+      // Fall back to p.spouseId if no other placed spouse found
+      if (!placedSpousePos && p.spouseId && p.spouseId !== spouseId) {
+        placedSpousePos = positions.get(p.spouseId);
+      }
+
       let spouseX;
-      // Check if primary spouse is to the right of person
-      const primarySpousePos = positions.get(p.spouseId);
-      if (primarySpousePos && primarySpousePos.x > personPos.x) {
-        // Primary is on right, place secondary on left
+      if (placedSpousePos && placedSpousePos.x > personPos.x) {
+        // Already-placed spouse is on right, place new spouse on left
         spouseX = personPos.x - CARD_W - COUPLE_GAP;
         // Ensure doesn't overlap with anything on the left
         if (spouseX < 0) {
@@ -2324,7 +2339,7 @@ function layoutTree() {
           }
         }
       } else {
-        // Primary is on left (or no primary), place secondary on right
+        // Already-placed spouse is on left (or no placed spouse), place new on right
         spouseX = personPos.x + CARD_W + COUPLE_GAP;
         const existingRight = getRightmostAt(spouseY, p.id);
         if (existingRight >= spouseX) {
