@@ -2849,11 +2849,31 @@ function layoutTree() {
 
       // Compute parent couple midpoint
       let parentMidX;
+      let recenterIds = parentIds; // which parents to move
       if (parentIds.length === 2) {
         const p1 = positions.get(parentIds[0]);
         const p2 = positions.get(parentIds[1]);
         if (!p1 || !p2) continue;
-        parentMidX = (p1.x + p2.x + CARD_W) / 2;
+        // If parents are far apart, they're from different marriages
+        // (e.g. one is the child's father, the other is the mother who
+        // remarried and is placed with her second husband). Only recenter
+        // the parent who is closest to the child to avoid dragging the
+        // far parent's subtree across the canvas.
+        const parentDist = Math.abs(p1.x - p2.x);
+        if (parentDist > CARD_W * 3) {
+          // Parents not a couple — recenter only the nearest parent
+          const d1 = Math.abs(p1.x - childPos.x);
+          const d2 = Math.abs(p2.x - childPos.x);
+          if (d1 <= d2) {
+            parentMidX = p1.x + CARD_W / 2;
+            recenterIds = [parentIds[0]];
+          } else {
+            parentMidX = p2.x + CARD_W / 2;
+            recenterIds = [parentIds[1]];
+          }
+        } else {
+          parentMidX = (p1.x + p2.x + CARD_W) / 2;
+        }
       } else {
         const p1 = positions.get(parentIds[0]);
         if (!p1) continue;
@@ -2867,7 +2887,7 @@ function layoutTree() {
 
       // Gather all ancestor subtree IDs to shift together
       const subtreeIds = new Set();
-      for (const pid of parentIds) {
+      for (const pid of recenterIds) {
         getSubtreeIds(pid, subtreeIds);
       }
       // Don't include the child itself
