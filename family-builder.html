@@ -3233,6 +3233,9 @@ function layoutTree() {
       } else if (conn.type === 'parent-child' || conn.type === 'parent-child-cross') {
         conn.midX += xShift; conn.parentY += yShift;
         conn.childX += xShift; conn.childY += yShift;
+      } else if (conn.type === 'parent-child-bus') {
+        conn.x1 += xShift; conn.x2 += xShift;
+        conn.y1 += yShift; conn.y2 += yShift;
       }
     }
   }
