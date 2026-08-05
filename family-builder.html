@@ -1389,8 +1389,8 @@ function parseGedcom(text) {
 // Mobile media query (max-width: 600px) shrinks cards to 120x34
 let CARD_W = window.innerWidth <= 600 ? 120 : 150;
 let CARD_H = window.innerWidth <= 600 ? 34 : 40;
-const CARD_GAP_X = 30;
-const CARD_GAP_Y = 80;
+const CARD_GAP_X = 40;
+const CARD_GAP_Y = 100;
 const COUPLE_GAP = 10;
 
 // Update card dimensions on viewport change
@@ -1583,8 +1583,11 @@ function layoutTree() {
   // ── STEP 1: Assign generations ──
   // BFS from root ancestors (no parents in view) downward.
   // gen = max(parents' gen) + 1
+  // Multiple passes to handle people whose parents are visited later.
   const genMap = new Map();
-  const visited = new Set();
+
+  // Initialize all to 0
+  for (const p of viewPeople) genMap.set(p.id, 0);
 
   // Find roots: people with no parents (or parents not in view)
   const roots = [];
@@ -1593,32 +1596,59 @@ function layoutTree() {
     if (!hasParentInView) roots.push(p.id);
   }
 
-  // BFS queue: [personId, gen]
-  const queue = roots.map(id => [id, 0]);
-  for (const [id] of queue) visited.add(id);
-
-  while (queue.length > 0) {
-    const [id, gen] = queue.shift();
-    genMap.set(id, Math.max(genMap.get(id) || 0, gen));
-    const person = getP(id);
-    if (!person) continue;
-    for (const cid of (person.children || [])) {
-      if (!viewSet.has(cid)) continue;
-      const childGen = (genMap.get(cid) || 0);
-      const newGen = gen + 1;
-      if (newGen > childGen) {
-        genMap.set(cid, newGen);
-      }
-      if (!visited.has(cid)) {
-        visited.add(cid);
-        queue.push([cid, genMap.get(cid) || newGen]);
+  // Multi-pass BFS: repeat until stable (handles cases where a child
+  // is visited before one of its parents, causing wrong gen)
+  let changed = true;
+  let passes = 0;
+  while (changed && passes < 10) {
+    changed = false;
+    passes++;
+    
+    // Reset: roots get gen 0
+    for (const rid of roots) genMap.set(rid, 0);
+    
+    // BFS from roots
+    const bfsQueue = [...roots];
+    const bfsVisited = new Set(roots);
+    
+    while (bfsQueue.length > 0) {
+      const id = bfsQueue.shift();
+      const person = getP(id);
+      if (!person) continue;
+      const myGen = genMap.get(id) || 0;
+      
+      for (const cid of (person.children || [])) {
+        if (!viewSet.has(cid)) continue;
+        // Child gen = max(current child gen, parent gen + 1)
+        const childGen = genMap.get(cid) || 0;
+        const newGen = myGen + 1;
+        if (newGen > childGen) {
+          genMap.set(cid, newGen);
+          changed = true;
+        }
+        if (!bfsVisited.has(cid)) {
+          bfsVisited.add(cid);
+          bfsQueue.push(cid);
+        }
       }
     }
-  }
-
-  // Anyone not visited (cycle or disconnected) gets gen 0
-  for (const p of viewPeople) {
-    if (!genMap.has(p.id)) genMap.set(p.id, 0);
+    
+    // Also check: anyone with parents in view should have gen = max(parents' gen) + 1
+    for (const p of viewPeople) {
+      if (!p.parents || p.parents.length === 0) continue;
+      const placedParents = p.parents.filter(pid => viewSet.has(pid));
+      if (placedParents.length === 0) continue;
+      let maxParentGen = -1;
+      for (const pid of placedParents) {
+        const pg = genMap.get(pid) || 0;
+        if (pg > maxParentGen) maxParentGen = pg;
+      }
+      const expectedGen = maxParentGen + 1;
+      if (expectedGen > (genMap.get(p.id) || 0)) {
+        genMap.set(p.id, expectedGen);
+        changed = true;
+      }
+    }
   }
 
   // Shift so 'me' card (focus person) is at gen 0
