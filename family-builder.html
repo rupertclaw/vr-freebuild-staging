@@ -3153,8 +3153,8 @@ function layoutTree() {
     // Bus Y: halfway between parents' bottom and children's top
     const childTopY = children[0].y;
     const busY = parentY + (childTopY - parentY) / 2;
-    const leftX = children[0].x;
-    const rightX = children[children.length - 1].x;
+    let leftX = children[0].x;
+    let rightX = children[children.length - 1].x;
 
     if (children.length === 1) {
       // Single child: straight line from parent midpoint to child
@@ -3166,13 +3166,16 @@ function layoutTree() {
       });
     } else {
       // Multiple children: vertical stem from parent to bus, horizontal bus, vertical drops
+      // Extend bus to include parent stem X so the stem connects to the bus
+      if (parentMidX < leftX) leftX = parentMidX;
+      if (parentMidX > rightX) rightX = parentMidX;
       // 1. Vertical stem from parent down to bus level
       connections.push({
         type: 'parent-child',
         midX: parentMidX, parentY: parentY,
         childX: parentMidX, childY: busY  // straight down to bus
       });
-      // 2. Horizontal bus line across all children
+      // 2. Horizontal bus line across all children (extended to reach parent stem)
       connections.push({
         type: 'parent-child-bus',
         x1: leftX, y1: busY,
