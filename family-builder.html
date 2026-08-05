@@ -711,8 +711,8 @@ if ('serviceWorker' in navigator) {
         <button class="help-btn" onclick="fitToScreen()" title="Fit to screen">Fit</button>
       </div>
       <div class="view-toggle">
-        <button id="viewModeFocus" class="active" onclick="setViewMode('focus')">Focus</button>
-        <button id="viewModeOverview" onclick="setViewMode('overview')">Overview</button>
+        <button id="viewModeFocus" onclick="setViewMode('focus')">Focus</button>
+        <button id="viewModeOverview" class="active" onclick="setViewMode('overview')">Overview</button>
       </div>
       <div class="header-stats">
         <div class="header-stat">
@@ -1150,7 +1150,7 @@ let zoom = 0.75;
 let selectedPersonId = null;
 let focusPersonId = null;
 let viewHistory = [];
-let viewMode = 'focus'; // 'focus' (default) or 'overview'
+let viewMode = 'overview'; // 'focus' or 'overview'
 
 // ═══════════════════════════════════════════════════════════════
 // GEDCOM PARSER — copied from data-tree.html
