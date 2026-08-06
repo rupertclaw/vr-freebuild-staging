@@ -1389,8 +1389,8 @@ function parseGedcom(text) {
 // Mobile media query (max-width: 600px) shrinks cards to 120x34
 let CARD_W = window.innerWidth <= 600 ? 120 : 150;
 let CARD_H = window.innerWidth <= 600 ? 34 : 40;
-const CARD_GAP_X = 40;
-const CARD_GAP_Y = 100;
+const CARD_GAP_X = 50;
+const CARD_GAP_Y = 120;
 const COUPLE_GAP = 10;
 
 // Update card dimensions on viewport change
@@ -1590,11 +1590,62 @@ function layoutTree() {
   for (const p of viewPeople) genMap.set(p.id, 0);
 
   // Find roots: people with no parents (or parents not in view)
-  const roots = [];
+  // But DON'T treat a married-in spouse as a root if their partner has parents
+  // (they should be placed next to their spouse, not as an independent subtree)
+  // Also: if both spouses have no parents, only add ONE as root (they'll be placed together)
+  const rootSet = new Set();
   for (const p of viewPeople) {
     const hasParentInView = (p.parents || []).some(pid => viewSet.has(pid));
-    if (!hasParentInView) roots.push(p.id);
+    if (hasParentInView) continue; // has parents, not a root
+
+    // Check if spouse has parents in view — if so, we'll be placed via spouse
+    if (p.spouseId && viewSet.has(p.spouseId)) {
+      const spouse = getP(p.spouseId);
+      const spouseHasParents = spouse && (spouse.parents || []).some(pid => viewSet.has(pid));
+      if (spouseHasParents) continue; // spouse will pull us in, skip as root
+    }
+
+    // Also check families array for any spouse with parents in view
+    let placedViaFamily = false;
+    if (p.families) {
+      for (const fam of p.families) {
+        if (!viewSet.has(fam.spouseId)) continue;
+        const spouse = getP(fam.spouseId);
+        if (spouse && (spouse.parents || []).some(pid => viewSet.has(pid))) {
+          placedViaFamily = true;
+          break;
+        }
+      }
+    }
+    if (placedViaFamily) continue;
+
+    // Both spouses have no parents: only add the one with the lower id as root
+    // (the other will be placed alongside via placePerson's spouse logic)
+    if (p.spouseId && viewSet.has(p.spouseId) && p.id > p.spouseId) {
+      // Check if spouse also has no parents (otherwise spouse is already filtered above)
+      const spouse = getP(p.spouseId);
+      if (spouse && !(spouse.parents || []).some(pid => viewSet.has(pid))) {
+        continue; // spouse is the root, we'll be placed with them
+      }
+    }
+    // Same check for families: if any spouse with no parents has a lower id, skip
+    if (p.families) {
+      let skipToSpouse = false;
+      for (const fam of p.families) {
+        if (!viewSet.has(fam.spouseId)) continue;
+        if (fam.spouseId >= p.id) continue;
+        const spouse = getP(fam.spouseId);
+        if (spouse && !(spouse.parents || []).some(pid => viewSet.has(pid))) {
+          // This spouse with lower id is also a root candidate — let them be the root
+          if (rootSet.has(fam.spouseId)) { skipToSpouse = true; break; }
+        }
+      }
+      if (skipToSpouse) continue;
+    }
+
+    rootSet.add(p.id);
   }
+  const roots = [...rootSet];
 
   // Multi-pass BFS: repeat until stable (handles cases where a child
   // is visited before one of its parents, causing wrong gen)
@@ -1616,6 +1667,35 @@ function layoutTree() {
       const person = getP(id);
       if (!person) continue;
       const myGen = genMap.get(id) || 0;
+      
+      // Propagate gen to spouse (married-in spouses get same gen as partner)
+      if (person.spouseId && viewSet.has(person.spouseId)) {
+        const spouseGen = genMap.get(person.spouseId) || 0;
+        if (myGen > spouseGen) {
+          genMap.set(person.spouseId, myGen);
+          changed = true;
+        }
+        if (!bfsVisited.has(person.spouseId)) {
+          bfsVisited.add(person.spouseId);
+          bfsQueue.push(person.spouseId);
+        }
+      }
+      // Also check families array for additional spouses
+      if (person.families) {
+        for (const fam of person.families) {
+          if (!viewSet.has(fam.spouseId)) continue;
+          if (fam.spouseId === person.spouseId) continue; // already handled
+          const sGen = genMap.get(fam.spouseId) || 0;
+          if (myGen > sGen) {
+            genMap.set(fam.spouseId, myGen);
+            changed = true;
+          }
+          if (!bfsVisited.has(fam.spouseId)) {
+            bfsVisited.add(fam.spouseId);
+            bfsQueue.push(fam.spouseId);
+          }
+        }
+      }
       
       for (const cid of (person.children || [])) {
         if (!viewSet.has(cid)) continue;
@@ -1646,6 +1726,19 @@ function layoutTree() {
       const expectedGen = maxParentGen + 1;
       if (expectedGen > (genMap.get(p.id) || 0)) {
         genMap.set(p.id, expectedGen);
+        changed = true;
+      }
+    }
+    
+    // Also propagate: if a person has a gen, their spouse should match (if spouse has no parents)
+    for (const p of viewPeople) {
+      if (!p.spouseId || !viewSet.has(p.spouseId)) continue;
+      const myGen = genMap.get(p.id) || 0;
+      const spouseGen = genMap.get(p.spouseId) || 0;
+      const spouse = getP(p.spouseId);
+      const spouseHasParents = spouse && (spouse.parents || []).some(pid => viewSet.has(pid));
+      if (!spouseHasParents && myGen > spouseGen) {
+        genMap.set(p.spouseId, myGen);
         changed = true;
       }
     }
@@ -2027,6 +2120,15 @@ function layoutTree() {
     }
   }
 
+  // ── STEP 5.5: Y-correction pass ──
+  // After all placement, ensure every person's Y matches their genMap generation.
+  // This must happen BEFORE drawing connectors so they use the correct Y values.
+  for (const [id, pos] of positions) {
+    const gen = genMap.get(id) - minGen;
+    const correctY = 50 + gen * GEN_HEIGHT;
+    pos.y = correctY;
+  }
+
   // ── STEP 6: Draw cross-block connectors ──
   // After all placement, check for parent-child relationships where
   // both cards are positioned but no connector was drawn (because they
@@ -2060,7 +2162,7 @@ function layoutTree() {
     }
   }
 
-  // ── STEP 7: Draw spouse connectors for couples placed at same Y ──
+  // ── STEP 7: Draw spouse connectors for all couples ──
   // Check all couples and draw spouse lines if not already drawn
   const spouseLines = new Set();
   for (const c of connections) {
@@ -2069,36 +2171,52 @@ function layoutTree() {
       spouseLines.add(key);
     }
   }
+  // Collect all unique couples from families arrays
+  const couples = new Set();
   for (const p of viewPeople) {
-    if (!p.spouseId || !viewSet.has(p.spouseId)) continue;
-    if (p.id >= p.spouseId) continue; // avoid duplicates
-    const pos1 = positions.get(p.id);
-    const pos2 = positions.get(p.spouseId);
+    if (!p.families) continue;
+    for (const fam of p.families) {
+      if (!viewSet.has(fam.spouseId)) continue;
+      const key = Math.min(p.id, fam.spouseId) + '-' + Math.max(p.id, fam.spouseId);
+      couples.add(key);
+    }
+    // Also check primary spouseId
+    if (p.spouseId && viewSet.has(p.spouseId)) {
+      const key = Math.min(p.id, p.spouseId) + '-' + Math.max(p.id, p.spouseId);
+      couples.add(key);
+    }
+  }
+  for (const coupleKey of couples) {
+    const [id1, id2] = coupleKey.split('-').map(Number);
+    const pos1 = positions.get(id1);
+    const pos2 = positions.get(id2);
     if (!pos1 || !pos2) continue;
-    if (Math.abs(pos1.y - pos2.y) > 2) continue; // only same-Y couples
+    // Draw spouse line even at different Y levels (for cousin marriages)
     const leftX = Math.min(pos1.x, pos2.x) + CARD_W;
     const rightX = Math.max(pos1.x, pos2.x);
-    const key = Math.min(leftX, rightX) + ',' + (pos1.y + CARD_H / 2);
+    const midY1 = pos1.y + CARD_H / 2;
+    const midY2 = pos2.y + CARD_H / 2;
+    const key = Math.min(leftX, rightX) + ',' + midY1;
     if (spouseLines.has(key)) continue;
-    connections.push({
-      type: 'spouse',
-      x1: leftX, y1: pos1.y + CARD_H / 2,
-      x2: rightX, y2: pos1.y + CARD_H / 2
-    });
+    if (Math.abs(pos1.y - pos2.y) < 2) {
+      // Same level: straight horizontal line
+      connections.push({
+        type: 'spouse',
+        x1: leftX, y1: midY1,
+        x2: rightX, y2: midY1
+      });
+    } else {
+      // Different levels: L-shaped line (horizontal then vertical)
+      connections.push({
+        type: 'spouse',
+        x1: leftX, y1: midY1,
+        x2: rightX, y2: midY2
+      });
+    }
     spouseLines.add(key);
   }
 
-  // ── STEP 8: Y-correction pass ──
-  // After all placement, ensure every person's Y matches their genMap generation.
-  // This fixes cases where a person was placed as a spouse at the wrong Y level
-  // (e.g. pedigree collapse or cousin marriages where spouse has different ancestors).
-  for (const [id, pos] of positions) {
-    const gen = genMap.get(id) - minGen;
-    const correctY = 50 + gen * GEN_HEIGHT;
-    if (pos.y !== correctY) {
-      pos.y = correctY;
-    }
-  }
+  // ── STEP 8: (Y-correction moved to Step 5.5, before connectors) ──
 
   // ── STEP 9: Normalize positions ──
   let minX = Infinity, minY = Infinity;
