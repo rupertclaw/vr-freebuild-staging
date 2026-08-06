@@ -1847,14 +1847,19 @@ function layoutTree() {
 
     if (hasSpouse) {
       visitedSet.add(person.spouseId);
-      positions.set(person.spouseId, { x: spouseX, y });
-      // Spouse line
+      // Spouse gets their own Y from genMap (may differ in pedigree collapse / cousin marriage cases)
+      const spouseGen = genMap.get(person.spouseId) - minGen;
+      const spouseY = 50 + spouseGen * GEN_HEIGHT;
+      positions.set(person.spouseId, { x: spouseX, y: spouseY });
+      // Spouse line — connect at midpoint between the two Y values
+      const lineY1 = y + CARD_H / 2;
+      const lineY2 = spouseY + CARD_H / 2;
       connections.push({
         type: 'spouse',
         x1: Math.min(personX, spouseX) + CARD_W,
-        y1: y + CARD_H / 2,
+        y1: (lineY1 + lineY2) / 2,
         x2: Math.max(personX, spouseX),
-        y2: y + CARD_H / 2
+        y2: (lineY1 + lineY2) / 2
       });
     }
 
@@ -2083,7 +2088,19 @@ function layoutTree() {
     spouseLines.add(key);
   }
 
-  // ── STEP 8: Normalize positions ──
+  // ── STEP 8: Y-correction pass ──
+  // After all placement, ensure every person's Y matches their genMap generation.
+  // This fixes cases where a person was placed as a spouse at the wrong Y level
+  // (e.g. pedigree collapse or cousin marriages where spouse has different ancestors).
+  for (const [id, pos] of positions) {
+    const gen = genMap.get(id) - minGen;
+    const correctY = 50 + gen * GEN_HEIGHT;
+    if (pos.y !== correctY) {
+      pos.y = correctY;
+    }
+  }
+
+  // ── STEP 9: Normalize positions ──
   let minX = Infinity, minY = Infinity;
   let maxX = -Infinity, maxY = -Infinity;
   for (const [id, pos] of positions) {
