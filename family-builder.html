@@ -1908,7 +1908,9 @@ function layoutTree() {
 
     // Determine if spouse should be placed at this level
     const hasSpouse = person.spouseId && viewSet.has(person.spouseId) && !visitedSet.has(person.spouseId);
-    const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+    // Check if spouse was already placed (by a different root subtree)
+    const spouseAlreadyPlaced = person.spouseId && viewSet.has(person.spouseId) && visitedSet.has(person.spouseId) && positions.has(person.spouseId);
+    const coupleWidth = (hasSpouse || spouseAlreadyPlaced) ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
 
     // Compute my subtree width
     const myWidth = computeWidth(personId);
@@ -1968,7 +1970,7 @@ function layoutTree() {
       }
     }
     // Also add children from spouse
-    if (hasSpouse) {
+    if (hasSpouse || spouseAlreadyPlaced) {
       for (const [, fam] of families) {
         if (fam.parents.includes(person.spouseId)) {
           for (const cid of fam.children) allChildren.add(cid);
@@ -2000,6 +2002,12 @@ function layoutTree() {
         if (motherIsPerson) parentMidX = personX + CARD_W / 2;
         else if (motherIsSpouse) parentMidX = spouseX + CARD_W / 2;
         else parentMidX = (personX + spouseX + CARD_W) / 2;
+      } else if (spouseAlreadyPlaced) {
+        // Spouse was already placed elsewhere; use midpoint between this person and spouse
+        const spousePos = positions.get(person.spouseId);
+        const spouseMidX = spousePos.x + CARD_W / 2;
+        const personMidX = personX + CARD_W / 2;
+        parentMidX = (personMidX + spouseMidX) / 2;
       } else {
         parentMidX = personX + CARD_W / 2;
       }
