@@ -1910,7 +1910,9 @@ function layoutTree() {
     const hasSpouse = person.spouseId && viewSet.has(person.spouseId) && !visitedSet.has(person.spouseId);
     // Check if spouse was already placed (by a different root subtree)
     const spouseAlreadyPlaced = person.spouseId && viewSet.has(person.spouseId) && visitedSet.has(person.spouseId) && positions.has(person.spouseId);
-    const coupleWidth = (hasSpouse || spouseAlreadyPlaced) ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+    // Only reserve couple width if spouse is actually next to this person
+    // (not placed far away by a different subtree)
+    const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
 
     // Compute my subtree width
     const myWidth = computeWidth(personId);
@@ -2003,11 +2005,20 @@ function layoutTree() {
         else if (motherIsSpouse) parentMidX = spouseX + CARD_W / 2;
         else parentMidX = (personX + spouseX + CARD_W) / 2;
       } else if (spouseAlreadyPlaced) {
-        // Spouse was already placed elsewhere; use midpoint between this person and spouse
+        // Spouse was already placed elsewhere. If they're close, use midpoint.
+        // If they're far apart (different subtree), use this person's center
+        // so the stem connects to THIS card, not empty space.
         const spousePos = positions.get(person.spouseId);
         const spouseMidX = spousePos.x + CARD_W / 2;
         const personMidX = personX + CARD_W / 2;
-        parentMidX = (personMidX + spouseMidX) / 2;
+        const xDist = Math.abs(personMidX - spouseMidX);
+        if (xDist <= CARD_W + COUPLE_GAP + 50) {
+          // Spouses are adjacent or close — use midpoint
+          parentMidX = (personMidX + spouseMidX) / 2;
+        } else {
+          // Spouses are far apart (different subtree) — stem from this person only
+          parentMidX = personMidX;
+        }
       } else {
         parentMidX = personX + CARD_W / 2;
       }
@@ -2133,11 +2144,25 @@ function layoutTree() {
 
   // ── STEP 5.5: Y-correction pass ──
   // After all placement, ensure every person's Y matches their genMap generation.
+  // But keep spouses at the same Y — use the person's gen (not the spouse's) for both.
   // This must happen BEFORE drawing connectors so they use the correct Y values.
   for (const [id, pos] of positions) {
     const gen = genMap.get(id) - minGen;
     const correctY = 50 + gen * GEN_HEIGHT;
     pos.y = correctY;
+  }
+  // Spouse Y alignment: if two spouses ended up at different Y values,
+  // move the spouse to match the person who was placed first (the "primary")
+  for (const p of viewPeople) {
+    if (!p.spouseId || !viewSet.has(p.spouseId)) continue;
+    const myPos = positions.get(p.id);
+    const spPos = positions.get(p.spouseId);
+    if (!myPos || !spPos) continue;
+    if (Math.abs(myPos.y - spPos.y) > 2) {
+      // Align spouse to the lower gen (higher up = smaller Y)
+      spPos.y = Math.min(myPos.y, spPos.y);
+      myPos.y = Math.min(myPos.y, spPos.y);
+    }
   }
 
   // ── STEP 6: Draw cross-block connectors ──
