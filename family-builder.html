@@ -1806,7 +1806,7 @@ function layoutTree() {
     if (computingWidth.has(personId)) return 0; // cycle guard
     computingWidth.add(personId);
 
-    // Couple width
+    // Couple width (this person + their spouse)
     const hasSpouse = person.spouseId && viewSet.has(person.spouseId);
     const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
 
@@ -1823,6 +1823,8 @@ function layoutTree() {
     if (childCount > 0) childrenTotal -= CARD_GAP_X; // remove trailing gap
 
     computingWidth.delete(personId);
+    // Width = max(coupleWidth, childrenTotal)
+    // But ensure children width includes the spouse-to-child gap
     const w = Math.max(coupleWidth, childrenTotal);
     widthCache.set(personId, w);
     return w;
@@ -1900,7 +1902,8 @@ function layoutTree() {
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return 0;
 
-    const gen = genMap.get(personId) - minGen;
+    // Use genMap directly for Y (not local computation) to match Y-correction pass
+    const gen = (genMap.get(personId) || 0) - minGen;
     const y = 50 + gen * GEN_HEIGHT;
 
     // Determine if spouse should be placed at this level
@@ -1940,8 +1943,8 @@ function layoutTree() {
 
     if (hasSpouse) {
       visitedSet.add(person.spouseId);
-      // Spouse gets their own Y from genMap (may differ in pedigree collapse / cousin marriage cases)
-      const spouseGen = genMap.get(person.spouseId) - minGen;
+      // Spouse gets their own Y from genMap
+      const spouseGen = (genMap.get(person.spouseId) || 0) - minGen;
       const spouseY = 50 + spouseGen * GEN_HEIGHT;
       positions.set(person.spouseId, { x: spouseX, y: spouseY });
       // Spouse line — connect at midpoint between the two Y values
