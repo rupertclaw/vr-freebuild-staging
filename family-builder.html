@@ -1890,16 +1890,17 @@ function layoutTree() {
   }
 
   // Assign positions recursively (top-down, centered under parents)
-  function assignPositions(personId, partnerId, leftX, visited) {
-    if (visited.has(personId)) return;
+  function assignPositions(personId, partnerId, leftX, visited, force) {
+    if (!force && visited.has(personId)) return;
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
     visited.add(personId);
 
     const gen = genMap.get(personId);
     const y = 50 + gen * GEN_HEIGHT;
-    const hasSpouse = partnerId !== null && viewSet.has(partnerId) && !visited.has(partnerId) &&
-                      genMap.get(partnerId) === gen;
+    const hasSpouse = partnerId !== null && viewSet.has(partnerId) &&
+                      genMap.get(partnerId) === gen &&
+                      (force || !visited.has(partnerId));
     const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
 
     const myWidth = computeWidth(personId, partnerId);
@@ -1960,9 +1961,35 @@ function layoutTree() {
     }
   }
 
-  // Find roots: people with no parents in view
+  // Find roots: people with no parents in view.
+  // Skip people who are a secondary spouse of a multi-marriage person —
+  // they'll be placed by the multi-marriage pass next to their partner.
+  const secondarySpouses = new Set();
+  for (const p of viewPeople) {
+    if (!p.families || p.families.length <= 1) continue;
+    for (const fam of p.families) {
+      const sid = fam.spouseId;
+      if (sid && viewSet.has(sid) && sid !== p.spouseId) {
+        // This is a secondary spouse — only skip if they have no parents
+        // (if they have parents, they're part of a bloodline and should be
+        // placed by the subtree walk)
+        const sp = getP(sid);
+        if (sp && (!sp.parents || sp.parents.length === 0 || !sp.parents.some(pid => viewSet.has(pid)))) {
+          secondarySpouses.add(sid);
+        }
+      }
+    }
+  }
+
   const layoutRoots = viewPeople
-    .filter(p => !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid)))
+    .filter(p => {
+      if (!p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid))) {
+        // Is a root, but skip if they're a secondary spouse
+        if (secondarySpouses.has(p.id)) return false;
+        return true;
+      }
+      return false;
+    })
     .map(p => p.id);
 
   const visited = new Set();
@@ -2026,10 +2053,14 @@ function layoutTree() {
       });
 
       // Children of this secondary marriage
+      // Don't skip already-visited children — they may have been placed
+      // by the unpositioned pass. Re-place them here, near their parents.
       const familyChildren = (p.children || []).filter(cid => {
-        if (!viewSet.has(cid) || visited.has(cid)) return false;
+        if (!viewSet.has(cid)) return false;
         const child = getP(cid);
-        return child?.parents?.includes(p.id) && child.parents.includes(sid);
+        if (!child?.parents?.includes(p.id) || !child.parents.includes(sid)) return false;
+        // Skip if already placed by this marriage's pass (shouldn't happen, but guard)
+        return true;
       });
 
       if (familyChildren.length > 0) {
@@ -2058,7 +2089,7 @@ function layoutTree() {
             ? child.spouseId : null;
           const childCoupleW = cs ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
           const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
-          assignPositions(cid, cs, adjustedLeftX, visited);
+          assignPositions(cid, cs, adjustedLeftX, visited, true);
           const placedPos = positions.get(cid);
           const childX = (placedPos?.x || childLeftX) + CARD_W / 2;
           connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
