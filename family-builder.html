@@ -1680,12 +1680,38 @@ function layoutTree() {
         parentMidX = myX + CARD_W / 2;
       }
       const parentY = y + CARD_H;
-      for (const cid of childEntries) {
-        const childPos = positions.get(cid);
-        if (!childPos) continue;
-        const childX = childPos.x + CARD_W / 2;
-        const childY = childPos.y;
-        connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+      // ── Sibling bus: one stem from parent, one bus line, individual drops ──
+      if (childEntries.length === 1) {
+        const childPos = positions.get(childEntries[0]);
+        if (childPos) {
+          const childX = childPos.x + CARD_W / 2;
+          const childY = childPos.y;
+          connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
+        }
+      } else if (childEntries.length > 1) {
+        // Collect child positions
+        const childPositions = [];
+        for (const cid of childEntries) {
+          const childPos = positions.get(cid);
+          if (childPos) childPositions.push({ x: childPos.x + CARD_W / 2, y: childPos.y });
+        }
+        if (childPositions.length > 0) {
+          // Bus Y: halfway between parent bottom and first child top
+          const minChildY = Math.min(...childPositions.map(c => c.y));
+          const busY = (parentY + minChildY) / 2;
+          // Stem: vertical from parent to bus
+          connections.push({ type: 'parent-child-bus', x1: parentMidX, y1: parentY, x2: parentMidX, y2: busY });
+          // Horizontal bus: from leftmost to rightmost child (clamped to parentMidX range)
+          const minChildX = Math.min(...childPositions.map(c => c.x));
+          const maxChildX = Math.max(...childPositions.map(c => c.x));
+          const busLeft = Math.min(minChildX, parentMidX);
+          const busRight = Math.max(maxChildX, parentMidX);
+          connections.push({ type: 'parent-child-bus', x1: busLeft, y1: busY, x2: busRight, y2: busY });
+          // Individual drops: bus to each child top
+          for (const cp of childPositions) {
+            connections.push({ type: 'parent-child-bus', x1: cp.x, y1: busY, x2: cp.x, y2: cp.y });
+          }
+        }
       }
     }
 
@@ -1909,18 +1935,30 @@ function layoutTree() {
             const cid = familyChildren[i];
             const cw = childWidths[i];
             const child = getP(cid);
-            // Calculate the assignPositions leftX so the child CARD lands at childLeftX
-            // assignPositions does: myX = (leftX + myWidth/2) - coupleWidth/2
-            // We want: myX = childLeftX
-            // So: leftX = childLeftX + coupleWidth/2 - myWidth/2
             const childHasSpouse = child?.spouseId && viewSet.has(child.spouseId);
             const childCoupleW = childHasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
             const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
             assignPositions(cid, adjustedLeftX, childDepth, visited, true);
-            const placed = positions.get(cid);
-            const childX = (placed?.x || childLeftX) + CARD_W / 2;
-            connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
             childLeftX += cw + CARD_GAP_X;
+          }
+          // Sibling bus for multi-marriage children (LEFT)
+          const childPositions = [];
+          for (const cid of familyChildren) {
+            const cp = positions.get(cid);
+            if (cp) childPositions.push({ x: cp.x + CARD_W / 2, y: cp.y });
+          }
+          if (childPositions.length === 1) {
+            connections.push({ type: 'parent-child', midX: motherX, parentY, childX: childPositions[0].x, childY: childPositions[0].y });
+          } else if (childPositions.length > 1) {
+            const minChildY = Math.min(...childPositions.map(c => c.y));
+            const busY = (parentY + minChildY) / 2;
+            connections.push({ type: 'parent-child-bus', x1: motherX, y1: parentY, x2: motherX, y2: busY });
+            const minChildX = Math.min(...childPositions.map(c => c.x));
+            const maxChildX = Math.max(...childPositions.map(c => c.x));
+            connections.push({ type: 'parent-child-bus', x1: Math.min(minChildX, motherX), y1: busY, x2: Math.max(maxChildX, motherX), y2: busY });
+            for (const cp of childPositions) {
+              connections.push({ type: 'parent-child-bus', x1: cp.x, y1: busY, x2: cp.x, y2: cp.y });
+            }
           }
         } else {
           // Secondary family on RIGHT — children go RIGHT of Rose's children
@@ -1945,10 +1983,26 @@ function layoutTree() {
             const childCoupleW = childHasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
             const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
             assignPositions(cid, adjustedLeftX, childDepth, visited, true);
-            const placed = positions.get(cid);
-            const childX = (placed?.x || childLeftX) + CARD_W / 2;
-            connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
             childLeftX += cw + CARD_GAP_X;
+          }
+          // Sibling bus for multi-marriage children (RIGHT)
+          const childPositionsR = [];
+          for (const cid of familyChildren) {
+            const cp = positions.get(cid);
+            if (cp) childPositionsR.push({ x: cp.x + CARD_W / 2, y: cp.y });
+          }
+          if (childPositionsR.length === 1) {
+            connections.push({ type: 'parent-child', midX: motherX, parentY, childX: childPositionsR[0].x, childY: childPositionsR[0].y });
+          } else if (childPositionsR.length > 1) {
+            const minChildY = Math.min(...childPositionsR.map(c => c.y));
+            const busY = (parentY + minChildY) / 2;
+            connections.push({ type: 'parent-child-bus', x1: motherX, y1: parentY, x2: motherX, y2: busY });
+            const minChildX = Math.min(...childPositionsR.map(c => c.x));
+            const maxChildX = Math.max(...childPositionsR.map(c => c.x));
+            connections.push({ type: 'parent-child-bus', x1: Math.min(minChildX, motherX), y1: busY, x2: Math.max(maxChildX, motherX), y2: busY });
+            for (const cp of childPositionsR) {
+              connections.push({ type: 'parent-child-bus', x1: cp.x, y1: busY, x2: cp.x, y2: cp.y });
+            }
           }
         }
       }
