@@ -1884,20 +1884,8 @@ function layoutTree() {
         const SEPARATOR_GAP = CARD_GAP_X * 3; // 90px gap between the two groups
 
         if (spouseX < personPos.x) {
-          // Secondary family on LEFT — children go LEFT of Rose's children
-          let leftmostAtChildY = Infinity;
-          for (const [id, pos] of positions) {
-            if (id === p.id || id === spouseId) continue;
-            if (Math.abs(pos.y - childY) < GEN_HEIGHT / 2) {
-              if (pos.x < leftmostAtChildY) leftmostAtChildY = pos.x;
-            }
-          }
-          let childLeftX;
-          if (leftmostAtChildY !== Infinity) {
-            childLeftX = leftmostAtChildY - totalW - SEPARATOR_GAP;
-          } else {
-            childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
-          }
+          // Secondary family on LEFT — center children below the secondary spouse
+          let childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
           // DON'T clamp to 0 — let cards go negative X; normalize step at end shifts everything right
 
           for (let i = 0; i < familyChildren.length; i++) {
@@ -1918,19 +1906,8 @@ function layoutTree() {
             childLeftX += cw + CARD_GAP_X;
           }
         } else {
-          // Secondary family on RIGHT — children go RIGHT of Rose's children
-          let rightmostAtChildY = 0;
-          for (const [id, pos] of positions) {
-            if (id === p.id || id === spouseId) continue;
-            if (Math.abs(pos.y - childY) < GEN_HEIGHT / 2) {
-              const right = pos.x + CARD_W;
-              if (right > rightmostAtChildY) rightmostAtChildY = right;
-            }
-          }
+          // Secondary family on RIGHT — center children below the secondary spouse
           let childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
-          if (rightmostAtChildY >= childLeftX) {
-            childLeftX = rightmostAtChildY + SEPARATOR_GAP;
-          }
 
           for (let i = 0; i < familyChildren.length; i++) {
             const cid = familyChildren[i];
