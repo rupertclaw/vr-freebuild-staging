@@ -1807,7 +1807,11 @@ function layoutTree() {
   // ── Resolve overlaps for secondary marriage children ──
   // After placing children, check if they overlap with existing cards at the
   // same Y level. If so, find the nearest clear gap and shift the children there.
-  function resolveChildOverlaps(childIds, positions, childY, cardW, gapX, getP) {
+  // targetX = the secondary spouse's X center — we want children near their parent,
+  //           not near wherever the main layout walk happened to dump them.
+  // separatorGap = minimum gap to keep between these children and the primary
+  //                 family's children (visual separation between marriages).
+  function resolveChildOverlaps(childIds, positions, childY, cardW, gapX, getP, targetX, separatorGap) {
     // Collect all cards at this Y level (excluding our children)
     const occupants = [];
     for (const [id, pos] of positions) {
@@ -1826,51 +1830,52 @@ function layoutTree() {
 
     if (ourChildren.length === 0) return;
 
-    // Check if any of our children overlap with occupants
-    let hasOverlap = false;
+    // Check if any of our children overlap with occupants OR are within separatorGap
+    let needsShift = false;
+    const sepGap = separatorGap || 0;
     for (const child of ourChildren) {
       for (const occ of occupants) {
-        if (child.x < occ.right + gapX && child.right > occ.x - gapX) {
-          hasOverlap = true;
+        if (child.x < occ.right + sepGap && child.right > occ.x - sepGap) {
+          needsShift = true;
           break;
         }
       }
-      if (hasOverlap) break;
+      if (needsShift) break;
     }
-    if (!hasOverlap) return;
+    if (!needsShift) return;
 
-    // Find the nearest clear gap that fits all children
+    // Find the nearest clear gap that fits all children, targeting the secondary spouse
     const totalW = ourChildren.length * cardW + (ourChildren.length - 1) * gapX;
-    const childCenter = (ourChildren[0].x + ourChildren[ourChildren.length - 1].right) / 2;
+    const anchor = targetX || (ourChildren[0].x + ourChildren[ourChildren.length - 1].right) / 2;
 
-    // Build list of gaps between occupants
+    // Build list of gaps between occupants (expanded by separatorGap on each side)
     const gaps = [];
     if (occupants.length === 0) {
-      // No occupants, no overlap possible
-      return;
+      return; // No occupants, no overlap possible
     }
     // Gap before first occupant
-    if (occupants[0].x > totalW + gapX) {
-      gaps.push({ x: 0, w: occupants[0].x - gapX });
+    const firstLeft = occupants[0].x - sepGap;
+    if (firstLeft > totalW + gapX) {
+      gaps.push({ x: 0, w: firstLeft - gapX });
     }
     // Gaps between occupants
     for (let i = 0; i < occupants.length - 1; i++) {
-      const gapStart = occupants[i].right + gapX;
-      const gapEnd = occupants[i + 1].x - gapX;
+      const gapStart = occupants[i].right + sepGap + gapX;
+      const gapEnd = occupants[i + 1].x - sepGap - gapX;
       const gapW = gapEnd - gapStart;
       if (gapW >= totalW) {
         gaps.push({ x: gapStart, w: gapW });
       }
     }
     // Gap after last occupant
-    gaps.push({ x: occupants[occupants.length - 1].right + gapX, w: Infinity });
+    gaps.push({ x: occupants[occupants.length - 1].right + sepGap + gapX, w: Infinity });
 
-    // Find the gap closest to the children's current center
+    // Find the gap closest to the anchor (secondary spouse position)
     let bestGap = gaps[0];
-    let bestDist = Math.abs((bestGap.x + bestGap.w / 2) - childCenter);
+    let bestDist = Math.abs((bestGap.x + bestGap.w / 2) - anchor);
     for (const gap of gaps) {
       const gapCenter = gap.x + Math.min(gap.w, totalW) / 2;
-      const dist = Math.abs(gapCenter - childCenter);
+      const dist = Math.abs(gapCenter - anchor);
       if (dist < bestDist) {
         bestDist = dist;
         bestGap = gap;
@@ -1987,7 +1992,8 @@ function layoutTree() {
           }
 
           // ── Post-placement overlap check: shift children to nearest clear gap ──
-          resolveChildOverlaps(familyChildren, positions, childY, CARD_W, CARD_GAP_X, getP);
+          // Target: secondary spouse's X center. Separator: 3x card gap.
+          resolveChildOverlaps(familyChildren, positions, childY, CARD_W, CARD_GAP_X, getP, spouseX + CARD_W / 2, SEPARATOR_GAP);
         } else {
           // Secondary family on RIGHT — center children below the secondary spouse
           let childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
@@ -2007,7 +2013,7 @@ function layoutTree() {
           }
 
           // ── Post-placement overlap check: shift children to nearest clear gap ──
-          resolveChildOverlaps(familyChildren, positions, childY, CARD_W, CARD_GAP_X, getP);
+          resolveChildOverlaps(familyChildren, positions, childY, CARD_W, CARD_GAP_X, getP, spouseX + CARD_W / 2, SEPARATOR_GAP);
         }
       }
     }
