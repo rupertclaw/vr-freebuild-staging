@@ -1148,6 +1148,7 @@ let people = [];
 let nextId = 1;
 let zoom = 0.75;
 let selectedPersonId = null;
+let skipAutoScroll = false;
 let focusPersonId = null;
 let viewHistory = [];
 let viewMode = 'overview'; // 'focus' or 'overview'
@@ -2218,18 +2219,20 @@ function renderFreeBuild() {
   if (statConfirmed) statConfirmed.textContent = people.filter(p => p.status === 'confirmed' || p.status === 'you').length;
   if (statWalls) statWalls.textContent = people.filter(p => p.status === 'brickwall').length;
 
-  // Auto-scroll to center on focus person
-  setTimeout(() => {
-    const scrollArea = document.getElementById('treeScroll');
-    if (!scrollArea) return;
-    let targetId = focusPersonId || (viewPeople.length > 0 ? viewPeople[0].id : null);
-    if (!targetId) return;
-    const targetPos = positions.get(targetId);
-    if (!targetPos) return;
-    const cx = (targetPos.x + CARD_W / 2) * zoom;
-    const cy = (targetPos.y + CARD_H / 2) * zoom;
-    scrollArea.scrollTo({ left: Math.max(0, cx - scrollArea.clientWidth / 2), top: Math.max(0, cy - scrollArea.clientHeight / 2), behavior: 'auto' });
-  }, 50);
+  // Auto-scroll to center on focus person (skip during scroll-triggered re-renders)
+  if (!skipAutoScroll) {
+    setTimeout(() => {
+      const scrollArea = document.getElementById('treeScroll');
+      if (!scrollArea) return;
+      let targetId = focusPersonId || (viewPeople.length > 0 ? viewPeople[0].id : null);
+      if (!targetId) return;
+      const targetPos = positions.get(targetId);
+      if (!targetPos) return;
+      const cx = (targetPos.x + CARD_W / 2) * zoom;
+      const cy = (targetPos.y + CARD_H / 2) * zoom;
+      scrollArea.scrollTo({ left: Math.max(0, cx - scrollArea.clientWidth / 2), top: Math.max(0, cy - scrollArea.clientHeight / 2), behavior: 'auto' });
+    }, 50);
+  }
 }
 
 function escapeHtml(s) {
@@ -2345,7 +2348,9 @@ document.addEventListener('touchmove', function(e) {
   scrollEl.addEventListener('scroll', function() {
     if (scrollTimer) clearTimeout(scrollTimer);
     scrollTimer = setTimeout(function() {
+      skipAutoScroll = true;
       renderFreeBuild();
+      skipAutoScroll = false;
     }, 80);
   }, { passive: true });
 })();
