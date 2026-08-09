@@ -1803,6 +1803,89 @@ function layoutTree() {
     return max;
   }
 
+  // ── Resolve overlaps for secondary marriage children ──
+  // After placing children, check if they overlap with existing cards at the
+  // same Y level. If so, find the nearest clear gap and shift the children there.
+  function resolveChildOverlaps(childIds, positions, childY, cardW, gapX, getP) {
+    // Collect all cards at this Y level (excluding our children)
+    const occupants = [];
+    for (const [id, pos] of positions) {
+      if (childIds.includes(id)) continue;
+      if (Math.abs(pos.y - childY) < 10) {
+        occupants.push({ id, x: pos.x, right: pos.x + cardW });
+      }
+    }
+    occupants.sort((a, b) => a.x - b.x);
+
+    // Get our children's current positions
+    const ourChildren = childIds.map(id => {
+      const pos = positions.get(id);
+      return { id, x: pos.x, right: pos.x + cardW };
+    }).sort((a, b) => a.x - b.x);
+
+    if (ourChildren.length === 0) return;
+
+    // Check if any of our children overlap with occupants
+    let hasOverlap = false;
+    for (const child of ourChildren) {
+      for (const occ of occupants) {
+        if (child.x < occ.right + gapX && child.right > occ.x - gapX) {
+          hasOverlap = true;
+          break;
+        }
+      }
+      if (hasOverlap) break;
+    }
+    if (!hasOverlap) return;
+
+    // Find the nearest clear gap that fits all children
+    const totalW = ourChildren.length * cardW + (ourChildren.length - 1) * gapX;
+    const childCenter = (ourChildren[0].x + ourChildren[ourChildren.length - 1].right) / 2;
+
+    // Build list of gaps between occupants
+    const gaps = [];
+    if (occupants.length === 0) {
+      // No occupants, no overlap possible
+      return;
+    }
+    // Gap before first occupant
+    if (occupants[0].x > totalW + gapX) {
+      gaps.push({ x: 0, w: occupants[0].x - gapX });
+    }
+    // Gaps between occupants
+    for (let i = 0; i < occupants.length - 1; i++) {
+      const gapStart = occupants[i].right + gapX;
+      const gapEnd = occupants[i + 1].x - gapX;
+      const gapW = gapEnd - gapStart;
+      if (gapW >= totalW) {
+        gaps.push({ x: gapStart, w: gapW });
+      }
+    }
+    // Gap after last occupant
+    gaps.push({ x: occupants[occupants.length - 1].right + gapX, w: Infinity });
+
+    // Find the gap closest to the children's current center
+    let bestGap = gaps[0];
+    let bestDist = Math.abs((bestGap.x + bestGap.w / 2) - childCenter);
+    for (const gap of gaps) {
+      const gapCenter = gap.x + Math.min(gap.w, totalW) / 2;
+      const dist = Math.abs(gapCenter - childCenter);
+      if (dist < bestDist) {
+        bestDist = dist;
+        bestGap = gap;
+      }
+    }
+
+    // Place children in the best gap, centered
+    const newLeftX = bestGap.x + Math.max(0, (Math.min(bestGap.w, totalW) - totalW) / 2);
+    for (let i = 0; i < ourChildren.length; i++) {
+      const pos = positions.get(ourChildren[i].id);
+      if (pos) {
+        pos.x = Math.round(newLeftX + i * (cardW + gapX));
+      }
+    }
+  }
+
   for (const p of viewPeople) {
     if (!positions.has(p.id) || !p.families || p.families.length <= 1) continue;
 
@@ -1892,10 +1975,6 @@ function layoutTree() {
             const cid = familyChildren[i];
             const cw = childWidths[i];
             const child = getP(cid);
-            // Calculate the assignPositions leftX so the child CARD lands at childLeftX
-            // assignPositions does: myX = (leftX + myWidth/2) - coupleWidth/2
-            // We want: myX = childLeftX
-            // So: leftX = childLeftX + coupleWidth/2 - myWidth/2
             const childHasSpouse = child?.spouseId && viewSet.has(child.spouseId);
             const childCoupleW = childHasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
             const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
@@ -1905,6 +1984,9 @@ function layoutTree() {
             connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
             childLeftX += cw + CARD_GAP_X;
           }
+
+          // ── Post-placement overlap check: shift children to nearest clear gap ──
+          resolveChildOverlaps(familyChildren, positions, childY, CARD_W, CARD_GAP_X, getP);
         } else {
           // Secondary family on RIGHT — center children below the secondary spouse
           let childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
@@ -1922,6 +2004,9 @@ function layoutTree() {
             connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
             childLeftX += cw + CARD_GAP_X;
           }
+
+          // ── Post-placement overlap check: shift children to nearest clear gap ──
+          resolveChildOverlaps(familyChildren, positions, childY, CARD_W, CARD_GAP_X, getP);
         }
       }
     }
