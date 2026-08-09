@@ -2124,9 +2124,24 @@ function renderFreeBuild() {
         svgContent += `<line x1="${conn.midX}" y1="${conn.parentY}" x2="${conn.childX}" y2="${conn.childY}"
                       stroke="var(--line-stroke)" stroke-width="1.5" />`;
       } else {
-        // L-shaped: vertical down from parent, horizontal to child, vertical down to child top
-        svgContent += `<path d="M ${conn.midX} ${conn.parentY} L ${conn.midX} ${midY} L ${conn.childX} ${midY} L ${conn.childX} ${conn.childY}"
-                      fill="none" stroke="var(--line-stroke)" stroke-width="1.5" />`;
+        // L-shaped with rounded corners: vertical down, horizontal, vertical down
+        const r = 6; // corner radius
+        const dy = midY - conn.parentY; // vertical distance to mid
+        const dx = conn.childX - conn.midX; // horizontal distance
+        const rV = Math.min(r, Math.abs(dy) / 2);
+        const rH = Math.min(r, Math.abs(dx) / 2);
+        const rEff = Math.min(rV, rH);
+        let path = `M ${conn.midX} ${conn.parentY}`;
+        if (dx > 0) {
+          path += ` L ${conn.midX} ${midY - rEff} Q ${conn.midX} ${midY} ${conn.midX + rEff} ${midY}`;
+          path += ` L ${conn.childX - rEff} ${midY} Q ${conn.childX} ${midY} ${conn.childX} ${midY + rEff}`;
+          path += ` L ${conn.childX} ${conn.childY}`;
+        } else {
+          path += ` L ${conn.midX} ${midY - rEff} Q ${conn.midX} ${midY} ${conn.midX - rEff} ${midY}`;
+          path += ` L ${conn.childX + rEff} ${midY} Q ${conn.childX} ${midY} ${conn.childX} ${midY + rEff}`;
+          path += ` L ${conn.childX} ${conn.childY}`;
+        }
+        svgContent += `<path d="${path}" fill="none" stroke="var(--line-stroke)" stroke-width="1.5" stroke-linejoin="round" />`;
       }
     } else if (conn.type === 'parent-child-bus') {
       // Horizontal bus line connecting sibling drops
