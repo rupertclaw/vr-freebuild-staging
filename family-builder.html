@@ -2711,7 +2711,23 @@ function resetFocus() {
 document.getElementById('gedcomInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  showToast('Importing GEDCOM...');
+  // Show loading overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'gedcomLoading';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(42,31,16,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;';
+  overlay.innerHTML = '<div style="font-family:Cinzel Decorative,serif;font-size:24px;color:#7dd3fc;letter-spacing:2px;">VAULTED ROOTS</div><div style="font-family:Cormorant Garamond,serif;font-size:18px;color:#e8dcc8;">Building your family tree...</div><div style="width:200px;height:4px;background:#3e2b1f;border-radius:2px;overflow:hidden;"><div style="width:100%;height:100%;background:#7dd3fc;animation:vrLoad 1s ease-in-out infinite;"></div></div><div style="font-family:Cormorant Garamond,serif;font-size:13px;color:#a89878;">' + (file.name || 'file') + '</div>';
+  // Add animation if not already defined
+  if (!document.getElementById('vrLoadKeyframes')) {
+    const style = document.createElement('style');
+    style.id = 'vrLoadKeyframes';
+    style.textContent = '@keyframes vrLoad { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }';
+    document.head.appendChild(style);
+  }
+  document.body.appendChild(overlay);
+
+  // Let the browser paint the overlay before doing heavy work
+  await new Promise(resolve => setTimeout(resolve, 50));
+
   const text = await file.text();
   const result = parseGedcom(text);
   people = result.people;
@@ -2765,6 +2781,10 @@ document.getElementById('gedcomInput').addEventListener('change', async (e) => {
   autoSave();
   renderFreeBuild();
   showToast('Imported ' + people.length + ' people');
+
+  // Remove loading overlay
+  const loadingEl = document.getElementById('gedcomLoading');
+  if (loadingEl) loadingEl.remove();
 
   // Auto-fit to show the whole tree in overview mode
   setTimeout(function() {
