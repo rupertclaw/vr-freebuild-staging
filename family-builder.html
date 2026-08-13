@@ -3177,6 +3177,8 @@ function initPrivacyModalListeners() {
     okBtn.addEventListener('click', () => {
       const m = document.getElementById('privacyModal');
       if (m) m.style.display = 'none';
+      // Set session-level flag so SW reload doesn't re-trigger the modal
+      sessionStorage.setItem('vaultedRootsPrivacySeen', '1');
       if (typeof updateExpandGenBtn === 'function') updateExpandGenBtn();
     });
   }
@@ -3185,10 +3187,12 @@ function initPrivacyModalListeners() {
       const m = document.getElementById('privacyModal');
       if (m) m.style.display = 'none';
       localStorage.setItem('vaultedRootsPrivacySeen', '1');
+      sessionStorage.setItem('vaultedRootsPrivacySeen', '1');
       if (typeof updateExpandGenBtn === 'function') updateExpandGenBtn();
     });
   }
-  if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
+  // Show only if not seen in this session OR ever
+  if (!sessionStorage.getItem('vaultedRootsPrivacySeen') && !localStorage.getItem('vaultedRootsPrivacySeen')) {
     showPrivacyModal();
   }
 }

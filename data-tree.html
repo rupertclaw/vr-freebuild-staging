@@ -6553,14 +6553,16 @@ function openFoundingForm() {
 }
 document.getElementById('privacyModalOk').addEventListener('click', () => {
   document.getElementById('privacyModal').style.display = 'none';
+  sessionStorage.setItem('vaultedRootsPrivacySeen', '1');
   updateExpandGenBtn();
 });
 document.getElementById('privacyModalDismissForever').addEventListener('click', () => {
   document.getElementById('privacyModal').style.display = 'none';
   localStorage.setItem('vaultedRootsPrivacySeen', '1');
+  sessionStorage.setItem('vaultedRootsPrivacySeen', '1');
   updateExpandGenBtn();
 });
-if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
+if (!sessionStorage.getItem('vaultedRootsPrivacySeen') && !localStorage.getItem('vaultedRootsPrivacySeen')) {
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => showPrivacyModal());
   } else {
