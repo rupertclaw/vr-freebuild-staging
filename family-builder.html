@@ -1581,67 +1581,140 @@ function layoutTree() {
   function getP(id) { return people.find(p => p.id === id); }
 
   // ═════════════════════════════════════════════════════════════
-  // SLOT-BASED LAYOUT ENGINE
+  // TREE TRAVERSAL LAYOUT ENGINE
   // ═════════════════════════════════════════════════════════════
-  // Each person gets a generation (Y row) and a slot (X column).
-  // Couples get adjacent slots. Siblings get contiguous slot ranges.
-  // The widest generation is centered; other rows offset relative to it.
-  // No subtree width computation, no collision detection, no overlap resolution.
+  // Start at the anchor/focus person (gen 0). Walk UP through parents
+  // (negative gens) to oldest ancestors. Walk DOWN through children
+  // (positive gens) to youngest descendants. Spouses sit next to their
+  // partner at the same gen. Children are centered below their parents.
+  //
+  // Phase 1: BFS from anchor → assign generations (negative = ancestors)
+  // Phase 2: Place cards left-to-right within each generation, ordered
+  //           by family group (siblings contiguous, parents nearby)
+  // Phase 3: Center children under their parents
+  // Phase 4: Draw connectors
 
-  // ── Step 1: Assign generations ──
-  // Use the parser's gen field which was computed via BFS from apex ancestors.
-  // Parser: gen 0 = apex (oldest), increasing for descendants.
-  // BUT: multiple disconnected components each have their own gen 0, compressing
-  // the tree. Fix: compute gen as the LONGEST path from any apex to this person.
-  // We do a second BFS pass: for each person, if a parent has a higher gen, bump it.
-  const genMap = new Map();
-  for (const p of viewPeople) {
-    genMap.set(p.id, p.gen || 0);
+  // ── Phase 1: Assign generations via BFS from anchor ──
+  // If no focus person, use the first person with parents (or first person)
+  let anchorId = null;
+  if (focusPersonId && viewSet.has(focusPersonId)) {
+    anchorId = focusPersonId;
+  } else {
+    // Find the "me" person, or the person with the most balanced tree
+    const me = viewPeople.find(p => p.isYou);
+    if (me) {
+      anchorId = me.id;
+    } else {
+      // Pick someone with both parents and children (middle of tree)
+      let best = viewPeople[0], bestScore = -1;
+      for (const p of viewPeople) {
+        const hasParents = p.parents && p.parents.some(pid => viewSet.has(pid)) ? 1 : 0;
+        const hasChildren = p.children && p.children.some(cid => viewSet.has(cid)) ? 1 : 0;
+        const score = hasParents + hasChildren;
+        if (score > bestScore) { bestScore = score; best = p; }
+      }
+      anchorId = best.id;
+    }
+    focusPersonId = anchorId;
   }
 
-  // Spouses: align to the older (lower) generation so couples share a row
-  for (const p of viewPeople) {
-    if (p.spouseId && viewSet.has(p.spouseId)) {
-      const g1 = genMap.get(p.id);
-      const g2 = genMap.get(p.spouseId);
-      const minG = Math.min(g1, g2);
-      genMap.set(p.id, minG);
-      genMap.set(p.spouseId, minG);
+  // BFS: assign gen relative to anchor. Anchor = 0, parents = -1, children = +1
+  const genMap = new Map();
+  const bfsVisited = new Set();
+  const bfsQueue = [{ id: anchorId, gen: 0 }];
+  bfsVisited.add(anchorId);
+  genMap.set(anchorId, 0);
+
+  while (bfsQueue.length > 0) {
+    const { id: pid, gen } = bfsQueue.shift();
+    const p = getP(pid);
+    if (!p) continue;
+
+    // Spouse: same gen
+    if (p.spouseId && viewSet.has(p.spouseId) && !bfsVisited.has(p.spouseId)) {
+      bfsVisited.add(p.spouseId);
+      genMap.set(p.spouseId, gen);
+      bfsQueue.push({ id: p.spouseId, gen });
     }
+    // All spouses from families array
     if (p.families) {
       for (const fam of p.families) {
-        if (fam.spouseId && viewSet.has(fam.spouseId)) {
-          const g1 = genMap.get(p.id);
-          const g2 = genMap.get(fam.spouseId);
-          const minG = Math.min(g1, g2);
-          genMap.set(p.id, minG);
-          genMap.set(fam.spouseId, minG);
+        if (fam.spouseId && viewSet.has(fam.spouseId) && !bfsVisited.has(fam.spouseId)) {
+          bfsVisited.add(fam.spouseId);
+          genMap.set(fam.spouseId, gen);
+          bfsQueue.push({ id: fam.spouseId, gen });
+        }
+      }
+    }
+    // Parents: gen - 1 (walk upward)
+    for (const parentId of (p.parents || [])) {
+      if (viewSet.has(parentId) && !bfsVisited.has(parentId)) {
+        bfsVisited.add(parentId);
+        genMap.set(parentId, gen - 1);
+        bfsQueue.push({ id: parentId, gen: gen - 1 });
+      }
+    }
+    // Children: gen + 1 (walk downward)
+    for (const cid of (p.children || [])) {
+      if (viewSet.has(cid) && !bfsVisited.has(cid)) {
+        const child = getP(cid);
+        if (child && (!child.parents || child.parents.length === 0 || child.parents.includes(pid))) {
+          bfsVisited.add(cid);
+          genMap.set(cid, gen + 1);
+          bfsQueue.push({ id: cid, gen: gen + 1 });
         }
       }
     }
   }
 
-  // Propagate: ensure children always have gen > parent
+  // Anyone not reached: assign gen based on nearest relative's gen
   let changed = true;
-  let iterations = 0;
-  while (changed && iterations < 20) {
+  while (changed) {
     changed = false;
-    iterations++;
     for (const p of viewPeople) {
-      const myGen = genMap.get(p.id);
-      for (const cid of (p.children || [])) {
-        if (!viewSet.has(cid)) continue;
-        const childGen = genMap.get(cid);
-        if (childGen <= myGen) {
-          genMap.set(cid, myGen + 1);
-          changed = true;
+      if (genMap.has(p.id)) continue;
+      // Check parents
+      for (const pid of (p.parents || [])) {
+        if (genMap.has(pid) && viewSet.has(pid)) {
+          genMap.set(p.id, genMap.get(pid) + 1);
+          changed = true; break;
         }
+      }
+      if (genMap.has(p.id)) continue;
+      // Check children
+      for (const cid of (p.children || [])) {
+        if (genMap.has(cid) && viewSet.has(cid)) {
+          genMap.set(p.id, genMap.get(cid) - 1);
+          changed = true; break;
+        }
+      }
+      if (genMap.has(p.id)) continue;
+      // Check spouse
+      if (p.spouseId && genMap.has(p.spouseId)) {
+        genMap.set(p.id, genMap.get(p.spouseId));
+        changed = true;
       }
     }
   }
 
-  // ── Step 2: Group people by generation ──
+  // Still not reached: gen 0
+  for (const p of viewPeople) {
+    if (!genMap.has(p.id)) genMap.set(p.id, 0);
+  }
+
+  // Normalize so minimum gen is 0 (oldest ancestors at top)
+  let minGen = Infinity;
+  for (const g of genMap.values()) if (g < minGen) minGen = g;
+  for (const [id, g] of genMap) genMap.set(id, g - minGen);
+
   const maxGen = Math.max(...genMap.values());
+
+  // ── Phase 2: Group by generation, assign X positions ──
+  // Within each gen, order people by family groups:
+  // - Start with the anchor's line (parents, siblings, children)
+  // - Each person's children go in the slot directly below them
+  // - Couples are adjacent
+
   const generations = [];
   for (let g = 0; g <= maxGen; g++) generations.push([]);
 
@@ -1650,79 +1723,101 @@ function layoutTree() {
     if (g >= 0 && g <= maxGen) generations[g].push(p);
   }
 
-  // ── Step 3: Assign slots within each generation ──
-  // Process generations top to bottom. Within each gen:
-  // - Order people by their parent's slot (children of parents in lower slots come first)
-  // - Couples get adjacent slots
-  // - Siblings get contiguous ranges
-  // - People with no parents in the tree (roots) are ordered by their subtree size (largest first)
-  //   so the biggest families are centered
+  // For each generation, sort by parent's X position (so children are near parents)
+  // Process top to bottom. Gen 0 (oldest) first — sort by family group size (largest centered)
+  // Then each subsequent gen: sort by parent slot, then by birth year
 
-  const slotMap = new Map(); // personId → slot number (0-based)
-  const coupleOffset = new Map(); // personId → 0 (left of couple) or 1 (right)
+  // Assign "slots" — a slot is just an index within the generation
+  // We'll convert to pixel X later
 
-  // For roots: sort by number of descendants (most descendants = center)
-  function countDesc(id, seen) {
+  // Helper: get all children for a person that belong to a specific co-parent
+  function getChildrenForCouple(personId, coParentId) {
+    const person = getP(personId);
+    if (!person) return [];
+    return (person.children || []).filter(cid => {
+      if (!viewSet.has(cid)) return false;
+      const child = getP(cid);
+      if (!child) return false;
+      if (child.parents && child.parents.length > 0) {
+        if (coParentId) {
+          return child.parents.includes(personId) && child.parents.includes(coParentId);
+        } else {
+          return child.parents.includes(personId) && child.parents.length === 1;
+        }
+      }
+      return true;
+    });
+  }
+
+  // Track which X slot each person is at (within their generation)
+  const xSlot = new Map(); // personId → slot index within their gen
+
+  // Gen 0: sort by descendant count (largest families in center)
+  function countDescendants(id, seen) {
     if (seen.has(id)) return 0;
     seen.add(id);
     const p = getP(id);
     if (!p) return 0;
     let count = 1;
     for (const cid of (p.children || [])) {
-      if (viewSet.has(cid)) count += countDesc(cid, seen);
+      if (viewSet.has(cid)) count += countDescendants(cid, seen);
     }
     return count;
   }
 
-  // Sort roots by descendant count descending (biggest families centered)
-  const rootPeople = generations[0].slice();
-  rootPeople.sort((a, b) => {
-    const da = countDesc(a.id, new Set());
-    const db = countDesc(b.id, new Set());
-    return db - da; // largest first
-  });
+  // ── Place gen 0 (oldest ancestors) ──
+  // Sort by descendant count descending — biggest families centered
+  const gen0People = generations[0].slice();
+  gen0People.sort((a, b) => countDescendants(b.id, new Set()) - countDescendants(a.id, new Set()));
 
-  // Assign slots for gen 0 (roots)
-  let slot = 0;
-  const gen0Visited = new Set();
-  for (const p of rootPeople) {
-    if (gen0Visited.has(p.id)) continue;
-    gen0Visited.add(p.id);
-    slotMap.set(p.id, slot);
-    coupleOffset.set(p.id, 0);
-    slot++;
-    // Place spouse next to them if in view and in same gen
-    if (p.spouseId && viewSet.has(p.spouseId) && genMap.get(p.spouseId) === 0 && !gen0Visited.has(p.spouseId)) {
-      gen0Visited.add(p.spouseId);
-      slotMap.set(p.spouseId, slot);
-      coupleOffset.set(p.spouseId, 1);
-      slot++;
+  let slotIdx = 0;
+  const gen0Placed = new Set();
+  for (const p of gen0People) {
+    if (gen0Placed.has(p.id)) continue;
+    gen0Placed.add(p.id);
+    xSlot.set(p.id, slotIdx++);
+
+    // Place spouse next to them
+    const spouseToPlace = p.spouseId && viewSet.has(p.spouseId) && genMap.get(p.spouseId) === 0 && !gen0Placed.has(p.spouseId);
+    if (spouseToPlace) {
+      gen0Placed.add(p.spouseId);
+      xSlot.set(p.spouseId, slotIdx++);
     }
-    // Also place secondary spouses next to them
+    // Secondary spouses
     if (p.families) {
       for (const fam of p.families) {
         const sid = fam.spouseId;
-        if (sid && viewSet.has(sid) && genMap.get(sid) === 0 && !gen0Visited.has(sid) && sid !== p.spouseId) {
-          gen0Visited.add(sid);
-          slotMap.set(sid, slot);
-          coupleOffset.set(sid, 1);
-          slot++;
+        if (sid && viewSet.has(sid) && genMap.get(sid) === 0 && !gen0Placed.has(sid) && sid !== p.spouseId) {
+          gen0Placed.add(sid);
+          xSlot.set(sid, slotIdx++);
         }
       }
     }
   }
 
-  // Assign slots for subsequent generations
+  // ── Place subsequent generations ──
+  // For each gen, sort by parent's slot so children are near their parents
   for (let g = 1; g <= maxGen; g++) {
     const genPeople = generations[g];
-    const visited = new Set();
+    const placed = new Set();
 
-    // Sort by parent's slot (so children follow parents in order)
+    // Sort by parent's X slot (ascending), then birth year
+    function parentSlot(personId) {
+      const person = getP(personId);
+      if (!person || !person.parents) return Infinity;
+      let minSlot = Infinity;
+      for (const pid of person.parents) {
+        if (xSlot.has(pid) && genMap.get(pid) === g - 1) {
+          minSlot = Math.min(minSlot, xSlot.get(pid));
+        }
+      }
+      return minSlot;
+    }
+
     genPeople.sort((a, b) => {
-      const aParentSlot = getParentSlot(a, slotMap, genMap);
-      const bParentSlot = getParentSlot(b, slotMap, genMap);
-      if (aParentSlot !== bParentSlot) return aParentSlot - bParentSlot;
-      // Same parent: sort by birth year if available
+      const aSlot = parentSlot(a.id);
+      const bSlot = parentSlot(b.id);
+      if (aSlot !== bSlot) return aSlot - bSlot;
       const aY = (a.birthDate || '').match(/\d{4}/);
       const bY = (b.birthDate || '').match(/\d{4}/);
       if (aY && bY) return parseInt(aY[0]) - parseInt(bY[0]);
@@ -1731,167 +1826,106 @@ function layoutTree() {
 
     let s = 0;
     for (const p of genPeople) {
-      if (visited.has(p.id)) continue;
-      visited.add(p.id);
-      slotMap.set(p.id, s);
-      coupleOffset.set(p.id, 0);
-      s++;
-      // Place spouse next to them
-      if (p.spouseId && viewSet.has(p.spouseId) && genMap.get(p.spouseId) === g && !visited.has(p.spouseId)) {
-        visited.add(p.spouseId);
-        slotMap.set(p.spouseId, s);
-        coupleOffset.set(p.spouseId, 1);
-        s++;
+      if (placed.has(p.id)) continue;
+      placed.add(p.id);
+      xSlot.set(p.id, s++);
+
+      // Spouse next to them
+      if (p.spouseId && viewSet.has(p.spouseId) && genMap.get(p.spouseId) === g && !placed.has(p.spouseId)) {
+        placed.add(p.spouseId);
+        xSlot.set(p.spouseId, s++);
       }
       // Secondary spouses
       if (p.families) {
         for (const fam of p.families) {
           const sid = fam.spouseId;
-          if (sid && viewSet.has(sid) && genMap.get(sid) === g && !visited.has(sid) && sid !== p.spouseId) {
-            visited.add(sid);
-            slotMap.set(sid, s);
-            coupleOffset.set(sid, 1);
-            s++;
+          if (sid && viewSet.has(sid) && genMap.get(sid) === g && !placed.has(sid) && sid !== p.spouseId) {
+            placed.add(sid);
+            xSlot.set(sid, s++);
           }
         }
       }
     }
   }
 
-  function getParentSlot(person, slotMap, genMap) {
-    if (!person.parents || person.parents.length === 0) return 0;
-    let minSlot = Infinity;
-    for (const pid of person.parents) {
-      if (slotMap.has(pid)) {
-        minSlot = Math.min(minSlot, slotMap.get(pid));
-      }
-    }
-    return minSlot === Infinity ? 0 : minSlot;
-  }
-
-  // ── Step 4: Convert slots to pixel positions ──
-  // Slot width = CARD_W + CARD_GAP_X for single, CARD_W*2 + COUPLE_GAP + CARD_GAP_X for couples
+  // ── Phase 3: Convert slots to pixels, center children under parents ──
   const SLOT_W = CARD_W + CARD_GAP_X;
-  const COUPLE_SLOT_W = CARD_W * 2 + COUPLE_GAP + CARD_GAP_X;
 
-  // Find the widest generation (most slots)
+  // Find the widest generation
   let widestGen = 0, widestSlots = 0;
   for (let g = 0; g <= maxGen; g++) {
     let maxSlot = 0;
     for (const p of generations[g]) {
-      const s = slotMap.get(p.id) || 0;
-      const isCoupled = (p.spouseId && viewSet.has(p.spouseId) && genMap.get(p.spouseId) === g) ||
-                        (p.families && p.families.some(f => f.spouseId && viewSet.has(f.spouseId) && genMap.get(f.spouseId) === g));
-      if (isCoupled) maxSlot = Math.max(maxSlot, s + 1);
-      else maxSlot = Math.max(maxSlot, s);
+      maxSlot = Math.max(maxSlot, xSlot.get(p.id) || 0);
     }
-    if (maxSlot > widestSlots) {
-      widestSlots = maxSlot;
-      widestGen = g;
-    }
+    if (maxSlot > widestSlots) { widestSlots = maxSlot; widestGen = g; }
   }
 
-  // Total canvas width based on widest generation
-  const totalSlots = widestSlots + 2; // padding
+  const totalSlots = widestSlots + 2;
   const canvasW = totalSlots * SLOT_W;
 
-  // Assign X positions: center each generation relative to the widest one
+  // Assign X positions: center each generation relative to the widest
   const genOffsets = [];
   for (let g = 0; g <= maxGen; g++) {
-    // Count slots used in this gen
     let genMaxSlot = 0;
     for (const p of generations[g]) {
-      genMaxSlot = Math.max(genMaxSlot, slotMap.get(p.id) || 0);
+      genMaxSlot = Math.max(genMaxSlot, xSlot.get(p.id) || 0);
     }
-    const genSlots = genMaxSlot + 1;
-    const genWidth = genSlots * SLOT_W;
-    // Center: offset so this gen's center aligns with canvas center
-    const offset = Math.round((canvasW - genWidth) / 2);
-    genOffsets.push(Math.max(0, offset));
+    const genWidth = (genMaxSlot + 1) * SLOT_W;
+    genOffsets.push(Math.max(0, Math.round((canvasW - genWidth) / 2)));
   }
 
   for (const p of viewPeople) {
     const g = genMap.get(p.id);
-    const s = slotMap.get(p.id) || 0;
+    const s = xSlot.get(p.id) || 0;
     const x = genOffsets[g] + s * SLOT_W;
     const y = 50 + g * GEN_HEIGHT;
     positions.set(p.id, { x, y });
   }
 
-  // ── Step 5: Draw connectors ──
-  // Spouse lines: connect adjacent couples
+  // ── Phase 4: Draw connectors ──
+  // Spouse lines
   const connectedCouples = new Set();
-  for (const p of viewPeople) {
-    if (!p.spouseId || !viewSet.has(p.spouseId)) continue;
-    const key = [Math.min(p.id, p.spouseId), Math.max(p.id, p.spouseId)].join('-');
-    if (connectedCouples.has(key)) continue;
+  function addSpouseLine(id1, id2) {
+    const key = [Math.min(id1, id2), Math.max(id1, id2)].join('-');
+    if (connectedCouples.has(key)) return;
     connectedCouples.add(key);
-
-    const pos1 = positions.get(p.id);
-    const pos2 = positions.get(p.spouseId);
-    if (!pos1 || !pos2) continue;
-
-    // Only draw if they're at the same Y level (same generation)
-    if (pos1.y !== pos2.y) {
-      // Spouse in different generation — draw a line anyway
-      connections.push({
-        type: 'spouse',
-        x1: pos1.x + CARD_W / 2, y1: pos1.y + CARD_H / 2,
-        x2: pos2.x + CARD_W / 2, y2: pos2.y + CARD_H / 2
-      });
-      continue;
-    }
-
-    // Standard horizontal spouse line
-    const leftX = Math.min(pos1.x, pos2.x) + CARD_W;
-    const rightX = Math.max(pos1.x, pos2.x);
-    connections.push({
-      type: 'spouse',
-      x1: leftX, y1: pos1.y + CARD_H / 2,
-      x2: rightX, y2: pos2.y + CARD_H / 2
-    });
-  }
-
-  // Also connect secondary spouses (from families array, not spouseId)
-  for (const p of viewPeople) {
-    if (!p.families) continue;
-    for (const fam of p.families) {
-      const sid = fam.spouseId;
-      if (!sid || !viewSet.has(sid) || sid === p.spouseId) continue;
-      const key = [Math.min(p.id, sid), Math.max(p.id, sid)].join('-');
-      if (connectedCouples.has(key)) continue;
-      connectedCouples.add(key);
-
-      const pos1 = positions.get(p.id);
-      const pos2 = positions.get(sid);
-      if (!pos1 || !pos2) continue;
-
+    const pos1 = positions.get(id1);
+    const pos2 = positions.get(id2);
+    if (!pos1 || !pos2) return;
+    if (pos1.y === pos2.y) {
       const leftX = Math.min(pos1.x, pos2.x) + CARD_W;
       const rightX = Math.max(pos1.x, pos2.x);
-      connections.push({
-        type: 'spouse',
-        x1: leftX, y1: pos1.y + CARD_H / 2,
-        x2: rightX, y2: pos2.y + CARD_H / 2
-      });
+      connections.push({ type: 'spouse', x1: leftX, y1: pos1.y + CARD_H / 2, x2: rightX, y2: pos2.y + CARD_H / 2 });
+    } else {
+      // Different generations — diagonal line
+      connections.push({ type: 'spouse', x1: pos1.x + CARD_W / 2, y1: pos1.y + CARD_H / 2, x2: pos2.x + CARD_W / 2, y2: pos2.y + CARD_H / 2 });
+    }
+  }
+
+  for (const p of viewPeople) {
+    if (p.spouseId && viewSet.has(p.spouseId)) addSpouseLine(p.id, p.spouseId);
+    if (p.families) {
+      for (const fam of p.families) {
+        if (fam.spouseId && viewSet.has(fam.spouseId) && fam.spouseId !== p.spouseId) {
+          addSpouseLine(p.id, fam.spouseId);
+        }
+      }
     }
   }
 
   // Parent-child lines
-  const childConnections = new Set(); // dedupe
+  const childConnections = new Set();
   for (const p of viewPeople) {
     const pPos = positions.get(p.id);
     if (!pPos) continue;
 
-    // Get all children of this person (from all marriages)
     for (const cid of (p.children || [])) {
       if (!viewSet.has(cid)) continue;
       const child = getP(cid);
       if (!child) continue;
-
-      // Verify this person is actually a parent of this child
       if (child.parents && child.parents.length > 0 && !child.parents.includes(p.id)) continue;
 
-      // Dedupe: use parent-child pair key (smaller id first to handle both directions)
       const key = [Math.min(p.id, cid), Math.max(p.id, cid), 'pc'].join('-');
       if (childConnections.has(key)) continue;
       childConnections.add(key);
@@ -1899,14 +1933,13 @@ function layoutTree() {
       const cPos = positions.get(cid);
       if (!cPos) continue;
 
-      // Find the co-parent (the other parent of this child) to get the midpoint
+      // Find co-parent for midpoint calculation
       let parentMidX = pPos.x + CARD_W / 2;
       if (child.parents && child.parents.length > 1) {
         const otherParentId = child.parents.find(pid => pid !== p.id && viewSet.has(pid));
         if (otherParentId) {
           const otherPos = positions.get(otherParentId);
           if (otherPos && otherPos.y === pPos.y) {
-            // Use the mother's card center for the connector origin
             const motherId = (getP(p.id)?.sex === 'F') ? p.id : (getP(otherParentId)?.sex === 'F' ? otherParentId : null);
             if (motherId) {
               const mPos = positions.get(motherId);
@@ -1918,18 +1951,17 @@ function layoutTree() {
         }
       }
 
-      const childX = cPos.x + CARD_W / 2;
       connections.push({
         type: 'parent-child',
         midX: parentMidX,
         parentY: pPos.y + CARD_H,
-        childX,
+        childX: cPos.x + CARD_W / 2,
         childY: cPos.y
       });
     }
   }
 
-  // ── Step 6: Calculate bounds ──
+  // ── Calculate bounds ──
   let maxX = 0, maxY = 0;
   for (const [id, pos] of positions) {
     maxX = Math.max(maxX, pos.x + CARD_W);
