@@ -1914,8 +1914,14 @@ function layoutTree() {
     }
   }
 
-  // Parent-child lines
+  // Parent-child lines — grouped bus connectors
+  // Instead of one L-shaped path per child, group children by parent couple
+  // and emit a single bus: vertical drop from parent, horizontal bus, verticals to each child.
   const childConnections = new Set();
+
+  // Build a map of parent-couple-key -> { parentMidX, parentY, children: [{childX, childY}] }
+  const busGroups = new Map();
+
   for (const p of viewPeople) {
     const pPos = positions.get(p.id);
     if (!pPos) continue;
@@ -1935,11 +1941,13 @@ function layoutTree() {
 
       // Find co-parent for midpoint calculation
       let parentMidX = pPos.x + CARD_W / 2;
+      let coupleKey = String(p.id);
       if (child.parents && child.parents.length > 1) {
         const otherParentId = child.parents.find(pid => pid !== p.id && viewSet.has(pid));
         if (otherParentId) {
           const otherPos = positions.get(otherParentId);
           if (otherPos && otherPos.y === pPos.y) {
+            coupleKey = [Math.min(p.id, otherParentId), Math.max(p.id, otherParentId)].join('-');
             const motherId = (getP(p.id)?.sex === 'F') ? p.id : (getP(otherParentId)?.sex === 'F' ? otherParentId : null);
             if (motherId) {
               const mPos = positions.get(motherId);
@@ -1951,12 +1959,46 @@ function layoutTree() {
         }
       }
 
+      const groupKey = coupleKey + '-' + pPos.y;
+      if (!busGroups.has(groupKey)) {
+        busGroups.set(groupKey, {
+          parentMidX: Math.round(parentMidX),
+          parentY: pPos.y + CARD_H,
+          children: []
+        });
+      }
+      busGroups.get(groupKey).children.push({
+        childX: Math.round(cPos.x + CARD_W / 2),
+        childY: cPos.y
+      });
+    }
+  }
+
+  // Emit bus connections for groups with multiple children,
+  // individual parent-child connections for single-child groups
+  for (const [key, group] of busGroups) {
+    // Sort children left to right by X
+    group.children.sort((a, b) => a.childX - b.childX);
+
+    if (group.children.length === 1) {
+      // Single child — simple L-shaped or straight line
+      const c = group.children[0];
       connections.push({
         type: 'parent-child',
-        midX: parentMidX,
-        parentY: pPos.y + CARD_H,
-        childX: cPos.x + CARD_W / 2,
-        childY: cPos.y
+        midX: group.parentMidX,
+        parentY: group.parentY,
+        childX: c.childX,
+        childY: c.childY
+      });
+    } else {
+      // Multiple children — bus connector
+      const busY = (group.parentY + group.children[0].childY) / 2;
+      connections.push({
+        type: 'parent-child-bus',
+        parentMidX: group.parentMidX,
+        parentY: group.parentY,
+        busY: Math.round(busY),
+        children: group.children
       });
     }
   }
@@ -2002,54 +2044,77 @@ function renderFreeBuild() {
   let svgContent = '';
   for (const conn of connections) {
     // Quick viewport cull for connections
-    const connMinX = Math.min(conn.x1 || conn.midX || 0, conn.x2 || conn.childX || 0);
-    const connMaxX = Math.max((conn.x1 || conn.midX || 0) + CARD_W, (conn.x2 || conn.childX || 0) + CARD_W);
-    const connMinY = Math.min(conn.y1 || conn.parentY || 0, conn.y2 || conn.childY || 0);
-    const connMaxY = Math.max(conn.y1 || conn.parentY || 0, conn.y2 || conn.childY || 0);
+    let connMinX, connMaxX, connMinY, connMaxY;
+    if (conn.type === 'parent-child-bus') {
+      connMinX = Math.min(conn.parentMidX, conn.children[0].childX);
+      connMaxX = Math.max(conn.parentMidX, conn.children[conn.children.length - 1].childX);
+      connMinY = conn.parentY;
+      connMaxY = conn.children[0].childY;
+    } else {
+      connMinX = Math.min(conn.x1 || conn.midX || 0, conn.x2 || conn.childX || 0);
+      connMaxX = Math.max((conn.x1 || conn.midX || 0) + CARD_W, (conn.x2 || conn.childX || 0) + CARD_W);
+      connMinY = Math.min(conn.y1 || conn.parentY || 0, conn.y2 || conn.childY || 0);
+      connMaxY = Math.max(conn.y1 || conn.parentY || 0, conn.y2 || conn.childY || 0);
+    }
     if (connMaxX < viewLeft || connMinX > viewRight || connMaxY < viewTop || connMinY > viewBottom) continue;
     if (conn.type === 'spouse') {
       svgContent += `<line x1="${conn.x1}" y1="${conn.y1}" x2="${conn.x2}" y2="${conn.y2}"
                     stroke="var(--line-stroke)" stroke-width="2" />`;
-    } else if (conn.type === 'parent-child' || conn.type === 'parent-child-cross') {
-      // L-shaped or straight vertical/horizontal line
-      // Per-family Y offset: different families at the same generation depth
-      // get slightly different midY values so their horizontal segments don't
-      // merge into one long line across the entire row.
+    } else if (conn.type === 'parent-child') {
+      // Single child — L-shaped or straight line
       const baseMidY = (conn.parentY + conn.childY) / 2;
-      const familyOffset = (conn.midX % 24) - 12;
-      const midY = baseMidY + familyOffset;
       if (Math.abs(conn.parentY - conn.childY) < 2) {
-        // Horizontal line (bus segment)
+        // Horizontal line (same generation)
         svgContent += `<line x1="${conn.midX}" y1="${conn.parentY}" x2="${conn.childX}" y2="${conn.childY}"
                       stroke="var(--line-stroke)" stroke-width="1.5" />`;
       } else if (Math.abs(conn.midX - conn.childX) < 2) {
-        // Straight vertical line (stem or drop)
+        // Straight vertical line
         svgContent += `<line x1="${conn.midX}" y1="${conn.parentY}" x2="${conn.childX}" y2="${conn.childY}"
                       stroke="var(--line-stroke)" stroke-width="1.5" />`;
       } else {
-        // L-shaped with rounded corners: vertical down, horizontal, vertical down
-        const r = 6; // corner radius
-        const dy = midY - conn.parentY; // vertical distance to mid
-        const dx = conn.childX - conn.midX; // horizontal distance
+        // L-shaped with rounded corners
+        const r = 6;
+        const dy = baseMidY - conn.parentY;
+        const dx = conn.childX - conn.midX;
         const rV = Math.min(r, Math.abs(dy) / 2);
         const rH = Math.min(r, Math.abs(dx) / 2);
         const rEff = Math.min(rV, rH);
         let path = `M ${conn.midX} ${conn.parentY}`;
         if (dx > 0) {
-          path += ` L ${conn.midX} ${midY - rEff} Q ${conn.midX} ${midY} ${conn.midX + rEff} ${midY}`;
-          path += ` L ${conn.childX - rEff} ${midY} Q ${conn.childX} ${midY} ${conn.childX} ${midY + rEff}`;
+          path += ` L ${conn.midX} ${baseMidY - rEff} Q ${conn.midX} ${baseMidY} ${conn.midX + rEff} ${baseMidY}`;
+          path += ` L ${conn.childX - rEff} ${baseMidY} Q ${conn.childX} ${baseMidY} ${conn.childX} ${baseMidY + rEff}`;
           path += ` L ${conn.childX} ${conn.childY}`;
         } else {
-          path += ` L ${conn.midX} ${midY - rEff} Q ${conn.midX} ${midY} ${conn.midX - rEff} ${midY}`;
-          path += ` L ${conn.childX + rEff} ${midY} Q ${conn.childX} ${midY} ${conn.childX} ${midY + rEff}`;
+          path += ` L ${conn.midX} ${baseMidY - rEff} Q ${conn.midX} ${baseMidY} ${conn.midX - rEff} ${baseMidY}`;
+          path += ` L ${conn.childX + rEff} ${baseMidY} Q ${conn.childX} ${baseMidY} ${conn.childX} ${baseMidY + rEff}`;
           path += ` L ${conn.childX} ${conn.childY}`;
         }
         svgContent += `<path d="${path}" fill="none" stroke="var(--line-stroke)" stroke-width="1.5" stroke-linejoin="round" />`;
       }
     } else if (conn.type === 'parent-child-bus') {
-      // Horizontal bus line connecting sibling drops
-      svgContent += `<line x1="${conn.x1}" y1="${conn.y1}" x2="${conn.x2}" y2="${conn.y2}"
+      // Bus connector: vertical drop from parent, horizontal bus, verticals to each child
+      const busY = conn.busY;
+      const r = 6; // corner radius
+
+      // 1. Vertical drop from parent down to busY
+      svgContent += `<line x1="${conn.parentMidX}" y1="${conn.parentY}" x2="${conn.parentMidX}" y2="${busY}"
                     stroke="var(--line-stroke)" stroke-width="1.5" />`;
+
+      // 2. Horizontal bus line from leftmost child to rightmost child
+      const leftX = conn.children[0].childX;
+      const rightX = conn.children[conn.children.length - 1].childX;
+      svgContent += `<line x1="${leftX}" y1="${busY}" x2="${rightX}" y2="${busY}"
+                    stroke="var(--line-stroke)" stroke-width="1.5" />`;
+
+      // 3. Vertical from bus up to each child's top edge
+      for (const child of conn.children) {
+        if (Math.abs(child.childX - conn.parentMidX) < 2) {
+          // Child is directly below parent — skip, the drop line already covers it
+          continue;
+        }
+        svgContent += `<line x1="${child.childX}" y1="${busY}" x2="${child.childX}" y2="${child.childY}"
+                      stroke="var(--line-stroke)" stroke-width="1.5" />`;
+      }
     }
   }
   svg.innerHTML = svgContent;
