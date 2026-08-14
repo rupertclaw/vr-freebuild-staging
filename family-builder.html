@@ -3193,6 +3193,7 @@ function initPrivacyModalListeners() {
   }
   // Show only if not seen in this session OR ever
   if (!sessionStorage.getItem('vaultedRootsPrivacySeen') && !localStorage.getItem('vaultedRootsPrivacySeen')) {
+    sessionStorage.setItem('vaultedRootsPrivacySeen', '1');
     showPrivacyModal();
   }
 }

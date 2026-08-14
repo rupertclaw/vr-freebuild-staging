@@ -618,6 +618,7 @@ document.getElementById('privacyModalDismissForever').addEventListener('click', 
   updateExpandGenBtn();
 });
 if (!sessionStorage.getItem('vaultedRootsPrivacySeen') && !localStorage.getItem('vaultedRootsPrivacySeen')) {
+  sessionStorage.setItem('vaultedRootsPrivacySeen', '1');
   if (document.readyState === 'loading') {
     document.addEventListener('DOMContentLoaded', () => showPrivacyModal());
   } else {
