@@ -1795,8 +1795,8 @@ function layoutTree() {
   }
 
   // ── Phase 3: Place subtree (recursive, top-down) ──
-  // Places a person + spouse, then children below centered.
-  // After placement, checks for unplaced spouses and places their ancestors above.
+  // Places a person + ALL their spouses, then children below each couple.
+  // Children are grouped by which marriage they belong to.
   function placeSubtree(personId, leftX, gen, seen) {
     if (placed.has(personId)) return 0;
     const person = getP(personId);
@@ -1805,96 +1805,132 @@ function layoutTree() {
     placed.add(personId);
     const y = 50 + gen * GEN_HEIGHT;
 
-    // Check spouse
-    const spouseId = person.spouseId;
-    const hasSpouse = spouseId && viewSet.has(spouseId) && !placed.has(spouseId);
-    if (hasSpouse) placed.add(spouseId);
-    const coupleWidth = hasSpouse ? (CARD_W * 2 + COUPLE_GAP) : CARD_W;
-
-    // Get children for this couple
-    const children = getCoupleChildren(personId, hasSpouse ? spouseId : null)
-      .filter(cid => !placed.has(cid));
-
-    // Handle children from other marriages (if person has families with different spouses)
-    const otherMarriageChildren = [];
-    if (person.families) {
+    // Collect ALL marriages (spouses) for this person
+    const marriages = [];
+    if (person.families && person.families.length > 0) {
       for (const fam of person.families) {
-        if (fam.spouseId === spouseId) continue; // already handled
-        if (!fam.spouseId || !viewSet.has(fam.spouseId)) continue;
-        const otherKids = getCoupleChildren(personId, fam.spouseId)
-          .filter(cid => !placed.has(cid) && !children.includes(cid));
-        otherMarriageChildren.push(...otherKids);
+        if (fam.spouseId && viewSet.has(fam.spouseId) && !placed.has(fam.spouseId)) {
+          marriages.push({ spouseId: fam.spouseId, marriageDate: fam.marriageDate || '' });
+        }
       }
     }
-    const allChildren = [...children, ...otherMarriageChildren.filter(c => !children.includes(c))];
+    // Fallback: if no families array but has spouseId
+    if (marriages.length === 0 && person.spouseId && viewSet.has(person.spouseId) && !placed.has(person.spouseId)) {
+      marriages.push({ spouseId: person.spouseId, marriageDate: '' });
+    }
+
+    // Place all spouses
+    for (const m of marriages) {
+      placed.add(m.spouseId);
+    }
+
+    // Total couple width: person + all spouses
+    const coupleWidth = CARD_W + marriages.length * (CARD_W + COUPLE_GAP);
+
+    // Get children for each marriage
+    const marriageChildren = [];
+    for (const m of marriages) {
+      const kids = getCoupleChildren(personId, m.spouseId).filter(cid => !placed.has(cid));
+      marriageChildren.push(kids);
+    }
+    // Also get children with no spouse specified (orphans or single parent)
+    const soloChildren = getCoupleChildren(personId, null).filter(cid =>
+      !placed.has(cid) && !marriageChildren.flat().includes(cid)
+    );
+    if (soloChildren.length > 0) {
+      marriageChildren.push(soloChildren);
+      marriages.push({ spouseId: null, marriageDate: '' });
+    }
+
+    const allChildren = marriageChildren.flat();
 
     if (allChildren.length === 0) {
-      // Leaf: place couple
+      // Leaf: place person + spouses
       const x = leftX;
       positions.set(personId, { x: Math.round(x), y });
-      if (hasSpouse) {
-        positions.set(spouseId, { x: Math.round(x + CARD_W + COUPLE_GAP), y });
-        connections.push({ type: 'spouse', x1: x + CARD_W, y1: y + CARD_H / 2, x2: x + CARD_W + COUPLE_GAP, y2: y + CARD_H / 2 });
+      let curX = x + CARD_W + COUPLE_GAP;
+      for (const m of marriages) {
+        positions.set(m.spouseId, { x: Math.round(curX), y });
+        connections.push({ type: 'spouse', x1: curX - COUPLE_GAP, y1: y + CARD_H / 2, x2: curX, y2: y + CARD_H / 2 });
+        // Place ancestors of spouse above (side branch)
+        placeAncestorsAbove(m.spouseId, gen, new Set([personId, m.spouseId]));
+        curX += CARD_W + COUPLE_GAP;
       }
-      // Place ancestors of spouse above (side branch)
-      if (hasSpouse) placeAncestorsAbove(spouseId, gen, new Set([personId, spouseId]));
       return coupleWidth;
     }
 
-    // Compute children widths
+    // Compute children widths for each marriage group
     const childWidths = [];
     let totalChildrenWidth = 0;
     const planSeen = seen ? new Set(seen) : new Set();
     planSeen.add(personId);
-    if (hasSpouse) planSeen.add(spouseId);
-    for (const cid of allChildren) {
-      const w = computeWidth(cid, new Set(planSeen));
-      childWidths.push(w);
-      totalChildrenWidth += w + CARD_GAP_X;
-      planSeen.add(cid);
+    for (const m of marriages) if (m.spouseId) planSeen.add(m.spouseId);
+
+    for (const kids of marriageChildren) {
+      let groupWidth = 0;
+      for (const cid of kids) {
+        const w = computeWidth(cid, new Set(planSeen));
+        groupWidth += w + CARD_GAP_X;
+      }
+      groupWidth -= CARD_GAP_X;
+      if (groupWidth < 0) groupWidth = 0;
+      childWidths.push(groupWidth);
+      totalChildrenWidth += groupWidth + CARD_GAP_X * 2; // extra gap between marriage groups
     }
-    totalChildrenWidth -= CARD_GAP_X;
+    totalChildrenWidth -= CARD_GAP_X * 2;
+    if (totalChildrenWidth < 0) totalChildrenWidth = 0;
 
     const subtreeWidth = Math.max(coupleWidth, totalChildrenWidth);
 
     // Place couple centered above children
     const coupleX = leftX + (subtreeWidth - coupleWidth) / 2;
     positions.set(personId, { x: Math.round(coupleX), y });
-    if (hasSpouse) {
-      positions.set(spouseId, { x: Math.round(coupleX + CARD_W + COUPLE_GAP), y });
-      connections.push({ type: 'spouse', x1: coupleX + CARD_W, y1: y + CARD_H / 2, x2: coupleX + CARD_W + COUPLE_GAP, y2: y + CARD_H / 2 });
+    let curSpouseX = coupleX + CARD_W + COUPLE_GAP;
+    for (const m of marriages) {
+      positions.set(m.spouseId, { x: Math.round(curSpouseX), y });
+      connections.push({ type: 'spouse', x1: curSpouseX - COUPLE_GAP, y1: y + CARD_H / 2, x2: curSpouseX, y2: y + CARD_H / 2 });
+      placeAncestorsAbove(m.spouseId, gen, new Set([personId, m.spouseId]));
+      curSpouseX += CARD_W + COUPLE_GAP;
     }
 
-    // Place children left to right, centered as group
+    // Place children left to right, grouped by marriage
     let childLeftX = leftX + (subtreeWidth - totalChildrenWidth) / 2;
-    const childPositions = [];
-    for (let i = 0; i < allChildren.length; i++) {
-      const cid = allChildren[i];
-      placeSubtree(cid, Math.round(childLeftX), gen + 1, new Set(planSeen));
-      childLeftX += childWidths[i] + CARD_GAP_X;
-      const cp = positions.get(cid);
-      if (cp) childPositions.push({ childX: Math.round(cp.x + CARD_W / 2), childY: cp.y });
-    }
+    for (let mi = 0; mi < marriageChildren.length; mi++) {
+      const kids = marriageChildren[mi];
+      if (kids.length === 0) continue;
 
-    // Parent-child connectors
-    let parentMidX = coupleX + CARD_W / 2;
-    if (hasSpouse) {
-      const motherIsPerson = person.sex === 'F';
-      const motherIsSpouse = !motherIsPerson && getP(spouseId)?.sex === 'F';
-      if (motherIsPerson) parentMidX = coupleX + CARD_W / 2;
-      else if (motherIsSpouse) parentMidX = coupleX + CARD_W + COUPLE_GAP + CARD_W / 2;
-      else parentMidX = coupleX + CARD_W + COUPLE_GAP / 2;
-    }
-    const parentY = y + CARD_H;
-    if (childPositions.length === 1) {
-      connections.push({ type: 'parent-child', midX: Math.round(parentMidX), parentY, childX: childPositions[0].childX, childY: childPositions[0].childY });
-    } else if (childPositions.length > 1) {
-      const busY = Math.round((parentY + childPositions[0].childY) / 2);
-      connections.push({ type: 'parent-child-bus', parentMidX: Math.round(parentMidX), parentY, busY, children: childPositions });
-    }
+      // Find the parent midpoint for this marriage's children
+      let parentMidX = positions.get(personId).x + CARD_W / 2;
+      if (marriages[mi] && marriages[mi].spouseId) {
+        const sp = getP(marriages[mi].spouseId);
+        const motherIsPerson = person.sex === 'F';
+        const motherIsSpouse = !motherIsPerson && sp?.sex === 'F';
+        const spPos = positions.get(marriages[mi].spouseId);
+        if (motherIsPerson) parentMidX = positions.get(personId).x + CARD_W / 2;
+        else if (motherIsSpouse && spPos) parentMidX = spPos.x + CARD_W / 2;
+        else if (spPos) parentMidX = (positions.get(personId).x + spPos.x) / 2 + CARD_W / 2;
+      }
 
-    // Place ancestors of spouse above (side branch)
-    if (hasSpouse) placeAncestorsAbove(spouseId, gen, new Set([personId, spouseId]));
+      const childPositions = [];
+      for (const cid of kids) {
+        const w = computeWidth(cid, new Set(planSeen));
+        placeSubtree(cid, Math.round(childLeftX), gen + 1, new Set(planSeen));
+        childLeftX += w + CARD_GAP_X;
+        const cp = positions.get(cid);
+        if (cp) childPositions.push({ childX: Math.round(cp.x + CARD_W / 2), childY: cp.y });
+      }
+
+      // Parent-child connectors for this marriage
+      const parentY = y + CARD_H;
+      if (childPositions.length === 1) {
+        connections.push({ type: 'parent-child', midX: Math.round(parentMidX), parentY, childX: childPositions[0].childX, childY: childPositions[0].childY });
+      } else if (childPositions.length > 1) {
+        const busY = Math.round((parentY + childPositions[0].childY) / 2);
+        connections.push({ type: 'parent-child-bus', parentMidX: Math.round(parentMidX), parentY, busY, children: childPositions });
+      }
+
+      childLeftX += CARD_GAP_X * 2; // extra gap between marriage groups
+    }
 
     return subtreeWidth;
   }
