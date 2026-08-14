@@ -1615,94 +1615,184 @@ function layoutTree() {
     focusPersonId = anchorId;
   }
 
-  // BFS: assign gen relative to anchor. Anchor = 0, parents = -1, children = +1
-  const genMap = new Map();
-  const bfsVisited = new Set();
-  const bfsQueue = [{ id: anchorId, gen: 0 }];
-  bfsVisited.add(anchorId);
-  genMap.set(anchorId, 0);
+  // ── Build relationship graph and find connected components ──
+  // Two people are connected if they share a parent-child or spouse link.
+  // Each connected component is laid out as a separate tree block with
+  // a large visual gap so unrelated families don't get aligned together.
 
-  while (bfsQueue.length > 0) {
-    const { id: pid, gen } = bfsQueue.shift();
-    const p = getP(pid);
-    if (!p) continue;
-
-    // Spouse: same gen
-    if (p.spouseId && viewSet.has(p.spouseId) && !bfsVisited.has(p.spouseId)) {
-      bfsVisited.add(p.spouseId);
-      genMap.set(p.spouseId, gen);
-      bfsQueue.push({ id: p.spouseId, gen });
+  const adj = new Map();
+  for (const p of viewPeople) {
+    if (!adj.has(p.id)) adj.set(p.id, new Set());
+    if (p.spouseId && viewSet.has(p.spouseId)) {
+      adj.get(p.id).add(p.spouseId);
+      if (!adj.has(p.spouseId)) adj.set(p.spouseId, new Set());
+      adj.get(p.spouseId).add(p.id);
     }
-    // All spouses from families array
     if (p.families) {
       for (const fam of p.families) {
-        if (fam.spouseId && viewSet.has(fam.spouseId) && !bfsVisited.has(fam.spouseId)) {
-          bfsVisited.add(fam.spouseId);
-          genMap.set(fam.spouseId, gen);
-          bfsQueue.push({ id: fam.spouseId, gen });
+        if (fam.spouseId && viewSet.has(fam.spouseId)) {
+          adj.get(p.id).add(fam.spouseId);
+          if (!adj.has(fam.spouseId)) adj.set(fam.spouseId, new Set());
+          adj.get(fam.spouseId).add(p.id);
         }
       }
     }
-    // Parents: gen - 1 (walk upward)
-    for (const parentId of (p.parents || [])) {
-      if (viewSet.has(parentId) && !bfsVisited.has(parentId)) {
-        bfsVisited.add(parentId);
-        genMap.set(parentId, gen - 1);
-        bfsQueue.push({ id: parentId, gen: gen - 1 });
+    for (const pid of (p.parents || [])) {
+      if (viewSet.has(pid)) {
+        adj.get(p.id).add(pid);
+        if (!adj.has(pid)) adj.set(pid, new Set());
+        adj.get(pid).add(p.id);
       }
     }
-    // Children: gen + 1 (walk downward)
     for (const cid of (p.children || [])) {
-      if (viewSet.has(cid) && !bfsVisited.has(cid)) {
-        const child = getP(cid);
-        if (child && (!child.parents || child.parents.length === 0 || child.parents.includes(pid))) {
-          bfsVisited.add(cid);
-          genMap.set(cid, gen + 1);
-          bfsQueue.push({ id: cid, gen: gen + 1 });
-        }
+      if (viewSet.has(cid)) {
+        adj.get(p.id).add(cid);
+        if (!adj.has(cid)) adj.set(cid, new Set());
+        adj.get(cid).add(p.id);
       }
     }
   }
 
-  // Anyone not reached: assign gen based on nearest relative's gen
-  let changed = true;
-  while (changed) {
-    changed = false;
-    for (const p of viewPeople) {
-      if (genMap.has(p.id)) continue;
-      // Check parents
-      for (const pid of (p.parents || [])) {
-        if (genMap.has(pid) && viewSet.has(pid)) {
-          genMap.set(p.id, genMap.get(pid) + 1);
-          changed = true; break;
-        }
-      }
-      if (genMap.has(p.id)) continue;
-      // Check children
-      for (const cid of (p.children || [])) {
-        if (genMap.has(cid) && viewSet.has(cid)) {
-          genMap.set(p.id, genMap.get(cid) - 1);
-          changed = true; break;
-        }
-      }
-      if (genMap.has(p.id)) continue;
-      // Check spouse
-      if (p.spouseId && genMap.has(p.spouseId)) {
-        genMap.set(p.id, genMap.get(p.spouseId));
-        changed = true;
-      }
-    }
-  }
-
-  // Still not reached: gen 0
+  // Find connected components via flood fill
+  const componentOf = new Map();
+  const components = [];
   for (const p of viewPeople) {
-    if (!genMap.has(p.id)) genMap.set(p.id, 0);
+    if (componentOf.has(p.id)) continue;
+    const compIdx = components.length;
+    const comp = new Set();
+    const q = [p.id];
+    comp.add(p.id);
+    componentOf.set(p.id, compIdx);
+    while (q.length > 0) {
+      const curId = q.shift();
+      for (const nid of (adj.get(curId) || [])) {
+        if (!componentOf.has(nid)) {
+          componentOf.set(nid, compIdx);
+          comp.add(nid);
+          q.push(nid);
+        }
+      }
+    }
+    components.push(comp);
   }
 
-  // Normalize so minimum gen is 0 (oldest ancestors at top)
-  let minGen = Infinity;
-  for (const g of genMap.values()) if (g < minGen) minGen = g;
-  for (const [id, g] of genMap) genMap.set(id, g - minGen);
+  // ── Per-component BFS to assign generations ──
+  // Each component gets its own BFS from its best root, then normalized
+  // independently so min gen = 0 (oldest ancestors at top of that component)
+  const genMap = new Map();
+
+  for (let ci = 0; ci < components.length; ci++) {
+    const comp = components[ci];
+    const compPeople = [...comp].map(id => getP(id)).filter(p => p);
+
+    // Pick the best root for this component
+    let compRoot = null;
+    if (anchorId && comp.has(anchorId)) {
+      compRoot = anchorId;
+    } else {
+      const me = compPeople.find(p => p.isYou);
+      if (me) {
+        compRoot = me.id;
+      } else {
+        // Prefer someone with children but no parents in this component
+        let bestScore = -Infinity;
+        for (const p of compPeople) {
+          const hasParents = p.parents && p.parents.some(pid => comp.has(pid)) ? 1 : 0;
+          const hasChildren = p.children && p.children.some(cid => comp.has(cid)) ? 1 : 0;
+          const score = hasChildren * 2 - hasParents;
+          if (score > bestScore) { bestScore = score; compRoot = p.id; }
+        }
+      }
+    }
+
+    // BFS within this component
+    const cv = new Set();
+    const cq = [{ id: compRoot, gen: 0 }];
+    cv.add(compRoot);
+    genMap.set(compRoot, 0);
+
+    while (cq.length > 0) {
+      const { id: pid, gen } = cq.shift();
+      const p = getP(pid);
+      if (!p) continue;
+
+      // Spouse: same gen
+      if (p.spouseId && comp.has(p.spouseId) && !cv.has(p.spouseId)) {
+        cv.add(p.spouseId);
+        genMap.set(p.spouseId, gen);
+        cq.push({ id: p.spouseId, gen });
+      }
+      if (p.families) {
+        for (const fam of p.families) {
+          if (fam.spouseId && comp.has(fam.spouseId) && !cv.has(fam.spouseId)) {
+            cv.add(fam.spouseId);
+            genMap.set(fam.spouseId, gen);
+            cq.push({ id: fam.spouseId, gen });
+          }
+        }
+      }
+      // Parents: gen - 1 (walk upward)
+      for (const parentId of (p.parents || [])) {
+        if (comp.has(parentId) && !cv.has(parentId)) {
+          cv.add(parentId);
+          genMap.set(parentId, gen - 1);
+          cq.push({ id: parentId, gen: gen - 1 });
+        }
+      }
+      // Children: gen + 1 (walk downward)
+      for (const cid of (p.children || [])) {
+        if (comp.has(cid) && !cv.has(cid)) {
+          const child = getP(cid);
+          if (child && (!child.parents || child.parents.length === 0 || child.parents.includes(pid))) {
+            cv.add(cid);
+            genMap.set(cid, gen + 1);
+            cq.push({ id: cid, gen: gen + 1 });
+          }
+        }
+      }
+    }
+
+    // Cleanup: assign gens to anyone in this component not yet reached
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const p of compPeople) {
+        if (genMap.has(p.id)) continue;
+        for (const pid of (p.parents || [])) {
+          if (genMap.has(pid) && comp.has(pid)) {
+            genMap.set(p.id, genMap.get(pid) + 1);
+            changed = true; break;
+          }
+        }
+        if (genMap.has(p.id)) continue;
+        for (const cid of (p.children || [])) {
+          if (genMap.has(cid) && comp.has(cid)) {
+            genMap.set(p.id, genMap.get(cid) - 1);
+            changed = true; break;
+          }
+        }
+        if (genMap.has(p.id)) continue;
+        if (p.spouseId && genMap.has(p.spouseId) && comp.has(p.spouseId)) {
+          genMap.set(p.id, genMap.get(p.spouseId));
+          changed = true;
+        }
+      }
+    }
+
+    // Still not reached in this component: gen 0
+    for (const p of compPeople) {
+      if (!genMap.has(p.id)) genMap.set(p.id, 0);
+    }
+
+    // Normalize THIS component so minimum gen is 0
+    let minGen = Infinity;
+    for (const id of comp) {
+      if (genMap.get(id) < minGen) minGen = genMap.get(id);
+    }
+    for (const id of comp) {
+      genMap.set(id, genMap.get(id) - minGen);
+    }
+  }
 
   const maxGen = Math.max(...genMap.values());
 
@@ -1711,11 +1801,7 @@ function layoutTree() {
   // placed left-to-right within their parent's allocated space, centered
   // as a group below the couple. This produces a proper tree shape.
 
-  // Identify roots at gen 0 (oldest ancestors). These are the entry points
-  // for the recursive walk. A root is someone at gen 0 whose parents are
-  // not in the visible set (or who has no parents).
-  const gen0Roots = viewPeople.filter(p => genMap.get(p.id) === 0);
-  // Sort by descendant count (largest first) so big families are centered
+  // Count descendants helper (used to sort roots within each component)
   function countDescendants(id, seen) {
     if (seen.has(id)) return 0;
     seen.add(id);
@@ -1727,7 +1813,6 @@ function layoutTree() {
     }
     return count;
   }
-  gen0Roots.sort((a, b) => countDescendants(b.id, new Set()) - countDescendants(a.id, new Set()));
 
   // Get children for a couple (person + their spouse at this gen)
   function getCoupleChildren(personId) {
@@ -1865,22 +1950,51 @@ function layoutTree() {
     return w;
   }
 
-  // Place all gen 0 roots side by side
-  let currentX = 50;
-  for (const root of gen0Roots) {
-    if (placedIds.has(root.id)) continue;
-    const w = computeSubtreeWidth(root.id, 0, new Set());
-    placeSubtree(root.id, Math.round(currentX), 0);
-    currentX += w + CARD_GAP_X * 2;
-  }
+  // ── Phase 2b: Place subtrees component by component ──
+  // Each connected component is placed as a separate tree block.
+  // A large COMPONENT_GAP separates unrelated family groups so they
+  // don't get visually aligned or mixed together.
+  const COMPONENT_GAP = CARD_W * 3; // 3 card widths between unrelated groups
 
-  // Place anyone not yet placed (disconnected from the main tree)
-  for (const p of viewPeople) {
-    if (!placedIds.has(p.id)) {
-      const g = genMap.get(p.id);
-      positions.set(p.id, { x: Math.round(currentX), y: 50 + g * GEN_HEIGHT });
-      currentX += CARD_W + CARD_GAP_X;
+  // Sort components: anchor's component first (largest), then by size descending
+  components.sort((a, b) => {
+    const aHasAnchor = a.has(anchorId) ? 1 : 0;
+    const bHasAnchor = b.has(anchorId) ? 1 : 0;
+    if (aHasAnchor !== bHasAnchor) return bHasAnchor - aHasAnchor;
+    return b.size - a.size;
+  });
+
+  let currentX = 50;
+  for (const comp of components) {
+    // Find gen-0 roots within THIS component only
+    const compGen0Roots = viewPeople.filter(p =>
+      comp.has(p.id) && genMap.get(p.id) === 0 && !placedIds.has(p.id)
+    );
+    // Sort by descendant count within component (largest first)
+    compGen0Roots.sort((a, b) =>
+      countDescendants(b.id, new Set()) - countDescendants(a.id, new Set())
+    );
+
+    const compStartX = currentX;
+    for (const root of compGen0Roots) {
+      if (placedIds.has(root.id)) continue;
+      const w = computeSubtreeWidth(root.id, 0, new Set());
+      placeSubtree(root.id, Math.round(currentX), 0);
+      currentX += w + CARD_GAP_X * 2;
     }
+
+    // Place anyone in this component not yet placed (shouldn't happen often,
+    // but catches edge cases like orphan spouses)
+    for (const p of viewPeople) {
+      if (comp.has(p.id) && !placedIds.has(p.id)) {
+        const g = genMap.get(p.id);
+        positions.set(p.id, { x: Math.round(currentX), y: 50 + g * GEN_HEIGHT });
+        currentX += CARD_W + CARD_GAP_X;
+      }
+    }
+
+    // Add large gap before next component
+    currentX += COMPONENT_GAP;
   }
 
   // ── Phase 4: Draw connectors ──
