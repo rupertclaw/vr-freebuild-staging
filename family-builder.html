@@ -606,9 +606,6 @@ if ('serviceWorker' in navigator) {
       };
     })
     .catch(function(err) { console.error('[SW] Failed', err); });
-  navigator.serviceWorker.addEventListener('controllerchange', function() {
-    location.reload();
-  });
 }
 </script>
 </head>
@@ -3193,7 +3190,6 @@ function initPrivacyModalListeners() {
   }
   // Show only if not seen in this session OR ever
   if (!sessionStorage.getItem('vaultedRootsPrivacySeen') && !localStorage.getItem('vaultedRootsPrivacySeen')) {
-    sessionStorage.setItem('vaultedRootsPrivacySeen', '1');
     showPrivacyModal();
   }
 }
