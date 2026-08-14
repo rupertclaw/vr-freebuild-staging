@@ -673,9 +673,6 @@ if ('serviceWorker' in navigator) {
       });
     })
     .catch(function(err) { console.error('[SW] Failed', err); });
-  navigator.serviceWorker.addEventListener('controllerchange', function() {
-    location.reload();
-  });
 }
 </script>
 </head>
