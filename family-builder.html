@@ -1225,15 +1225,26 @@ function parseGedcom(text) {
   }
 
   // Merge duplicate individuals (same name + same birth year)
-  // Ancestry sometimes exports the same person as two INDI records with different xrefs
+  // Ancestry sometimes exports the same person as two INDI records with different xrefs.
+  // BUT: only merge when we have a real birth year. The GED export date (e.g. "07 MAR 2022")
+  // is NOT a real birth date — it's the file creation timestamp. Merging 26 people
+  // all named "Mooney" with birth year 2022 destroys family connections.
   const mergeKey = (ind) => {
     const bY = (ind.birthDate || '').match(/\d{4}/);
-    return (ind.name || '').toLowerCase().trim() + '|' + (bY ? bY[0] : (ind.birthDate || ''));
+    const year = bY ? parseInt(bY[0]) : null;
+    // Only use birth year for merging if it's a plausible birth year (before 2020)
+    // Years 2020+ are almost certainly export timestamps, not birth dates
+    if (year && year < 2020) {
+      return (ind.name || '').toLowerCase().trim() + '|' + year;
+    }
+    // No reliable birth year: don't merge (return unique key per xref)
+    return null;  // null = don't merge this person
   };
   const canonicalXref = {};  // dupXref -> canonicalXref
   const seenByKey = {};      // mergeKey -> canonical xref
   for (const [xref, ind] of Object.entries(indis)) {
     const key = mergeKey(ind);
+    if (key === null) continue;  // Skip merging for people without real birth years
     if (seenByKey[key]) {
       const canonXref = seenByKey[key];
       canonicalXref[xref] = canonXref;
