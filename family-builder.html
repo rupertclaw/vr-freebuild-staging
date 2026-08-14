@@ -1615,42 +1615,63 @@ function layoutTree() {
   }
 
   // ── Get children for a specific couple (both parents) ──
+  // Uses the families array to correctly match children to the right marriage.
   function getCoupleChildren(personId, spouseId) {
-    const kids = [];
-    const seen = new Set();
-    // Children from person
     const person = getP(personId);
     if (!person) return [];
-    for (const cid of (person.children || [])) {
-      if (!viewSet.has(cid) || seen.has(cid)) continue;
-      const child = getP(cid);
-      if (!child) continue;
-      if (spouseId) {
-        // Child must have both personId and spouseId as parents
-        if (child.parents && child.parents.length > 0) {
-          if (!child.parents.includes(personId) || !child.parents.includes(spouseId)) continue;
-        }
-      } else {
-        // No spouse specified: include all children
-      }
-      seen.add(cid);
-      kids.push(cid);
-    }
-    // Children from spouse (in case they have children from another marriage with this person)
-    if (spouseId) {
-      const sp = getP(spouseId);
-      if (sp) {
-        for (const cid of (sp.children || [])) {
+    const kids = [];
+    const seen = new Set();
+
+    // If person has families array, use it to find children of THIS specific marriage
+    if (person.families && person.families.length > 0) {
+      // Find the family record matching this spouse
+      for (const fam of person.families) {
+        if (fam.spouseId !== spouseId) continue;
+        // This is the right marriage. Get children from the person's children
+        // array who have BOTH personId and spouseId as parents.
+        for (const cid of (person.children || [])) {
           if (!viewSet.has(cid) || seen.has(cid)) continue;
           const child = getP(cid);
-          if (!child || !child.parents) continue;
-          if (child.parents.includes(personId) && child.parents.includes(spouseId)) {
+          if (!child) continue;
+          // Child must have both this person and this spouse as parents
+          if (child.parents && child.parents.length > 0) {
+            if (child.parents.includes(personId) && child.parents.includes(spouseId)) {
+              seen.add(cid);
+              kids.push(cid);
+            }
+          } else {
+            // No parents array — include (shouldn't happen with GEDCOM)
             seen.add(cid);
             kids.push(cid);
           }
         }
+        // Also check spouse's children for this marriage
+        const sp = getP(spouseId);
+        if (sp) {
+          for (const cid of (sp.children || [])) {
+            if (!viewSet.has(cid) || seen.has(cid)) continue;
+            const child = getP(cid);
+            if (!child || !child.parents) continue;
+            if (child.parents.includes(personId) && child.parents.includes(spouseId)) {
+              seen.add(cid);
+              kids.push(cid);
+            }
+          }
+        }
+        break; // Only process the matching family
       }
     }
+
+    // Fallback: if no families array or no match, use children directly
+    if (kids.length === 0 && !spouseId) {
+      for (const cid of (person.children || [])) {
+        if (viewSet.has(cid) && !seen.has(cid)) {
+          seen.add(cid);
+          kids.push(cid);
+        }
+      }
+    }
+
     // Sort by birth year
     kids.sort((a, b) => {
       const ca = getP(a), cb = getP(b);
@@ -1732,8 +1753,14 @@ function layoutTree() {
       .filter(cid => !placed.has(cid) && !seen.has(cid));
 
     if (children.length === 0) {
-      widthCache.set(personId, coupleWidth);
-      return coupleWidth;
+      // Leaf: width is couple width, but also account for spouse's ancestors above
+      let w = coupleWidth;
+      if (hasSpouse) {
+        const ancestorW = computeAncestorWidth(person.spouseId, new Set([personId, person.spouseId]));
+        w = Math.max(w, ancestorW);
+      }
+      widthCache.set(personId, w);
+      return w;
     }
 
     let childrenWidth = 0;
@@ -1746,7 +1773,12 @@ function layoutTree() {
     }
     childrenWidth -= CARD_GAP_X;
 
-    const w = Math.max(coupleWidth, childrenWidth);
+    let w = Math.max(coupleWidth, childrenWidth);
+    // Account for spouse's ancestors above (they may extend wider than the subtree)
+    if (hasSpouse) {
+      const ancestorW = computeAncestorWidth(person.spouseId, new Set([personId, person.spouseId]));
+      w = Math.max(w, ancestorW);
+    }
     widthCache.set(personId, w);
     return w;
   }
