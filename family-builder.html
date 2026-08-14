@@ -1756,38 +1756,55 @@ function layoutTree() {
     const person = getP(personId);
     if (!person || !viewSet.has(personId) || placed.has(personId)) return 0;
 
-    const hasSpouse = person.spouseId && viewSet.has(person.spouseId) && !placed.has(person.spouseId);
-    const coupleWidth = hasSpouse ? (CARD_W * 2 + COUPLE_GAP) : CARD_W;
-
-    // Get children for this couple
-    const children = getCoupleChildren(personId, hasSpouse ? person.spouseId : null)
-      .filter(cid => !placed.has(cid) && !seen.has(cid));
-
-    if (children.length === 0) {
-      // Leaf: width is couple width, but also account for spouse's ancestors above
-      let w = coupleWidth;
-      if (hasSpouse) {
-        const ancestorW = computeAncestorWidth(person.spouseId, new Set([personId, person.spouseId]));
-        w = Math.max(w, ancestorW);
+    // Collect ALL marriages (same as placeSubtree does)
+    const allMarriages = [];
+    if (person.families && person.families.length > 0) {
+      for (const fam of person.families) {
+        if (fam.spouseId && viewSet.has(fam.spouseId) && !placed.has(fam.spouseId)) {
+          allMarriages.push(fam.spouseId);
+        }
       }
-      widthCache.set(personId, w);
-      return w;
+    }
+    if (allMarriages.length === 0 && person.spouseId && viewSet.has(person.spouseId) && !placed.has(person.spouseId)) {
+      allMarriages.push(person.spouseId);
     }
 
+    const coupleWidth = CARD_W + allMarriages.length * (CARD_W + COUPLE_GAP);
+
+    // Get children for each marriage
     let childrenWidth = 0;
     const childSeen = new Set(seen);
     childSeen.add(personId);
-    if (hasSpouse) childSeen.add(person.spouseId);
+    for (const spId of allMarriages) childSeen.add(spId);
 
-    for (const cid of children) {
-      childrenWidth += computeWidth(cid, new Set(childSeen)) + CARD_GAP_X;
+    for (const spId of allMarriages) {
+      const kids = getCoupleChildren(personId, spId).filter(cid => !placed.has(cid) && !childSeen.has(cid));
+      let groupWidth = 0;
+      for (const cid of kids) {
+        groupWidth += computeWidth(cid, new Set(childSeen)) + CARD_GAP_X;
+        childSeen.add(cid);
+      }
+      groupWidth -= CARD_GAP_X;
+      if (groupWidth > 0) childrenWidth += groupWidth + CARD_GAP_X * 2; // gap between marriage groups
     }
-    childrenWidth -= CARD_GAP_X;
+    // Also solo children (no spouse)
+    const soloKids = getCoupleChildren(personId, null).filter(cid => !placed.has(cid) && !childSeen.has(cid));
+    if (soloKids.length > 0) {
+      let groupWidth = 0;
+      for (const cid of soloKids) {
+        groupWidth += computeWidth(cid, new Set(childSeen)) + CARD_GAP_X;
+        childSeen.add(cid);
+      }
+      groupWidth -= CARD_GAP_X;
+      if (groupWidth > 0) childrenWidth += groupWidth + CARD_GAP_X * 2;
+    }
+    childrenWidth -= CARD_GAP_X * 2;
+    if (childrenWidth < 0) childrenWidth = 0;
 
     let w = Math.max(coupleWidth, childrenWidth);
-    // Account for spouse's ancestors above (they may extend wider than the subtree)
-    if (hasSpouse) {
-      const ancestorW = computeAncestorWidth(person.spouseId, new Set([personId, person.spouseId]));
+    // Account for ALL spouses' ancestors above
+    for (const spId of allMarriages) {
+      const ancestorW = computeAncestorWidth(spId, new Set([personId, spId]));
       w = Math.max(w, ancestorW);
     }
     widthCache.set(personId, w);
@@ -2104,6 +2121,41 @@ function layoutTree() {
         positions.set(p.id, { x: Math.round(orphanX), y: 50 + orphanGen * GEN_HEIGHT });
         placed.add(p.id);
         orphanX += CARD_W + CARD_GAP_X;
+      }
+    }
+  }
+
+  // ── POST-PLACEMENT COLLISION RESOLUTION ──
+  // After all cards are placed, scan each generation level for overlapping
+  // cards and shift them apart. This handles overlaps caused by side branches
+  // (spouse ancestors) that extend beyond their allocated subtree width.
+  
+  // Group cards by generation level (Y position)
+  const genGroups = new Map();
+  for (const [id, pos] of positions) {
+    const gen = Math.round((pos.y - 50) / GEN_HEIGHT);
+    if (!genGroups.has(gen)) genGroups.set(gen, []);
+    genGroups.get(gen).push({ id, x: pos.x, y: pos.y });
+  }
+
+  // For each generation level, sort by X and resolve overlaps
+  for (const [gen, cards] of genGroups) {
+    cards.sort((a, b) => a.x - b.x);
+    
+    // Resolve overlaps left-to-right
+    for (let i = 1; i < cards.length; i++) {
+      const prev = cards[i - 1];
+      const cur = cards[i];
+      const minGap = CARD_W + COUPLE_GAP; // minimum space between cards
+      const actualGap = cur.x - (prev.x + CARD_W);
+      
+      if (actualGap < COUPLE_GAP) {
+        // Overlap or too close: shift this card and all subsequent cards right
+        const shift = COUPLE_GAP - actualGap;
+        for (let j = i; j < cards.length; j++) {
+          cards[j].x += shift;
+          positions.set(cards[j].id, { x: Math.round(cards[j].x), y: cards[j].y });
+        }
       }
     }
   }
