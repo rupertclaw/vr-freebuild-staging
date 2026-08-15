@@ -2338,8 +2338,17 @@ function renderFreeBuild() {
     }
     if (connMaxX < viewLeft || connMinX > viewRight || connMaxY < viewTop || connMinY > viewBottom) continue;
     if (conn.type === 'spouse') {
-      svgContent += `<line x1="${conn.x1}" y1="${conn.y1}" x2="${conn.x2}" y2="${conn.y2}"
-                    stroke="var(--line-stroke)" stroke-width="2" />`;
+      if (Math.abs(conn.y1 - conn.y2) < 2) {
+        // Same Y — simple horizontal line
+        svgContent += `<line x1="${conn.x1}" y1="${conn.y1}" x2="${conn.x2}" y2="${conn.y2}"
+                      stroke="var(--line-stroke)" stroke-width="2" />`;
+      } else {
+        // Different Y — step connector: horizontal from left card, vertical, horizontal to right card
+        // Use the midpoint X between the two cards for the vertical segment
+        const midX = (conn.x1 + conn.x2) / 2;
+        svgContent += `<path d="M ${conn.x1} ${conn.y1} L ${midX} ${conn.y1} L ${midX} ${conn.y2} L ${conn.x2} ${conn.y2}"
+                      fill="none" stroke="var(--line-stroke)" stroke-width="2" stroke-linejoin="round" />`;
+      }
     } else if (conn.type === 'parent-child') {
       // Single child — L-shaped or straight line
       const baseMidY = (conn.parentY + conn.childY) / 2;
@@ -2820,22 +2829,41 @@ function fbAddSpouse() {
   const person = people.find(p => p.id === selectedPersonId);
   if (!person) return;
   
-  // Count existing spouses (from families array, not just spouseId)
-  const existingSpouseIds = [];
-  if (person.families) {
-    for (const fam of person.families) {
-      if (fam.spouseId && !existingSpouseIds.includes(fam.spouseId)) {
-        existingSpouseIds.push(fam.spouseId);
+  // Ensure the person has a families array
+  if (!person.families) person.families = [];
+  
+  // If the person already has a spouseId but that spouse is NOT in the
+  // families array, we need to add the existing marriage to families
+  // BEFORE adding the new one. This happens when the first spouse was
+  // added by the old code that only set spouseId (no families entry).
+  if (person.spouseId) {
+    const alreadyInFamilies = person.families.some(f => f.spouseId === person.spouseId);
+    if (!alreadyInFamilies) {
+      const existingSpouse = people.find(p => p.id === person.spouseId);
+      const existingName = existingSpouse ? existingSpouse.name : 'Unknown';
+      person.families.push({
+        spouseId: person.spouseId,
+        spouseName: existingName,
+        marriageDate: person.marriageDate || '',
+        famId: 'manual-' + person.spouseId
+      });
+      // Also add the reverse entry to the existing spouse
+      if (existingSpouse) {
+        if (!existingSpouse.families) existingSpouse.families = [];
+        if (!existingSpouse.families.some(f => f.spouseId === person.id)) {
+          existingSpouse.families.push({
+            spouseId: person.id,
+            spouseName: person.name,
+            marriageDate: person.marriageDate || '',
+            famId: 'manual-' + person.spouseId
+          });
+        }
       }
     }
   }
-  // Also check spouseId if not already in the list
-  if (person.spouseId && !existingSpouseIds.includes(person.spouseId)) {
-    existingSpouseIds.push(person.spouseId);
-  }
   
-  // Allow multiple spouses — no limit. Each additional spouse is added
-  // to the families array so the layout engine can group children correctly.
+  // Count existing spouses
+  const existingSpouseCount = person.families.length;
   
   // Infer opposite sex from existing person
   const spouseSex = person.sex === 'F' ? 'M' : (person.sex === 'M' ? 'F' : '');
@@ -2845,13 +2873,12 @@ function fbAddSpouse() {
   
   // Initialize families array on the new spouse
   if (!newSpouse.families) newSpouse.families = [];
-  newSpouse.families.push({ spouseId: person.id, spouseName: person.name, marriageDate: '', famId: 'manual-' + nextId });
+  const famId = 'manual-' + newSpouse.id;
+  newSpouse.families.push({ spouseId: person.id, spouseName: person.name, marriageDate: '', famId: famId });
   
   people.push(newSpouse);
   
   // Add this marriage to the person's families array
-  if (!person.families) person.families = [];
-  const famId = 'manual-' + nextId;
   person.families.push({ spouseId: newSpouse.id, spouseName: 'Name', marriageDate: '', famId: famId });
   
   // Update spouseId to the new spouse (most recently added)
@@ -2864,7 +2891,7 @@ function fbAddSpouse() {
   closeDetail();
   renderFreeBuild();
   setTimeout(() => openDetail(newSpouse), 100);
-  const spouseWord = existingSpouseIds.length > 0 ? 'another spouse' : 'a spouse';
+  const spouseWord = existingSpouseCount > 0 ? 'another spouse' : 'a spouse';
   showToast('Added ' + spouseWord + ' for ' + person.name);
 }
 
