@@ -1877,11 +1877,11 @@ function layoutTree() {
           // Spouse already placed elsewhere — draw a spouse line to their existing position
           const spPos = positions.get(m.spouseId);
           if (spPos) {
-            connections.push({ type: 'spouse', x1: x + CARD_W, y1: y + CARD_H / 2, x2: spPos.x, y2: spPos.y + CARD_H / 2 });
+            connections.push({ type: 'spouse', x1: x + CARD_W, y1: y + CARD_H / 2, x2: spPos.x, y2: spPos.y + CARD_H / 2, personIds: [personId, m.spouseId] });
           }
         } else {
           positions.set(m.spouseId, { x: Math.round(curX), y });
-          connections.push({ type: 'spouse', x1: curX - COUPLE_GAP, y1: y + CARD_H / 2, x2: curX, y2: y + CARD_H / 2 });
+          connections.push({ type: 'spouse', x1: curX - COUPLE_GAP, y1: y + CARD_H / 2, x2: curX, y2: y + CARD_H / 2, personIds: [personId, m.spouseId] });
           placeAncestorsAbove(m.spouseId, gen, new Set([personId, m.spouseId]));
           curX += CARD_W + COUPLE_GAP;
         }
@@ -1921,11 +1921,11 @@ function layoutTree() {
         // Spouse already placed elsewhere — draw spouse line to their position
         const spPos = positions.get(m.spouseId);
         if (spPos) {
-          connections.push({ type: 'spouse', x1: coupleX + CARD_W, y1: y + CARD_H / 2, x2: spPos.x, y2: spPos.y + CARD_H / 2 });
+          connections.push({ type: 'spouse', x1: coupleX + CARD_W, y1: y + CARD_H / 2, x2: spPos.x, y2: spPos.y + CARD_H / 2, personIds: [personId, m.spouseId] });
         }
       } else {
         positions.set(m.spouseId, { x: Math.round(curSpouseX), y });
-        connections.push({ type: 'spouse', x1: curSpouseX - COUPLE_GAP, y1: y + CARD_H / 2, x2: curSpouseX, y2: y + CARD_H / 2 });
+        connections.push({ type: 'spouse', x1: curSpouseX - COUPLE_GAP, y1: y + CARD_H / 2, x2: curSpouseX, y2: y + CARD_H / 2, personIds: [personId, m.spouseId] });
         placeAncestorsAbove(m.spouseId, gen, new Set([personId, m.spouseId]));
         curSpouseX += CARD_W + COUPLE_GAP;
       }
@@ -1960,11 +1960,14 @@ function layoutTree() {
 
       // Parent-child connectors for this marriage
       const parentY = y + CARD_H;
+      // Store person IDs so connections can be recomputed after collision resolution
+      const childIdsForConn = kids;
+      const parentIdForConn = personId;
       if (childPositions.length === 1) {
-        connections.push({ type: 'parent-child', midX: Math.round(parentMidX), parentY, childX: childPositions[0].childX, childY: childPositions[0].childY });
+        connections.push({ type: 'parent-child', midX: Math.round(parentMidX), parentY, childX: childPositions[0].childX, childY: childPositions[0].childY, personIds: { parentId: parentIdForConn, childId: childIdsForConn[0] } });
       } else if (childPositions.length > 1) {
         const busY = Math.round((parentY + childPositions[0].childY) / 2);
-        connections.push({ type: 'parent-child-bus', parentMidX: Math.round(parentMidX), parentY, busY, children: childPositions });
+        connections.push({ type: 'parent-child-bus', parentMidX: Math.round(parentMidX), parentY, busY, children: childPositions, personIds: { parentId: parentIdForConn, childIds: childIdsForConn.slice() } });
       }
 
       childLeftX += CARD_GAP_X * 2; // extra gap between marriage groups
@@ -2011,11 +2014,11 @@ function layoutTree() {
         placed.add(psId);
         seen.add(psId);
         positions.set(psId, { x: px + CARD_W + COUPLE_GAP, y: parentY });
-        connections.push({ type: 'spouse', x1: px + CARD_W, y1: parentY + CARD_H / 2, x2: px + CARD_W + COUPLE_GAP, y2: parentY + CARD_H / 2 });
+        connections.push({ type: 'spouse', x1: px + CARD_W, y1: parentY + CARD_H / 2, x2: px + CARD_W + COUPLE_GAP, y2: parentY + CARD_H / 2, personIds: [pid, psId] });
       }
 
       // Connector: parent down to person
-      connections.push({ type: 'parent-child', midX: px + CARD_W / 2, parentY: parentY + CARD_H, childX: Math.round(myPos.x + CARD_W / 2), childY: myPos.y });
+      connections.push({ type: 'parent-child', midX: px + CARD_W / 2, parentY: parentY + CARD_H, childX: Math.round(myPos.x + CARD_W / 2), childY: myPos.y, personIds: { parentId: pid, childId: personId } });
 
       // Recurse upward for grandparents
       placeAncestorsAbove(pid, parentGen, new Set(seen));
@@ -2073,7 +2076,7 @@ function layoutTree() {
         const spX = myPos.x + CARD_W + COUPLE_GAP;
         const spGen = Math.round((myPos.y - 50) / GEN_HEIGHT);
         positions.set(spId, { x: spX, y: myPos.y });
-        connections.push({ type: 'spouse', x1: myPos.x + CARD_W, y1: myPos.y + CARD_H / 2, x2: spX, y2: myPos.y + CARD_H / 2 });
+        connections.push({ type: 'spouse', x1: myPos.x + CARD_W, y1: myPos.y + CARD_H / 2, x2: spX, y2: myPos.y + CARD_H / 2, personIds: [pid, spId] });
         // Place spouse's ancestors above
         placeAncestorsAbove(spId, spGen, new Set([pid, spId]));
         changed = true;
@@ -2126,7 +2129,7 @@ function layoutTree() {
             const spX = myPos.x + CARD_W + COUPLE_GAP;
             const spGen = Math.round((myPos.y - 50) / GEN_HEIGHT);
             positions.set(spId, { x: spX, y: myPos.y });
-            connections.push({ type: 'spouse', x1: myPos.x + CARD_W, y1: myPos.y + CARD_H / 2, x2: spX, y2: myPos.y + CARD_H / 2 });
+            connections.push({ type: 'spouse', x1: myPos.x + CARD_W, y1: myPos.y + CARD_H / 2, x2: spX, y2: myPos.y + CARD_H / 2, personIds: [pid, spId] });
             placeAncestorsAbove(spId, spGen, new Set([pid, spId]));
             subChanged = true;
           }
@@ -2181,6 +2184,81 @@ function layoutTree() {
     }
   }
 
+  // ── RECOMPUTE CONNECTIONS AFTER COLLISION RESOLUTION ──
+  // The collision resolution above shifted card positions, but the
+  // connections array still holds the OLD coordinates. We must rebuild
+  // every connection from the final positions so lines actually point
+  // to where the cards ended up.
+  const fixedConnections = [];
+  for (const conn of connections) {
+    if (conn.type === 'spouse') {
+      // Spouse lines connect two card edges. We stored the two person IDs
+      // in conn.personIds (added below) so we can look up final positions.
+      // Fallback: if no personIds, keep original (shouldn't happen).
+      if (conn.personIds && conn.personIds.length === 2) {
+        const p1 = positions.get(conn.personIds[0]);
+        const p2 = positions.get(conn.personIds[1]);
+        if (p1 && p2) {
+          // Draw line from right edge of left card to left edge of right card
+          const left = p1.x <= p2.x ? p1 : p2;
+          const right = p1.x <= p2.x ? p2 : p1;
+          fixedConnections.push({
+            type: 'spouse',
+            x1: left.x + CARD_W,
+            y1: left.y + CARD_H / 2,
+            x2: right.x,
+            y2: right.y + CARD_H / 2
+          });
+        }
+      } else {
+        fixedConnections.push(conn);
+      }
+    } else if (conn.type === 'parent-child') {
+      // Single parent-child line: from parent bottom to child top
+      if (conn.personIds) {
+        const parentPos = positions.get(conn.personIds.parentId);
+        const childPos = positions.get(conn.personIds.childId);
+        if (parentPos && childPos) {
+          fixedConnections.push({
+            type: 'parent-child',
+            midX: parentPos.x + CARD_W / 2,
+            parentY: parentPos.y + CARD_H,
+            childX: childPos.x + CARD_W / 2,
+            childY: childPos.y
+          });
+        }
+      } else {
+        fixedConnections.push(conn);
+      }
+    } else if (conn.type === 'parent-child-bus') {
+      // Bus connector: parent midpoint down to a horizontal bus, then to each child
+      if (conn.personIds) {
+        const parentPos = positions.get(conn.personIds.parentId);
+        if (parentPos) {
+          const newChildren = conn.personIds.childIds.map(function(cid) {
+            var cp = positions.get(cid);
+            return cp ? { childX: cp.x + CARD_W / 2, childY: cp.y } : null;
+          }).filter(function(c) { return c !== null; });
+          if (newChildren.length > 0) {
+            var parentY = parentPos.y + CARD_H;
+            var busY = Math.round((parentY + newChildren[0].childY) / 2);
+            fixedConnections.push({
+              type: 'parent-child-bus',
+              parentMidX: parentPos.x + CARD_W / 2,
+              parentY: parentY,
+              busY: busY,
+              children: newChildren
+            });
+          }
+        }
+      } else {
+        fixedConnections.push(conn);
+      }
+    } else {
+      fixedConnections.push(conn);
+    }
+  }
+
   // ── Calculate bounds ──
   let maxX = 0, maxY = 0;
   for (const [id, pos] of positions) {
@@ -2192,7 +2270,7 @@ function layoutTree() {
     positions,
     width: Math.max(maxX + 100, 200),
     height: Math.max(maxY + 100, 200),
-    connections
+    connections: fixedConnections
   };
 }
 
@@ -2717,25 +2795,53 @@ function fbAddSpouse() {
   if (!selectedPersonId) return;
   const person = people.find(p => p.id === selectedPersonId);
   if (!person) return;
-  if (person.spouseId) {
-    showToast('This person already has a spouse');
-    return;
+  
+  // Count existing spouses (from families array, not just spouseId)
+  const existingSpouseIds = [];
+  if (person.families) {
+    for (const fam of person.families) {
+      if (fam.spouseId && !existingSpouseIds.includes(fam.spouseId)) {
+        existingSpouseIds.push(fam.spouseId);
+      }
+    }
   }
+  // Also check spouseId if not already in the list
+  if (person.spouseId && !existingSpouseIds.includes(person.spouseId)) {
+    existingSpouseIds.push(person.spouseId);
+  }
+  
+  // Allow multiple spouses — no limit. Each additional spouse is added
+  // to the families array so the layout engine can group children correctly.
+  
   // Infer opposite sex from existing person
   const spouseSex = person.sex === 'F' ? 'M' : (person.sex === 'M' ? 'F' : '');
   const newSpouse = createPerson(nextId++, person.gen, 'Name', '?', 'blank', { sex: spouseSex });
   newSpouse.spouseId = person.id;
   newSpouse.spouseName = person.name;
+  
+  // Initialize families array on the new spouse
+  if (!newSpouse.families) newSpouse.families = [];
+  newSpouse.families.push({ spouseId: person.id, spouseName: person.name, marriageDate: '', famId: 'manual-' + nextId });
+  
   people.push(newSpouse);
-
+  
+  // Add this marriage to the person's families array
+  if (!person.families) person.families = [];
+  const famId = 'manual-' + nextId;
+  person.families.push({ spouseId: newSpouse.id, spouseName: 'Name', marriageDate: '', famId: famId });
+  
+  // Update spouseId to the new spouse (most recently added)
+  // The layout engine uses families[] for multi-marriage handling,
+  // but spouseId is still needed for focus mode and detail panel.
   person.spouseId = newSpouse.id;
   person.spouseName = 'Name'; // will be updated when spouse is edited
-
+  
   autoSave();
   closeDetail();
   renderFreeBuild();
   setTimeout(() => openDetail(newSpouse), 100);
-  showToast('Added spouse for ' + person.name);
+  const spouseWord = existingSpouseIds.length > 0 ? 'another spouse' : 'a spouse';
+  showToast('Added ' + spouseWord + ' for ' + person.name);
 }
 
 function fbAddChild() {
