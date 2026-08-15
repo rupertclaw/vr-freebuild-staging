@@ -1823,26 +1823,30 @@ function layoutTree() {
     const y = 50 + gen * GEN_HEIGHT;
 
     // Collect ALL marriages (spouses) for this person
+    // Even if a spouse is already placed, we still need to place their children
     const marriages = [];
     if (person.families && person.families.length > 0) {
       for (const fam of person.families) {
-        if (fam.spouseId && viewSet.has(fam.spouseId) && !placed.has(fam.spouseId)) {
-          marriages.push({ spouseId: fam.spouseId, marriageDate: fam.marriageDate || '' });
+        if (fam.spouseId && viewSet.has(fam.spouseId)) {
+          marriages.push({ spouseId: fam.spouseId, marriageDate: fam.marriageDate || '', alreadyPlaced: placed.has(fam.spouseId) });
         }
       }
     }
     // Fallback: if no families array but has spouseId
-    if (marriages.length === 0 && person.spouseId && viewSet.has(person.spouseId) && !placed.has(person.spouseId)) {
-      marriages.push({ spouseId: person.spouseId, marriageDate: '' });
+    if (marriages.length === 0 && person.spouseId && viewSet.has(person.spouseId)) {
+      marriages.push({ spouseId: person.spouseId, marriageDate: '', alreadyPlaced: placed.has(person.spouseId) });
     }
 
-    // Place all spouses
+    // Place all spouses (mark as placed, but don't reposition if already placed)
     for (const m of marriages) {
-      placed.add(m.spouseId);
+      if (!m.alreadyPlaced) {
+        placed.add(m.spouseId);
+      }
     }
 
-    // Total couple width: person + all spouses
-    const coupleWidth = CARD_W + marriages.length * (CARD_W + COUPLE_GAP);
+    // Total couple width: person + spouses that need to be placed next to this person
+    const newSpouses = marriages.filter(m => !m.alreadyPlaced);
+    const coupleWidth = CARD_W + newSpouses.length * (CARD_W + COUPLE_GAP);
 
     // Get children for each marriage
     const marriageChildren = [];
@@ -1862,16 +1866,23 @@ function layoutTree() {
     const allChildren = marriageChildren.flat();
 
     if (allChildren.length === 0) {
-      // Leaf: place person + spouses
+      // Leaf: place person + new spouses (already-placed spouses stay where they are)
       const x = leftX;
       positions.set(personId, { x: Math.round(x), y });
       let curX = x + CARD_W + COUPLE_GAP;
       for (const m of marriages) {
-        positions.set(m.spouseId, { x: Math.round(curX), y });
-        connections.push({ type: 'spouse', x1: curX - COUPLE_GAP, y1: y + CARD_H / 2, x2: curX, y2: y + CARD_H / 2 });
-        // Place ancestors of spouse above (side branch)
-        placeAncestorsAbove(m.spouseId, gen, new Set([personId, m.spouseId]));
-        curX += CARD_W + COUPLE_GAP;
+        if (m.alreadyPlaced) {
+          // Spouse already placed elsewhere — draw a spouse line to their existing position
+          const spPos = positions.get(m.spouseId);
+          if (spPos) {
+            connections.push({ type: 'spouse', x1: x + CARD_W, y1: y + CARD_H / 2, x2: spPos.x, y2: spPos.y + CARD_H / 2 });
+          }
+        } else {
+          positions.set(m.spouseId, { x: Math.round(curX), y });
+          connections.push({ type: 'spouse', x1: curX - COUPLE_GAP, y1: y + CARD_H / 2, x2: curX, y2: y + CARD_H / 2 });
+          placeAncestorsAbove(m.spouseId, gen, new Set([personId, m.spouseId]));
+          curX += CARD_W + COUPLE_GAP;
+        }
       }
       return coupleWidth;
     }
@@ -1904,10 +1915,18 @@ function layoutTree() {
     positions.set(personId, { x: Math.round(coupleX), y });
     let curSpouseX = coupleX + CARD_W + COUPLE_GAP;
     for (const m of marriages) {
-      positions.set(m.spouseId, { x: Math.round(curSpouseX), y });
-      connections.push({ type: 'spouse', x1: curSpouseX - COUPLE_GAP, y1: y + CARD_H / 2, x2: curSpouseX, y2: y + CARD_H / 2 });
-      placeAncestorsAbove(m.spouseId, gen, new Set([personId, m.spouseId]));
-      curSpouseX += CARD_W + COUPLE_GAP;
+      if (m.alreadyPlaced) {
+        // Spouse already placed elsewhere — draw spouse line to their position
+        const spPos = positions.get(m.spouseId);
+        if (spPos) {
+          connections.push({ type: 'spouse', x1: coupleX + CARD_W, y1: y + CARD_H / 2, x2: spPos.x, y2: spPos.y + CARD_H / 2 });
+        }
+      } else {
+        positions.set(m.spouseId, { x: Math.round(curSpouseX), y });
+        connections.push({ type: 'spouse', x1: curSpouseX - COUPLE_GAP, y1: y + CARD_H / 2, x2: curSpouseX, y2: y + CARD_H / 2 });
+        placeAncestorsAbove(m.spouseId, gen, new Set([personId, m.spouseId]));
+        curSpouseX += CARD_W + COUPLE_GAP;
+      }
     }
 
     // Place children left to right, grouped by marriage
