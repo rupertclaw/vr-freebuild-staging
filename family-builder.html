@@ -1963,11 +1963,12 @@ function layoutTree() {
       // Store person IDs so connections can be recomputed after collision resolution
       const childIdsForConn = kids;
       const parentIdForConn = personId;
+      const spouseIdForConn = (marriages[mi] && marriages[mi].spouseId) ? marriages[mi].spouseId : null;
       if (childPositions.length === 1) {
-        connections.push({ type: 'parent-child', midX: Math.round(parentMidX), parentY, childX: childPositions[0].childX, childY: childPositions[0].childY, personIds: { parentId: parentIdForConn, childId: childIdsForConn[0] } });
+        connections.push({ type: 'parent-child', midX: Math.round(parentMidX), parentY, childX: childPositions[0].childX, childY: childPositions[0].childY, personIds: { parentId: parentIdForConn, childId: childIdsForConn[0], spouseId: spouseIdForConn } });
       } else if (childPositions.length > 1) {
         const busY = Math.round((parentY + childPositions[0].childY) / 2);
-        connections.push({ type: 'parent-child-bus', parentMidX: Math.round(parentMidX), parentY, busY, children: childPositions, personIds: { parentId: parentIdForConn, childIds: childIdsForConn.slice() } });
+        connections.push({ type: 'parent-child-bus', parentMidX: Math.round(parentMidX), parentY, busY, children: childPositions, personIds: { parentId: parentIdForConn, childIds: childIdsForConn.slice(), spouseId: spouseIdForConn } });
       }
 
       childLeftX += CARD_GAP_X * 2; // extra gap between marriage groups
@@ -2218,10 +2219,21 @@ function layoutTree() {
       if (conn.personIds) {
         const parentPos = positions.get(conn.personIds.parentId);
         const childPos = positions.get(conn.personIds.childId);
+        const spousePos = conn.personIds.spouseId ? positions.get(conn.personIds.spouseId) : null;
         if (parentPos && childPos) {
+          // Compute midpoint: use mother's position if known, else couple midpoint, else parent center
+          let midX;
+          const parent = getP(conn.personIds.parentId);
+          const spouse = conn.personIds.spouseId ? getP(conn.personIds.spouseId) : null;
+          const motherIsParent = parent && parent.sex === 'F';
+          const motherIsSpouse = !motherIsParent && spouse && spouse.sex === 'F';
+          if (motherIsParent) midX = parentPos.x + CARD_W / 2;
+          else if (motherIsSpouse && spousePos) midX = spousePos.x + CARD_W / 2;
+          else if (spousePos) midX = (parentPos.x + spousePos.x) / 2 + CARD_W / 2;
+          else midX = parentPos.x + CARD_W / 2;
           fixedConnections.push({
             type: 'parent-child',
-            midX: parentPos.x + CARD_W / 2,
+            midX: Math.round(midX),
             parentY: parentPos.y + CARD_H,
             childX: childPos.x + CARD_W / 2,
             childY: childPos.y
@@ -2234,7 +2246,19 @@ function layoutTree() {
       // Bus connector: parent midpoint down to a horizontal bus, then to each child
       if (conn.personIds) {
         const parentPos = positions.get(conn.personIds.parentId);
+        const spousePos = conn.personIds.spouseId ? positions.get(conn.personIds.spouseId) : null;
         if (parentPos) {
+          // Compute midpoint: use mother's position if known, else couple midpoint, else parent center
+          let midX;
+          const parent = getP(conn.personIds.parentId);
+          const spouse = conn.personIds.spouseId ? getP(conn.personIds.spouseId) : null;
+          const motherIsParent = parent && parent.sex === 'F';
+          const motherIsSpouse = !motherIsParent && spouse && spouse.sex === 'F';
+          if (motherIsParent) midX = parentPos.x + CARD_W / 2;
+          else if (motherIsSpouse && spousePos) midX = spousePos.x + CARD_W / 2;
+          else if (spousePos) midX = (parentPos.x + spousePos.x) / 2 + CARD_W / 2;
+          else midX = parentPos.x + CARD_W / 2;
+          
           const newChildren = conn.personIds.childIds.map(function(cid) {
             var cp = positions.get(cid);
             return cp ? { childX: cp.x + CARD_W / 2, childY: cp.y } : null;
@@ -2244,7 +2268,7 @@ function layoutTree() {
             var busY = Math.round((parentY + newChildren[0].childY) / 2);
             fixedConnections.push({
               type: 'parent-child-bus',
-              parentMidX: parentPos.x + CARD_W / 2,
+              parentMidX: Math.round(midX),
               parentY: parentY,
               busY: busY,
               children: newChildren
