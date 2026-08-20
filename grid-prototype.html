@@ -245,10 +245,10 @@ function findDisconnected(individuals, families, visited) {
   return components;
 }
 
-// ---- Family-grouped slot assignment ----
-// For each generation row, assign column slots ordered by family grouping:
-// 1. Start with anchor (gen 0) at center
-// 2. Walk outward: spouses adjacent, children centered under parents, siblings grouped
+// ---- Wave-based slot assignment v2 ----
+// Process families in dependency waves from anchor outward.
+// Each family: place couple together, center children under couple.
+// Ancestors centered above their already-placed children.
 function assignSlots(individuals, families, childToFamily, generations, visited, anchorId) {
   const CARD_W = parseInt(document.getElementById('cardW').value);
   const CARD_H = parseInt(document.getElementById('cardH').value);
@@ -258,240 +258,145 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
   const STEP_X = CARD_W + GAP_X;
   const STEP_Y = CARD_H + GAP_Y;
   
-  // Group people by generation
+  // Group by gen
   const byGen = {};
   for (const [pid, gen] of Object.entries(generations)) {
     if (!byGen[gen]) byGen[gen] = [];
     byGen[gen].push(pid);
   }
-  
-  // For each generation, we need to order people by family groups
-  // Strategy: process families in order, place couples together, children under parents
-  
-  // Build a family ordering for each generation
-  // Start from anchor and work outward
-  
-  const positions = {}; // pid -> { x, y }
-  
-  // First, figure out which families belong to which generation
-  // A family "belongs" to the generation of the parents
-  
-  // For each person, find their spouse family(s) and parent family
-  const personSpouseFams = {}; // pid -> [famId]
-  const personParentFam = {};   // pid -> famId
-  
-  for (const fid in families) {
-    const fam = families[fid];
-    if (fam.husb) {
-      if (!personSpouseFams[fam.husb]) personSpouseFams[fam.husb] = [];
-      personSpouseFams[fam.husb].push(fid);
-    }
-    if (fam.wife) {
-      if (!personSpouseFams[fam.wife]) personSpouseFams[fam.wife] = [];
-      personSpouseFams[fam.wife].push(fid);
-    }
-    for (const childId of fam.children) {
-      personParentFam[childId] = fid;
-    }
-  }
-  
-  // Process each generation from anchor outward
   const genList = Object.keys(byGen).map(Number).sort((a, b) => a - b);
   
-  // For gen 0: place anchor at center, then spouses, siblings around
-  // For gen -1 (parents): place anchor's parents above, then their siblings
-  // For gen +1 (children): place children below
+  // Build person maps
+  const personSpouseFams = {};
+  const personParentFam = {};
+  for (const fid in families) {
+    const fam = families[fid];
+    if (fam.husb) { if (!personSpouseFams[fam.husb]) personSpouseFams[fam.husb] = []; personSpouseFams[fam.husb].push(fid); }
+    if (fam.wife) { if (!personSpouseFams[fam.wife]) personSpouseFams[fam.wife] = []; personSpouseFams[fam.wife].push(fid); }
+    for (const c of fam.children) personParentFam[c] = fid;
+  }
   
-  // Track which column each family group occupies
-  let nextCol = 0; // running counter for slot assignment
-  const colMap = {}; // pid -> col (can be fractional for couples)
+  const colMap = {};
+  let nextCol = 200;
   
-  // Process from anchor generation outward (both directions)
-  // Start with gen 0
-  const anchorGen = 0;
-  
-  // Place anchor at col 0
-  colMap[anchorId] = 0;
-  
-  // Place anchor's spouses next to anchor
+  // Step 1: Place anchor + spouse + children
+  colMap[anchorId] = 100;
   const anchorSpouseFams = personSpouseFams[anchorId] || [];
-  let anchorCol = 0;
   for (const fid of anchorSpouseFams) {
     const fam = families[fid];
     const spouse = fam.husb === anchorId ? fam.wife : fam.husb;
     if (spouse && visited.has(spouse)) {
-      // Place spouse to the right of anchor
-      anchorCol += 1;
-      colMap[spouse] = anchorCol;
+      if (colMap[spouse] === undefined) colMap[spouse] = colMap[anchorId] + 1;
     }
-    // Place children below this couple
-    const coupleCenter = (colMap[anchorId] + colMap[spouse]) / 2;
-    let childOffset = 0;
-    for (const childId of fam.children) {
-      if (visited.has(childId)) {
-        colMap[childId] = coupleCenter + childOffset - (fam.children.length - 1) / 2;
-        childOffset++;
+    const spouseCol = colMap[spouse] !== undefined ? colMap[spouse] : colMap[anchorId];
+    const coupleCenter = (colMap[anchorId] + spouseCol) / 2;
+    const children = fam.children.filter(c => visited.has(c));
+    children.forEach((c, i) => {
+      if (colMap[c] === undefined) colMap[c] = coupleCenter + (i - (children.length - 1) / 2);
+    });
+  }
+  
+  // Step 2: Wave-based family placement
+  const placedFamilies = new Set();
+  let allFamiliesPlaced = false;
+  let waves = 0;
+  
+  while (!allFamiliesPlaced && waves < 20) {
+    allFamiliesPlaced = true;
+    waves++;
+    
+    for (const fid in families) {
+      if (placedFamilies.has(fid)) continue;
+      const fam = families[fid];
+      
+      const husbCol = fam.husb ? colMap[fam.husb] : undefined;
+      const wifeCol = fam.wife ? colMap[fam.wife] : undefined;
+      const husbPlaced = husbCol !== undefined && !isNaN(husbCol);
+      const wifePlaced = wifeCol !== undefined && !isNaN(wifeCol);
+      
+      if (!husbPlaced && !wifePlaced) {
+        // Check if any child is placed (for ancestor families)
+        const placedChildren = fam.children.filter(c => colMap[c] !== undefined && !isNaN(colMap[c]));
+        if (placedChildren.length === 0) { allFamiliesPlaced = false; continue; }
+        
+        const childCenter = placedChildren.reduce((s, c) => s + colMap[c], 0) / placedChildren.length;
+        if (fam.husb && !husbPlaced && visited.has(fam.husb)) colMap[fam.husb] = childCenter - 0.5;
+        if (fam.wife && !wifePlaced && visited.has(fam.wife)) colMap[fam.wife] = childCenter + 0.5;
+      } else if (husbPlaced && !wifePlaced) {
+        if (fam.wife && visited.has(fam.wife)) colMap[fam.wife] = husbCol + 1;
+      } else if (wifePlaced && !husbPlaced) {
+        if (fam.husb && visited.has(fam.husb)) colMap[fam.husb] = wifeCol - 1;
+      }
+      
+      // Place unplaced children centered under couple
+      const finalHusbCol = fam.husb ? colMap[fam.husb] : undefined;
+      const finalWifeCol = fam.wife ? colMap[fam.wife] : undefined;
+      const bothPlaced = (finalHusbCol !== undefined || !fam.husb || !visited.has(fam.husb)) &&
+                         (finalWifeCol !== undefined || !fam.wife || !visited.has(fam.wife));
+      
+      if (!bothPlaced) { allFamiliesPlaced = false; continue; }
+      
+      const parentCols = [finalHusbCol, finalWifeCol].filter(c => c !== undefined && !isNaN(c));
+      const coupleCenter = parentCols.length > 0 ? parentCols.reduce((s, c) => s + c, 0) / parentCols.length : 100;
+      
+      const unplacedChildren = fam.children.filter(c => visited.has(c) && (colMap[c] === undefined || isNaN(colMap[c])));
+      if (unplacedChildren.length > 0) {
+        const alreadyPlaced = fam.children.filter(c => visited.has(c) && colMap[c] !== undefined && !isNaN(colMap[c]));
+        if (alreadyPlaced.length > 0) {
+          const existingCenter = alreadyPlaced.reduce((s, c) => s + colMap[c], 0) / alreadyPlaced.length;
+          unplacedChildren.forEach((c, i) => { colMap[c] = existingCenter + (i + 1) * 0.5; });
+        } else {
+          unplacedChildren.forEach((c, i) => { colMap[c] = coupleCenter + (i - (unplacedChildren.length - 1) / 2); });
+        }
+      }
+      
+      placedFamilies.add(fid);
+    }
+    
+    // Place spouses of newly placed people
+    for (const pid in colMap) {
+      if (isNaN(colMap[pid])) continue;
+      const sFams = personSpouseFams[pid] || [];
+      for (const fid of sFams) {
+        const fam = families[fid];
+        const spouse = fam.husb === pid ? fam.wife : fam.husb;
+        if (spouse && visited.has(spouse) && (colMap[spouse] === undefined || isNaN(colMap[spouse]))) {
+          colMap[spouse] = colMap[pid] + (fam.husb === pid ? 1 : -1);
+        }
       }
     }
   }
   
-  // Now process other generations
-  // For each generation, order people by their family connections
+  // Place any remaining people
+  for (const pid of visited) {
+    if (colMap[pid] === undefined || isNaN(colMap[pid])) colMap[pid] = nextCol++;
+  }
   
-  function orderGeneration(gen) {
+  // Resolve overlaps per generation
+  for (const gen of genList) {
     const people = byGen[gen] || [];
-    if (!people.length) return;
-    
-    // Group people by their parent family
-    const familyGroups = {}; // parentFamId -> [pid]
-    const ungrouped = [];
-    
-    for (const pid of people) {
-      const parentFamId = personParentFam[pid];
-      if (parentFamId) {
-        if (!familyGroups[parentFamId]) familyGroups[parentFamId] = [];
-        familyGroups[parentFamId].push(pid);
-      } else {
-        ungrouped.push(pid);
-      }
-    }
-    
-    // Order family groups by the column of their children in the previous generation
-    // (or by the column of parents in the next generation for ancestor gens)
-    const orderedGroups = Object.entries(familyGroups).sort((a, b) => {
-      // Find the avg column of people in this group from adjacent generation
-      const getAvgCol = (groupPids) => {
-        const cols = groupPids.map(pid => colMap[pid]).filter(c => c !== undefined);
-        return cols.length ? cols.reduce((s, c) => s + c, 0) / cols.length : 999;
-      };
-      return getAvgCol(a[1]) - getAvgCol(b[1]);
-    });
-    
-    // For ancestor generations (gen < 0), order by children's columns
-    // For descendant generations (gen > 0), order by parents' columns
-    if (gen < 0) {
-      // These are ancestors. For each person, find their children (in gen+1) and center above them
-      for (const pid of people) {
-        if (colMap[pid] !== undefined) continue;
-        
-        // Find families where this person is a parent
-        const spouseFams = personSpouseFams[pid] || [];
-        let childColSum = 0, childCount = 0;
-        
-        for (const fid of spouseFams) {
-          const fam = families[fid];
-          for (const childId of fam.children) {
-            if (colMap[childId] !== undefined) {
-              childColSum += colMap[childId];
-              childCount++;
-            }
-          }
-        }
-        
-        if (childCount > 0) {
-          colMap[pid] = childColSum / childCount;
-        }
-      }
-      
-      // Place spouses next to each other
-      for (const pid of people) {
-        if (colMap[pid] !== undefined) continue;
-        const spouseFams = personSpouseFams[pid] || [];
-        for (const fid of spouseFams) {
-          const fam = families[fid];
-          const spouse = fam.husb === pid ? fam.wife : fam.husb;
-          if (spouse && colMap[spouse] !== undefined) {
-            colMap[pid] = colMap[spouse] + (fam.husb === pid ? 1 : -1);
-          }
-        }
-      }
-      
-      // Any remaining unplaced people get sequential slots
-      for (const pid of people) {
-        if (colMap[pid] === undefined) {
-          colMap[pid] = nextCol++;
-        }
-      }
-    } else if (gen > 0) {
-      // Descendants: center children under parents
-      for (const pid of people) {
-        if (colMap[pid] !== undefined) continue;
-        
-        const parentFamId = personParentFam[pid];
-        if (parentFamId) {
-          const fam = families[parentFamId];
-          const parents = [fam.husb, fam.wife].filter(p => p && colMap[p] !== undefined);
-          if (parents.length > 0) {
-            const parentCenter = parents.reduce((s, p) => s + colMap[p], 0) / parents.length;
-            // Get all siblings in this family that are in this gen
-            const siblings = fam.children.filter(c => generations[c] === gen && visited.has(c));
-            const sibIndex = siblings.indexOf(pid);
-            const totalSibs = siblings.length;
-            colMap[pid] = parentCenter + (sibIndex - (totalSibs - 1) / 2);
-          }
-        }
-      }
-      
-      // Place spouses next to placed people
-      for (const pid of people) {
-        if (colMap[pid] !== undefined) continue;
-        const spouseFams = personSpouseFams[pid] || [];
-        for (const fid of spouseFams) {
-          const fam = families[fid];
-          const spouse = fam.husb === pid ? fam.wife : fam.husb;
-          if (spouse && colMap[spouse] !== undefined && visited.has(spouse)) {
-            colMap[pid] = colMap[spouse] + 1;
-          }
-        }
-      }
-      
-      for (const pid of people) {
-        if (colMap[pid] === undefined) {
-          colMap[pid] = nextCol++;
-        }
-      }
-    }
-    
-    // Round to avoid overlaps from fractional positions
-    // Resolve overlaps: if two people have same col, shift one right
     const occupied = {};
     for (const pid of people) {
-      let col = colMap[pid];
-      // Snap to nearest 0.5
-      col = Math.round(col * 2) / 2;
-      // Check for overlap
-      while (occupied[col] !== undefined) {
-        col += 0.5;
-      }
+      let col = Math.round(colMap[pid] * 2) / 2;
+      if (isNaN(col)) col = nextCol++;
+      let safety = 0;
+      while (occupied[col] !== undefined && safety < 500) { col += 0.5; safety++; }
       occupied[col] = pid;
       colMap[pid] = col;
     }
   }
   
-  // Process generations from anchor outward
-  // First gen 0 (already partially placed), then expand outward
-  for (const gen of genList) {
-    if (gen === 0) continue; // skip anchor gen, already handled
-    orderGeneration(gen);
-  }
-  
-  // Re-process gen 0 to clean up any unplaced
-  orderGeneration(0);
-  
-  // Convert col+gen to pixel positions
-  // Normalize so minimum col = 0 and minimum gen = 0
-  const allCols = Object.values(colMap).filter(c => c !== undefined);
+  // Convert to pixel positions
+  const allCols = Object.values(colMap).filter(c => c !== undefined && !isNaN(c));
   const minCol = Math.min(...allCols);
   const minGen = Math.min(...genList);
   
+  const positions = {};
   for (const pid in colMap) {
     if (!visited.has(pid)) continue;
     const normCol = colMap[pid] - minCol;
     const normGen = generations[pid] - minGen;
-    positions[pid] = {
-      x: normCol * STEP_X + 20,
-      y: normGen * STEP_Y + 20
-    };
+    positions[pid] = { x: normCol * STEP_X + 20, y: normGen * STEP_Y + 20 };
   }
   
   return positions;
