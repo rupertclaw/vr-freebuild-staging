@@ -1927,14 +1927,7 @@ function layoutTree() {
     }
 
     // Draw spouse line between parents if both placed
-    if (parents.length >= 2 && gridPos.has(parents[0]) && gridPos.has(parents[1])) {
-      addSpouseConn(parents[0], parents[1]);
-    }
-
-    // Draw parent-child connector from parents down to this person
-    if (parentCols.length > 0 && gridPos.has(pid)) {
-      addParentChildBus(parents[0], parents.length > 1 ? parents[1] : null, [pid]);
-    }
+    // (Connections are generated in Step 9 after all placement is done)
 
     // Recurse upward for grandparents
     for (const parentId of parents) {
@@ -1968,14 +1961,12 @@ function layoutTree() {
       if (gridPos.has(spouseId)) {
         // Already placed (by another branch)
         spouseCols[spouseId] = gridPos.get(spouseId).col;
-        addSpouseConn(pid, spouseId);
         continue;
       }
 
       const spCol = findFreeCol(row, currentCol + 2);
       placeAt(spouseId, row, spCol, seen);
       spouseCols[spouseId] = spCol;
-      addSpouseConn(pid, spouseId);
       currentCol = spCol;
 
       // Place spouse's ancestors above
@@ -2016,13 +2007,11 @@ function layoutTree() {
         startCol = getSubtreeRightmost(childId) + 2;
       }
 
-      // Draw parent-child connectors for this marriage
+      // Update childrenRightmost
       if (placedKids.length > 0) {
-        // Update childrenRightmost
         for (const kid of placedKids) {
           childrenRightmost = Math.max(childrenRightmost, getSubtreeRightmost(kid));
         }
-        addParentChildBus(pid, spouseId, placedKids, mIdx);
       }
     }
 
@@ -2031,15 +2020,10 @@ function layoutTree() {
     const unplacedKids = allKids.filter(cid => !placedChildren.has(cid) && !seen.has(cid) && !gridPos.has(cid));
     if (unplacedKids.length > 0) {
       let startCol = Math.max(childrenRightmost + 2, currentCol + 2);
-      const placedKids = [];
       for (let i = 0; i < unplacedKids.length; i++) {
         const childCol = findFreeCol(childRow, startCol);
         placeSubtree(unplacedKids[i], childRow, childCol, seen);
-        placedKids.push(unplacedKids[i]);
         startCol = getSubtreeRightmost(unplacedKids[i]) + 2;
-      }
-      if (placedKids.length > 0) {
-        addParentChildBus(pid, null, placedKids);
       }
     }
   }
@@ -2063,14 +2047,12 @@ function layoutTree() {
 
       if (gridPos.has(spouseId)) {
         spouseCols[spouseId] = gridPos.get(spouseId).col;
-        addSpouseConn(pid, spouseId);
         continue;
       }
 
       const spCol = findFreeCol(gridPos.get(pid).row, currentCol + 2);
       placeAt(spouseId, gridPos.get(pid).row, spCol, seen);
       spouseCols[spouseId] = spCol;
-      addSpouseConn(pid, spouseId);
       currentCol = spCol;
 
       placeAncestorsAbove(spouseId, gridPos.get(pid).row, seen);
@@ -2108,7 +2090,6 @@ function layoutTree() {
         for (const kid of placedKids) {
           childrenRightmost = Math.max(childrenRightmost, getSubtreeRightmost(kid));
         }
-        addParentChildBus(pid, spouseId, placedKids, mIdx);
       }
     }
 
@@ -2117,15 +2098,10 @@ function layoutTree() {
     const unplacedKids = allKids.filter(cid => !placedChildren.has(cid) && !seen.has(cid) && !gridPos.has(cid));
     if (unplacedKids.length > 0) {
       let startCol = Math.max(childrenRightmost + 2, currentCol + 2);
-      const placedKids = [];
       for (let i = 0; i < unplacedKids.length; i++) {
         const childCol = findFreeCol(childRow, startCol);
         placeSubtree(unplacedKids[i], childRow, childCol, seen);
-        placedKids.push(unplacedKids[i]);
         startCol = getSubtreeRightmost(unplacedKids[i]) + 2;
-      }
-      if (placedKids.length > 0) {
-        addParentChildBus(pid, null, placedKids);
       }
     }
   }
@@ -2493,45 +2469,8 @@ function layoutTree() {
       placeAt(id, row, col, new Set());
     }
 
-    // ── Step 9: Generate connections (prototype approach) ──
-    // Iterate families directly. For each family:
-    //   - If both spouses placed: draw marriage line
-    //   - If children placed and at least one parent placed: draw bus
-    // No gen/row checks, no parentKey grouping. Just connect what's placed.
-    for (const fid in families) {
-      const fam = families[fid];
-      const husbPos = fam.husb ? positions.get(fam.husb) : null;
-      const wifePos = fam.wife ? positions.get(fam.wife) : null;
-
-      // Spouse line
-      if (husbPos && wifePos && gridPos.has(fam.husb) && gridPos.has(fam.wife)) {
-        addSpouseConn(fam.husb, fam.wife);
-      }
-
-      // Parent-child bus: all placed children of this family
-      const placedChildren = (fam.children || []).filter(c =>
-        positions.has(c) && gridPos.has(c)
-      );
-      if (placedChildren.length === 0) continue;
-
-      // Determine marriage index (for bus Y offset on multi-marriage parents)
-      let marriageIndex = 0;
-      if (fam.husb && fam.wife) {
-        const parent = getP(fam.husb);
-        if (parent && parent.families) {
-          for (let mi = 0; mi < parent.families.length; mi++) {
-            if (parent.families[mi].spouseId === fam.wife) {
-              marriageIndex = mi;
-              break;
-            }
-          }
-        }
-      }
-
-      addParentChildBus(fam.husb || fam.wife, fam.husb ? fam.wife : null, placedChildren, marriageIndex);
-    }
-
-    // Place any unconnected people (not reachable from anchor BFS)
+    // ── Step 9: Place orphan people (not reachable from anchor BFS) ──
+    // (Connections generated AFTER all placement + normalization, prototype-style)
     const unplaced = viewPeople.filter(p => !genMap.has(p.id) && !gridPos.has(p.id));
     if (unplaced.length > 0) {
       let maxUsedRow = 0;
@@ -2568,8 +2507,6 @@ function layoutTree() {
     if (normMinRow !== Infinity) {
       const rowDelta = -normMinRow;
       const colDelta = -normMinCol;
-      const yShift = rowDelta * GEN_HEIGHT;
-      const xShift = colDelta * COL_WIDTH;
       for (const [id, gp] of gridPos) {
         gp.row += rowDelta;
         gp.col += colDelta;
@@ -2581,25 +2518,45 @@ function layoutTree() {
           pos.x = LEFT_MARGIN + gp.col * COL_WIDTH;
         }
       }
-      // Shift all connection coordinates to match the new positions
-      for (const conn of connections) {
-        if (conn.y1 !== undefined) conn.y1 += yShift;
-        if (conn.y2 !== undefined) conn.y2 += yShift;
-        if (conn.parentY !== undefined) conn.parentY += yShift;
-        if (conn.childY !== undefined) conn.childY += yShift;
-        if (conn.busY !== undefined) conn.busY += yShift;
-        if (conn.stepY !== undefined) conn.stepY += yShift;
-        if (conn.x1 !== undefined) conn.x1 += xShift;
-        if (conn.x2 !== undefined) conn.x2 += xShift;
-        if (conn.midX !== undefined) conn.midX += xShift;
-        if (conn.parentMidX !== undefined) conn.parentMidX += xShift;
-        if (conn.childX !== undefined) conn.childX += xShift;
-        if (conn.children) {
-          for (const c of conn.children) {
-            if (c.childX !== undefined) c.childX += xShift;
+    }
+
+    // ── Step 11: Generate connections (prototype approach) ──
+    // Iterate ALL families after ALL placement + normalization is done.
+    // This is exactly what grid-prototype.html buildConnections() does:
+    //   for each family: if spouses placed → marriage line,
+    //                    if children placed + parent placed → parent-child bus
+    // No traversal-dependent inline calls. No missing connections.
+    for (const fid in families) {
+      const fam = families[fid];
+      const husbPos = fam.husb ? positions.get(fam.husb) : null;
+      const wifePos = fam.wife ? positions.get(fam.wife) : null;
+
+      // Spouse line
+      if (husbPos && wifePos && gridPos.has(fam.husb) && gridPos.has(fam.wife)) {
+        addSpouseConn(fam.husb, fam.wife);
+      }
+
+      // Parent-child bus: all placed children of this family
+      const placedChildren = (fam.children || []).filter(c =>
+        positions.has(c) && gridPos.has(c)
+      );
+      if (placedChildren.length === 0) continue;
+
+      // Determine marriage index (for bus Y offset on multi-marriage parents)
+      let marriageIndex = 0;
+      if (fam.husb && fam.wife) {
+        const parent = getP(fam.husb);
+        if (parent && parent.families) {
+          for (let mi = 0; mi < parent.families.length; mi++) {
+            if (parent.families[mi].spouseId === fam.wife) {
+              marriageIndex = mi;
+              break;
+            }
           }
         }
       }
+
+      addParentChildBus(fam.husb || fam.wife, fam.husb ? fam.wife : null, placedChildren, marriageIndex);
     }
 
   } else {    // ── FALLBACK: AUTO-ROOT LAYOUT (no focus person) ──
@@ -2676,6 +2633,37 @@ function layoutTree() {
         placeAt(p.id, orphanRow, c, new Set());
         orphanCol = c + 2;
       }
+    }
+
+    // ── Fallback path: generate connections after all placement (same as Step 11) ──
+    for (const fid in families) {
+      const fam = families[fid];
+      const husbPos = fam.husb ? positions.get(fam.husb) : null;
+      const wifePos = fam.wife ? positions.get(fam.wife) : null;
+
+      if (husbPos && wifePos && gridPos.has(fam.husb) && gridPos.has(fam.wife)) {
+        addSpouseConn(fam.husb, fam.wife);
+      }
+
+      const placedChildren = (fam.children || []).filter(c =>
+        positions.has(c) && gridPos.has(c)
+      );
+      if (placedChildren.length === 0) continue;
+
+      let marriageIndex = 0;
+      if (fam.husb && fam.wife) {
+        const parent = getP(fam.husb);
+        if (parent && parent.families) {
+          for (let mi = 0; mi < parent.families.length; mi++) {
+            if (parent.families[mi].spouseId === fam.wife) {
+              marriageIndex = mi;
+              break;
+            }
+          }
+        }
+      }
+
+      addParentChildBus(fam.husb || fam.wife, fam.husb ? fam.wife : null, placedChildren, marriageIndex);
     }
   }
 
