@@ -246,130 +246,152 @@ function findDisconnected(individuals, families, visited) {
   return components;
 }
 
-// ---- Block-based slot assignment v3 ----
-// Place family blocks (couple + children) as units.
-// Each FAM record = one block. Parents on their gen row, children on next.
-// Blocks expand outward from anchor. Overlaps resolved by shifting right.
+// ---- Family Unit Layout v5 ----
+// Place family UNITS (couple + children) as recursive blocks.
+// Root = anchor's grandfather family. Tree grows downward.
+// Each unit: parents centered, children spread left-to-right below.
+// Children with their own families get recursive sub-units.
+// Multi-marriage: all spouse families placed side by side.
 function assignSlots(individuals, families, childToFamily, generations, visited, anchorId) {
   const CARD_W = parseInt(document.getElementById('cardW').value);
   const CARD_H = parseInt(document.getElementById('cardH').value);
   const GAP_X = parseInt(document.getElementById('gapX').value);
   const GAP_Y = parseInt(document.getElementById('gapY').value);
-  
   const STEP_X = CARD_W + GAP_X;
   const STEP_Y = CARD_H + GAP_Y;
   
-  // Group by gen
   const byGen = {};
-  for (const [pid, gen] of Object.entries(generations)) {
-    if (!byGen[gen]) byGen[gen] = [];
-    byGen[gen].push(pid);
-  }
+  for (const [pid, gen] of Object.entries(generations)) { (byGen[gen] ||= []).push(pid); }
   const genList = Object.keys(byGen).map(Number).sort((a, b) => a - b);
   
-  // Build person maps
   const personSpouseFams = {};
   const personParentFam = {};
   for (const fid in families) {
     const fam = families[fid];
-    if (fam.husb) { if (!personSpouseFams[fam.husb]) personSpouseFams[fam.husb] = []; personSpouseFams[fam.husb].push(fid); }
-    if (fam.wife) { if (!personSpouseFams[fam.wife]) personSpouseFams[fam.wife] = []; personSpouseFams[fam.wife].push(fid); }
+    if (fam.husb) (personSpouseFams[fam.husb] ||= []).push(fid);
+    if (fam.wife) (personSpouseFams[fam.wife] ||= []).push(fid);
     for (const c of fam.children) personParentFam[c] = fid;
   }
   
-  // Build family blocks
-  const familyBlocks = {};
-  for (const fid in families) {
+  // Unit width: recursive. Width = max(parents, sum of child sub-widths)
+  const unitWidths = {};
+  function computeWidth(fid, visiting = new Set()) {
+    if (unitWidths[fid] !== undefined) return unitWidths[fid];
+    if (visiting.has(fid)) return 2;
+    visiting.add(fid);
     const fam = families[fid];
-    const parents = [fam.husb, fam.wife].filter(p => p && visited.has(p));
+    if (!fam) return 2;
     const children = fam.children.filter(c => visited.has(c));
-    if (parents.length === 0 && children.length === 0) continue;
-    let parentGen = null;
-    for (const p of parents) { if (generations[p] !== undefined) { parentGen = generations[p]; break; } }
-    if (parentGen === null) { for (const c of children) { if (generations[c] !== undefined) { parentGen = generations[c] - 1; break; } } }
-    if (parentGen === null) continue;
-    familyBlocks[fid] = { fid, parents, children, parentGen };
+    const parents = [fam.husb, fam.wife].filter(p => p && visited.has(p));
+    let childWidthSum = 0;
+    for (const c of children) {
+      const sFams = (personSpouseFams[c] || []).filter(sf => {
+        const sfam = families[sf]; if (!sfam) return false;
+        const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
+        return spouse && visited.has(spouse);
+      });
+      if (sFams.length > 0) {
+        let w = 0;
+        for (const sf of sFams) w += computeWidth(sf, visiting);
+        childWidthSum = Math.max(childWidthSum, w);
+      } else {
+        childWidthSum += 1;
+      }
+    }
+    const width = Math.max(parents.length, childWidthSum, 1);
+    unitWidths[fid] = width;
+    return width;
+  }
+  for (const fid in families) computeWidth(fid);
+  
+  // Root family: anchor's grandfather family
+  const anchorParentFam = personParentFam[anchorId];
+  let rootFam = anchorParentFam;
+  if (anchorParentFam && families[anchorParentFam]) {
+    const fam = families[anchorParentFam];
+    const fatherId = fam.husb;
+    if (fatherId && visited.has(fatherId)) {
+      const grandFam = personParentFam[fatherId];
+      if (grandFam && families[grandFam]) rootFam = grandFam;
+    }
   }
   
   const colMap = {};
-  const placedBlocks = new Set();
+  const placedUnits = new Set();
+  const GAP = 1;
   
-  function placeBlock(fid, centerCol) {
-    if (placedBlocks.has(fid)) return;
-    const block = familyBlocks[fid];
-    if (!block) return;
-    if (block.parents.length === 2) {
-      colMap[block.parents[0]] = centerCol - 0.5;
-      colMap[block.parents[1]] = centerCol + 0.5;
-    } else if (block.parents.length === 1) {
-      colMap[block.parents[0]] = centerCol;
+  function placeUnit(fid, startCol) {
+    if (placedUnits.has(fid)) return;
+    const fam = families[fid];
+    if (!fam) return;
+    const parents = [fam.husb, fam.wife].filter(p => p && visited.has(p));
+    const children = fam.children.filter(c => visited.has(c));
+    const width = unitWidths[fid] || 2;
+    placedUnits.add(fid);
+    
+    // Parents centered
+    if (parents.length === 2) {
+      const center = startCol + (width - 1) / 2;
+      colMap[parents[0]] = Math.floor(center);
+      colMap[parents[1]] = Math.floor(center) + 1;
+    } else if (parents.length === 1) {
+      colMap[parents[0]] = startCol + Math.floor(width / 2);
     }
-    const n = block.children.length;
-    const childStart = centerCol - (n - 1) / 2;
-    block.children.forEach((c, i) => {
-      if (colMap[c] === undefined) colMap[c] = childStart + i;
-    });
-    placedBlocks.add(fid);
-  }
-  
-  // Find the root family: walk up from anchor through parent families to the oldest ancestor
-  let rootFam = personParentFam[anchorId];
-  if (rootFam && familyBlocks[rootFam]) {
-    // Walk up through parents
-    let current = rootFam;
-    let safety = 0;
-    while (safety < 20) {
-      safety++;
-      const block = familyBlocks[current];
-      if (!block) break;
-      // Try to find parent family of the first parent in this block
-      let foundParent = false;
-      for (const pid of block.parents) {
-        const pfid = personParentFam[pid];
-        if (pfid && familyBlocks[pfid]) {
-          current = pfid;
-          foundParent = true;
-          break;
+    
+    // Children left to right
+    let col = startCol;
+    for (const c of children) {
+      const sFams = (personSpouseFams[c] || []).filter(sf => {
+        const sfam = families[sf]; if (!sfam) return false;
+        const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
+        return spouse && visited.has(spouse);
+      });
+      if (sFams.length > 0) {
+        for (const sf of sFams) {
+          if (placedUnits.has(sf)) continue;
+          const cw = unitWidths[sf] || 2;
+          colMap[c] = col;
+          const sfam = families[sf];
+          const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
+          if (spouse && colMap[spouse] === undefined) colMap[spouse] = col + 1;
+          placeUnit(sf, col);
+          col += cw + GAP;
         }
+      } else {
+        colMap[c] = col;
+        col += 1 + GAP;
       }
-      if (!foundParent) break;
     }
-    rootFam = current;
   }
   
-  // Place from root family
-  placeBlock(rootFam, 100);
+  // Place from root downward
+  placeUnit(rootFam, 100);
   
-  // Place anchor's spouse family
-  const anchorSFams = (personSpouseFams[anchorId] || []).filter(fid => familyBlocks[fid]);
+  // Place anchor's own family if not placed
+  const anchorSFams = (personSpouseFams[anchorId] || []).filter(fid => families[fid] && !placedUnits.has(fid));
   for (const fid of anchorSFams) {
-    if (colMap[anchorId] !== undefined) placeBlock(fid, colMap[anchorId] + 0.5);
+    if (colMap[anchorId] !== undefined) {
+      const fam = families[fid];
+      const spouse = fam.husb === anchorId ? fam.wife : fam.husb;
+      if (spouse && colMap[spouse] === undefined) colMap[spouse] = colMap[anchorId] + 1;
+      placeUnit(fid, colMap[anchorId]);
+    }
   }
   
-  // Expand outward
+  // Place ancestor families above root
   let waves = 0;
   while (waves < 30) {
     waves++;
-    const current = [...placedBlocks];
+    const current = [...placedUnits];
     let newPlacements = false;
     for (const fid of current) {
-      const block = familyBlocks[fid];
-      for (const childId of block.children) {
-        const childSFams = (personSpouseFams[childId] || []).filter(sf => familyBlocks[sf] && !placedBlocks.has(sf));
-        for (const sfid of childSFams) {
-          const cb = familyBlocks[sfid];
-          if (colMap[childId] !== undefined) {
-            const spouse = cb.parents.find(p => p !== childId);
-            if (spouse && colMap[spouse] === undefined) colMap[spouse] = colMap[childId] + 1;
-            placeBlock(sfid, (colMap[childId] + (spouse ? colMap[spouse] : colMap[childId])) / 2);
-            newPlacements = true;
-          }
-        }
-      }
-      for (const pid of block.parents) {
+      const fam = families[fid];
+      for (const pid of [fam.husb, fam.wife].filter(p => p && visited.has(p))) {
         const pfid = personParentFam[pid];
-        if (pfid && familyBlocks[pfid] && !placedBlocks.has(pfid)) {
-          if (colMap[pid] !== undefined) { placeBlock(pfid, colMap[pid]); newPlacements = true; }
+        if (pfid && families[pfid] && !placedUnits.has(pfid)) {
+          const pw = unitWidths[pfid] || 2;
+          placeUnit(pfid, Math.round((colMap[pid] || 100) - pw / 2));
+          newPlacements = true;
         }
       }
     }
@@ -377,12 +399,12 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
   }
   
   // Place remaining individuals
-  let nextCol = 500;
+  let nextCol = 1000;
   for (const pid of visited) {
     if (colMap[pid] === undefined) colMap[pid] = nextCol++;
   }
   
-  // Overlap resolution: per-gen, sort by col (preserves family order), shift right
+  // Overlap resolution: per-gen, sort by col (family order), shift right
   let shiftPasses = 0;
   while (shiftPasses < 10) {
     shiftPasses++;
@@ -404,15 +426,11 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
   const allCols = Object.values(colMap).filter(c => c !== undefined && !isNaN(c));
   const minCol = Math.min(...allCols);
   const minGen = Math.min(...genList);
-  
   const positions = {};
   for (const pid in colMap) {
     if (!visited.has(pid)) continue;
-    const normCol = colMap[pid] - minCol;
-    const normGen = generations[pid] - minGen;
-    positions[pid] = { x: normCol * STEP_X + 20, y: normGen * STEP_Y + 20 };
+    positions[pid] = { x: (colMap[pid] - minCol) * STEP_X + 20, y: (generations[pid] - minGen) * STEP_Y + 20 };
   }
-  
   return positions;
 }
 
