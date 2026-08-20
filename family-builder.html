@@ -2504,11 +2504,18 @@ function layoutTree() {
       const { parents, children } = group;
       const parentId = parents[0];
       const spouseId = parents.length > 1 ? parents[1] : null;
-      // Only draw if children are exactly one generation below
-      const parentGen = genMap.get(parentId);
-      const childGens = children.map(cid => genMap.get(cid));
-      const minChildGen = Math.min(...childGens);
-      if (minChildGen === parentGen + 1) {
+      // Draw parent-child bus if ANY child is on the row below the parents.
+      // Don't require ALL children to be exactly parentGen+1 — BFS shortest-path
+      // can assign different gens to children of the same couple if one parent
+      // was reached via a shorter path. Just check that children are on a
+      // different row (below parents) and draw the connector.
+      const parentRow = gridPos.get(parentId) ? gridPos.get(parentId).row : -1;
+      const placedChildren = children.filter(cid => gridPos.has(cid));
+      if (placedChildren.length === 0) continue;
+      const childRows = placedChildren.map(cid => gridPos.get(cid).row);
+      const minChildRow = Math.min(...childRows);
+      // Draw if children are on the row below the parents
+      if (minChildRow === parentRow + 1) {
         // Determine marriage index for bus Y offset
         let marriageIndex = 0;
         if (spouseId) {
@@ -2522,7 +2529,7 @@ function layoutTree() {
             }
           }
         }
-        addParentChildBus(parentId, spouseId, children, marriageIndex);
+        addParentChildBus(parentId, spouseId, placedChildren, marriageIndex);
       }
     }
 
@@ -2710,23 +2717,11 @@ function renderFreeBuild() {
   const viewRight = scrollArea ? viewLeft + (scrollArea.clientWidth / zoom) + 200 : Infinity;
   const viewBottom = scrollArea ? viewTop + (scrollArea.clientHeight / zoom) + 200 : Infinity;
 
-  // Draw connections — only those touching the viewport
+  // Draw connections — render ALL connections statically (no viewport culling)
+  // Virtualized culling causes lines to appear/disappear on scroll, which looks broken.
+  // For 513 people the connection count is manageable.
   let svgContent = '';
   for (const conn of connections) {
-    // Quick viewport cull for connections
-    let connMinX, connMaxX, connMinY, connMaxY;
-    if (conn.type === 'parent-child-bus') {
-      connMinX = Math.min(conn.parentMidX, conn.children[0].childX);
-      connMaxX = Math.max(conn.parentMidX, conn.children[conn.children.length - 1].childX);
-      connMinY = conn.parentY;
-      connMaxY = conn.children[0].childY;
-    } else {
-      connMinX = Math.min(conn.x1 || conn.midX || 0, conn.x2 || conn.childX || 0);
-      connMaxX = Math.max((conn.x1 || conn.midX || 0) + CARD_W, (conn.x2 || conn.childX || 0) + CARD_W);
-      connMinY = Math.min(conn.y1 || conn.parentY || 0, conn.y2 || conn.childY || 0);
-      connMaxY = Math.max(conn.y1 || conn.parentY || 0, conn.y2 || conn.childY || 0);
-    }
-    if (connMaxX < viewLeft || connMinX > viewRight || connMaxY < viewTop || connMinY > viewBottom) continue;
     if (conn.type === 'spouse') {
       if (conn.stepped) {
         // Non-adjacent spouses: stepped line going below intervening cards

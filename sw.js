@@ -1,4 +1,4 @@
-const CACHE_NAME = "vaultedroots-v122";
+const CACHE_NAME = "vaultedroots-v123";
 
 // Cache icons for offline use; also cache HTML as offline fallback
 const ASSETS = [
