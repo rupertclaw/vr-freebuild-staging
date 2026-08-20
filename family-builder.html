@@ -1941,14 +1941,38 @@ function layoutTree() {
     else if (spousePos) midX = (parentPos.x + spousePos.x) / 2 + CARD_W / 2;
     else midX = parentPos.x + CARD_W / 2;
 
+    // Split children into near (bus) and far (individual lines)
+    // Far children are in disconnected components; including them in the bus
+    // creates lines spanning the entire canvas.
+    const MAX_BUS_COL_DIST = 40;
+    const parentCol = parentPos.col;
     const childPositions = [];
+    const farChildren = [];
     for (const cid of childIds) {
       const cp = positions.get(cid);
-      if (cp) childPositions.push({ childX: Math.round(cp.x + CARD_W / 2), childY: cp.y });
+      if (!cp) continue;
+      if (Math.abs(cp.col - parentCol) > MAX_BUS_COL_DIST) {
+        farChildren.push({ childX: Math.round(cp.x + CARD_W / 2), childY: cp.y, childId: cid });
+      } else {
+        childPositions.push({ childX: Math.round(cp.x + CARD_W / 2), childY: cp.y });
+      }
     }
-    if (childPositions.length === 0) return;
 
     const parentY = parentPos.y + CARD_H;
+
+    // Far children get individual L-shaped lines
+    for (const fc of farChildren) {
+      connections.push({
+        type: 'parent-child',
+        midX: Math.round(midX),
+        parentY: parentY,
+        childX: fc.childX,
+        childY: fc.childY,
+        personIds: { parentId, childId: fc.childId, spouseId }
+      });
+    }
+
+    if (childPositions.length === 0) return;
 
     if (childPositions.length === 1) {
       // Single child: simple L-shaped connector
