@@ -2478,59 +2478,42 @@ function layoutTree() {
       placeAt(id, row, col, new Set());
     }
 
-    // ── Step 9: Generate connections ──
-    // Spouse lines: for every couple in a placed family
+    // ── Step 9: Generate connections (prototype approach) ──
+    // Iterate families directly. For each family:
+    //   - If both spouses placed: draw marriage line
+    //   - If children placed and at least one parent placed: draw bus
+    // No gen/row checks, no parentKey grouping. Just connect what's placed.
     for (const fid in families) {
       const fam = families[fid];
-      if (fam.husb && fam.wife && gridPos.has(fam.husb) && gridPos.has(fam.wife)) {
+      const husbPos = fam.husb ? positions.get(fam.husb) : null;
+      const wifePos = fam.wife ? positions.get(fam.wife) : null;
+
+      // Spouse line
+      if (husbPos && wifePos && gridPos.has(fam.husb) && gridPos.has(fam.wife)) {
         addSpouseConn(fam.husb, fam.wife);
       }
-    }
 
-    // Parent-child lines: group children by parent couple, draw bus
-    const parentChildMap = new Map();  // parentKey -> { parents, children }
-    for (const p of viewPeople) {
-      if (!genMap.has(p.id) || !gridPos.has(p.id)) continue;
-      const parents = (p.parents || []).filter(pid => viewSet.has(pid) && gridPos.has(pid));
-      if (parents.length === 0) continue;
-      const parentKey = parents.sort().join(',');
-      if (!parentChildMap.has(parentKey)) {
-        parentChildMap.set(parentKey, { parents, children: [] });
-      }
-      parentChildMap.get(parentKey).children.push(p.id);
-    }
-
-    for (const [key, group] of parentChildMap) {
-      const { parents, children } = group;
-      const parentId = parents[0];
-      const spouseId = parents.length > 1 ? parents[1] : null;
-      // Draw parent-child bus if ANY child is on the row below the parents.
-      // Don't require ALL children to be exactly parentGen+1 — BFS shortest-path
-      // can assign different gens to children of the same couple if one parent
-      // was reached via a shorter path. Just check that children are on a
-      // different row (below parents) and draw the connector.
-      const parentRow = gridPos.get(parentId) ? gridPos.get(parentId).row : -1;
-      const placedChildren = children.filter(cid => gridPos.has(cid));
+      // Parent-child bus: all placed children of this family
+      const placedChildren = (fam.children || []).filter(c =>
+        positions.has(c) && gridPos.has(c)
+      );
       if (placedChildren.length === 0) continue;
-      const childRows = placedChildren.map(cid => gridPos.get(cid).row);
-      const minChildRow = Math.min(...childRows);
-      // Draw if children are on the row below the parents
-      if (minChildRow === parentRow + 1) {
-        // Determine marriage index for bus Y offset
-        let marriageIndex = 0;
-        if (spouseId) {
-          const parent = getP(parentId);
-          if (parent && parent.families) {
-            for (let mi = 0; mi < parent.families.length; mi++) {
-              if (parent.families[mi].spouseId === spouseId) {
-                marriageIndex = mi;
-                break;
-              }
+
+      // Determine marriage index (for bus Y offset on multi-marriage parents)
+      let marriageIndex = 0;
+      if (fam.husb && fam.wife) {
+        const parent = getP(fam.husb);
+        if (parent && parent.families) {
+          for (let mi = 0; mi < parent.families.length; mi++) {
+            if (parent.families[mi].spouseId === fam.wife) {
+              marriageIndex = mi;
+              break;
             }
           }
         }
-        addParentChildBus(parentId, spouseId, placedChildren, marriageIndex);
       }
+
+      addParentChildBus(fam.husb || fam.wife, fam.husb ? fam.wife : null, placedChildren, marriageIndex);
     }
 
     // Place any unconnected people (not reachable from anchor BFS)
