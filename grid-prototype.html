@@ -283,8 +283,8 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
   }
   
   // Compute zone width recursively — tight packing
-  // Single child = 1 col, child with family = their zone width
-  // Gap between children = 1 col, gap between sub-zones = 1 col
+  // Width = sum of child sub-widths + 1 col gap between each child
+  // Min width = 2 (for parents)
   const ZONE_GAP = 1;
   const zoneWidths = {};
   function computeZoneWidth(fid, visiting = new Set()) {
@@ -293,7 +293,6 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     visiting.add(fid);
     const unit = familyUnits[fid];
     if (!unit) return 2;
-    const parentWidth = unit.parents.length;
     let childrenWidth = 0;
     for (let i = 0; i < unit.children.length; i++) {
       const c = unit.children[i];
@@ -312,7 +311,7 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
       }
       if (i < unit.children.length - 1) childrenWidth += 1;
     }
-    zoneWidths[fid] = Math.max(parentWidth, childrenWidth, 1);
+    zoneWidths[fid] = Math.max(2, childrenWidth);
     return zoneWidths[fid];
   }
   for (const fid in families) computeZoneWidth(fid);
@@ -349,7 +348,7 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
       colMap[unit.parents[0]] = startCol + Math.floor(width / 2);
     }
     
-    // Children left to right, tight packing
+    // Children left to right, tight packing — 1 col gap between siblings
     let col = startCol;
     for (let i = 0; i < unit.children.length; i++) {
       const c = unit.children[i];
@@ -363,18 +362,21 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
           const sf = sFams[j];
           if (placedZones.has(sf)) continue;
           const cw = zoneWidths[sf] || 2;
+          // Child + spouse placed at current col
           colMap[c] = col;
           const sfam = families[sf];
           const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
           if (spouse && colMap[spouse] === undefined) colMap[spouse] = col + 1;
+          // Place sub-zone starting at child's position
           placeZone(sf, col);
           col += cw;
-          if (j < sFams.length - 1) col += 1;
+          if (j < sFams.length - 1) col += 1; // 1 col gap between marriages
         }
       } else {
         colMap[c] = col;
         col += 1;
       }
+      // 1 col gap between siblings (not 2)
       if (i < unit.children.length - 1) col += 1;
     }
     return startCol + width;
