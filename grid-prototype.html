@@ -373,20 +373,26 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     if (colMap[pid] === undefined || isNaN(colMap[pid])) colMap[pid] = nextCol++;
   }
   
-  // Resolve overlaps per generation — use integer cols, shift right on conflict
+  // Resolve overlaps: scale fractional cols to integers with enough space
+  // The wave algorithm gives fractional cols that encode family grouping
+  // and cross-generation alignment (father above son).
+  // Multiply by 2 to give integer+half space, then resolve per-gen dups
+  // by shifting right while staying as close as possible to family position.
+  
+  // Scale: multiply by 3 to give generous spacing (avoids most collisions)
+  for (const pid of visited) {
+    colMap[pid] = Math.round(colMap[pid] * 3);
+  }
+  
+  // Per-gen dedup: sort by col (family order), shift right on collision
   for (const gen of genList) {
     const people = byGen[gen] || [];
-    // Sort by intended col so we resolve left-to-right
-    people.sort((a, b) => (colMap[a] || 9999) - (colMap[b] || 9999));
-    const occupied = new Set();
+    people.sort((a, b) => colMap[a] - colMap[b]);
+    const used = new Set();
     for (const pid of people) {
-      let col = Math.round(colMap[pid]);
-      if (isNaN(col)) col = nextCol++;
-      // Ensure this col + 1 is free (card occupies col to col+1 conceptually,
-      // but actual card width is CARD_W and step is CARD_W+GAP_X so each col
-      // is one STEP_X wide — no overlap if cols are integers)
-      while (occupied.has(col)) { col++; }
-      occupied.add(col);
+      let col = colMap[pid];
+      while (used.has(col)) { col++; }
+      used.add(col);
       colMap[pid] = col;
     }
   }
