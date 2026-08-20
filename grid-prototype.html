@@ -246,12 +246,11 @@ function findDisconnected(individuals, families, visited) {
   return components;
 }
 
-// ---- Family Unit Layout v5 ----
-// Place family UNITS (couple + children) as recursive blocks.
-// Root = anchor's grandfather family. Tree grows downward.
-// Each unit: parents centered, children spread left-to-right below.
-// Children with their own families get recursive sub-units.
-// Multi-marriage: all spouse families placed side by side.
+// ---- Family Zone Layout v6 ----
+// Each family unit gets its own ZONE: a contiguous block of columns
+// that no other family unit can use. Zones are allocated recursively.
+// Parents centered in their zone, children spread below.
+// Gap of 1+ cols between zones so families don't blend together.
 function assignSlots(individuals, families, childToFamily, generations, visited, anchorId) {
   const CARD_W = parseInt(document.getElementById('cardW').value);
   const CARD_H = parseInt(document.getElementById('cardH').value);
@@ -273,74 +272,79 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     for (const c of fam.children) personParentFam[c] = fid;
   }
   
-  // Unit width: recursive. Width = max(parents, sum of child sub-widths)
-  const unitWidths = {};
-  function computeWidth(fid, visiting = new Set()) {
-    if (unitWidths[fid] !== undefined) return unitWidths[fid];
+  // Build family units
+  const familyUnits = {};
+  for (const fid in families) {
+    const fam = families[fid];
+    const parents = [fam.husb, fam.wife].filter(p => p && visited.has(p));
+    const children = fam.children.filter(c => visited.has(c));
+    if (parents.length === 0 && children.length === 0) continue;
+    familyUnits[fid] = { fid, parents, children };
+  }
+  
+  // Compute zone width recursively
+  const zoneWidths = {};
+  function computeZoneWidth(fid, visiting = new Set()) {
+    if (zoneWidths[fid] !== undefined) return zoneWidths[fid];
     if (visiting.has(fid)) return 2;
     visiting.add(fid);
-    const fam = families[fid];
-    if (!fam) return 2;
-    const children = fam.children.filter(c => visited.has(c));
-    const parents = [fam.husb, fam.wife].filter(p => p && visited.has(p));
-    let childWidthSum = 0;
-    for (const c of children) {
+    const unit = familyUnits[fid];
+    if (!unit) return 2;
+    const parentWidth = unit.parents.length;
+    let childrenWidth = 0;
+    for (const c of unit.children) {
       const sFams = (personSpouseFams[c] || []).filter(sf => {
         const sfam = families[sf]; if (!sfam) return false;
         const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
         return spouse && visited.has(spouse);
       });
       if (sFams.length > 0) {
-        let w = 0;
-        for (const sf of sFams) w += computeWidth(sf, visiting);
-        childWidthSum = Math.max(childWidthSum, w);
-      } else {
-        childWidthSum += 1;
-      }
+        for (const sf of sFams) { childrenWidth += computeZoneWidth(sf, visiting) + 1; }
+        childrenWidth--;
+      } else { childrenWidth += 1; }
+      childrenWidth += 1;
     }
-    const width = Math.max(parents.length, childWidthSum, 1);
-    unitWidths[fid] = width;
-    return width;
+    if (unit.children.length > 0) childrenWidth--;
+    zoneWidths[fid] = Math.max(parentWidth, childrenWidth, 1);
+    return zoneWidths[fid];
   }
-  for (const fid in families) computeWidth(fid);
+  for (const fid in families) computeZoneWidth(fid);
   
   // Root family: anchor's grandfather family
   const anchorParentFam = personParentFam[anchorId];
   let rootFam = anchorParentFam;
   if (anchorParentFam && families[anchorParentFam]) {
     const fam = families[anchorParentFam];
-    const fatherId = fam.husb;
-    if (fatherId && visited.has(fatherId)) {
-      const grandFam = personParentFam[fatherId];
+    if (fam.husb && visited.has(fam.husb)) {
+      const grandFam = personParentFam[fam.husb];
       if (grandFam && families[grandFam]) rootFam = grandFam;
     }
   }
   
+  // Place zones recursively
   const colMap = {};
-  const placedUnits = new Set();
-  const GAP = 1;
+  const placedZones = new Set();
   
-  function placeUnit(fid, startCol) {
-    if (placedUnits.has(fid)) return;
-    const fam = families[fid];
-    if (!fam) return;
-    const parents = [fam.husb, fam.wife].filter(p => p && visited.has(p));
-    const children = fam.children.filter(c => visited.has(c));
-    const width = unitWidths[fid] || 2;
-    placedUnits.add(fid);
+  function placeZone(fid, startCol) {
+    if (placedZones.has(fid)) return startCol + zoneWidths[fid];
+    const unit = familyUnits[fid];
+    if (!unit) return startCol;
+    const width = zoneWidths[fid] || 2;
+    placedZones.add(fid);
     
-    // Parents centered
-    if (parents.length === 2) {
-      const center = startCol + (width - 1) / 2;
-      colMap[parents[0]] = Math.floor(center);
-      colMap[parents[1]] = Math.floor(center) + 1;
-    } else if (parents.length === 1) {
-      colMap[parents[0]] = startCol + Math.floor(width / 2);
+    // Parents at center of zone
+    if (unit.parents.length === 2) {
+      const center = startCol + (width / 2);
+      colMap[unit.parents[0]] = Math.floor(center) - 1;
+      colMap[unit.parents[1]] = Math.floor(center);
+      if (colMap[unit.parents[1]] <= colMap[unit.parents[0]]) colMap[unit.parents[1]] = colMap[unit.parents[0]] + 1;
+    } else if (unit.parents.length === 1) {
+      colMap[unit.parents[0]] = startCol + Math.floor(width / 2);
     }
     
     // Children left to right
     let col = startCol;
-    for (const c of children) {
+    for (const c of unit.children) {
       const sFams = (personSpouseFams[c] || []).filter(sf => {
         const sfam = families[sf]; if (!sfam) return false;
         const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
@@ -348,49 +352,49 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
       });
       if (sFams.length > 0) {
         for (const sf of sFams) {
-          if (placedUnits.has(sf)) continue;
-          const cw = unitWidths[sf] || 2;
+          if (placedZones.has(sf)) continue;
+          const cw = zoneWidths[sf] || 2;
           colMap[c] = col;
           const sfam = families[sf];
           const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
           if (spouse && colMap[spouse] === undefined) colMap[spouse] = col + 1;
-          placeUnit(sf, col);
-          col += cw + GAP;
+          placeZone(sf, col);
+          col += cw + 1;
         }
       } else {
         colMap[c] = col;
-        col += 1 + GAP;
+        col += 2;
       }
     }
+    return startCol + width;
   }
   
-  // Place from root downward
-  placeUnit(rootFam, 100);
+  placeZone(rootFam, 100);
   
-  // Place anchor's own family if not placed
-  const anchorSFams = (personSpouseFams[anchorId] || []).filter(fid => families[fid] && !placedUnits.has(fid));
+  // Place anchor's own family
+  const anchorSFams = (personSpouseFams[anchorId] || []).filter(fid => families[fid] && !placedZones.has(fid));
   for (const fid of anchorSFams) {
     if (colMap[anchorId] !== undefined) {
       const fam = families[fid];
       const spouse = fam.husb === anchorId ? fam.wife : fam.husb;
       if (spouse && colMap[spouse] === undefined) colMap[spouse] = colMap[anchorId] + 1;
-      placeUnit(fid, colMap[anchorId]);
+      placeZone(fid, colMap[anchorId]);
     }
   }
   
-  // Place ancestor families above root
+  // Place ancestors above root
   let waves = 0;
   while (waves < 30) {
     waves++;
-    const current = [...placedUnits];
+    const current = [...placedZones];
     let newPlacements = false;
     for (const fid of current) {
       const fam = families[fid];
       for (const pid of [fam.husb, fam.wife].filter(p => p && visited.has(p))) {
         const pfid = personParentFam[pid];
-        if (pfid && families[pfid] && !placedUnits.has(pfid)) {
-          const pw = unitWidths[pfid] || 2;
-          placeUnit(pfid, Math.round((colMap[pid] || 100) - pw / 2));
+        if (pfid && families[pfid] && !placedZones.has(pfid)) {
+          const pw = zoneWidths[pfid] || 2;
+          placeZone(pfid, Math.round((colMap[pid] || 100) - pw / 2));
           newPlacements = true;
         }
       }
@@ -398,13 +402,11 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     if (!newPlacements) break;
   }
   
-  // Place remaining individuals
+  // Place remaining
   let nextCol = 1000;
-  for (const pid of visited) {
-    if (colMap[pid] === undefined) colMap[pid] = nextCol++;
-  }
+  for (const pid of visited) { if (colMap[pid] === undefined) colMap[pid] = nextCol++; }
   
-  // Overlap resolution: per-gen, sort by col (family order), shift right
+  // Overlap resolution
   let shiftPasses = 0;
   while (shiftPasses < 10) {
     shiftPasses++;
@@ -422,7 +424,7 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     if (shifts === 0) break;
   }
   
-  // Convert to pixel positions
+  // Convert to pixels
   const allCols = Object.values(colMap).filter(c => c !== undefined && !isNaN(c));
   const minCol = Math.min(...allCols);
   const minGen = Math.min(...genList);
