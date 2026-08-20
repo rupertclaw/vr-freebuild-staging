@@ -312,9 +312,33 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     placedBlocks.add(fid);
   }
   
-  // Place anchor's parent family
-  const anchorParentFam = personParentFam[anchorId];
-  placeBlock(anchorParentFam, 100);
+  // Find the root family: walk up from anchor through parent families to the oldest ancestor
+  let rootFam = personParentFam[anchorId];
+  if (rootFam && familyBlocks[rootFam]) {
+    // Walk up through parents
+    let current = rootFam;
+    let safety = 0;
+    while (safety < 20) {
+      safety++;
+      const block = familyBlocks[current];
+      if (!block) break;
+      // Try to find parent family of the first parent in this block
+      let foundParent = false;
+      for (const pid of block.parents) {
+        const pfid = personParentFam[pid];
+        if (pfid && familyBlocks[pfid]) {
+          current = pfid;
+          foundParent = true;
+          break;
+        }
+      }
+      if (!foundParent) break;
+    }
+    rootFam = current;
+  }
+  
+  // Place from root family
+  placeBlock(rootFam, 100);
   
   // Place anchor's spouse family
   const anchorSFams = (personSpouseFams[anchorId] || []).filter(fid => familyBlocks[fid]);
@@ -358,9 +382,9 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     if (colMap[pid] === undefined) colMap[pid] = nextCol++;
   }
   
-  // Overlap resolution: per-gen, sort by col, shift right on collision
+  // Overlap resolution: per-gen, sort by col (preserves family order), shift right
   let shiftPasses = 0;
-  while (shiftPasses < 5) {
+  while (shiftPasses < 10) {
     shiftPasses++;
     let shifts = 0;
     for (const gen of genList) {
