@@ -1145,6 +1145,7 @@ function createPerson(id, gen, name, years, status, opts) {
 
 let people = [];
 let nextId = 1;
+let gedcomFams = {};  // GEDCOM FAM records with numeric IDs: { famId: { husb: numId, wife: numId, children: [numIds], marr } }
 let zoom = 0.75;
 let selectedPersonId = null;
 let skipAutoScroll = false;
@@ -1389,7 +1390,22 @@ function parseGedcom(text) {
   for (const p of result) { if (p.gen > maxGen) maxGen = p.gen; }
   for (const p of result) { p.gen = maxGen - p.gen; }
 
-  return { people: result, nextId: nid, families: fams };
+  // Build gedcomFams with numeric IDs (matching prototype's direct FAM usage)
+  // This preserves the exact parent-child relationships from the GEDCOM file
+  // without any reconstruction or matching.
+  const numericFams = {};
+  for (const [famXref, fam] of Object.entries(fams)) {
+    const husbId = fam.husb ? (xrefMap[fam.husb] || xrefMap[canonicalXref[fam.husb]]) : null;
+    const wifeId = fam.wife ? (xrefMap[fam.wife] || xrefMap[canonicalXref[fam.wife]]) : null;
+    const childIds = fam.children
+      .map(c => xrefMap[c] || xrefMap[canonicalXref[c]])
+      .filter(Boolean);
+    if (husbId || wifeId || childIds.length > 0) {
+      numericFams[famXref] = { id: famXref, husb: husbId, wife: wifeId, children: childIds, marr: fam.marriageDate || '' };
+    }
+  }
+
+  return { people: result, nextId: nid, families: fams, gedcomFams: numericFams };
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2159,77 +2175,76 @@ function layoutTree() {
       }
     }
 
-    // ── Step 2: Build family registry from people data ──
-    // The prototype uses families[famId] = { husb, wife, children: [] }.
-    // We build the same structure from people[].families (each has spouseId, famId).
-    const families = {};           // famId -> { husb, wife, children: [], marr }
+    // ── Step 2: Use GEDCOM family records directly (prototype approach) ──
+    // The prototype reads FAM records directly from the GEDCOM file:
+    //   families[famId] = { husb, wife, children: [], marr }
+    // No reconstruction, no matching, no guessing. This is the authoritative
+    // source for parent-child relationships.
+    const families = {};
     const personSpouseFams = {};   // personId -> [famId, ...]
-    const personParentFam = {};     // personId -> famId (first parent family found)
+    const personParentFam = {};    // personId -> famId
 
-    function ensureFam(famId) {
-      if (!famId) return null;
-      if (!families[famId]) families[famId] = { husb: null, wife: null, children: [], marr: '' };
-      return families[famId];
+    for (const [famId, gfam] of Object.entries(gedcomFams)) {
+      // Only include families that have at least one person in the current view
+      const husb = gfam.husb && viewSet.has(gfam.husb) ? gfam.husb : null;
+      const wife = gfam.wife && viewSet.has(gfam.wife) ? gfam.wife : null;
+      const children = gfam.children.filter(c => viewSet.has(c));
+      if (!husb && !wife && children.length === 0) continue;
+
+      families[famId] = { husb, wife, children, marr: gfam.marr || '' };
+
+      // Build personSpouseFams and personParentFam
+      if (husb && wife) {
+        if (!personSpouseFams[husb]) personSpouseFams[husb] = [];
+        if (!personSpouseFams[husb].includes(famId)) personSpouseFams[husb].push(famId);
+        if (!personSpouseFams[wife]) personSpouseFams[wife] = [];
+        if (!personSpouseFams[wife].includes(famId)) personSpouseFams[wife].push(famId);
+      }
+      for (const cid of children) {
+        if (!personParentFam[cid]) personParentFam[cid] = famId;
+      }
+    }
+
+    // Fallback: for people NOT in any GEDCOM family (manual adds, no GEDCOM loaded),
+    // reconstruct from people[].families and people[].parents.
+    // This preserves manual tree building functionality.
+    const peopleInFams = new Set();
+    for (const fid in families) {
+      const f = families[fid];
+      if (f.husb) peopleInFams.add(f.husb);
+      if (f.wife) peopleInFams.add(f.wife);
+      for (const c of f.children) peopleInFams.add(c);
     }
 
     for (const p of viewPeople) {
-      if (!genMap.has(p.id)) continue; // only people reachable from anchor
+      if (!genMap.has(p.id)) continue;
+      if (peopleInFams.has(p.id)) continue; // already covered by GEDCOM family
       for (const fam of (p.families || [])) {
-        const famId = fam.famId || ('f_' + p.id + '_' + fam.spouseId);
-        const f = ensureFam(famId);
-        const spouse = getP(fam.spouseId);
-        // Assign husb/wife by sex
-        if (p.sex === 'M' && !f.husb) {
-          f.husb = p.id;
-          if (spouse && !f.wife) f.wife = fam.spouseId;
-        } else if (p.sex === 'F' && !f.wife) {
-          f.wife = p.id;
-          if (spouse && !f.husb) f.husb = fam.spouseId;
-        } else {
-          // Fallback: assign by slot if sex-based didn't work
-          if (!f.husb) f.husb = p.id;
-          else if (!f.wife && fam.spouseId) f.wife = fam.spouseId;
-        }
-        if (fam.marriageDate) f.marr = fam.marriageDate;
-        // Build personSpouseFams
-        if (!personSpouseFams[p.id]) personSpouseFams[p.id] = [];
-        if (!personSpouseFams[p.id].includes(famId)) personSpouseFams[p.id].push(famId);
-        if (spouse) {
+        const famId = fam.famId || ('manual_' + p.id + '_' + fam.spouseId);
+        if (!families[famId]) families[famId] = { husb: null, wife: null, children: [], marr: fam.marriageDate || '' };
+        const f = families[famId];
+        if (p.sex === 'M' && !f.husb) f.husb = p.id;
+        else if (p.sex === 'F' && !f.wife) f.wife = p.id;
+        else if (!f.husb) f.husb = p.id;
+        else if (!f.wife && fam.spouseId) f.wife = fam.spouseId;
+        if (fam.spouseId && viewSet.has(fam.spouseId)) {
+          if (!personSpouseFams[p.id]) personSpouseFams[p.id] = [];
+          if (!personSpouseFams[p.id].includes(famId)) personSpouseFams[p.id].push(famId);
           if (!personSpouseFams[fam.spouseId]) personSpouseFams[fam.spouseId] = [];
           if (!personSpouseFams[fam.spouseId].includes(famId)) personSpouseFams[fam.spouseId].push(famId);
         }
       }
-    }
-
-    // Add children to families and build personParentFam
-    for (const p of viewPeople) {
-      if (!genMap.has(p.id)) continue;
-      const parents = (p.parents || []).filter(pid => viewSet.has(pid) && genMap.has(pid));
-      if (parents.length === 0) continue;
-      // Find the family that contains both parents (or just the first parent)
-      let parentFamId = null;
-      for (const fid in families) {
-        const f = families[fid];
-        if (parents.length >= 2 && f.husb && f.wife &&
-            parents.includes(f.husb) && parents.includes(f.wife)) {
-          parentFamId = fid;
-          break;
-        }
-      }
-      if (!parentFamId && parents.length === 1) {
-        // Single parent: find a family where this person is husb or wife
+      // Add children for manually-added people
+      for (const cid of (p.children || [])) {
+        if (!viewSet.has(cid) || peopleInFams.has(cid)) continue;
         for (const fid in families) {
           const f = families[fid];
-          if (f.husb === parents[0] || f.wife === parents[0]) {
-            parentFamId = fid;
+          if ((f.husb === p.id || f.wife === p.id) && !f.children.includes(cid)) {
+            f.children.push(cid);
+            if (!personParentFam[cid]) personParentFam[cid] = fid;
             break;
           }
         }
-      }
-      if (parentFamId) {
-        const f = ensureFam(parentFamId);
-        if (!f.children.includes(p.id)) f.children.push(p.id);
-        if (!personParentFam[p.id]) personParentFam[p.id] = parentFamId;
       }
     }
 
@@ -3562,6 +3577,7 @@ document.getElementById('gedcomInput').addEventListener('change', async (e) => {
   const result = parseGedcom(text);
   people = result.people;
   nextId = result.nextId;
+  gedcomFams = result.gedcomFams || {};
 
   autoSave();
 
@@ -3825,7 +3841,7 @@ function openPrintDialog() {
 
 function autoSave() {
   try {
-    const data = JSON.stringify({ people, nextId });
+    const data = JSON.stringify({ people, nextId, gedcomFams });
     localStorage.setItem(STORAGE_KEY, data);
     // Also write to legacy key so data-tree (pedigree) can pick it up
     localStorage.setItem('familytree_data_v5', data);
@@ -3868,6 +3884,7 @@ function autoRestore() {
           if (p.status === 'blank' && (p.isYou || p.name === 'Me' || p.name === 'You')) p.status = 'you';
         });
         nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+        gedcomFams = data.gedcomFams || {};
         if (fromDT) showToast('Loaded ' + people.length + ' people from Pedigree Tree');
         return true;
       }
@@ -3881,7 +3898,7 @@ function resetTree() {
   dlg.style.display = 'flex';
   document.getElementById('confirmOk').onclick = () => {
     dlg.style.display = 'none';
-    people = []; nextId = 1; focusPersonId = null; viewHistory = [];
+    people = []; nextId = 1; focusPersonId = null; viewHistory = []; gedcomFams = {};
     localStorage.removeItem(STORAGE_KEY);
     initDefault();
     renderFreeBuild();
@@ -5651,6 +5668,7 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
       const imported = JSON.parse(gedcomData);
       people = imported.people || [];
       nextId = imported.nextId || (people.length + 1);
+      gedcomFams = imported.gedcomFams || {};
       gedcomLoaded = true;
       showToast('Loaded ' + people.length + ' people from GEDCOM import');
     } catch (e) {
