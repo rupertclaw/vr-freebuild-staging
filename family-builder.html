@@ -1931,14 +1931,16 @@ function layoutTree() {
     if (!parentPos) return;
 
     // Compute midpoint: prefer mother's card center, else couple midpoint, else parent center
+    // But if spouse is far from the parent (different component), use parent center only
     let midX;
     const parent = getP(parentId);
     const spouse = spouseId ? getP(spouseId) : null;
     const motherIsParent = parent && parent.sex === 'F';
     const motherIsSpouse = !motherIsParent && spouse && spouse.sex === 'F';
+    const spouseFar = spousePos && Math.abs(spousePos.col - parentPos.col) > 40;
     if (motherIsParent) midX = parentPos.x + CARD_W / 2;
-    else if (motherIsSpouse && spousePos) midX = spousePos.x + CARD_W / 2;
-    else if (spousePos) midX = (parentPos.x + spousePos.x) / 2 + CARD_W / 2;
+    else if (motherIsSpouse && spousePos && !spouseFar) midX = spousePos.x + CARD_W / 2;
+    else if (spousePos && !spouseFar) midX = (parentPos.x + spousePos.x) / 2 + CARD_W / 2;
     else midX = parentPos.x + CARD_W / 2;
 
     // Split children into near (bus) and far (individual lines)
