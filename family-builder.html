@@ -2187,8 +2187,19 @@ function layoutTree() {
 
   // ═══ MAIN LAYOUT ═══
 
-  if (focusPersonId && viewSet.has(focusPersonId)) {
-    // ── ANCHOR-BASED LAYOUT: FAMILY-ZONE ALGORITHM ──
+  // Auto-pick anchor if none selected (overview mode).
+  // Uses the root with the most descendants, then runs the same
+  // zone-based layout as focus mode. This replaces the old placeSubtree
+  // algorithm that spread children across 300+ columns causing mega bus lines.
+  let anchorId = focusPersonId;
+  if (!anchorId || !viewSet.has(anchorId)) {
+    const _roots = findRoots();
+    _roots.sort((a, b) => countDescendants(b) - countDescendants(a));
+    anchorId = _roots[0] || (viewPeople.length > 0 ? viewPeople[0].id : null);
+  }
+
+  if (anchorId && viewSet.has(anchorId)) {
+    // ── ZONE-BASED LAYOUT (both focus and overview) ──
     // Places family UNITS (couple + children) as recursive zones with tight packing.
     // Ported from grid-prototype.html assignSlots().
     // Family units stay together as contiguous blocks; no extra column gaps between siblings.
@@ -2196,8 +2207,8 @@ function layoutTree() {
     // ── Step 1: BFS from anchor to assign generations ──
     // (Same as before — keep the existing BFS.)
     const genMap = new Map();  // id -> generation
-    const queue = [{ id: focusPersonId, gen: 0 }];
-    genMap.set(focusPersonId, 0);
+    const queue = [{ id: anchorId, gen: 0 }];
+    genMap.set(anchorId, 0);
 
     while (queue.length > 0) {
       const { id, gen } = queue.shift();
@@ -2275,7 +2286,7 @@ function layoutTree() {
     for (const fid in families) computeZoneWidth(fid);
 
     // ── Step 5: Find root family (anchor's grandfather family) ──
-    const anchorParentFam = personParentFam[focusPersonId];
+    const anchorParentFam = personParentFam[anchorId];
     let rootFam = anchorParentFam;
     if (anchorParentFam && families[anchorParentFam]) {
       const fam = families[anchorParentFam];
@@ -2373,21 +2384,21 @@ function layoutTree() {
       placeZone(rootFam, 100);
     } else if (!rootFam) {
       // No parent family — just place the anchor
-      colMap[focusPersonId] = 100;
+      colMap[anchorId] = 100;
     }
 
     // Place anchor's own family (spouse + children)
-    const anchorSFams = (personSpouseFams[focusPersonId] || []).filter(
+    const anchorSFams = (personSpouseFams[anchorId] || []).filter(
       fid => families[fid] && !placedZones.has(fid)
     );
     for (const fid of anchorSFams) {
-      if (colMap[focusPersonId] !== undefined) {
+      if (colMap[anchorId] !== undefined) {
         const fam = families[fid];
-        const spouse = fam.husb === focusPersonId ? fam.wife : fam.husb;
+        const spouse = fam.husb === anchorId ? fam.wife : fam.husb;
         if (spouse && colMap[spouse] === undefined) {
-          colMap[spouse] = colMap[focusPersonId] + 1;
+          colMap[spouse] = colMap[anchorId] + 1;
         }
-        placeZone(fid, colMap[focusPersonId]);
+        placeZone(fid, colMap[anchorId]);
       }
     }
 
@@ -2556,60 +2567,11 @@ function layoutTree() {
       addParentChildBus(fam.husb || fam.wife, fam.husb ? fam.wife : null, placedChildren, marriageIndex);
     }
 
-  } else {    // ── FALLBACK: AUTO-ROOT LAYOUT (no focus person) ──
-    // Find roots and sort by descendant count (most descendants = main trunk)
-    const roots = findRoots();
-    roots.sort((a, b) => countDescendants(b) - countDescendants(a));
-
-    // Process each root as a potentially disconnected component
-    const processedRoots = new Set();
-
-    for (const rootId of roots) {
-      if (processedRoots.has(rootId) || gridPos.has(rootId)) continue;
-
-      // Fix: If this root's children are already placed, place root above them
-      const rootPerson = getP(rootId);
-      if (rootPerson) {
-        const placedKids = (rootPerson.children || []).filter(cid => viewSet.has(cid) && gridPos.has(cid));
-        if (placedKids.length > 0) {
-          const childRows = placedKids.map(cid => gridPos.get(cid).row);
-          const minChildRow = Math.min(...childRows);
-          const parentRow = minChildRow - 1;
-          if (parentRow >= 0) {
-            const childCols = placedKids.map(cid => gridPos.get(cid).col);
-            const midCol = Math.floor(childCols.reduce((a, b) => a + b, 0) / placedKids.length);
-            const col = findFreeCol(parentRow, midCol);
-            placeSubtree(rootId, parentRow, col, new Set());
-
-            const reachable = new Set();
-            markReachable(rootId, reachable, new Set());
-            for (const rid of reachable) processedRoots.add(rid);
-            continue;
-          }
-        }
-      }
-
-      // Normal placement: start from row 0
-      const startRow = 0;
-      const startCol = findFreeCol(startRow, 0);
-
-      // Place this subtree
-      placeSubtree(rootId, startRow, startCol, new Set());
-
-      // Mark all reachable people as processed
-      const reachable = new Set();
-      markReachable(rootId, reachable, new Set());
-      for (const rid of reachable) processedRoots.add(rid);
-    }
-
-    // Place any remaining unplaced people (completely disconnected)
-    const unplaced = viewPeople.filter(p => !gridPos.has(p.id));
+  } else {    // ── NO ANCHOR FOUND: place everyone as orphans ──
+    // (Extremely rare: no view people at all, or all disconnected)
+    const unplaced = viewPeople;
     if (unplaced.length > 0) {
-      let maxUsedRow = 0;
-      for (const [id, gp] of gridPos) {
-        if (gp.row > maxUsedRow) maxUsedRow = gp.row;
-      }
-      const orphanRow = maxUsedRow + 2;
+      const orphanRow = 0;
       let col = 0;
 
       const orphanRoots = unplaced.filter(p =>
@@ -2632,7 +2594,7 @@ function layoutTree() {
       }
     }
 
-    // ── Fallback path: generate connections after all placement (same as Step 11) ──
+    // Generate connections (same approach as zone-based path)
     for (const fid in families) {
       const fam = families[fid];
       const husbPos = fam.husb ? positions.get(fam.husb) : null;
