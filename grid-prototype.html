@@ -349,9 +349,13 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     }
     
     // Children left to right, tight packing — 1 col gap between siblings
+    // Skip children that are already placed (they're in the tree through
+    // their own descendants or through another family)
     let col = startCol;
     for (let i = 0; i < unit.children.length; i++) {
       const c = unit.children[i];
+      // Skip if already placed (ancestor expansion: don't re-place siblings)
+      if (colMap[c] !== undefined) continue;
       const sFams = (personSpouseFams[c] || []).filter(sf => {
         const sfam = families[sf]; if (!sfam) return false;
         const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
@@ -394,7 +398,8 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     }
   }
   
-  // Place ancestors above root
+  // Place ancestors above root — only place parents, don't re-place children
+  // that are already in the tree through their own descendants.
   let waves = 0;
   while (waves < 30) {
     waves++;
@@ -406,6 +411,8 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
         const pfid = personParentFam[pid];
         if (pfid && families[pfid] && !placedZones.has(pfid)) {
           const pw = zoneWidths[pfid] || 2;
+          // Place parent family centered above this person
+          // But ONLY if we're placing it above the root (not overlapping descendants)
           placeZone(pfid, Math.round((colMap[pid] || 100) - pw / 2));
           newPlacements = true;
         }
