@@ -283,9 +283,8 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
   }
   
   // Compute zone width recursively — tight packing
-  // Width = sum of child sub-widths + 1 col gap between each child
+  // Width = sum of child sub-widths. No extra gap between siblings.
   // Min width = 2 (for parents)
-  const ZONE_GAP = 0.5; // half-col gap between family zones
   const zoneWidths = {};
   function computeZoneWidth(fid, visiting = new Set()) {
     if (zoneWidths[fid] !== undefined) return zoneWidths[fid];
@@ -304,12 +303,12 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
       if (sFams.length > 0) {
         for (let j = 0; j < sFams.length; j++) {
           childrenWidth += computeZoneWidth(sFams[j], visiting);
-          if (j < sFams.length - 1) childrenWidth += ZONE_GAP; // 0.5 col between marriages
+          if (j < sFams.length - 1) childrenWidth += 1; // 1 col between marriages
         }
       } else {
         childrenWidth += 1;
       }
-      if (i < unit.children.length - 1) childrenWidth += 0.5;
+      // No extra gap between siblings — they pack at 1 col each
     }
     zoneWidths[fid] = Math.max(2, childrenWidth);
     return zoneWidths[fid];
@@ -374,13 +373,13 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
           // Place sub-zone starting at child's position
           placeZone(sf, col);
           col += cw;
-          if (j < sFams.length - 1) col += 0.5; // half-col gap between marriages
+          if (j < sFams.length - 1) col += 1; // 1 col between marriages
         }
       } else {
         colMap[c] = col;
         col += 1;
       }
-      if (i < unit.children.length - 1) col += 0.5; // half-col gap between siblings
+      // No extra gap between siblings — they're 1 col apart (= Gap X + card)
     }
     return startCol + width;
   }
