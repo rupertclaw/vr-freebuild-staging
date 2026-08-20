@@ -2477,32 +2477,287 @@ function layoutTree() {
       placeAt(id, row, col, new Set());
     }
 
-    // ── Step 9: Place orphan people (not reachable from anchor BFS) ──
-    // (Connections generated AFTER all placement + normalization, prototype-style)
+    // ── Step 9: Place disconnected components using zone-based layout ──
+    // For each component not reachable from the anchor, run a mini BFS +
+    // zone-based layout at a column offset. This avoids placeSubtree which
+    // spreads children across hundreds of columns creating mega bus lines.
+    const placedIds = new Set([...genMap.keys()].filter(id => gridPos.has(id)));
     const unplaced = viewPeople.filter(p => !genMap.has(p.id) && !gridPos.has(p.id));
     if (unplaced.length > 0) {
-      let maxUsedRow = 0;
-      for (const [id, gp] of gridPos) {
-        if (gp.row > maxUsedRow) maxUsedRow = gp.row;
+      // Find disconnected components among unplaced people
+      const assigned = new Set();
+      const components = [];
+      for (const p of unplaced) {
+        if (assigned.has(p.id)) continue;
+        // BFS within unplaced set
+        const comp = new Set();
+        const q = [p.id];
+        while (q.length > 0) {
+          const pid = q.shift();
+          if (comp.has(pid)) continue;
+          comp.add(pid);
+          assigned.add(pid);
+          const person = getP(pid);
+          if (!person) continue;
+          for (const cid of (person.children || [])) {
+            if (viewSet.has(cid) && !genMap.has(cid) && !comp.has(cid)) q.push(cid);
+          }
+          for (const pp of (person.parents || [])) {
+            if (viewSet.has(pp) && !genMap.has(pp) && !comp.has(pp)) q.push(pp);
+          }
+          for (const fam of (person.families || [])) {
+            if (viewSet.has(fam.spouseId) && !genMap.has(fam.spouseId) && !comp.has(fam.spouseId)) q.push(fam.spouseId);
+          }
+        }
+        // Find root of this component
+        const compRoots = [...comp].filter(pid => {
+          const person = getP(pid);
+          return !person.parents || person.parents.length === 0 || !person.parents.some(pp => viewSet.has(pp));
+        });
+        // Sort by descendant count
+        compRoots.sort((a, b) => countDescendants(b) - countDescendants(a));
+        components.push({ people: [...comp], rootId: compRoots[0] || [...comp][0] });
       }
-      const orphanRow = maxUsedRow + 2;
-      let col = 0;
-      const orphanRoots = unplaced.filter(p =>
-        !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid))
-      );
-      for (const root of orphanRoots) {
-        if (gridPos.has(root.id)) continue;
-        const startCol = findFreeCol(orphanRow, col);
-        placeSubtree(root.id, orphanRow, startCol, new Set());
-        col = getSubtreeRightmost(root.id) + 2;
+
+      // Place each component using zone-based layout at a column offset
+      let compOffset = 500; // start far right of main tree
+      for (const comp of components) {
+        if (comp.people.length === 0) continue;
+        const compSet = new Set(comp.people);
+
+        // Mini BFS from component root
+        const compGenMap = new Map();
+        const q2 = [{ id: comp.rootId, gen: 0 }];
+        compGenMap.set(comp.rootId, 0);
+        while (q2.length > 0) {
+          const { id, gen } = q2.shift();
+          const person = getP(id);
+          if (!person) continue;
+          for (const fam of (person.families || [])) {
+            if (viewSet.has(fam.spouseId) && !compGenMap.has(fam.spouseId) && compSet.has(fam.spouseId)) {
+              compGenMap.set(fam.spouseId, gen); q2.push({ id: fam.spouseId, gen });
+            }
+          }
+          for (const pp of (person.parents || [])) {
+            if (viewSet.has(pp) && !compGenMap.has(pp) && compSet.has(pp)) {
+              compGenMap.set(pp, gen - 1); q2.push({ id: pp, gen: gen - 1 });
+            }
+          }
+          for (const cid of (person.children || [])) {
+            if (viewSet.has(cid) && !compGenMap.has(cid) && compSet.has(cid)) {
+              compGenMap.set(cid, gen + 1); q2.push({ id: cid, gen: gen + 1 });
+            }
+          }
+        }
+
+        // Build family units for this component
+        const compFamilyUnits = {};
+        for (const fid in families) {
+          const fam = families[fid];
+          const parents = [fam.husb, fam.wife].filter(p => p && compGenMap.has(p) && viewSet.has(p));
+          const children = fam.children.filter(c => compGenMap.has(c) && viewSet.has(c));
+          if (parents.length === 0 && children.length === 0) continue;
+          compFamilyUnits[fid] = { fid, parents, children };
+        }
+
+        // Compute zone widths for this component
+        const compZoneWidths = {};
+        function compComputeZoneWidth(fid, visiting) {
+          if (compZoneWidths[fid] !== undefined) return compZoneWidths[fid];
+          if (!visiting) visiting = new Set();
+          if (visiting.has(fid)) return 2;
+          visiting.add(fid);
+          const unit = compFamilyUnits[fid]; if (!unit) return 2;
+          let cw = 0;
+          for (const c of unit.children) {
+            const sFams = (personSpouseFams[c] || []).filter(sf => {
+              const sfam = families[sf]; if (!sfam) return false;
+              const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
+              return spouse && compGenMap.has(spouse) && viewSet.has(spouse);
+            });
+            if (sFams.length > 0) {
+              for (const sf of sFams) cw += compComputeZoneWidth(sf, visiting);
+            } else { cw += 1; }
+          }
+          compZoneWidths[fid] = Math.max(2, cw);
+          return compZoneWidths[fid];
+        }
+        for (const fid in compFamilyUnits) compComputeZoneWidth(fid);
+
+        // Find root family for this component
+        const compRootParentFam = personParentFam[comp.rootId];
+        let compRootFam = compRootParentFam;
+        if (compRootParentFam && families[compRootParentFam] && compFamilyUnits[compRootParentFam]) {
+          const fam = families[compRootParentFam];
+          if (fam.husb && compGenMap.has(fam.husb)) {
+            const grandFam = personParentFam[fam.husb];
+            if (grandFam && compFamilyUnits[grandFam]) compRootFam = grandFam;
+          }
+        }
+
+        // Place zones for this component
+        const compColMap = {};
+        const compPlacedZones = new Set();
+
+        function compPlaceZone(fid, startCol) {
+          if (compPlacedZones.has(fid)) return startCol + (compZoneWidths[fid] || 2);
+          const unit = compFamilyUnits[fid]; if (!unit) return startCol;
+          const width = compZoneWidths[fid] || 2;
+          compPlacedZones.add(fid);
+
+          if (unit.parents.length === 2) {
+            const center = startCol + (width / 2);
+            compColMap[unit.parents[0]] = Math.floor(center) - 1;
+            compColMap[unit.parents[1]] = Math.floor(center);
+            if (compColMap[unit.parents[1]] <= compColMap[unit.parents[0]]) {
+              compColMap[unit.parents[1]] = compColMap[unit.parents[0]] + 1;
+            }
+          } else if (unit.parents.length === 1) {
+            compColMap[unit.parents[0]] = startCol + Math.floor(width / 2);
+          }
+
+          let col = startCol;
+          for (const c of unit.children) {
+            if (compColMap[c] !== undefined) {
+              const sFams = (personSpouseFams[c] || []).filter(sf => {
+                const sfam = families[sf]; if (!sfam) return false;
+                const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
+                return spouse && compGenMap.has(spouse) && viewSet.has(spouse);
+              });
+              let cw = 1;
+              if (sFams.length > 0) cw = sFams.reduce((s, sf) => s + (compZoneWidths[sf] || 2), 0);
+              col += cw; continue;
+            }
+            const sFams = (personSpouseFams[c] || []).filter(sf => {
+              const sfam = families[sf]; if (!sfam) return false;
+              const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
+              return spouse && compGenMap.has(spouse) && viewSet.has(spouse);
+            });
+            if (sFams.length > 0) {
+              for (const sf of sFams) {
+                if (compPlacedZones.has(sf)) { col += compZoneWidths[sf] || 2; continue; }
+                const cw = compZoneWidths[sf] || 2;
+                compColMap[c] = col;
+                const sfam = families[sf];
+                const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
+                if (spouse && compColMap[spouse] === undefined) compColMap[spouse] = col + 1;
+                compPlaceZone(sf, col);
+                col += cw;
+              }
+            } else {
+              compColMap[c] = col; col += 1;
+            }
+          }
+          return startCol + width;
+        }
+
+        if (compRootFam && compFamilyUnits[compRootFam]) {
+          compPlaceZone(compRootFam, compOffset);
+        } else {
+          compColMap[comp.rootId] = compOffset;
+        }
+
+        // Place anchor's own family
+        const compAnchorSFams = (personSpouseFams[comp.rootId] || []).filter(
+          fid => families[fid] && !compPlacedZones.has(fid) && compFamilyUnits[fid]
+        );
+        for (const fid of compAnchorSFams) {
+          if (compColMap[comp.rootId] !== undefined) {
+            const fam = families[fid];
+            const spouse = fam.husb === comp.rootId ? fam.wife : fam.husb;
+            if (spouse && compColMap[spouse] === undefined) {
+              compColMap[spouse] = compColMap[comp.rootId] + 1;
+            }
+            compPlaceZone(fid, compColMap[comp.rootId]);
+          }
+        }
+
+        // Place ancestors above root (same wave approach as main)
+        let compWaves = 0;
+        while (compWaves < 30) {
+          compWaves++;
+          const current = [...compPlacedZones];
+          let newPlacements = false;
+          for (const fid of current) {
+            const fam = families[fid];
+            for (const pid of [fam.husb, fam.wife].filter(p => p && compGenMap.has(p))) {
+              const pfid = personParentFam[pid];
+              if (pfid && compFamilyUnits[pfid] && !compPlacedZones.has(pfid)) {
+                const pw = compZoneWidths[pfid] || 2;
+                compPlaceZone(pfid, Math.round((compColMap[pid] || compOffset) - pw / 2));
+                newPlacements = true;
+              }
+            }
+          }
+          if (!newPlacements) break;
+        }
+
+        // Place any remaining people in this component
+        let compNextCol = compOffset + 200;
+        for (const pid of comp.people) {
+          if (!compGenMap.has(pid)) continue;
+          if (compColMap[pid] === undefined) compColMap[pid] = compNextCol++;
+        }
+
+        // Overlap resolution within this component
+        const compByGen = {};
+        for (const [id, gen] of compGenMap) {
+          if (compColMap[id] === undefined) continue;
+          (compByGen[gen] ||= []).push(id);
+        }
+        const compGenList = Object.keys(compByGen).map(Number).sort((a, b) => a - b);
+        let compShiftPasses = 0;
+        while (compShiftPasses < 10) {
+          compShiftPasses++;
+          let shifts = 0;
+          for (const gen of compGenList) {
+            const ppl = compByGen[gen] || [];
+            ppl.sort((a, b) => compColMap[a] - compColMap[b]);
+            for (let i = 0; i < ppl.length - 1; i++) {
+              if (compColMap[ppl[i]] + 1 > compColMap[ppl[i + 1]]) {
+                compColMap[ppl[i + 1]] = compColMap[ppl[i]] + 1;
+                shifts++;
+              }
+            }
+          }
+          if (shifts === 0) break;
+        }
+
+        // Merge into main gridPos/positions
+        let compMinGen = Infinity;
+        for (const [id, gen] of compGenMap) {
+          if (compColMap[id] === undefined) continue;
+          if (gen < compMinGen) compMinGen = gen;
+        }
+        if (compMinGen === Infinity) compMinGen = 0;
+
+        for (const [id, gen] of compGenMap) {
+          if (compColMap[id] === undefined) continue;
+          const row = gen - compMinGen;
+          const col = compColMap[id];
+          placeAt(id, row, col, new Set());
+        }
+
+        // Advance offset for next component
+        let compMaxCol = 0;
+        for (const [id, gp] of gridPos) {
+          if (compGenMap.has(id) && gp.col > compMaxCol) compMaxCol = gp.col;
+        }
+        compOffset = compMaxCol + 5;
       }
-      // Anyone still unplaced
+
+      // Anyone still unplaced (not in any component BFS)
       const stillUnplaced = viewPeople.filter(p => !genMap.has(p.id) && !gridPos.has(p.id));
-      let orphanCol = 0;
-      for (const p of stillUnplaced) {
-        const c = findFreeCol(orphanRow, orphanCol);
-        placeAt(p.id, orphanRow, c, new Set());
-        orphanCol = c + 2;
+      if (stillUnplaced.length > 0) {
+        let maxUsedRow = 0;
+        for (const [id, gp] of gridPos) { if (gp.row > maxUsedRow) maxUsedRow = gp.row; }
+        const orphanRow = maxUsedRow + 2;
+        let orphanCol = 0;
+        for (const p of stillUnplaced) {
+          const c = findFreeCol(orphanRow, orphanCol);
+          placeAt(p.id, orphanRow, c, new Set());
+          orphanCol = c + 2;
+        }
       }
     }
 
