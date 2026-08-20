@@ -1,0 +1,801 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VR Grid Layout Prototype</title>
+<style>
+* { margin: 0; padding: 0; box-sizing: border-box; }
+body { background: #2a1f1a; color: #e0d6c8; font-family: 'Segoe UI', Tahoma, sans-serif; overflow: hidden; }
+#controls { position: fixed; top: 0; left: 0; right: 0; z-index: 100; background: #1a1410; padding: 8px 16px; display: flex; gap: 12px; align-items: center; flex-wrap: wrap; border-bottom: 1px solid #4a3a2a; }
+#controls label { font-size: 13px; color: #a09080; }
+#controls button { background: #3a2a1a; color: #e0d6c8; border: 1px solid #5a4a3a; padding: 4px 12px; cursor: pointer; border-radius: 3px; font-size: 13px; }
+#controls button:hover { background: #4a3a2a; }
+#controls select { background: #1a1410; color: #e0d6c8; border: 1px solid #5a4a3a; padding: 3px 8px; font-size: 13px; border-radius: 3px; }
+#controls input { background: #1a1410; color: #e0d6c8; border: 1px solid #5a4a3a; padding: 3px 8px; font-size: 13px; border-radius: 3px; width: 60px; }
+#treeContainer { position: absolute; top: 50px; left: 0; right: 0; bottom: 0; overflow: auto; background: #f5f0e6; }
+#treeSvg { position: absolute; top: 0; left: 0; }
+.card { position: absolute; width: 140px; height: 50px; background: #fff; border: 1px solid #ccc; border-left: 3px solid #8b7355; border-radius: 3px; padding: 4px 6px; font-size: 11px; color: #333; cursor: pointer; overflow: hidden; transition: box-shadow 0.15s; z-index: 2; }
+.card:hover { box-shadow: 0 2px 8px rgba(0,0,0,0.3); z-index: 10; }
+.card.male { border-left-color: #4a7ab0; }
+.card.female { border-left-color: #b04a7a; }
+.card.unknown { border-left-color: #8b7355; }
+.card.anchor { border: 2px solid #d4a017; box-shadow: 0 0 8px rgba(212,160,23,0.4); }
+.card-name { font-weight: bold; font-size: 11px; line-height: 1.2; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.card-dates { font-size: 10px; color: #888; line-height: 1.2; margin-top: 2px; }
+.card-gen { font-size: 8px; color: #aaa; position: absolute; bottom: 2px; right: 4px; }
+.gen-label { position: absolute; left: 4px; font-size: 10px; color: #999; font-style: italic; z-index: 1; background: #f5f0e6; padding: 0 4px; border-radius: 2px; }
+</style>
+</head>
+<body>
+
+<div id="controls">
+  <label>Anchor:</label>
+  <select id="anchorSelect"></select>
+  <label>Card W:</label>
+  <input id="cardW" type="number" value="140">
+  <label>Card H:</label>
+  <input id="cardH" type="number" value="50">
+  <label>Gap X:</label>
+  <input id="gapX" type="number" value="30">
+  <label>Gap Y:</label>
+  <input id="gapY" type="number" value="80">
+  <button id="layoutBtn">Layout</button>
+  <button id="fitBtn">Fit</button>
+  <button id="loadGedBtn">Load GED</button>
+  <input id="gedFile" type="file" accept=".ged" style="display:none">
+  <span id="stats"></span>
+</div>
+
+<div id="treeContainer">
+  <div id="treeSvg"></div>
+</div>
+
+<script>const EMBEDDED_DATA = {"individuals":{"I1":{"id":"I1","name":"Joseph /Mooney/","sex":"M","birth":"1 aug 1879","death":"17 jan 1957"},"I2":{"id":"I2","name":"Isabella /Farrell/","sex":"F","birth":"12 Jun 1864","death":""},"I3":{"id":"I3","name":"Selina /Fullerton/","sex":"F","birth":"1833","death":""},"I4":{"id":"I4","name":"Mary /Steven/","sex":"F","birth":"1886","death":"10 Apr 1936"},"I5":{"id":"I5","name":"Catherine /McAdam/","sex":"F","birth":"","death":""},"I6":{"id":"I6","name":"Alice /Lynch/","sex":"F","birth":"26 Apr 1865","death":"4 Apr 1890"},"I7":{"id":"I7","name":"Mary /Whyte/","sex":"F","birth":"","death":""},"I8":{"id":"I8","name":"Nancy (Agnes) /Mooney/","sex":"F","birth":"1836","death":"2 Jun 1893"},"I9":{"id":"I9","name":"James /Barnes/","sex":"M","birth":"23 dec 1872","death":"20 Jan 1963"},"I10":{"id":"I10","name":"John /Rogers/","sex":"M","birth":"","death":""},"I11":{"id":"I11","name":"Charles /Shanks/","sex":"M","birth":"","death":""},"I12":{"id":"I12","name":"John /Smith/","sex":"M","birth":"1887","death":""},"I13":{"id":"I13","name":"Mary /Shepherd/","sex":"F","birth":"1838","death":"9 jul 1901"},"I14":{"id":"I14","name":"Ann /Welsh/","sex":"F","birth":"1826","death":"23 Jul 1887"},"I15":{"id":"I15","name":"James /Graham/","sex":"M","birth":"17 Mar 1871","death":"1 apr 1905"},"I16":{"id":"I16","name":"John (Jackie) /Moonie/","sex":"M","birth":"21 Nov 1936","death":"16 Dec 2016"},"I17":{"id":"I17","name":"Thomas Smith or /Weir/","sex":"M","birth":"19 Oct 1903","death":"1 Jun 1973"},"I18":{"id":"I18","name":"James /Smith/","sex":"M","birth":"1876","death":""},"I19":{"id":"I19","name":"James /McCormick/","sex":"M","birth":"1826","death":""},"I20":{"id":"I20","name":"George /Bett/","sex":"M","birth":"1983","death":""},"I21":{"id":"I21","name":"Mary /Lynch/","sex":"F","birth":"10 Jun 1891","death":""},"I22":{"id":"I22","name":"Margaret Campbell /Barnes/","sex":"F","birth":"11 Jan 1890","death":""},"I23":{"id":"I23","name":"Samuel /McCullock/","sex":"M","birth":"25 Oct 1864","death":""},"I24":{"id":"I24","name":"Annie /Farrell/","sex":"F","birth":"1898","death":""},"I25":{"id":"I25","name":"Ann /Stevenson/","sex":"F","birth":"1823","death":"5 Apr 1873"},"I26":{"id":"I26","name":"John /Sanderson/","sex":"M","birth":"","death":""},"I27":{"id":"I27","name":"Catherine /Connelly/","sex":"F","birth":"1835","death":""},"I28":{"id":"I28","name":"Elizabeth /Mooney/","sex":"F","birth":"15 Dec 1881","death":"18 feb 1883"},"I29":{"id":"I29","name":"Wilhelmina E /Farrell/","sex":"M","birth":"15 Sep 1890","death":""},"I30":{"id":"I30","name":"David SmIth or /Weir/","sex":"M","birth":"10 Mar 1909","death":"5 July 1991"},"I31":{"id":"I31","name":"Thomas /Knox/","sex":"M","birth":"","death":""},"I32":{"id":"I32","name":"Margaret /Keiller/","sex":"F","birth":"","death":""},"I33":{"id":"I33","name":"James /McDonald/","sex":"M","birth":"","death":""},"I34":{"id":"I34","name":"Susan /Smith/","sex":"F","birth":"1884","death":""},"I35":{"id":"I35","name":"Joseph /Lynch/","sex":"M","birth":"18 may 1858","death":"28 may 1858"},"I36":{"id":"I36","name":"John /Gardner/","sex":"M","birth":"1853","death":"30 April 1903"},"I37":{"id":"I37","name":"Ellen /Barnes/","sex":"F","birth":"1852","death":""},"I38":{"id":"I38","name":"robert /McCullock/","sex":"M","birth":"1 Mar 1870","death":""},"I39":{"id":"I39","name":"Francis /Gillon/","sex":"M","birth":"","death":""},"I40":{"id":"I40","name":"Margaret /Mooney/","sex":"F","birth":"27 Jun 1872","death":""},"I41":{"id":"I41","name":"Margaret /Steven/","sex":"F","birth":"1888","death":""},"I42":{"id":"I42","name":"Isabella /Shepherd/","sex":"F","birth":"12 apr 1866","death":"11 dec 1914"},"I43":{"id":"I43","name":"Hannah Foot /Millar/","sex":"F","birth":"abt 1877","death":""},"I44":{"id":"I44","name":"Jessie Agnes /Weir/","sex":"F","birth":"20 jun 1894","death":"22 Dec 1969"},"I45":{"id":"I45","name":"William /Mooney/","sex":"M","birth":"1885","death":""},"I46":{"id":"I46","name":"Michael /Mooney/","sex":"M","birth":"1801","death":"23 Mar 1875"},"I47":{"id":"I47","name":"Cathrine","sex":"F","birth":"1821","death":""},"I48":{"id":"I48","name":"Edward /Collins/","sex":"M","birth":"25 Feb 1865","death":"30 jun 1919"},"I49":{"id":"I49","name":"Thomas /Mooney/","sex":"M","birth":"1853","death":"21 jan 1924"},"I50":{"id":"I50","name":"George /Colquhoun/","sex":"M","birth":"12 Jun 1877","death":"25 Sep 1915"},"I51":{"id":"I51","name":"Francis","sex":"F","birth":"11 Jan 1872","death":""},"I52":{"id":"I52","name":"Owen /Lynch/","sex":"M","birth":"1894","death":""},"I53":{"id":"I53","name":"Christopher /Young/","sex":"M","birth":"","death":""},"I54":{"id":"I54","name":"Patrick /Quin/","sex":"M","birth":"","death":""},"I55":{"id":"I55","name":"William /Mooney/","sex":"M","birth":"28 Jun 1829","death":""},"I56":{"id":"I56","name":"Rose /McDonald/","sex":"F","birth":"24 Sep 1867","death":"1868"},"I57":{"id":"I57","name":"Sarah Jane /Mallon/","sex":"F","birth":"1860","death":""},"I58":{"id":"I58","name":"Thomas Joshua /Cooper/","sex":"M","birth":"19 Dec 1943","death":""},"I59":{"id":"I59","name":"/Traynor/","sex":"M","birth":"","death":""},"I60":{"id":"I60","name":"Ninian /Weir/","sex":"M","birth":"18 Aug 1872","death":"21 May 1931"},"I61":{"id":"I61","name":"Elizabeth /Thomson/","sex":"F","birth":"19 Dec 1891","death":"27 Sep 1951"},"I62":{"id":"I62","name":"Catherine /Welsh/","sex":"F","birth":"1820","death":"17 Jan 1899"},"I63":{"id":"I63","name":"Andrew /Welsh/","sex":"M","birth":"1824","death":""},"I64":{"id":"I64","name":"Jean /Caithness/","sex":"F","birth":"","death":""},"I65":{"id":"I65","name":"Thomas /Mooney/","sex":"M","birth":"1778","death":"1864"},"I66":{"id":"I66","name":"Sophie Alice /Cooper/","sex":"F","birth":"1 Nov 1997","death":""},"I67":{"id":"I67","name":"Lisa /Whiteside/","sex":"F","birth":"25 Sep 1986","death":""},"I68":{"id":"I68","name":"Bridget /Welsh/","sex":"F","birth":"","death":""},"I69":{"id":"I69","name":"Thomas /Mooney/","sex":"M","birth":"1883","death":""},"I70":{"id":"I70","name":"Isabella","sex":"F","birth":"1786","death":""},"I71":{"id":"I71","name":"Matilda /Norrie/","sex":"F","birth":"21 Apr 1812","death":"12 Jul 1857"},"I72":{"id":"I72","name":"Ann Jane /Weir/","sex":"F","birth":"1875","death":""},"I73":{"id":"I73","name":"Elizabeth /High/","sex":"M","birth":"1854","death":""},"I74":{"id":"I74","name":"Francis /Lynch/","sex":"M","birth":"17 August 1891","death":"12 Dec 1892"},"I75":{"id":"I75","name":"Charles /Crichton/","sex":"M","birth":"12 Apr 1879","death":"30 Apr 1937"},"I76":{"id":"I76","name":"Jessie /Mooney/","sex":"F","birth":"1853","death":""},"I77":{"id":"I77","name":"Michael /Young/","sex":"M","birth":"","death":""},"I78":{"id":"I78","name":"Margaret /Gardner/","sex":"F","birth":"1883","death":""},"I79":{"id":"I79","name":"Christina /Mooney/","sex":"F","birth":"3 Apr 1876","death":""},"I80":{"id":"I80","name":"Rose /Rogers/","sex":"F","birth":"","death":""},"I81":{"id":"I81","name":"Catherine /Gillan/","sex":"F","birth":"1892","death":"7 nov 1929"},"I82":{"id":"I82","name":"John /Reilly/","sex":"M","birth":"1798","death":"6 Jan 1866"},"I83":{"id":"I83","name":"Jean /Lamb/","sex":"F","birth":"1831","death":""},"I84":{"id":"I84","name":"Maria /Lynch/","sex":"F","birth":"9 may 1854","death":"bef oct 1855"},"I85":{"id":"I85","name":"Peter /Paterson/","sex":"M","birth":"13 Feb 1880","death":"29 Mar 1937"},"I86":{"id":"I86","name":"John /Mooney/","sex":"M","birth":"1858","death":""},"I87":{"id":"I87","name":"Margaret /Harrington/","sex":"F","birth":"1798","death":"15 Aug 1862"},"I88":{"id":"I88","name":"james /Reid/","sex":"M","birth":"1821","death":""},"I89":{"id":"I89","name":"Terence /McDonald/","sex":"M","birth":"17 Jun 1869","death":"1936"},"I90":{"id":"I90","name":"Paul /Mooney/","sex":"M","birth":"","death":""},"I91":{"id":"I91","name":"Brant /Young/","sex":"M","birth":"","death":""},"I92":{"id":"I92","name":"john /Farrell/","sex":"M","birth":"13 jun 1891","death":""},"I93":{"id":"I93","name":"Helen Dalgety /Burnett/","sex":"F","birth":"","death":"27 Dec 1995"},"I94":{"id":"I94","name":"Kelly Marie /Bett/","sex":"F","birth":"8 Jun 1981","death":""},"I95":{"id":"I95","name":"Elizabeth /Mahood/","sex":"F","birth":"abt 1836","death":"5 Aug 1911"},"I96":{"id":"I96","name":"Margaret Cameron /Dalgleish/","sex":"F","birth":"","death":""},"I97":{"id":"I97","name":"Catherine /Clark/","sex":"F","birth":"abt 1801","death":""},"I98":{"id":"I98","name":"Barbara Ellen /Mooney/","sex":"F","birth":"23 Apr 1936","death":"10 Oct 1970"},"I99":{"id":"I99","name":"Thomas /Barnes/","sex":"M","birth":"","death":""},"I100":{"id":"I100","name":"Owen Graham /(Grimes)/","sex":"M","birth":"","death":""},"I101":{"id":"I101","name":"James Robert (Jimmy) /Bett/","sex":"M","birth":"22 Jun 1961","death":""},"I102":{"id":"I102","name":"Edward /Lynch/","sex":"M","birth":"","death":""},"I103":{"id":"I103","name":"James /Mooney/","sex":"M","birth":"1850","death":"16 jan 1901"},"I104":{"id":"I104","name":"Gerard Anthony /Farrell/","sex":"M","birth":"Jan 1904","death":""},"I105":{"id":"I105","name":"Thomas /Mooney/","sex":"M","birth":"1833","death":"6 Jan 1907"},"I106":{"id":"I106","name":"James Aaron /Balmain/","sex":"M","birth":"1 Oct 1989","death":""},"I107":{"id":"I107","name":"Elizabeth /Moonie/","sex":"F","birth":"28 Jun 1932","death":"30 Jan 2005"},"I108":{"id":"I108","name":"Jenifer /Young/","sex":"F","birth":"1982","death":""},"I109":{"id":"I109","name":"Lucnda /Mallon/","sex":"F","birth":"7 Jun 1865","death":""},"I110":{"id":"I110","name":"Eliza /Smith/","sex":"F","birth":"1879","death":""},"I111":{"id":"I111","name":"Elizabeth Ann /Barnes/","sex":"F","birth":"1837","death":""},"I112":{"id":"I112","name":"Rose /Graham/","sex":"F","birth":"1877","death":""},"I113":{"id":"I113","name":"Mary /Clark/","sex":"F","birth":"","death":""},"I114":{"id":"I114","name":"Alison /McCormick/","sex":"F","birth":"1834","death":""},"I115":{"id":"I115","name":"Bridget /Collins/","sex":"F","birth":"7 jun 1860","death":"1 Apr 1861"},"I116":{"id":"I116","name":"William /Steven/","sex":"M","birth":"1851","death":"Oct 1898"},"I117":{"id":"I117","name":"Ann /Gaynor/","sex":"F","birth":"1821","death":""},"I118":{"id":"I118","name":"Mary /McCullock/","sex":"F","birth":"1895","death":""},"I119":{"id":"I119","name":"Mary /Lynch/","sex":"F","birth":"","death":""},"I120":{"id":"I120","name":"Ann Jane /Farrell/","sex":"F","birth":"14 jan 1862","death":""},"I121":{"id":"I121","name":"Hannah /Casson/","sex":"F","birth":"11 Nov 1902","death":"1992"},"I122":{"id":"I122","name":"Catherine Alice /Mooney/","sex":"F","birth":"21 Oct 1963","death":""},"I123":{"id":"I123","name":"Catherine /Lynch/","sex":"F","birth":"1854","death":""},"I124":{"id":"I124","name":"Betty /Dillon/","sex":"F","birth":"","death":"1892"},"I125":{"id":"I125","name":"Clair Lisa Marie /Balmain/","sex":"F","birth":"18 Oct 1994","death":""},"I126":{"id":"I126","name":"John Spencer /Mooney/","sex":"M","birth":"4 Feb 1965","death":""},"I127":{"id":"I127","name":"Thomas W /Whiteside/","sex":"M","birth":"Abt 1941","death":""},"I128":{"id":"I128","name":"Ellen /Smith/","sex":"F","birth":"Mar 1891","death":""},"I129":{"id":"I129","name":"Michael /Mooney/","sex":"M","birth":"13 Nov 1855","death":"13 jul 1910"},"I130":{"id":"I130","name":"Bridget Helen /Farrell/","sex":"F","birth":"13 Jun 1878","death":"17 feb 1953"},"I131":{"id":"I131","name":"Agnes (Nancy) /Barnes/","sex":"F","birth":"12 sep 1884","death":"23 Nov 1961"},"I132":{"id":"I132","name":"John /Mooney/","sex":"M","birth":"1822","death":"13 May 1898"},"I133":{"id":"I133","name":"Elizabeth /Farrell/","sex":"F","birth":"1880","death":""},"I134":{"id":"I134","name":"Ann /Mooney/","sex":"F","birth":"1956","death":""},"I135":{"id":"I135","name":"Barbara /Moonie/","sex":"F","birth":"27 Oct 1939","death":"7 Aug 2010"},"I136":{"id":"I136","name":"Terence (Thomas) /McDonald/","sex":"M","birth":"1834","death":"10 feb 1901"},"I137":{"id":"I137","name":"Norman /Moonie/","sex":"M","birth":"20 Oct 1917","death":"23 apr 1918"},"I138":{"id":"I138","name":"James /Norrie/","sex":"M","birth":"31 Dec 1752","death":"28 Jun 1736"},"I139":{"id":"I139","name":"William /Norrie/","sex":"M","birth":"23 Dec 1787","death":""},"I140":{"id":"I140","name":"John /Mulholland/","sex":"M","birth":"","death":""},"I141":{"id":"I141","name":"William /Gordon/","sex":"M","birth":"","death":""},"I142":{"id":"I142","name":"Eliza /Welsh/","sex":"F","birth":"1830","death":"7 Oct 1895"},"I143":{"id":"I143","name":"Bridget (Biddy) /Collins/","sex":"F","birth":"24 Dec 1871","death":""},"I144":{"id":"I144","name":"Annie /McCullock/","sex":"F","birth":"1890","death":""},"I145":{"id":"I145","name":"Robert Weir /Paterson/","sex":"M","birth":"16 jul 1914","death":"1993"},"I146":{"id":"I146","name":"Patrick Thornton /Graham/","sex":"M","birth":"11 aug 1903","death":"1978"},"I147":{"id":"I147","name":"Jane /Lynch/","sex":"F","birth":"15 nov 1889","death":"20 dec 1923"},"I148":{"id":"I148","name":"Adam /Bett/","sex":"M","birth":"1985","death":""},"I149":{"id":"I149","name":"Thomas /Mooney/","sex":"M","birth":"8 dec 1888","death":"5 feb 1889"},"I150":{"id":"I150","name":"Jessie /Moonie/","sex":"F","birth":"24 Oct 1921","death":"15 nov 2001"},"I151":{"id":"I151","name":"Ann /Coleman/","sex":"F","birth":"1838","death":""},"I152":{"id":"I152","name":"Alice /Rogers/","sex":"F","birth":"abt 1831","death":"5 Aug 1892"},"I153":{"id":"I153","name":"Thomas /Farrell/","sex":"M","birth":"23 Aug 1866","death":""},"I154":{"id":"I154","name":"John /Summers/","sex":"M","birth":"","death":""},"I155":{"id":"I155","name":"Bridget /Lynch/","sex":"F","birth":"16 feb 1856","death":"10 dec 1892"},"I156":{"id":"I156","name":"James /Mallon/","sex":"M","birth":"1857","death":""},"I157":{"id":"I157","name":"Patrick /McDonald/","sex":"M","birth":"30 Jan 1861","death":""},"I158":{"id":"I158","name":"William Henry /Barnes/","sex":"M","birth":"1841","death":""},"I159":{"id":"I159","name":"John /Collins/","sex":"M","birth":"abt 1831","death":""},"I160":{"id":"I160","name":"Mary /Mooney/","sex":"F","birth":"22 apr 1892","death":"15 may 1897"},"I161":{"id":"I161","name":"George /Mooney/","sex":"M","birth":"1844","death":""},"I162":{"id":"I162","name":"George /Mooney/","sex":"M","birth":"10 Jan 1871","death":"12 Apr 1874"},"I163":{"id":"I163","name":"Ann","sex":"F","birth":"1861","death":""},"I164":{"id":"I164","name":"Patrick Dorsay /(Darcy)/","sex":"M","birth":"17 feb 1859","death":""},"I165":{"id":"I165","name":"James Muir /Campbell/","sex":"M","birth":"1880","death":"1961"},"I166":{"id":"I166","name":"Ann /Handy/","sex":"F","birth":"8 Jun 1868","death":"11 Mar 1892"},"I167":{"id":"I167","name":"John /Mooney/","sex":"M","birth":"","death":""},"I168":{"id":"I168","name":"James /McCormick/","sex":"M","birth":"","death":""},"I169":{"id":"I169","name":"Ellen (Nell) /Farrell/","sex":"F","birth":"28 Mar 1889","death":"28 Jan 1973"},"I170":{"id":"I170","name":"Owen Graham /(Grimes)/","sex":"M","birth":"1842","death":""},"I171":{"id":"I171","name":"James /Mooney/","sex":"M","birth":"29 may 1826","death":""},"I172":{"id":"I172","name":"Matilda /Mooney/","sex":"M","birth":"22 Apr 1874","death":""},"I173":{"id":"I173","name":"Elizabeth /Graham/","sex":"F","birth":"13 oct 1873","death":""},"I174":{"id":"I174","name":"Cecilia /Mallon/","sex":"F","birth":"1863","death":""},"I175":{"id":"I175","name":"Robert /Weir/","sex":"M","birth":"1888","death":""},"I176":{"id":"I176","name":"James /Mooney/","sex":"M","birth":"13 aug 1904","death":"19 May 1908"},"I177":{"id":"I177","name":"Margaret /Taggart/","sex":"F","birth":"26 mar 1854","death":""},"I178":{"id":"I178","name":"Mary /Mallon/","sex":"F","birth":"1853","death":""},"I179":{"id":"I179","name":"John /Harrington/","sex":"M","birth":"1780","death":""},"I180":{"id":"I180","name":"Daniel J /Farrell/","sex":"M","birth":"1895","death":"23 Apr 1917"},"I181":{"id":"I181","name":"Maria /Thornton/","sex":"F","birth":"7 apr 1867","death":""},"I182":{"id":"I182","name":"Isaac Doverty /Wilson/","sex":"M","birth":"","death":""},"I183":{"id":"I183","name":"Elizabeth /Gardner/","sex":"F","birth":"5 Jul 1891","death":"1 Sep 1944"},"I184":{"id":"I184","name":"Ann /McDonald/","sex":"F","birth":"17 Jul 1865","death":""},"I185":{"id":"I185","name":"Agnes /Lamb/","sex":"F","birth":"1834","death":""},"I186":{"id":"I186","name":"Andrew /Blyth/","sex":"M","birth":"25 Mar 1926","death":"7 Oct 2003"},"I187":{"id":"I187","name":"William /Campbell/","sex":"M","birth":"30 Oct 1858","death":"22 jun 1906"},"I188":{"id":"I188","name":"Ann /Murphy/","sex":"F","birth":"1801","death":""},"I189":{"id":"I189","name":"William /Wylie/","sex":"M","birth":"","death":""},"I190":{"id":"I190","name":"Catherine /Doig/","sex":"F","birth":"1784","death":""},"I191":{"id":"I191","name":"Hannah /Mooney/","sex":"F","birth":"9 sep 1861","death":"3 Jan 1928"},"I192":{"id":"I192","name":"John /Mooney/","sex":"M","birth":"19 May 1858","death":"12 aug 1934"},"I193":{"id":"I193","name":"Betsy /Mooney/","sex":"F","birth":"1885","death":""},"I194":{"id":"I194","name":"Alexander /Young/","sex":"M","birth":"1850","death":""},"I195":{"id":"I195","name":"John /Mooney/","sex":"M","birth":"13 Nov 1889","death":"27 Mar 1939"},"I196":{"id":"I196","name":"Matilda /Mooney/","sex":"F","birth":"1845","death":""},"I197":{"id":"I197","name":"Mary Hamilton /Farrell/","sex":"F","birth":"13 Mar 1868","death":""},"I198":{"id":"I198","name":"Catherine /Moonie/","sex":"F","birth":"25 jun 1916","death":"30 Nov 1948"},"I199":{"id":"I199","name":"James /Norrie/","sex":"M","birth":"21 Mar 1792","death":"5 May 1839"},"I200":{"id":"I200","name":"Maria /Cochrane/","sex":"F","birth":"1905","death":""},"I201":{"id":"I201","name":"Rose /Lynch/","sex":"F","birth":"abt 1837","death":""},"I202":{"id":"I202","name":"George Graham /Bett/","sex":"M","birth":"8 jan 1956","death":""},"I203":{"id":"I203","name":"William /Elliot/","sex":"M","birth":"8 Dec 1870","death":"8 Oct 1913"},"I204":{"id":"I204","name":"Margaret (Margot) Mc /Lean/","sex":"F","birth":"6 Feb 1958","death":""},"I205":{"id":"I205","name":"Thomas /Smith/","sex":"M","birth":"1889","death":""},"I206":{"id":"I206","name":"Catherine M /Porter/","sex":"F","birth":"","death":""},"I207":{"id":"I207","name":"Francis Patrick /Farrell/","sex":"M","birth":"1878","death":"jan 1966"},"I208":{"id":"I208","name":"Janet /Emm/","sex":"F","birth":"14 Dec 1760","death":""},"I209":{"id":"I209","name":"Catherine /Harrington/","sex":"F","birth":"1796","death":"28 Jan 1863"},"I210":{"id":"I210","name":"Ellen (Helen) /McCormick/","sex":"F","birth":"1829","death":""},"I211":{"id":"I211","name":"James /Johnston/","sex":"M","birth":"","death":""},"I212":{"id":"I212","name":"Andrew /Mooney/","sex":"M","birth":"1850","death":""},"I213":{"id":"I213","name":"Alice /Lynch/","sex":"F","birth":"30 Nov 1906","death":"30 May 1989"},"I214":{"id":"I214","name":"David /Mooney/","sex":"M","birth":"","death":""},"I215":{"id":"I215","name":"Jane /McCullock/","sex":"F","birth":"1877","death":""},"I216":{"id":"I216","name":"Mary /Welsh/","sex":"F","birth":"","death":""},"I217":{"id":"I217","name":"Alexander /McCullock/","sex":"M","birth":"1873","death":""},"I218":{"id":"I218","name":"Gordon David Roy /Whiteside/","sex":"M","birth":"13 May 1945","death":"1989"},"I219":{"id":"I219","name":"George Graham /Bett/","sex":"M","birth":"22 Jun 1979","death":""},"I220":{"id":"I220","name":"John Patrick /Mooney/","sex":"M","birth":"1910","death":"7 nov 1910"},"I221":{"id":"I221","name":"John /Gardner/","sex":"M","birth":"8 July 1881","death":""},"I222":{"id":"I222","name":"Catherine /McDonald/","sex":"F","birth":"1838","death":"25 Jan 1913"},"I223":{"id":"I223","name":"Patt /Mooney/","sex":"M","birth":"13 Mar 1810","death":""},"I224":{"id":"I224","name":"William /Mooney/","sex":"M","birth":"28 jul 1874","death":"14 jul 1890"},"I225":{"id":"I225","name":"Ann /McCullock/","sex":"F","birth":"1868","death":""},"I226":{"id":"I226","name":"James /Jones/","sex":"M","birth":"1827","death":""},"I227":{"id":"I227","name":"Matthew /Weir/","sex":"M","birth":"1871","death":""},"I228":{"id":"I228","name":"Margaret /Lynch/","sex":"F","birth":"22 may 1863","death":""},"I229":{"id":"I229","name":"Bridget (Biddy) /Egan/","sex":"F","birth":"1801","death":"5 May 1872"},"I230":{"id":"I230","name":"Edward /Gardner/","sex":"M","birth":"1881","death":""},"I231":{"id":"I231","name":"Robina /Mooney/","sex":"F","birth":"1895","death":""},"I232":{"id":"I232","name":"Hannah Veronica /Moonie/","sex":"F","birth":"25 Aug 1919","death":"17 Nov 1968"},"I233":{"id":"I233","name":"James /High/","sex":"M","birth":"1847","death":""},"I234":{"id":"I234","name":"Elizabeth (Betsy) /Smith/","sex":"F","birth":"","death":""},"I235":{"id":"I235","name":"Andrew /Dunn/","sex":"M","birth":"","death":""},"I236":{"id":"I236","name":"James /Mooney/","sex":"M","birth":"17 Jan 1831","death":""},"I237":{"id":"I237","name":"Charles /Mooney/","sex":"M","birth":"1898","death":""},"I238":{"id":"I238","name":"Margaret /Gourlay/","sex":"F","birth":"","death":""},"I239":{"id":"I239","name":"John L /Lynch/","sex":"M","birth":"abt 1833","death":""},"I240":{"id":"I240","name":"Robert Duff /Mooney/","sex":"M","birth":"25 nov 1861","death":""},"I241":{"id":"I241","name":"Thomas /Mooney/","sex":"M","birth":"24 Apr 1868","death":""},"I242":{"id":"I242","name":"Annie /Mooney/","sex":"F","birth":"1887","death":""},"I243":{"id":"I243","name":"Susan /Mooney/","sex":"F","birth":"1894","death":""},"I244":{"id":"I244","name":"Catherine /Mooney/","sex":"F","birth":"12 Feb 1885","death":"16 Jan 1980"},"I245":{"id":"I245","name":"Clementina /McKenzie/","sex":"F","birth":"1817","death":"17 Jan 1884"},"I246":{"id":"I246","name":"James Smith or Weir /k/","sex":"M","birth":"9 Jun 1901","death":"13 Jul 1964"},"I247":{"id":"I247","name":"William Clark Gilmour (Billy) /Forrest/","sex":"M","birth":"","death":""},"I248":{"id":"I248","name":"Mary Ann /McCormick/","sex":"F","birth":"1821","death":"25 Nov 1855"},"I249":{"id":"I249","name":"Rose /McDonald/","sex":"F","birth":"1827","death":""},"I250":{"id":"I250","name":"Andrew Scott /Mooney/","sex":"M","birth":"28 April 1961","death":""},"I251":{"id":"I251","name":"Alexander /McCullock/","sex":"M","birth":"1893","death":""},"I252":{"id":"I252","name":"Ann /Conner/","sex":"F","birth":"1872","death":"1905"},"I253":{"id":"I253","name":"Laura Indego /Cooper/","sex":"F","birth":"4 Mar 1995","death":""},"I254":{"id":"I254","name":"Ann /Gillon/","sex":"F","birth":"1835","death":"13 Jan 1872"},"I255":{"id":"I255","name":"Thomas Henry /Barnes/","sex":"M","birth":"6 jun 1847","death":"12 Mar 1915"},"I256":{"id":"I256","name":"Davie /High/","sex":"M","birth":"1850","death":""},"I257":{"id":"I257","name":"Owen /Lynch/","sex":"M","birth":"abt 1835","death":"29 aug 1897"},"I258":{"id":"I258","name":"William /Elliot/","sex":"M","birth":"2 jan 1898","death":"24 April 1957"},"I259":{"id":"I259","name":"Bridget /Patterson/","sex":"F","birth":"","death":"3 Sep 1892"},"I260":{"id":"I260","name":"Anne /Lynch/","sex":"F","birth":"16 jun 1861","death":"22 apr 1904"},"I261":{"id":"I261","name":"Thomas /Mooney/","sex":"M","birth":"22 mar 1857","death":"22 dec 1911"},"I262":{"id":"I262","name":"Hannah /Mooney/","sex":"F","birth":"1833","death":"28 jan 1863"},"I263":{"id":"I263","name":"Isobell /Emm/","sex":"F","birth":"1756","death":""},"I264":{"id":"I264","name":"Alice /Smith/","sex":"F","birth":"","death":""},"I265":{"id":"I265","name":"Catherine /McDonald/","sex":"F","birth":"25 Mar 1863","death":""},"I266":{"id":"I266","name":"william /Campbell/","sex":"M","birth":"1886","death":""},"I267":{"id":"I267","name":"Ann /Graham/","sex":"F","birth":"27 May 1861","death":""},"I268":{"id":"I268","name":"Betsy /Henderson/","sex":"F","birth":"29 Aug 1851","death":""},"I269":{"id":"I269","name":"Patrick /Carr/","sex":"M","birth":"","death":""},"I270":{"id":"I270","name":"James /Jones/","sex":"M","birth":"1787","death":""},"I271":{"id":"I271","name":"Ann /McDonald/","sex":"F","birth":"1834","death":""},"I272":{"id":"I272","name":"Barbara /Farrell/","sex":"F","birth":"21 Dec 1884","death":"20 Mar 1969"},"I273":{"id":"I273","name":"kirsty /Whiteside/","sex":"F","birth":"10 Oct 1988","death":""},"I274":{"id":"I274","name":"James /Munro/","sex":"M","birth":"28 Mar 1889","death":"31 Jul 1917"},"I275":{"id":"I275","name":"Bridget /Kelly/","sex":"F","birth":"","death":"1868"},"I276":{"id":"I276","name":"Lilias /Mooney/","sex":"F","birth":"1899","death":"20 Nov 1917"},"I277":{"id":"I277","name":"Robert /Ellwood/","sex":"M","birth":"1823","death":""},"I278":{"id":"I278","name":"Catherine /McMahon/","sex":"F","birth":"1801","death":""},"I279":{"id":"I279","name":"John /Steven/","sex":"M","birth":"Jan 1891","death":""},"I280":{"id":"I280","name":"Mary /Lynch/","sex":"F","birth":"10 sep 1859","death":"16 oct 1890"},"I281":{"id":"I281","name":"Ann /Mallon/","sex":"F","birth":"19 Jun 1860","death":""},"I282":{"id":"I282","name":"john /Welsh/","sex":"M","birth":"","death":""},"I283":{"id":"I283","name":"Margaret /Norrie/","sex":"F","birth":"","death":"28 Jul 1841"},"I284":{"id":"I284","name":"John /Mooney/","sex":"M","birth":"1882","death":""},"I285":{"id":"I285","name":"John /Farrell/","sex":"M","birth":"1833","death":"30 jul 1893"},"I286":{"id":"I286","name":"John /McCormick/","sex":"M","birth":"1832","death":""},"I287":{"id":"I287","name":"Ann /Reid/","sex":"F","birth":"1852","death":""},"I288":{"id":"I288","name":"Rachel /Forrest/","sex":"F","birth":"5 Apr 1986","death":""},"I289":{"id":"I289","name":"George /Mahood/","sex":"M","birth":"","death":""},"I290":{"id":"I290","name":"Ann Robertson /Mooney/","sex":"F","birth":"14 May 1881","death":"29 apr 1904"},"I291":{"id":"I291","name":"Allan /Mooney/","sex":"M","birth":"11 Mar 1874","death":"15 Apr 1876"},"I292":{"id":"I292","name":"Michael /Cunningham/","sex":"M","birth":"27 feb 1858","death":"8 jul 1894"},"I293":{"id":"I293","name":"Rose /Tyrell/","sex":"F","birth":"","death":""},"I294":{"id":"I294","name":"James /Lynch/","sex":"M","birth":"Sep 1890","death":""},"I295":{"id":"I295","name":"John /Mooney/","sex":"M","birth":"1875","death":""},"I296":{"id":"I296","name":"John /Mooney/","sex":"M","birth":"14 Mar 1934","death":"21 May 2018"},"I297":{"id":"I297","name":"Benjamin Michael /Masters/","sex":"M","birth":"","death":""},"I298":{"id":"I298","name":"James /Mooney/","sex":"M","birth":"1882","death":""},"I299":{"id":"I299","name":"Thomasina /Moonie/","sex":"F","birth":"1 Feb 1934","death":"8 Aug 2003"},"I300":{"id":"I300","name":"James Patrick /Mooney/","sex":"M","birth":"17 Mar 1941","death":""},"I301":{"id":"I301","name":"Alice /Lynch/","sex":"F","birth":"1899","death":""},"I302":{"id":"I302","name":"Samuel /McCullock/","sex":"M","birth":"1837","death":""},"I303":{"id":"I303","name":"Hugh /Mulholland/","sex":"M","birth":"8 jun 1902","death":""},"I304":{"id":"I304","name":"Edward /Handy/","sex":"M","birth":"1846","death":"18 Dec 1871"},"I305":{"id":"I305","name":"Richard /Barnes/","sex":"M","birth":"1839","death":""},"I306":{"id":"I306","name":"John /Mooney/","sex":"M","birth":"15 jan 1808","death":"15 Feb 1878"},"I307":{"id":"I307","name":"Isaiah /Mallon/","sex":"M","birth":"","death":""},"I308":{"id":"I308","name":"Euphemia /Housego/","sex":"F","birth":"","death":""},"I309":{"id":"I309","name":"Roselyn /Mooney/","sex":"F","birth":"12 Jun 1964","death":""},"I310":{"id":"I310","name":"Elizabeth /McCullock/","sex":"F","birth":"24 Feb 1861","death":""},"I311":{"id":"I311","name":"Christina /Farrell/","sex":"F","birth":"10 Dec 1869","death":""},"I312":{"id":"I312","name":"Elizabeth (Elisabeth) /Mooney/","sex":"F","birth":"29 Dec 1857","death":"5 Jan 1858"},"I313":{"id":"I313","name":"Catherine (Kate) /Farrell/","sex":"F","birth":"12 sep 1882","death":"14 apr 1960"},"I314":{"id":"I314","name":"Agnes Matthews /Keay/","sex":"F","birth":"","death":""},"I315":{"id":"I315","name":"John /Weir/","sex":"M","birth":"1863","death":""},"I316":{"id":"I316","name":"Margaret /McCormick/","sex":"F","birth":"1827","death":""},"I317":{"id":"I317","name":"Margaret /Mooney/","sex":"F","birth":"1895","death":""},"I318":{"id":"I318","name":"Samuel /Fullerton/","sex":"M","birth":"","death":""},"I319":{"id":"I319","name":"Wilhelmina /Farrell/","sex":"F","birth":"11 jun 1865","death":""},"I320":{"id":"I320","name":"James /Campbell/","sex":"M","birth":"1896","death":""},"I321":{"id":"I321","name":"Agnes /Sanderson/","sex":"F","birth":"1828","death":"9 Dec 1889"},"I322":{"id":"I322","name":"William /Mitchell/","sex":"M","birth":"1838","death":""},"I323":{"id":"I323","name":"Alan /Whiteside/","sex":"M","birth":"1 Dec 1964","death":""},"I324":{"id":"I324","name":"Barbara Alice /Bett/","sex":"F","birth":"25 Nov 1957","death":"19 Oct 2012"},"I325":{"id":"I325","name":"John /Barnes/","sex":"M","birth":"2 jan 1888","death":"21 Jan 1916"},"I326":{"id":"I326","name":"Barbara Ellen /Mooney/","sex":"F","birth":"18 Feb 1914","death":"9 jun 1926"},"I327":{"id":"I327","name":"Margaret /Lamb/","sex":"F","birth":"1837","death":""},"I328":{"id":"I328","name":"james /Farrell/","sex":"M","birth":"18 jun 1855","death":"5 Oct 1905"},"I329":{"id":"I329","name":"Mary /Young/","sex":"F","birth":"1846","death":""},"I330":{"id":"I330","name":"James /McDade/","sex":"M","birth":"21 Jan 1868","death":""},"I331":{"id":"I331","name":"Janet","sex":"F","birth":"1863","death":""},"I332":{"id":"I332","name":"Thomas /Mooney/","sex":"M","birth":"1900","death":""},"I333":{"id":"I333","name":"Alex /Lamb/","sex":"M","birth":"1796","death":""},"I334":{"id":"I334","name":"Agnes (Nancy) /Mooney/","sex":"F","birth":"9 Aug 1883","death":"6 Dec 1950"},"I335":{"id":"I335","name":"James /Sinclair/","sex":"M","birth":"1863","death":""},"I336":{"id":"I336","name":"Michael /McCormick/","sex":"M","birth":"1830","death":""},"I337":{"id":"I337","name":"John /Mooney/","sex":"M","birth":"31 Jan 1864","death":""},"I338":{"id":"I338","name":"Margaret (Meg) /Lynch/","sex":"F","birth":"17 Sep 1902","death":"24 Jul 1966"},"I339":{"id":"I339","name":"William /Mooney/","sex":"M","birth":"1893","death":""},"I340":{"id":"I340","name":"Margaret","sex":"F","birth":"1831","death":""},"I341":{"id":"I341","name":"Patrick /Reid/","sex":"M","birth":"1858","death":""},"I342":{"id":"I342","name":"Terren Dawn /Mooney/","sex":"F","birth":"","death":""},"I343":{"id":"I343","name":"James A /Whiteside/","sex":"M","birth":"abt 1943","death":""},"I344":{"id":"I344","name":"Jane /Murray/","sex":"F","birth":"1849","death":"20 jun 1921"},"I345":{"id":"I345","name":"Elizabeth /Steven/","sex":"F","birth":"1884","death":""},"I346":{"id":"I346","name":"Margaret /Lynch/","sex":"F","birth":"1894","death":"1984"},"I347":{"id":"I347","name":"Alexandra /Young/","sex":"F","birth":"","death":""},"I348":{"id":"I348","name":"Janet","sex":"F","birth":"","death":""},"I349":{"id":"I349","name":"Elizabeth /Lynch/","sex":"F","birth":"22 Oct 1888","death":"13 Jul 1967"},"I350":{"id":"I350","name":"James /Gordon/","sex":"M","birth":"1836","death":"5 Jun 1889"},"I351":{"id":"I351","name":"Graham /Whiteside/","sex":"M","birth":"11 Aug 1967","death":""},"I352":{"id":"I352","name":"Janet /Cochran/","sex":"F","birth":"","death":""},"I353":{"id":"I353","name":"Joseph /Mooney/","sex":"M","birth":"4 jan 1908","death":"19 oct 1974"},"I354":{"id":"I354","name":"Robert /Barnes/","sex":"M","birth":"Mar 1878","death":"11 oct 1945"},"I355":{"id":"I355","name":"James /Eason/","sex":"M","birth":"3 Sep 1904","death":""},"I356":{"id":"I356","name":"George /Young/","sex":"M","birth":"1839","death":""},"I357":{"id":"I357","name":"Owen /Smith/","sex":"M","birth":"1846","death":""},"I358":{"id":"I358","name":"Michael /Moonie/","sex":"M","birth":"19 Jun 1929","death":"2020"},"I359":{"id":"I359","name":"Patrick /McDonald/","sex":"M","birth":"1795","death":"9 Jan 1875"},"I360":{"id":"I360","name":"Barbara /Gordon/","sex":"F","birth":"1841","death":"27 Feb 1918"},"I361":{"id":"I361","name":"Patrick /Farrell/","sex":"M","birth":"12 Dec 1879","death":"25 Aug 1965"},"I362":{"id":"I362","name":"John /Lynch/","sex":"M","birth":"","death":""},"I363":{"id":"I363","name":"Marie Alison /Bett/","sex":"F","birth":"21 Oct 1964","death":""},"I364":{"id":"I364","name":"Margaret Keay /Wilson/","sex":"F","birth":"","death":""},"I365":{"id":"I365","name":"Sarah /Smith/","sex":"F","birth":"","death":""},"I366":{"id":"I366","name":"Mary /McDonald/","sex":"F","birth":"1840","death":""},"I367":{"id":"I367","name":"Isaiah /Mallon/","sex":"M","birth":"","death":""},"I368":{"id":"I368","name":"Mary Ann /Holt/","sex":"F","birth":"","death":""},"I369":{"id":"I369","name":"Thomas /Lynch/","sex":"M","birth":"1818","death":"22 Jun 1892"},"I370":{"id":"I370","name":"Jessie Agnes /Smith/","sex":"F","birth":"25 Aug 1872","death":"18 Dec 1955"},"I371":{"id":"I371","name":"Mary /High/","sex":"F","birth":"1845","death":""},"I372":{"id":"I372","name":"John /Lynch/","sex":"M","birth":"21 oct 1898","death":"1969"},"I373":{"id":"I373","name":"George /Gordon/","sex":"M","birth":"","death":"13 Apr 1896"},"I374":{"id":"I374","name":"Robert /Young/","sex":"M","birth":"1854","death":""},"I375":{"id":"I375","name":"Margaret /Collins/","sex":"F","birth":"12 feb 1862","death":"22 jan 1864"},"I376":{"id":"I376","name":"Robert /Young/","sex":"M","birth":"1812","death":""},"I377":{"id":"I377","name":"Anna /Quin/","sex":"F","birth":"","death":""},"I378":{"id":"I378","name":"Janet /Wylie/","sex":"F","birth":"1836","death":""},"I379":{"id":"I379","name":"Elizabeth Jane /Beal/","sex":"F","birth":"14 Apr 1966","death":""},"I380":{"id":"I380","name":"Helen /Moonie/","sex":"F","birth":"8 Jun 1926","death":"10 Jul 1994"},"I381":{"id":"I381","name":"Catherine /Lynch/","sex":"F","birth":"1882","death":"28 December 1956"},"I382":{"id":"I382","name":"Georgina /Mooney/","sex":"F","birth":"1880","death":""},"I383":{"id":"I383","name":"Alexander /Gordon/","sex":"M","birth":"","death":""},"I384":{"id":"I384","name":"Craig /Bett/","sex":"M","birth":"1 Nov 1984","death":""},"I385":{"id":"I385","name":"Matthew /Lynch/","sex":"M","birth":"16 Mar 1880","death":"10 Dec 1967"},"I386":{"id":"I386","name":"Jan /Masters/","sex":"F","birth":"","death":""},"I387":{"id":"I387","name":"Patrick /Graham/","sex":"M","birth":"7 Apr 1866","death":"2 aug 1954"},"I388":{"id":"I388","name":"Thomas /Mooney/","sex":"M","birth":"5 Apr 1897","death":""},"I389":{"id":"I389","name":"Michael /Mooney/","sex":"M","birth":"12 jun 1894","death":"3 oct 1968"},"I390":{"id":"I390","name":"Elizabeth /McGregor/","sex":"F","birth":"1850","death":""},"I391":{"id":"I391","name":"Catharine /Mooney/","sex":"F","birth":"3 Jan 1837","death":""},"I392":{"id":"I392","name":"Bridget /Farrell/","sex":"F","birth":"9 Mar 1857","death":"1857"},"I393":{"id":"I393","name":"David /Mooney/","sex":"M","birth":"1851","death":""},"I394":{"id":"I394","name":"William /Steven/","sex":"M","birth":"22 aug 1882","death":"22 oct 1919"},"I395":{"id":"I395","name":"Peter /Lynch/","sex":"M","birth":"abt 1839","death":""},"I396":{"id":"I396","name":"Catherine /Moran/","sex":"F","birth":"","death":""},"I397":{"id":"I397","name":"Hannah /Mooney/","sex":"F","birth":"30 jan 1888","death":"15 Dec 1973"},"I398":{"id":"I398","name":"Thomas /Mooney/","sex":"M","birth":"16 oct 1880","death":"8 dec 1880"},"I399":{"id":"I399","name":"Graeme /Mooney/","sex":"M","birth":"11 Aug 1966","death":""},"I400":{"id":"I400","name":"Philip /Fisher/","sex":"M","birth":"","death":"20 apr 1855"},"I401":{"id":"I401","name":"James /Balmain/","sex":"M","birth":"5 Aug 1963","death":""},"I402":{"id":"I402","name":"Matthew Scott /Masters/","sex":"M","birth":"","death":""},"I403":{"id":"I403","name":"Greg William /Forrest/","sex":"M","birth":"17 Apr 1984","death":""},"I404":{"id":"I404","name":"Mary /Moonie/","sex":"F","birth":"13 Apr 1928","death":"10 sep 2001"},"I405":{"id":"I405","name":"Rose Ann /Collins/","sex":"F","birth":"23 may 1856","death":""},"I406":{"id":"I406","name":"Mary Ann /Smith/","sex":"F","birth":"1870","death":""},"I407":{"id":"I407","name":"Helen /McDonald/","sex":"F","birth":"1857","death":"1896"},"I408":{"id":"I408","name":"John /Norrie/","sex":"M","birth":"27 Jul 1783","death":"14 Sep 1795"},"I409":{"id":"I409","name":"Rachel /Whiteside/","sex":"F","birth":"2 Apr 1992","death":""},"I410":{"id":"I410","name":"Isabella /High/","sex":"F","birth":"1844","death":""},"I411":{"id":"I411","name":"Gillian /Traynor/","sex":"M","birth":"17 Sep 1979","death":""},"I412":{"id":"I412","name":"Martha /Stafford/","sex":"F","birth":"1834","death":"12 Sep 1898"},"I413":{"id":"I413","name":"John /McDonald/","sex":"M","birth":"1829","death":""},"I414":{"id":"I414","name":"Joseph /Lynch/","sex":"M","birth":"1897","death":""},"I415":{"id":"I415","name":"Margaret /Mooney/","sex":"F","birth":"1839","death":"7 Apr 1916"},"I416":{"id":"I416","name":"Mary /Mooney/","sex":"F","birth":"5 Oct 1886","death":"15 May 1887"},"I417":{"id":"I417","name":"Catherine /Weir/","sex":"F","birth":"Jan 1891","death":""},"I418":{"id":"I418","name":"James Souter /Graham/","sex":"M","birth":"1836","death":"11 feb 1897"},"I419":{"id":"I419","name":"Edward /Lynch/","sex":"M","birth":"24 Apr 1867","death":"11 Apr 1946"},"I420":{"id":"I420","name":"William /Doig/","sex":"M","birth":"","death":""},"I421":{"id":"I421","name":"Edward (Ned) /Lynch/","sex":"M","birth":"17 Dec 1903","death":""},"I422":{"id":"I422","name":"John /Collins/","sex":"M","birth":"26 JUN 1874","death":"6 Sep 1874"},"I423":{"id":"I423","name":"Elizabeth /Currie/","sex":"F","birth":"abt 1800","death":"bef 1861"},"I424":{"id":"I424","name":"Robert /McDonald/","sex":"M","birth":"1827","death":"11 Dec 1872"},"I425":{"id":"I425","name":"Daniel /Quin/","sex":"M","birth":"1816","death":""},"I426":{"id":"I426","name":"Jane /Knox/","sex":"F","birth":"1838","death":""},"I427":{"id":"I427","name":"Jane /Gardner/","sex":"F","birth":"1890","death":""},"I428":{"id":"I428","name":"Agnes (Nancy) /Harrington/","sex":"F","birth":"1799","death":"13 Nov 1867"},"I429":{"id":"I429","name":"Mary /Mooney/","sex":"F","birth":"2 Mar 1866","death":"2 Dec 1920"},"I430":{"id":"I430","name":"Robina /Mahannah/","sex":"F","birth":"","death":""},"I431":{"id":"I431","name":"Mary /Lynch/","sex":"F","birth":"1892","death":""},"I432":{"id":"I432","name":"Moira /Meenagh/","sex":"F","birth":"15 Apr 1942","death":"25 Jan 2026"},"I433":{"id":"I433","name":"Joseph Ian /Mooney/","sex":"M","birth":"22 Apr 1954","death":"8 apr 2023"},"I434":{"id":"I434","name":"Agnes","sex":"F","birth":"1801","death":""},"I435":{"id":"I435","name":"Alexander /Crichton/","sex":"M","birth":"1842","death":"16 Nov 1890"},"I436":{"id":"I436","name":"James /Bett/","sex":"M","birth":"9 Aug 1936","death":"19 Nov 2010"},"I437":{"id":"I437","name":"John A /Farrell/","sex":"M","birth":"23 jan 1872","death":""},"I438":{"id":"I438","name":"Betsy (Elizabeth) /Mcknight/","sex":"F","birth":"1782","death":""},"I439":{"id":"I439","name":"Frances /Mooney/","sex":"F","birth":"1890","death":""},"I440":{"id":"I440","name":"Rose Graham /(Grimes)/","sex":"F","birth":"1840","death":""},"I441":{"id":"I441","name":"Robert /Weir/","sex":"M","birth":"1871","death":""},"I442":{"id":"I442","name":"John /Graham/","sex":"M","birth":"21 Dec 1863","death":"12 jan 1945"},"I443":{"id":"I443","name":"James /High/","sex":"M","birth":"","death":""},"I444":{"id":"I444","name":"John /Bogue/","sex":"M","birth":"1893","death":"29 Jul 1947"},"I445":{"id":"I445","name":"Derek Crawford /Mooney/","sex":"M","birth":"29 Oct 1956","death":""},"I446":{"id":"I446","name":"Joseph /Lynch/","sex":"M","birth":"15 Apr 1869","death":"1908"},"I447":{"id":"I447","name":"Mary E /Gardner/","sex":"F","birth":"1885","death":"1957"},"I448":{"id":"I448","name":"William /Ellwood/","sex":"M","birth":"1 Apr 1853","death":"28 Aug 1917"},"I449":{"id":"I449","name":"Helen Pattullo /Norrie/","sex":"M","birth":"30 Jan 1815","death":""},"I450":{"id":"I450","name":"Thomas /Lynch/","sex":"M","birth":"1852","death":"12 Aug 1911"},"I451":{"id":"I451","name":"Mary Ann /Carr/","sex":"F","birth":"1852","death":"30 May 1928"},"I452":{"id":"I452","name":"Agnes /Mooney/","sex":"F","birth":"28 Apr 1923","death":"2 Jun 2007"},"I453":{"id":"I453","name":"Joseph /Lynch/","sex":"M","birth":"1896","death":"23 Oct 1916"},"I454":{"id":"I454","name":"Rose M /Farrell/","sex":"F","birth":"15 mar 1863","death":""},"I455":{"id":"I455","name":"Mary /Lynch/","sex":"F","birth":"5 Oct 1886","death":"1977"},"I456":{"id":"I456","name":"Norman /McLeod/","sex":"M","birth":"","death":""},"I457":{"id":"I457","name":"Euphemia /Jones/","sex":"F","birth":"1813","death":""},"I458":{"id":"I458","name":"Elisabeth /Mooney/","sex":"F","birth":"1841","death":""},"I459":{"id":"I459","name":"Mark /Mooney/","sex":"M","birth":"","death":""},"I460":{"id":"I460","name":"Mary /Ellwood/","sex":"F","birth":"14 May 1849","death":"19 Aug 1882"},"I461":{"id":"I461","name":"Suzanne Mitchell /Farmer/","sex":"F","birth":"6 Nov 1943","death":""},"I462":{"id":"I462","name":"William /Hendry/","sex":"M","birth":"","death":""},"I463":{"id":"I463","name":"Catherine /Collins/","sex":"F","birth":"16 Apr 1867","death":"13 Jul 1948"},"I464":{"id":"I464","name":"james /Campbell/","sex":"M","birth":"","death":""},"I465":{"id":"I465","name":"William /Gardner/","sex":"M","birth":"31 Jan 1879","death":""},"I466":{"id":"I466","name":"Patrick /McDonald/","sex":"M","birth":"1834","death":"22 Mar 1905"},"I467":{"id":"I467","name":"Margaret /Lynch/","sex":"F","birth":"1830","death":"23 mar 1901"},"I468":{"id":"I468","name":"Thomas /Mooney/","sex":"M","birth":"10 Mar 1835","death":""},"I469":{"id":"I469","name":"Rose /Farrell/","sex":"F","birth":"9 Jan 1887","death":"1975"},"I470":{"id":"I470","name":"Mary Graham /Mooney/","sex":"F","birth":"16 JAN 1947","death":"13 Jun 2003"},"I471":{"id":"I471","name":"William /Emm/","sex":"M","birth":"","death":""},"I472":{"id":"I472","name":"Rose McFarland /Cragie/","sex":"F","birth":"1 Dec 1931","death":"24 May 2026"},"I473":{"id":"I473","name":"George /High/","sex":"M","birth":"1849","death":""},"I474":{"id":"I474","name":"john /Gardner/","sex":"M","birth":"1878","death":"21 july 1926"},"I475":{"id":"I475","name":"Mary /Graham/","sex":"F","birth":"16 Nov 1868","death":"16 jan 1943"},"I476":{"id":"I476","name":"Mary /Reid/","sex":"F","birth":"1858","death":""},"I477":{"id":"I477","name":"David /Barnes/","sex":"M","birth":"22 Aug 1886","death":"31 mar 1955"},"I478":{"id":"I478","name":"Patrick /Collins/","sex":"M","birth":"19 Oct 1875","death":"9 Jan 1950"},"I479":{"id":"I479","name":"James /Bett/","sex":"M","birth":"1982","death":""},"I480":{"id":"I480","name":"Edward /Barnes/","sex":"M","birth":"6 mar 1880","death":"22 feb 1963"},"I481":{"id":"I481","name":"Robina /Mooney/","sex":"F","birth":"1890","death":""},"I482":{"id":"I482","name":"Agnes (Nancy) /Mooney/","sex":"F","birth":"25 feb 1851","death":"8 nov 1908"},"I483":{"id":"I483","name":"James Dunlop /Whiteside/","sex":"M","birth":"13 mar 1903","death":"26 feb 1980"},"I484":{"id":"I484","name":"James /Reilly/","sex":"M","birth":"","death":""},"I485":{"id":"I485","name":"Edward /Lynch/","sex":"M","birth":"1893","death":"1898"},"I486":{"id":"I486","name":"Samuel /McCullock/","sex":"M","birth":"Jan 1891","death":""},"I487":{"id":"I487","name":"John /Gordon/","sex":"M","birth":"","death":""},"I488":{"id":"I488","name":"Joseph /Mooney/","sex":"M","birth":"4 Mar 1931","death":"24 jul 2004"},"I489":{"id":"I489","name":"Agnes /Mooney/","sex":"F","birth":"7 Jan 1874","death":""},"I490":{"id":"I490","name":"Patrick (Peter) /Welsh/","sex":"M","birth":"Abt 1800","death":"bef 1861"},"I491":{"id":"I491","name":"James /Mitchell/","sex":"M","birth":"12 Sep 1861","death":""},"I492":{"id":"I492","name":"Malcolm /Young/","sex":"M","birth":"","death":""},"I493":{"id":"I493","name":"John /Taggart/","sex":"M","birth":"","death":""},"I494":{"id":"I494","name":"Ann /Reilly/","sex":"F","birth":"abt 1838","death":"13 sep 1909"},"I495":{"id":"I495","name":"Beth /Newton/","sex":"F","birth":"6 Jan 1966","death":""},"I496":{"id":"I496","name":"John /Farrell/","sex":"M","birth":"","death":""},"I497":{"id":"I497","name":"Thomas Henry /Barnes/","sex":"M","birth":"5 Feb 1875","death":"23 Aug 1915"},"I498":{"id":"I498","name":"Mary Jane /Mooney/","sex":"F","birth":"14 Apr 1991","death":""},"I499":{"id":"I499","name":"Thomas /Mooney/","sex":"M","birth":"20 Nov 1905","death":"17 Apr 1908"},"I500":{"id":"I500","name":"Elizabeth /Mooney/","sex":"F","birth":"27 may 1859","death":"9 jun 1937"},"I501":{"id":"I501","name":"Selina Fullerton /Mooney/","sex":"F","birth":"15 Mar 1891","death":""},"I502":{"id":"I502","name":"Robert /Mooney/","sex":"M","birth":"1877","death":""},"I503":{"id":"I503","name":"Ninian /Weir/","sex":"M","birth":"1838","death":"23 May 1912"},"I504":{"id":"I504","name":"Joseph Victor /Gardner/","sex":"M","birth":"6 Mar 1886","death":"25 May 1890"},"I505":{"id":"I505","name":"Catherine (Ann) /Quin/","sex":"F","birth":"1829","death":"16 mar 1857"},"I506":{"id":"I506","name":"Lizzie /Mooney/","sex":"F","birth":"1900","death":""},"I507":{"id":"I507","name":"Catherine /Lynch/","sex":"F","birth":"29 oct 1855","death":""},"I508":{"id":"I508","name":"John /Norrie/","sex":"M","birth":"4 Dec 1796","death":"13 Mar 1812"},"I509":{"id":"I509","name":"Lisa /Ordell/","sex":"F","birth":"","death":""},"I510":{"id":"I510","name":"Lynne /Forrest/","sex":"F","birth":"24 Feb 1982","death":""},"I511":{"id":"I511","name":"James /Eason/","sex":"M","birth":"1867","death":""},"I512":{"id":"I512","name":"Sarah /Mooney/","sex":"F","birth":"","death":""},"I513":{"id":"I513","name":"James /Mooney/","sex":"M","birth":"","death":""},"I514":{"id":"I514","name":"Adam /Mooney/","sex":"M","birth":"","death":""}},"families":{"F1":{"id":"F1","husb":"I1","wife":"I313","children":["I176","I499","I353","I220","I326"]},"F3":{"id":"F3","husb":"I367","wife":"I3","children":["I178","I156","I281","I57","I174","I109"]},"F5":{"id":"F5","husb":"I33","wife":"I5","children":["I359"]},"F7":{"id":"F7","husb":"I289","wife":"I7","children":["I95"]},"F10":{"id":"F10","husb":"I10","wife":"I264","children":["I80","I152"]},"F11":{"id":"F11","husb":"I11","wife":"I415","children":[]},"F13":{"id":"F13","husb":"I132","wife":"I13","children":["I42","I224"]},"F15":{"id":"F15","husb":"I15","wife":"I181","children":["I146"]},"F23":{"id":"F23","husb":"I23","wife":"I260","children":["I144","I486","I251","I118"]},"F25":{"id":"F25","husb":"I132","wife":"I25","children":["I103","I49","I129","I192","I240"]},"F26":{"id":"F26","husb":"I26","wife":"I87","children":["I321"]},"F27":{"id":"F27","husb":"I136","wife":"I27","children":[]},"F31":{"id":"F31","husb":"I31","wife":"I238","children":["I426"]},"F32":{"id":"F32","husb":"I212","wife":"I32","children":["I172"]},"F36":{"id":"F36","husb":"I36","wife":"I155","children":["I474","I465","I230","I221","I78","I447","I504","I427","I183"]},"F39":{"id":"F39","husb":"I39","wife":"I396","children":["I254"]},"F42":{"id":"F42","husb":"I335","wife":"I42","children":[]},"F43":{"id":"F43","husb":"I75","wife":"I43","children":[]},"F44":{"id":"F44","husb":"I389","wife":"I44","children":["I198","I137","I232","I150","I452","I380","I404","I358","I107","I299","I16","I135"]},"F46":{"id":"F46","husb":"I46","wife":"I428","children":["I132","I171","I262","I105","I8"]},"F47":{"id":"F47","husb":"I88","wife":"I47","children":["I287","I476","I341"]},"F49":{"id":"F49","husb":"I49","wife":"I268","children":["I502","I193","I439"]},"F50":{"id":"F50","husb":"I50","wife":"I244","children":[]},"F51":{"id":"F51","husb":"I153","wife":"I51","children":["I29","I24","I104"]},"F54":{"id":"F54","husb":"I54","wife":"I68","children":["I377","I425","I505"]},"F58":{"id":"F58","husb":"I58","wife":"I122","children":["I253","I66"]},"F59":{"id":"F59","husb":"I59","wife":"I324","children":["I411"]},"F60":{"id":"F60","husb":"I60","wife":"I370","children":["I44"]},"F61":{"id":"F61","husb":"I294","wife":"I61","children":[]},"F62":{"id":"F62","husb":"I369","wife":"I62","children":["I450","I84","I507"]},"F63":{"id":"F63","husb":"I63","wife":"I426","children":["I282"]},"F64":{"id":"F64","husb":"I138","wife":"I64","children":["I283","I408","I139","I199","I508"]},"F65":{"id":"F65","husb":"I65","wife":"I275","children":["I46","I306","I223"]},"F70":{"id":"F70","husb":"I270","wife":"I70","children":["I457","I226"]},"F71":{"id":"F71","husb":"I306","wife":"I71","children":["I55","I236","I468","I391","I415","I458","I161","I196","I212","I393","I76"]},"F81":{"id":"F81","husb":"I195","wife":"I81","children":[]},"F82":{"id":"F82","husb":"I82","wife":"I87","children":[]},"F85":{"id":"F85","husb":"I85","wife":"I370","children":["I30","I145"]},"F90":{"id":"F90","husb":"I90","wife":"I430","children":["I514","I513","I512"]},"F91":{"id":"F91","husb":"I91","wife":"I309","children":["I347","I53","I492","I77","I108"]},"F93":{"id":"F93","husb":"I483","wife":"I93","children":["I127","I343","I218"]},"F95":{"id":"F95","husb":"I171","wife":"I95","children":["I75","I312","I500","I191","I337","I429","I241","I162","I291"]},"F96":{"id":"F96","husb":"I477","wife":"I96","children":[]},"F97":{"id":"F97","husb":"I102","wife":"I97","children":["I467","I239","I257","I201","I395"]},"F98":{"id":"F98","husb":"I436","wife":"I98","children":["I202","I324","I101","I363"]},"F99":{"id":"F99","husb":"I99","wife":"I368","children":["I111","I305","I158","I255","I37"]},"F100":{"id":"F100","husb":"I100","wife":"I113","children":["I418","I440","I170"]},"F101":{"id":"F101","husb":"I101","wife":"I308","children":["I479","I20","I148"]},"F103":{"id":"F103","husb":"I103","wife":"I344","children":[]},"F105":{"id":"F105","husb":"I105","wife":"I390","children":["I40","I489","I79"]},"F116":{"id":"F116","husb":"I116","wife":"I191","children":["I394","I345","I4","I41","I279"]},"F117":{"id":"F117","husb":"I269","wife":"I117","children":["I451"]},"F119":{"id":"F119","husb":"I357","wife":"I119","children":["I406","I370","I18","I110","I34","I12","I205","I128"]},"F124":{"id":"F124","husb":"I362","wife":"I124","children":["I369"]},"F126":{"id":"F126","husb":"I126","wife":"I379","children":["I498"]},"F131":{"id":"F131","husb":"I235","wife":"I131","children":[]},"F136":{"id":"F136","husb":"I136","wife":"I254","children":["I157","I265","I184","I56","I89"]},"F139":{"id":"F139","husb":"I139","wife":"I190","children":["I71","I449"]},"F142":{"id":"F142","husb":"I277","wife":"I142","children":["I491","I460","I448"]},"F146":{"id":"F146","husb":"I146","wife":"I200","children":[]},"F151":{"id":"F151","husb":"I302","wife":"I151","children":["I310","I23","I225","I38","I217","I215"]},"F152":{"id":"F152","husb":"I257","wife":"I152","children":["I123","I155","I35","I280","I260","I228","I6","I419","I446"]},"F154":{"id":"F154","husb":"I154","wife":"I458","children":[]},"F159":{"id":"F159","husb":"I159","wife":"I467","children":["I405","I115","I375","I48","I463","I143","I422","I478"]},"F163":{"id":"F163","husb":"I240","wife":"I163","children":["I481","I339","I317","I237","I332"]},"F164":{"id":"F164","husb":"I164","wife":"I181","children":[]},"F165":{"id":"F165","husb":"I165","wife":"I334","children":[]},"F168":{"id":"F168","husb":"I168","wife":"I188","children":["I248","I19","I316","I210","I336","I286","I114"]},"F169":{"id":"F169","husb":"I274","wife":"I169","children":[]},"F171":{"id":"F171","husb":"I171","wife":"I248","children":["I312","I500","I191","I337","I429","I241","I162","I291","I482"]},"F179":{"id":"F179","husb":"I179","wife":"I438","children":["I209","I87","I428"]},"F182":{"id":"F182","husb":"I182","wife":"I314","children":["I364"]},"F186":{"id":"F186","husb":"I186","wife":"I452","children":[]},"F187":{"id":"F187","husb":"I187","wife":"I500","children":["I266","I320"]},"F189":{"id":"F189","husb":"I189","wife":"I457","children":["I378"]},"F191":{"id":"F191","husb":"I511","wife":"I191","children":["I394","I345","I4","I41","I279","I276","I121","I355","I388"]},"F192":{"id":"F192","husb":"I192","wife":"I281","children":["I298","I284","I45","I242","I501","I231","I506"]},"F202":{"id":"F202","husb":"I202","wife":"I204","children":["I219","I94","I384"]},"F203":{"id":"F203","husb":"I203","wife":"I370","children":["I258","I246","I17"]},"F206":{"id":"F206","husb":"I372","wife":"I206","children":[]},"F208":{"id":"F208","husb":"I420","wife":"I208","children":["I190"]},"F209":{"id":"F209","husb":"I400","wife":"I209","children":[]},"F211":{"id":"F211","husb":"I211","wife":"I429","children":[]},"F213":{"id":"F213","husb":"I353","wife":"I213","children":["I488","I296","I98","I300","I470"]},"F216":{"id":"F216","husb":"I480","wife":"I216","children":[]},"F218":{"id":"F218","husb":"I218","wife":"I470","children":["I323","I351"]},"F228":{"id":"F228","husb":"I330","wife":"I228","children":[]},"F229":{"id":"F229","husb":"I383","wife":"I229","children":["I373","I350","I360"]},"F234":{"id":"F234","husb":"I484","wife":"I234","children":["I494"]},"F245":{"id":"F245","husb":"I376","wife":"I245","children":["I356","I329","I194","I374"]},"F247":{"id":"F247","husb":"I247","wife":"I324","children":["I510","I403","I288"]},"F250":{"id":"F250","husb":"I250","wife":"I386","children":["I402"]},"F252":{"id":"F252","husb":"I446","wife":"I252","children":["I431","I52","I414","I301"]},"F255":{"id":"F255","husb":"I255","wife":"I482","children":["I9","I497","I354","I480","I131","I477","I325","I22"]},"F259":{"id":"F259","husb":"I425","wife":"I259","children":[]},"F261":{"id":"F261","husb":"I261","wife":"I507","children":["I1","I398","I28","I334","I244","I416","I397","I149","I195","I160","I389","I243"]},"F278":{"id":"F278","husb":"I359","wife":"I278","children":["I249","I413","I271","I466","I136","I222","I366"]},"F280":{"id":"F280","husb":"I292","wife":"I280","children":[]},"F285":{"id":"F285","husb":"I285","wife":"I505","children":["I120","I454","I2","I319","I153","I197","I311","I437","I207","I133","I328","I392"]},"F286":{"id":"F286","husb":"I286","wife":"I340","children":[]},"F293":{"id":"F293","husb":"I496","wife":"I293","children":["I285"]},"F296":{"id":"F296","husb":"I296","wife":"I364","children":["I214","I167","I134"]},"F300":{"id":"F300","husb":"I300","wife":"I461","children":["I122","I126"]},"F303":{"id":"F303","husb":"I303","wife":"I338","children":["I140"]},"F304":{"id":"F304","husb":"I304","wife":"I451","children":["I166"]},"F321":{"id":"F321","husb":"I424","wife":"I321","children":[]},"F323":{"id":"F323","husb":"I323","wife":"I495","children":["I67","I273","I409"]},"F327":{"id":"F327","husb":"I493","wife":"I327","children":["I120","I454","I2","I319","I153","I197","I311","I437","I207","I133","I177"]},"F328":{"id":"F328","husb":"I328","wife":"I476","children":["I130","I361","I313","I272","I469","I169","I92","I180"]},"F331":{"id":"F331","husb":"I441","wife":"I331","children":["I175","I417"]},"F333":{"id":"F333","husb":"I333","wife":"I434","children":["I83","I185","I327"]},"F348":{"id":"F348","husb":"I464","wife":"I348","children":["I187"]},"F349":{"id":"F349","husb":"I444","wife":"I349","children":[]},"F352":{"id":"F352","husb":"I471","wife":"I352","children":["I263","I208"]},"F360":{"id":"F360","husb":"I466","wife":"I360","children":["I407"]},"F363":{"id":"F363","husb":"I401","wife":"I363","children":["I106","I125"]},"F365":{"id":"F365","husb":"I421","wife":"I365","children":[]},"F378":{"id":"F378","husb":"I468","wife":"I378","children":["I86"]},"F397":{"id":"F397","husb":"I456","wife":"I397","children":[]},"F412":{"id":"F412","husb":"I503","wife":"I412","children":["I315","I227","I441","I60","I72"]},"F418":{"id":"F418","husb":"I418","wife":"I494","children":["I267","I442","I387","I475","I15","I173","I112"]},"F419":{"id":"F419","husb":"I419","wife":"I475","children":["I294","I21","I485","I453","I372","I338","I421","I213"]},"F423":{"id":"F423","husb":"I490","wife":"I423","children":["I62","I63","I14","I142"]},"F432":{"id":"F432","husb":"I488","wife":"I432","children":["I459","I90"]},"F443":{"id":"F443","husb":"I443","wife":"I457","children":["I410","I371","I233","I473","I256","I73"]},"F445":{"id":"F445","husb":"I445","wife":"I509","children":["I342"]},"F450":{"id":"F450","husb":"I450","wife":"I451","children":["I385","I381","I455","I349","I74","I346"]},"F462":{"id":"F462","husb":"I462","wife":"I463","children":[]},"F472":{"id":"F472","husb":"I488","wife":"I472","children":["I433","I445","I250","I309","I399"]}}};</script>
+<script>
+// ============================================================
+// VR GRID LAYOUT PROTOTYPE
+// Fixed grid placement: gen = row, family-grouped slots = col
+// No collision detection, no post-placement shifting
+// ============================================================
+
+let DATA = null;
+let ANCHOR_ID = 'I126'; // John Spencer Mooney
+
+// ---- GED parser ----
+function parseGed(text) {
+  const individuals = {};
+  const families = {};
+  
+  // Split into records
+  const lines = text.split(/\r?\n/);
+  let currentRecord = null;
+  let currentId = null;
+  let currentType = null;
+  let currentBody = [];
+  let inBirt = false, inDeat = false, inMarr = false;
+  let birthDate = '', deathDate = '', marrDate = '';
+  
+  function flushRecord() {
+    if (!currentId || !currentType) return;
+    if (currentType === 'INDI') {
+      const nameLine = currentBody.find(l => l.startsWith('1 NAME '));
+      const sexLine = currentBody.find(l => l.startsWith('1 SEX '));
+      individuals[currentId] = {
+        id: currentId,
+        name: nameLine ? nameLine.substring(7).trim() : 'Unknown',
+        sex: sexLine ? sexLine.substring(7).trim() : '?',
+        birth: birthDate,
+        death: deathDate,
+        fams: currentBody.filter(l => l.startsWith('1 FAMS ')).map(l => l.match(/@(\w+)@/)?.[1]).filter(Boolean),
+        famc: currentBody.filter(l => l.startsWith('1 FAMC ')).map(l => l.match(/@(\w+)@/)?.[1]).filter(Boolean)
+      };
+    } else if (currentType === 'FAM') {
+      const husbLine = currentBody.find(l => l.startsWith('1 HUSB '));
+      const wifeLine = currentBody.find(l => l.startsWith('1 WIFE '));
+      const chilLines = currentBody.filter(l => l.startsWith('1 CHIL '));
+      families[currentId] = {
+        id: currentId,
+        husb: husbLine ? husbLine.match(/@(\w+)@/)?.[1] : null,
+        wife: wifeLine ? wifeLine.match(/@(\w+)@/)?.[1] : null,
+        children: chilLines.map(l => l.match(/@(\w+)@/)?.[1]).filter(Boolean),
+        marr: marrDate
+      };
+    }
+  }
+  
+  for (let line of lines) {
+    if (line.startsWith('0 @') && line.includes(' INDI')) {
+      flushRecord();
+      currentId = line.match(/@(\w+)@/)?.[1];
+      currentType = 'INDI';
+      currentBody = [];
+      birthDate = ''; deathDate = '';
+      inBirt = false; inDeat = false;
+    } else if (line.startsWith('0 @') && line.includes(' FAM')) {
+      flushRecord();
+      currentId = line.match(/@(\w+)@/)?.[1];
+      currentType = 'FAM';
+      currentBody = [];
+      marrDate = '';
+      inMarr = false;
+    } else if (line.startsWith('0 ')) {
+      flushRecord();
+      currentId = null; currentType = null;
+    } else if (currentId) {
+      currentBody.push(line);
+      if (line.startsWith('1 BIRT')) { inBirt = true; }
+      else if (line.startsWith('1 DEAT')) { inDeat = true; }
+      else if (line.startsWith('1 MARR')) { inMarr = true; }
+      else if (line.startsWith('2 DATE ') && inBirt) { birthDate = line.substring(7).trim(); }
+      else if (line.startsWith('2 DATE ') && inDeat) { deathDate = line.substring(7).trim(); }
+      else if (line.startsWith('2 DATE ') && inMarr) { marrDate = line.substring(7).trim(); }
+      else if (line.startsWith('1 ') && !line.startsWith('1 BIRT') && !line.startsWith('1 DEAT') && !line.startsWith('1 MARR')) { inBirt = false; inDeat = false; inMarr = false; }
+    }
+  }
+  flushRecord();
+  
+  return { individuals, families };
+}
+
+// ---- Build child->family map ----
+function buildChildToFamily(families) {
+  const map = {};
+  for (const fid in families) {
+    for (const childId of families[fid].children) {
+      map[childId] = fid;
+    }
+  }
+  return map;
+}
+
+// ---- BFS generation assignment ----
+function assignGenerations(individuals, families, childToFamily, anchorId) {
+  const generations = {};
+  const visited = new Set();
+  const queue = [anchorId];
+  generations[anchorId] = 0;
+  
+  while (queue.length > 0) {
+    const pid = queue.shift();
+    if (visited.has(pid)) continue;
+    visited.add(pid);
+    const gen = generations[pid];
+    
+    // Find spouse families
+    for (const fid in families) {
+      const fam = families[fid];
+      if (fam.husb === pid || fam.wife === pid) {
+        const spouse = fam.husb === pid ? fam.wife : fam.husb;
+        if (spouse && !visited.has(spouse) && generations[spouse] === undefined) {
+          generations[spouse] = gen;
+          queue.push(spouse);
+        }
+        for (const childId of fam.children) {
+          if (!visited.has(childId) && generations[childId] === undefined) {
+            generations[childId] = gen + 1;
+            queue.push(childId);
+          }
+        }
+      }
+    }
+    
+    // Find parent family
+    const parentFamId = childToFamily[pid];
+    if (parentFamId) {
+      const fam = families[parentFamId];
+      for (const parentId of [fam.husb, fam.wife]) {
+        if (parentId && !visited.has(parentId) && generations[parentId] === undefined) {
+          generations[parentId] = gen - 1;
+          queue.push(parentId);
+        }
+      }
+      // Siblings
+      for (const sibId of fam.children) {
+        if (sibId !== pid && !visited.has(sibId) && generations[sibId] === undefined) {
+          generations[sibId] = gen;
+          queue.push(sibId);
+        }
+      }
+    }
+  }
+  
+  return { generations, visited };
+}
+
+// ---- Find disconnected components ----
+function findDisconnected(individuals, families, visited) {
+  const all = new Set(Object.keys(individuals));
+  const disconnected = [...all].filter(id => !visited.has(id));
+  const alreadyGrouped = new Set();
+  const components = [];
+  
+  for (const pid of disconnected) {
+    if (alreadyGrouped.has(pid)) continue;
+    const comp = new Set();
+    const queue = [pid];
+    while (queue.length > 0) {
+      const p = queue.shift();
+      if (comp.has(p)) continue;
+      comp.add(p);
+      alreadyGrouped.add(p);
+      
+      for (const fid in families) {
+        const fam = families[fid];
+        if (fam.husb === p || fam.wife === p) {
+          const spouse = fam.husb === p ? fam.wife : fam.husb;
+          if (spouse && disconnected.includes(spouse) && !comp.has(spouse)) queue.push(spouse);
+          for (const c of fam.children) {
+            if (disconnected.includes(c) && !comp.has(c)) queue.push(c);
+          }
+        }
+        if (fam.children.includes(p)) {
+          for (const parent of [fam.husb, fam.wife]) {
+            if (parent && disconnected.includes(parent) && !comp.has(parent)) queue.push(parent);
+          }
+          for (const sib of fam.children) {
+            if (sib !== p && disconnected.includes(sib) && !comp.has(sib)) queue.push(sib);
+          }
+        }
+      }
+    }
+    components.push([...comp]);
+  }
+  
+  return components;
+}
+
+// ---- Family-grouped slot assignment ----
+// For each generation row, assign column slots ordered by family grouping:
+// 1. Start with anchor (gen 0) at center
+// 2. Walk outward: spouses adjacent, children centered under parents, siblings grouped
+function assignSlots(individuals, families, childToFamily, generations, visited, anchorId) {
+  const CARD_W = parseInt(document.getElementById('cardW').value);
+  const CARD_H = parseInt(document.getElementById('cardH').value);
+  const GAP_X = parseInt(document.getElementById('gapX').value);
+  const GAP_Y = parseInt(document.getElementById('gapY').value);
+  
+  const STEP_X = CARD_W + GAP_X;
+  const STEP_Y = CARD_H + GAP_Y;
+  
+  // Group people by generation
+  const byGen = {};
+  for (const [pid, gen] of Object.entries(generations)) {
+    if (!byGen[gen]) byGen[gen] = [];
+    byGen[gen].push(pid);
+  }
+  
+  // For each generation, we need to order people by family groups
+  // Strategy: process families in order, place couples together, children under parents
+  
+  // Build a family ordering for each generation
+  // Start from anchor and work outward
+  
+  const positions = {}; // pid -> { x, y }
+  
+  // First, figure out which families belong to which generation
+  // A family "belongs" to the generation of the parents
+  
+  // For each person, find their spouse family(s) and parent family
+  const personSpouseFams = {}; // pid -> [famId]
+  const personParentFam = {};   // pid -> famId
+  
+  for (const fid in families) {
+    const fam = families[fid];
+    if (fam.husb) {
+      if (!personSpouseFams[fam.husb]) personSpouseFams[fam.husb] = [];
+      personSpouseFams[fam.husb].push(fid);
+    }
+    if (fam.wife) {
+      if (!personSpouseFams[fam.wife]) personSpouseFams[fam.wife] = [];
+      personSpouseFams[fam.wife].push(fid);
+    }
+    for (const childId of fam.children) {
+      personParentFam[childId] = fid;
+    }
+  }
+  
+  // Process each generation from anchor outward
+  const genList = Object.keys(byGen).map(Number).sort((a, b) => a - b);
+  
+  // For gen 0: place anchor at center, then spouses, siblings around
+  // For gen -1 (parents): place anchor's parents above, then their siblings
+  // For gen +1 (children): place children below
+  
+  // Track which column each family group occupies
+  let nextCol = 0; // running counter for slot assignment
+  const colMap = {}; // pid -> col (can be fractional for couples)
+  
+  // Process from anchor generation outward (both directions)
+  // Start with gen 0
+  const anchorGen = 0;
+  
+  // Place anchor at col 0
+  colMap[anchorId] = 0;
+  
+  // Place anchor's spouses next to anchor
+  const anchorSpouseFams = personSpouseFams[anchorId] || [];
+  let anchorCol = 0;
+  for (const fid of anchorSpouseFams) {
+    const fam = families[fid];
+    const spouse = fam.husb === anchorId ? fam.wife : fam.husb;
+    if (spouse && visited.has(spouse)) {
+      // Place spouse to the right of anchor
+      anchorCol += 1;
+      colMap[spouse] = anchorCol;
+    }
+    // Place children below this couple
+    const coupleCenter = (colMap[anchorId] + colMap[spouse]) / 2;
+    let childOffset = 0;
+    for (const childId of fam.children) {
+      if (visited.has(childId)) {
+        colMap[childId] = coupleCenter + childOffset - (fam.children.length - 1) / 2;
+        childOffset++;
+      }
+    }
+  }
+  
+  // Now process other generations
+  // For each generation, order people by their family connections
+  
+  function orderGeneration(gen) {
+    const people = byGen[gen] || [];
+    if (!people.length) return;
+    
+    // Group people by their parent family
+    const familyGroups = {}; // parentFamId -> [pid]
+    const ungrouped = [];
+    
+    for (const pid of people) {
+      const parentFamId = personParentFam[pid];
+      if (parentFamId) {
+        if (!familyGroups[parentFamId]) familyGroups[parentFamId] = [];
+        familyGroups[parentFamId].push(pid);
+      } else {
+        ungrouped.push(pid);
+      }
+    }
+    
+    // Order family groups by the column of their children in the previous generation
+    // (or by the column of parents in the next generation for ancestor gens)
+    const orderedGroups = Object.entries(familyGroups).sort((a, b) => {
+      // Find the avg column of people in this group from adjacent generation
+      const getAvgCol = (groupPids) => {
+        const cols = groupPids.map(pid => colMap[pid]).filter(c => c !== undefined);
+        return cols.length ? cols.reduce((s, c) => s + c, 0) / cols.length : 999;
+      };
+      return getAvgCol(a[1]) - getAvgCol(b[1]);
+    });
+    
+    // For ancestor generations (gen < 0), order by children's columns
+    // For descendant generations (gen > 0), order by parents' columns
+    if (gen < 0) {
+      // These are ancestors. For each person, find their children (in gen+1) and center above them
+      for (const pid of people) {
+        if (colMap[pid] !== undefined) continue;
+        
+        // Find families where this person is a parent
+        const spouseFams = personSpouseFams[pid] || [];
+        let childColSum = 0, childCount = 0;
+        
+        for (const fid of spouseFams) {
+          const fam = families[fid];
+          for (const childId of fam.children) {
+            if (colMap[childId] !== undefined) {
+              childColSum += colMap[childId];
+              childCount++;
+            }
+          }
+        }
+        
+        if (childCount > 0) {
+          colMap[pid] = childColSum / childCount;
+        }
+      }
+      
+      // Place spouses next to each other
+      for (const pid of people) {
+        if (colMap[pid] !== undefined) continue;
+        const spouseFams = personSpouseFams[pid] || [];
+        for (const fid of spouseFams) {
+          const fam = families[fid];
+          const spouse = fam.husb === pid ? fam.wife : fam.husb;
+          if (spouse && colMap[spouse] !== undefined) {
+            colMap[pid] = colMap[spouse] + (fam.husb === pid ? 1 : -1);
+          }
+        }
+      }
+      
+      // Any remaining unplaced people get sequential slots
+      for (const pid of people) {
+        if (colMap[pid] === undefined) {
+          colMap[pid] = nextCol++;
+        }
+      }
+    } else if (gen > 0) {
+      // Descendants: center children under parents
+      for (const pid of people) {
+        if (colMap[pid] !== undefined) continue;
+        
+        const parentFamId = personParentFam[pid];
+        if (parentFamId) {
+          const fam = families[parentFamId];
+          const parents = [fam.husb, fam.wife].filter(p => p && colMap[p] !== undefined);
+          if (parents.length > 0) {
+            const parentCenter = parents.reduce((s, p) => s + colMap[p], 0) / parents.length;
+            // Get all siblings in this family that are in this gen
+            const siblings = fam.children.filter(c => generations[c] === gen && visited.has(c));
+            const sibIndex = siblings.indexOf(pid);
+            const totalSibs = siblings.length;
+            colMap[pid] = parentCenter + (sibIndex - (totalSibs - 1) / 2);
+          }
+        }
+      }
+      
+      // Place spouses next to placed people
+      for (const pid of people) {
+        if (colMap[pid] !== undefined) continue;
+        const spouseFams = personSpouseFams[pid] || [];
+        for (const fid of spouseFams) {
+          const fam = families[fid];
+          const spouse = fam.husb === pid ? fam.wife : fam.husb;
+          if (spouse && colMap[spouse] !== undefined && visited.has(spouse)) {
+            colMap[pid] = colMap[spouse] + 1;
+          }
+        }
+      }
+      
+      for (const pid of people) {
+        if (colMap[pid] === undefined) {
+          colMap[pid] = nextCol++;
+        }
+      }
+    }
+    
+    // Round to avoid overlaps from fractional positions
+    // Resolve overlaps: if two people have same col, shift one right
+    const occupied = {};
+    for (const pid of people) {
+      let col = colMap[pid];
+      // Snap to nearest 0.5
+      col = Math.round(col * 2) / 2;
+      // Check for overlap
+      while (occupied[col] !== undefined) {
+        col += 0.5;
+      }
+      occupied[col] = pid;
+      colMap[pid] = col;
+    }
+  }
+  
+  // Process generations from anchor outward
+  // First gen 0 (already partially placed), then expand outward
+  for (const gen of genList) {
+    if (gen === 0) continue; // skip anchor gen, already handled
+    orderGeneration(gen);
+  }
+  
+  // Re-process gen 0 to clean up any unplaced
+  orderGeneration(0);
+  
+  // Convert col+gen to pixel positions
+  // Normalize so minimum col = 0 and minimum gen = 0
+  const allCols = Object.values(colMap).filter(c => c !== undefined);
+  const minCol = Math.min(...allCols);
+  const minGen = Math.min(...genList);
+  
+  for (const pid in colMap) {
+    if (!visited.has(pid)) continue;
+    const normCol = colMap[pid] - minCol;
+    const normGen = generations[pid] - minGen;
+    positions[pid] = {
+      x: normCol * STEP_X + 20,
+      y: normGen * STEP_Y + 20
+    };
+  }
+  
+  return positions;
+}
+
+// ---- Build connections from final positions ----
+function buildConnections(individuals, families, positions, visited) {
+  const connections = [];
+  
+  for (const fid in families) {
+    const fam = families[fid];
+    const husbPos = fam.husb ? positions[fam.husb] : null;
+    const wifePos = fam.wife ? positions[fam.wife] : null;
+    
+    // Marriage line: horizontal between spouses
+    if (husbPos && wifePos && visited.has(fam.husb) && visited.has(fam.wife)) {
+      connections.push({
+        type: 'marriage',
+        x1: husbPos.x, y1: husbPos.y,
+        x2: wifePos.x, y2: wifePos.y,
+        husbId: fam.husb, wifeId: fam.wife
+      });
+    }
+    
+    // Parent-child: from couple midpoint (or single parent) down to each child
+    const placedChildren = fam.children.filter(c => positions[c] && visited.has(c));
+    if (placedChildren.length === 0) continue;
+    
+    let parentMidX, parentY;
+    if (husbPos && wifePos) {
+      parentMidX = (husbPos.x + wifePos.x) / 2;
+      parentY = (husbPos.y + wifePos.y) / 2;
+    } else if (husbPos) {
+      parentMidX = husbPos.x + 70; // half card width
+      parentY = husbPos.y;
+    } else if (wifePos) {
+      parentMidX = wifePos.x + 70;
+      parentY = wifePos.y;
+    } else {
+      continue; // no parents placed
+    }
+    
+    // One bus connector per family
+    connections.push({
+      type: 'parent-child-bus',
+      parentMidX: parentMidX,
+      parentY: parentY,
+      children: placedChildren.map(cid => ({
+        childId: cid,
+        childX: positions[cid].x + 70, // center of card
+        childY: positions[cid].y
+      }))
+    });
+  }
+  
+  return connections;
+}
+
+// ---- Render ----
+function render(individuals, generations, positions, connections, visited, anchorId) {
+  const CARD_W = parseInt(document.getElementById('cardW').value);
+  const CARD_H = parseInt(document.getElementById('cardH').value);
+  const container = document.getElementById('treeContainer');
+  const svgLayer = document.getElementById('treeSvg');
+  
+  // Clear
+  container.querySelectorAll('.card, .gen-label, svg').forEach(el => el.remove());
+  
+  // Calculate bounds
+  const allX = Object.values(positions).map(p => p.x);
+  const allY = Object.values(positions).map(p => p.y);
+  const maxX = Math.max(...allX) + CARD_W + 50;
+  const maxY = Math.max(...allY) + CARD_H + 50;
+  
+  // Create SVG for connections
+  const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
+  svg.setAttribute('width', maxX);
+  svg.setAttribute('height', maxY);
+  svg.style.position = 'absolute';
+  svg.style.top = '0';
+  svg.style.left = '0';
+  svg.style.pointerEvents = 'none';
+  svg.style.zIndex = '1';
+  
+  // Draw connections
+  for (const conn of connections) {
+    if (conn.type === 'marriage') {
+      // Horizontal line between spouse cards (at card center height)
+      const y = conn.y1 + 25; // center of card
+      const line = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      line.setAttribute('x1', conn.x1 + (conn.x2 > conn.x1 ? CARD_W : 0));
+      line.setAttribute('y1', y);
+      line.setAttribute('x2', conn.x2 + (conn.x2 > conn.x1 ? 0 : CARD_W));
+      line.setAttribute('y2', y);
+      line.setAttribute('stroke', '#999');
+      line.setAttribute('stroke-width', 1.5);
+      svg.appendChild(line);
+    } else if (conn.type === 'parent-child-bus') {
+      const busY = (conn.parentY + conn.children[0].childY) / 2;
+      
+      // Vertical from parent midpoint down to bus
+      const v1 = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+      v1.setAttribute('x1', conn.parentMidX);
+      v1.setAttribute('y1', conn.parentY + CARD_H);
+      v1.setAttribute('x2', conn.parentMidX);
+      v1.setAttribute('y2', busY);
+      v1.setAttribute('stroke', '#999');
+      v1.setAttribute('stroke-width', 1.5);
+      svg.appendChild(v1);
+      
+      // Horizontal bus from leftmost to rightmost child
+      const minChildX = Math.min(...conn.children.map(c => c.childX));
+      const maxChildX = Math.max(...conn.children.map(c => c.childX));
+      if (conn.children.length > 1) {
+        const hBus = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        hBus.setAttribute('x1', Math.min(minChildX, conn.parentMidX));
+        hBus.setAttribute('y1', busY);
+        hBus.setAttribute('x2', Math.max(maxChildX, conn.parentMidX));
+        hBus.setAttribute('y2', busY);
+        hBus.setAttribute('stroke', '#999');
+        hBus.setAttribute('stroke-width', 1.5);
+        svg.appendChild(hBus);
+      }
+      
+      // Vertical from bus down to each child
+      for (const child of conn.children) {
+        const vChild = document.createElementNS('http://www.w3.org/2000/svg', 'line');
+        vChild.setAttribute('x1', child.childX);
+        vChild.setAttribute('y1', busY);
+        vChild.setAttribute('x2', child.childX);
+        vChild.setAttribute('y2', child.childY);
+        vChild.setAttribute('stroke', '#999');
+        vChild.setAttribute('stroke-width', 1.5);
+        svg.appendChild(vChild);
+      }
+    }
+  }
+  
+  svgLayer.appendChild(svg);
+  
+  // Draw cards
+  for (const pid in positions) {
+    if (!visited.has(pid)) continue;
+    const pos = positions[pid];
+    const person = individuals[pid];
+    if (!person) continue;
+    
+    const card = document.createElement('div');
+    card.className = 'card ' + (person.sex === 'M' ? 'male' : person.sex === 'F' ? 'female' : 'unknown');
+    if (pid === anchorId) card.classList.add('anchor');
+    card.style.left = pos.x + 'px';
+    card.style.top = pos.y + 'px';
+    
+    // Clean up name (remove slashes from GEDCOM format)
+    const cleanName = person.name.replace(/\//g, '').trim();
+    const dates = (person.birth || '') + (person.birth && person.death ? ' - ' : '') + (person.death || '');
+    
+    card.innerHTML = `
+      <div class="card-name">${cleanName}</div>
+      <div class="card-dates">${dates || '?'}</div>
+      <div class="card-gen">G${generations[pid]}</div>
+    `;
+    
+    card.title = `${cleanName}\n${dates}\nID: ${pid}\nGen: ${generations[pid]}`;
+    container.appendChild(card);
+  }
+  
+  // Draw generation labels
+  const genSet = new Set(Object.values(generations));
+  const minGen = Math.min(...genSet);
+  const STEP_Y = parseInt(document.getElementById('cardH').value) + parseInt(document.getElementById('gapY').value);
+  for (const gen of genSet) {
+    const normGen = gen - minGen;
+    const label = document.createElement('div');
+    label.className = 'gen-label';
+    label.style.top = (normGen * STEP_Y + 35) + 'px';
+    label.textContent = gen === 0 ? 'Anchor' : gen < 0 ? `Gen ${gen}` : `Gen +${gen}`;
+    container.appendChild(label);
+  }
+  
+  // Update stats
+  const stats = document.getElementById('stats');
+  stats.textContent = ` | ${visited.size} people, ${connections.length} connections | Canvas: ${maxX}x${maxY}`;
+  
+  // Store for fit function
+  window._treeBounds = { maxX, maxY };
+}
+
+// ---- Fit to screen ----
+function fitToScreen() {
+  const container = document.getElementById('treeContainer');
+  const bounds = window._treeBounds;
+  if (!bounds) return;
+  
+  const cw = container.clientWidth - 40;
+  const ch = container.clientHeight - 40;
+  const scale = Math.min(cw / bounds.maxX, ch / bounds.maxY, 1);
+  
+  const svgLayer = document.getElementById('treeSvg');
+  const content = container.querySelectorAll('.card, .gen-label, svg');
+  
+  // Apply transform via CSS zoom
+  container.style.transformOrigin = '0 0';
+  container.style.transform = `scale(${scale})`;
+  
+  // Adjust container scroll area
+  const scaledW = bounds.maxX * scale;
+  const scaledH = bounds.maxY * scale;
+  svgLayer.style.width = scaledW + 'px';
+  svgLayer.style.height = scaledH + 'px';
+}
+
+// ---- Main layout function ----
+function doLayout() {
+  if (!DATA) return;
+  
+  const { individuals, families } = DATA;
+  const childToFamily = buildChildToFamily(families);
+  const { generations, visited } = assignGenerations(individuals, families, childToFamily, ANCHOR_ID);
+  const positions = assignSlots(individuals, families, childToFamily, generations, visited, ANCHOR_ID);
+  const connections = buildConnections(individuals, families, positions, visited);
+  
+  render(individuals, generations, positions, connections, visited, ANCHOR_ID);
+}
+
+// ---- Load default GED data ----
+function loadDefaultGed() {
+  // Use embedded TREE_DATA from tree-data.js
+  DATA = {
+    individuals: EMBEDDED_DATA.individuals,
+    families: EMBEDDED_DATA.families
+  };
+  
+  // Populate anchor select with some known people
+  const select = document.getElementById('anchorSelect');
+  select.innerHTML = '';
+  const anchorCandidates = ['I126', 'I122', 'I399', 'I300', 'I488', 'I472'];
+  for (const pid of anchorCandidates) {
+    if (DATA.individuals[pid]) {
+      const opt = document.createElement('option');
+      opt.value = pid;
+      opt.textContent = DATA.individuals[pid].name.replace(/\//g, '').trim() + ' (b.' + (DATA.individuals[pid].birth || '?') + ')';
+      select.appendChild(opt);
+    }
+  }
+  select.value = ANCHOR_ID;
+  
+  doLayout();
+}
+
+// ---- Event handlers ----
+document.getElementById('layoutBtn').addEventListener('click', doLayout);
+document.getElementById('fitBtn').addEventListener('click', fitToScreen);
+document.getElementById('anchorSelect').addEventListener('change', (e) => {
+  ANCHOR_ID = e.target.value;
+  doLayout();
+});
+
+['cardW', 'cardH', 'gapX', 'gapY'].forEach(id => {
+  document.getElementById(id).addEventListener('change', doLayout);
+});
+
+document.getElementById('loadGedBtn').addEventListener('click', () => {
+  document.getElementById('gedFile').click();
+});
+
+document.getElementById('gedFile').addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const text = await file.text();
+  DATA = parseGed(text);
+  
+  // Find people born 1960-1970 as anchor candidates
+  const select = document.getElementById('anchorSelect');
+  select.innerHTML = '';
+  const candidates = Object.values(DATA.individuals)
+    .filter(p => {
+      const y = parseInt((p.birth || '').match(/\d{4}/)?.[0] || 0);
+      return y >= 1955 && y <= 1975;
+    })
+    .sort((a, b) => (a.birth || '').localeCompare(b.birth || ''));
+  
+  for (const person of candidates.slice(0, 20)) {
+    const opt = document.createElement('option');
+    opt.value = person.id;
+    opt.textContent = person.name.replace(/\//g, '').trim() + ' (b.' + (person.birth || '?') + ')';
+    select.appendChild(opt);
+  }
+  
+  // Default to I126 if available
+  if (DATA.individuals['I126']) {
+    ANCHOR_ID = 'I126';
+    select.value = ANCHOR_ID;
+  } else if (candidates.length > 0) {
+    ANCHOR_ID = candidates[0].id;
+    select.value = ANCHOR_ID;
+  }
+  
+  doLayout();
+});
+
+// ---- Init ----
+loadDefaultGed();
+</script>
+
+</body>
+</html>
