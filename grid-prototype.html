@@ -25,6 +25,7 @@ body { background: #2a1f1a; color: #e0d6c8; font-family: 'Segoe UI', Tahoma, san
 .card-dates { font-size: 10px; color: #888; line-height: 1.2; margin-top: 2px; }
 .card-gen { font-size: 8px; color: #aaa; position: absolute; bottom: 2px; right: 4px; }
 .gen-label { position: absolute; left: 4px; font-size: 10px; color: #999; font-style: italic; z-index: 1; background: #f5f0e6; padding: 0 4px; border-radius: 2px; }
+.family-panel { position: absolute; background: rgba(200, 190, 170, 0.15); border: 1px dashed rgba(180, 170, 150, 0.3); border-radius: 6px; z-index: 0; pointer-events: none; }
 </style>
 </head>
 <body>
@@ -372,16 +373,20 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     if (colMap[pid] === undefined || isNaN(colMap[pid])) colMap[pid] = nextCol++;
   }
   
-  // Resolve overlaps per generation
+  // Resolve overlaps per generation — use integer cols, shift right on conflict
   for (const gen of genList) {
     const people = byGen[gen] || [];
-    const occupied = {};
+    // Sort by intended col so we resolve left-to-right
+    people.sort((a, b) => (colMap[a] || 9999) - (colMap[b] || 9999));
+    const occupied = new Set();
     for (const pid of people) {
-      let col = Math.round(colMap[pid] * 2) / 2;
+      let col = Math.round(colMap[pid]);
       if (isNaN(col)) col = nextCol++;
-      let safety = 0;
-      while (occupied[col] !== undefined && safety < 500) { col += 0.5; safety++; }
-      occupied[col] = pid;
+      // Ensure this col + 1 is free (card occupies col to col+1 conceptually,
+      // but actual card width is CARD_W and step is CARD_W+GAP_X so each col
+      // is one STEP_X wide — no overlap if cols are integers)
+      while (occupied.has(col)) { col++; }
+      occupied.add(col);
       colMap[pid] = col;
     }
   }
@@ -455,21 +460,82 @@ function buildConnections(individuals, families, positions, visited) {
   return connections;
 }
 
+// ---- Build family units for visual grouping ----
+function buildFamilyUnits(families, positions, generations, visited) {
+  const units = [];
+  for (const fid in families) {
+    const fam = families[fid];
+    const husbPos = fam.husb ? positions[fam.husb] : null;
+    const wifePos = fam.wife ? positions[fam.wife] : null;
+    const placedChildren = fam.children.filter(c => positions[c] && visited.has(c));
+    if (!husbPos && !wifePos && placedChildren.length === 0) continue;
+    
+    // Get all member positions
+    const memberPositions = [];
+    if (husbPos && visited.has(fam.husb)) memberPositions.push({ pos: husbPos, gen: generations[fam.husb] });
+    if (wifePos && visited.has(fam.wife)) memberPositions.push({ pos: wifePos, gen: generations[fam.wife] });
+    for (const cid of placedChildren) {
+      memberPositions.push({ pos: positions[cid], gen: generations[cid] });
+    }
+    if (memberPositions.length < 2) continue; // skip singletons
+    
+    // Find bounding box of this family unit
+    const minX = Math.min(...memberPositions.map(m => m.pos.x));
+    const maxX = Math.max(...memberPositions.map(m => m.pos.x));
+    const minGen = Math.min(...memberPositions.map(m => m.gen));
+    const maxGen = Math.max(...memberPositions.map(m => m.gen));
+    
+    units.push({
+      fid,
+      minX, maxX, minGen, maxGen,
+      hasChildren: placedChildren.length > 0,
+      parentCount: (husbPos && visited.has(fam.husb) ? 1 : 0) + (wifePos && visited.has(fam.wife) ? 1 : 0)
+    });
+  }
+  return units;
+}
+
 // ---- Render ----
-function render(individuals, generations, positions, connections, visited, anchorId) {
+function render(individuals, generations, positions, connections, visited, anchorId, families) {
   const CARD_W = parseInt(document.getElementById('cardW').value);
   const CARD_H = parseInt(document.getElementById('cardH').value);
   const container = document.getElementById('treeContainer');
   const svgLayer = document.getElementById('treeSvg');
   
   // Clear
-  container.querySelectorAll('.card, .gen-label, svg').forEach(el => el.remove());
+  container.querySelectorAll('.card, .gen-label, .family-panel, svg').forEach(el => el.remove());
   
   // Calculate bounds
   const allX = Object.values(positions).map(p => p.x);
   const allY = Object.values(positions).map(p => p.y);
   const maxX = Math.max(...allX) + CARD_W + 50;
   const maxY = Math.max(...allY) + CARD_H + 50;
+  
+  // Draw family unit panels (behind everything)
+  const STEP_Y = CARD_H + parseInt(document.getElementById('gapY').value);
+  if (families) {
+    const units = buildFamilyUnits(families, positions, generations, visited);
+    for (const unit of units) {
+      const panel = document.createElement('div');
+      panel.className = 'family-panel';
+      const padding = 8;
+      const panelX = unit.minX - padding;
+      const panelY = (unit.minGen - Math.min(...Object.values(generations))) * STEP_Y + 20 - padding;
+      const panelW = (unit.maxX - unit.minX) + CARD_W + padding * 2;
+      // If parents and children, span from parent row to child row
+      let panelH;
+      if (unit.hasChildren && unit.maxGen > unit.minGen) {
+        panelH = (unit.maxGen - unit.minGen) * STEP_Y + CARD_H + padding * 2;
+      } else {
+        panelH = CARD_H + padding * 2;
+      }
+      panel.style.left = panelX + 'px';
+      panel.style.top = panelY + 'px';
+      panel.style.width = panelW + 'px';
+      panel.style.height = panelH + 'px';
+      container.appendChild(panel);
+    }
+  }
   
   // Create SVG for connections
   const svg = document.createElementNS('http://www.w3.org/2000/svg', 'svg');
@@ -619,7 +685,7 @@ function doLayout() {
   const positions = assignSlots(individuals, families, childToFamily, generations, visited, ANCHOR_ID);
   const connections = buildConnections(individuals, families, positions, visited);
   
-  render(individuals, generations, positions, connections, visited, ANCHOR_ID);
+  render(individuals, generations, positions, connections, visited, ANCHOR_ID, families);
 }
 
 // ---- Load default GED data ----
