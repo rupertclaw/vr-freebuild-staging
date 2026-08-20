@@ -34,6 +34,10 @@
   --bg-detail-actions: #f5eedc;
   --bg-detail-header: #2a1f15;
   --text-detail-header: #e8dcc8;
+  --bg-stat: rgba(56, 189, 248, 0.10);
+  --border-stat: rgba(56, 189, 248, 0.20);
+  --text-stat-label: #93c5fd;
+  --text-stat-value: #38bdf8;
 }
 
 [data-theme="dark"] {
@@ -57,6 +61,10 @@
   --bg-detail-actions: #f5eedc;
   --bg-detail-header: #2a1f15;
   --text-detail-header: #e8dcc8;
+  --bg-stat: rgba(80, 140, 220, 0.08);
+  --border-stat: rgba(80, 140, 220, 0.15);
+  --text-stat-label: #5a8aaa;
+  --text-stat-value: #4db8ff;
 }
 
 html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-family: 'Cormorant Garamond', serif; }
@@ -87,12 +95,43 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   font-size: 14px; color: var(--text-tagline); font-weight: 700;
   letter-spacing: 2px; margin-top: 3px;
 }
+.header-pagename {
+  font-family: 'Cormorant Garamond', serif;
+  font-size: 15px; color: #c4a875; font-style: italic;
+  margin-top: 2px;
+}
+.header-stats {
+  display: flex; gap: 10px; align-items: center;
+}
+.header-stat {
+  display: flex; flex-direction: column; align-items: center;
+  background: var(--bg-stat);
+  border: 1px solid var(--border-stat);
+  padding: 6px 12px; border-radius: 6px;
+  min-width: 68px;
+}
+.header-stat .stat-label {
+  font-size: 11px; color: var(--text-stat-label);
+  text-transform: uppercase; letter-spacing: 1px;
+}
+.header-stat .stat-value {
+  font-size: 18px; color: var(--text-stat-value);
+  font-weight: 600; font-family: 'Cormorant Garamond', serif;
+}
 .header-bottom {
-  display: flex; align-items: center; justify-content: flex-end;
+  display: flex; align-items: center; justify-content: space-between;
   flex-wrap: wrap;
   padding-top: 6px; border-top: 1px solid rgba(255,248,225,0.08);
   margin-top: 4px;
   gap: 6px;
+}
+.header-left-group {
+  display: flex; align-items: center; gap: 6px;
+  flex-shrink: 0;
+}
+.zoom-controls {
+  display: flex; align-items: center; gap: 4px;
+  flex-shrink: 0;
 }
 .header-actions {
   display: flex; align-items: center; gap: 6px;
@@ -141,6 +180,10 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   overflow: auto; -webkit-overflow-scrolling: touch; touch-action: pan-x pan-y;
   background: radial-gradient(ellipse at center, var(--bg-tree-start) 0%, var(--bg-tree-end) 100%);
 }
+/* Push tree area below taller mobile header */
+@media (max-width: 600px) {
+  .tree-scroll { top: 140px; }
+}
 .tree-wrap {
   position: relative; min-width: 100%; min-height: 100%;
   transform: scale(var(--zoom, 1)); transform-origin: top left;
@@ -176,7 +219,30 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .fb-card.confirmed { border-left: 4px solid #22c55e; }
 .fb-card.probable { border-left: 4px solid #f59e0b; }
 .fb-card.brickwall { border-left: 4px dashed #ef4444; }
-.fb-card.you { border: 2px solid #c4a875; background: var(--bg-card-you); }
+.fb-card.you {
+  border: 2px solid #c4a875;
+  background: var(--bg-card-you);
+  opacity: 1;
+  cursor: pointer;
+  box-shadow: 0 0 0 2px rgba(196,168,117,0.3), 0 2px 8px rgba(90,60,30,0.2);
+  animation: pulseYou 2s ease-in-out infinite;
+}
+.fb-card.you:hover { transform: none; box-shadow: 0 0 0 3px rgba(196,168,117,0.5), 0 2px 12px rgba(90,60,30,0.3); }
+.fb-card.you .name { color: #2a1f10; font-weight: 600; }
+.fb-card.you .years { color: #7a6545; }
+.fb-card.you .tap-hint {
+  font-family: 'Cormorant Garamond', serif; font-size: 8px;
+  color: #c4a875; margin-top: 1px; font-style: italic;
+  animation: hintBlink 1.5s ease-in-out infinite;
+}
+@keyframes pulseYou {
+  0%, 100% { box-shadow: 0 0 0 2px rgba(196,168,117,0.3), 0 2px 8px rgba(90,60,30,0.2); }
+  50% { box-shadow: 0 0 0 4px rgba(196,168,117,0.4), 0 2px 12px rgba(90,60,30,0.3); }
+}
+@keyframes hintBlink {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
+}
 .fb-card.blank { background: #f0ebe0; border: 1px dashed #b8a88a; opacity: 0.4; cursor: default; }
 .fb-card.blank:hover { transform: none; box-shadow: none; }
 .fb-card.blank .name, .fb-card.blank .years { color: #b8a88a; }
@@ -186,6 +252,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .fb-card .doc-badge.bc { background: #dcfce7; color: #166534; }
 .fb-card .doc-badge.mc { background: #dbeafe; color: #1e40af; }
 .fb-card .doc-badge.dc { background: #fee2e2; color: #991b1b; }
+.fb-card .doc-badge.doc { background: #e5e7eb; color: #374151; }
 
 /* Detail Panel */
 .detail-panel {
@@ -209,6 +276,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   font-family: 'Cormorant Garamond', serif; font-size: 14px; background: #fff; color: #2a1f10;
 }
 .detail-field textarea { min-height: 60px; resize: vertical; }
+.detail-field input::placeholder, .detail-field textarea::placeholder { color: #b0a090; font-style: italic; }
 .detail-actions { margin-top: 12px; display: flex; gap: 8px; }
 .detail-actions button {
   flex: 1; padding: 8px 14px; border-radius: 4px; font-family: 'Cinzel Decorative', serif;
@@ -524,33 +592,71 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 </style>
 <script>
 if ('serviceWorker' in navigator) {
-  navigator.serviceWorker.register('./sw.js')
+  navigator.serviceWorker.register('./sw.js', { updateViaCache: 'none' })
     .then(function(reg) {
       console.log('[SW] Registered', reg.scope);
+      // Force update check on every page load
+      reg.update();
       reg.onupdatefound = function() {
         var newSW = reg.installing;
         newSW.onstatechange = function() {
           if (newSW.state === 'activated' && navigator.serviceWorker.controller) {
-            console.log('[SW] New version activated \u2014 reloading');
+            console.log('[SW] New version activated — reloading');
             location.reload();
           }
         };
       };
     })
     .catch(function(err) { console.error('[SW] Failed', err); });
-  navigator.serviceWorker.addEventListener('controllerchange', function() {
-    location.reload();
-  });
 }
 </script>
 </head>
 <body>
+
+<!-- Privacy Modal -->
+<div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:16px 20px;max-width:400px;width:92%;max-height:90vh;overflow-y:auto;">
+    <div style="text-align:center;margin-bottom:10px;">
+      <div style="font-size:36px;margin-bottom:4px;">🔒</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:4px;">Your Data. Your Device.</div>
+      <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b5537;">How Vaulted Roots protects your family history</div>
+    </div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#2a1f10;line-height:1.6;margin-bottom:16px;">
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+        <div style="font-size:17px;flex-shrink:0;">📱</div>
+        <div><strong>Stays on your device.</strong> Everything is saved locally in your browser. No servers, no cloud, no accounts.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+        <div style="font-size:17px;flex-shrink:0;">🔐</div>
+        <div><strong>Private local storage.</strong> Your tree stays in your browser's own IndexedDB storage. We cannot read it, even if we wanted to.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+        <div style="font-size:17px;flex-shrink:0;">🚫</div>
+        <div><strong>No cookies, no ads.</strong> We measure anonymous page visits with cookieless Google Analytics. Your tree data never leaves your device.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
+        <div style="font-size:17px;flex-shrink:0;">📤</div>
+        <div><strong>You control sharing.</strong> Export your tree as a file to share with family. Only send it to people you trust.</div>
+      </div>
+      <div style="display:flex;align-items:flex-start;gap:10px;">
+        <div style="font-size:17px;flex-shrink:0;">🗑️</div>
+        <div><strong>Delete anytime.</strong> Clear your browser data and your tree is gone forever. No backups we keep, no hidden copies.</div>
+      </div>
+    </div>
+    <div style="background:#e8f0e0;border:1px solid #6b8e5a;border-radius:6px;padding:10px;margin-bottom:16px;font-family:'Cormorant Garamond',serif;font-size:12px;color:#3a5a2a;">
+      <strong>Compare:</strong> Other sites upload your family data to their servers and use it to train AI. Vaulted Roots never does this.
+    </div>
+    <button id="privacyModalOk" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;margin-bottom:8px;">Dismiss</button>
+    <button id="privacyModalDismissForever" style="width:100%;padding:10px;border:none;background:transparent;color:#6b5537;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Dismiss forever — do not show again</button>
+  </div>
+</div>
 
 <div class="header">
   <div class="header-top">
     <div class="header-brand">
       <div class="header-logo">Vaulted Roots</div>
       <div class="header-tagline">Your legacy. Secure.</div>
+      <div class="header-pagename">Family Builder</div>
     </div>
     <img src="vaulted-roots-shield.png" class="header-emblem" alt="Vaulted Roots">
     <div class="header-actions">
@@ -566,7 +672,7 @@ if ('serviceWorker' in navigator) {
           <div class="fb-menu-item" role="menuitem" onclick="location.href='family-builder.html'"><span class="icon">🌿</span> Family Builder</div>
           <div class="fb-menu-item" role="menuitem" onclick="window.open('families.html','_blank')"><span class="icon">📋</span> Family Sheets</div>
           <div class="fb-menu-item" role="menuitem" onclick="openPoster()"><span class="icon">🖼️</span> Heritage Poster</div>
-          <div class="fb-menu-item" role="menuitem" onclick="toggleHelp(); setTimeout(function(){var b=document.querySelector('.help-tab[data-tab=\"2\"]');if(b)b.click();},100)"><span class="icon">🔄</span> Import & Export GEDCOM</div>
+          <div class="fb-menu-item" role="menuitem" onclick="toggleHelp(); switchHelpTab(2, document.querySelectorAll('.help-tab')[2])"><span class="icon">🔄</span> Import & Export GEDCOM</div>
           <div class="fb-menu-item" role="menuitem" onclick="saveSession()"><span class="icon">💾</span> Save Tree</div>
           <div class="fb-menu-item" role="menuitem" onclick="document.getElementById('loadFileInput').click()"><span class="icon">📂</span> Load Backup</div>
           <div class="fb-menu-item" role="menuitem" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
@@ -596,11 +702,33 @@ if ('serviceWorker' in navigator) {
     </div>
   </div>
   <div class="header-bottom">
+    <div class="header-left-group">
+      <div class="zoom-controls">
+        <button class="help-btn" onclick="setZoom(zoom / 1.2)" title="Zoom out">−</button>
+        <span class="help-btn" id="zoomLevel" style="cursor:default;min-width:36px;justify-content:center;">100%</span>
+        <button class="help-btn" onclick="setZoom(zoom * 1.2)" title="Zoom in">+</button>
+        <button class="help-btn" onclick="fitToScreen()" title="Fit to screen">Fit</button>
+      </div>
+      <div class="view-toggle">
+        <button id="viewModeFocus" onclick="setViewMode('focus')">Focus</button>
+        <button id="viewModeOverview" class="active" onclick="setViewMode('overview')">Overview</button>
+      </div>
+      <div class="header-stats">
+        <div class="header-stat">
+          <div class="stat-label">Nodes</div>
+          <div class="stat-value" id="statPeople">0</div>
+        </div>
+        <div class="header-stat">
+          <div class="stat-label">Documented</div>
+          <div class="stat-value" id="statConfirmed">0</div>
+        </div>
+        <div class="header-stat">
+          <div class="stat-label">Brick Walls</div>
+          <div class="stat-value" id="statWalls">0</div>
+        </div>
+      </div>
+    </div>
     <div class="header-actions">
-      <button class="help-btn" onclick="setZoom(zoom * 1.2)" title="Zoom in">+</button>
-      <span class="help-btn" id="zoomLevel" style="cursor:default;min-width:36px;justify-content:center;">100%</span>
-      <button class="help-btn" onclick="setZoom(zoom / 1.2)" title="Zoom out">−</button>
-      <button class="help-btn" onclick="fitToScreen()" title="Fit to screen">Fit</button>
       <button class="help-btn" onclick="exportGedcom()" title="Export GEDCOM">⬇</button>
     </div>
   </div>
@@ -692,7 +820,7 @@ if ('serviceWorker' in navigator) {
           <li><strong>Review.</strong> Large trees auto-focus on the most connected person. Tap any card to explore or edit.</li>
         </ol>
         <div style="margin:14px 0;text-align:center;display:flex;gap:8px;justify-content:center;flex-wrap:wrap;">
-          <button onclick="document.getElementById('gedcomInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
+          <button onclick="toggleHelp(); document.getElementById('gedcomInput').click()" style="padding:10px 16px;border:2px solid #4a6b4a;border-radius:4px;background:#4a6b4a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">🔄 Import GEDCOM</button>
           <button onclick="exportGedcom()" style="padding:10px 16px;border:2px solid #4a5a8a;border-radius:4px;background:#4a5a8a;color:#fff;font-family:'Cinzel Decorative',serif;font-size:12px;cursor:pointer;">📤 Export GEDCOM</button>
         </div>
         <p style="font-style:italic;font-size:13px;">Export creates a standard <code>.ged</code> file that any genealogy software can read. Your data never leaves your device.</p>
@@ -962,16 +1090,26 @@ if ('serviceWorker' in navigator) {
       </div>
     </div>
 
-    <div class="cert-upload-area" id="certUploadArea" style="display:none">
+    <div class="cert-upload-area" id="certUploadArea" style="display:none" onclick="document.getElementById('certAttachInput').click()">
       <div style="font-size:24px;margin-bottom:8px;">📄</div>
       <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#4a3a22;">Tap to upload cert</div>
       <div style="font-size:11px;color:#8a7a5a;margin-top:4px;">Birth, marriage, or death record</div>
     </div>
     <input type="file" id="certFileInput" accept="image/*" style="display:none">
     <input type="file" id="certCameraInput" accept="image/*" capture="environment" style="display:none">
+    <input type="file" id="certAttachInput" accept="image/*" style="display:none">
+    <input type="file" id="directAttachInput" accept="image/*" style="display:none">
     <div class="cert-preview-area" id="certPreviewArea"><img id="certPreviewImg"></div>
     <div class="cert-status" id="certStatus"></div>
     <div id="certResults"></div>
+  </div>
+</div>
+
+<!-- Document Viewer Modal -->
+<div id="docViewerModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
+  <div style="position:relative;max-width:90%;max-height:90%;">
+    <button onclick="closeDocViewer()" style="position:absolute;top:-40px;right:0;background:#f5eedc;border:2px solid #4a3a22;border-radius:4px;padding:4px 12px;font-family:'Cinzel Decorative',serif;font-size:12px;color:#4a3a22;cursor:pointer;">✕ Close</button>
+    <img id="docViewerImg" style="max-width:85vw;max-height:80vh;border:3px solid #4a3a22;border-radius:4px;display:block;" />
   </div>
 </div>
 
@@ -1009,8 +1147,10 @@ let people = [];
 let nextId = 1;
 let zoom = 0.75;
 let selectedPersonId = null;
+let skipAutoScroll = false;
 let focusPersonId = null;
 let viewHistory = [];
+let viewMode = 'overview'; // 'focus' or 'overview'
 
 // ═══════════════════════════════════════════════════════════════
 // GEDCOM PARSER — copied from data-tree.html
@@ -1087,15 +1227,26 @@ function parseGedcom(text) {
   }
 
   // Merge duplicate individuals (same name + same birth year)
-  // Ancestry sometimes exports the same person as two INDI records with different xrefs
+  // Ancestry sometimes exports the same person as two INDI records with different xrefs.
+  // BUT: only merge when we have a real birth year. The GED export date (e.g. "07 MAR 2022")
+  // is NOT a real birth date — it's the file creation timestamp. Merging 26 people
+  // all named "Mooney" with birth year 2022 destroys family connections.
   const mergeKey = (ind) => {
     const bY = (ind.birthDate || '').match(/\d{4}/);
-    return (ind.name || '').toLowerCase().trim() + '|' + (bY ? bY[0] : (ind.birthDate || ''));
+    const year = bY ? parseInt(bY[0]) : null;
+    // Only use birth year for merging if it's a plausible birth year (before 2020)
+    // Years 2020+ are almost certainly export timestamps, not birth dates
+    if (year && year < 2020) {
+      return (ind.name || '').toLowerCase().trim() + '|' + year;
+    }
+    // No reliable birth year: don't merge (return unique key per xref)
+    return null;  // null = don't merge this person
   };
   const canonicalXref = {};  // dupXref -> canonicalXref
   const seenByKey = {};      // mergeKey -> canonical xref
   for (const [xref, ind] of Object.entries(indis)) {
     const key = mergeKey(ind);
+    if (key === null) continue;  // Skip merging for people without real birth years
     if (seenByKey[key]) {
       const canonXref = seenByKey[key];
       canonicalXref[xref] = canonXref;
@@ -1249,8 +1400,8 @@ function parseGedcom(text) {
 // Mobile media query (max-width: 600px) shrinks cards to 120x34
 let CARD_W = window.innerWidth <= 600 ? 120 : 150;
 let CARD_H = window.innerWidth <= 600 ? 34 : 40;
-const CARD_GAP_X = 30;
-const CARD_GAP_Y = 80;
+const CARD_GAP_X = 50;
+const CARD_GAP_Y = 60;
 const COUPLE_GAP = 10;
 
 // Update card dimensions on viewport change
@@ -1266,7 +1417,25 @@ function updateCardDimensions() {
 
 window.addEventListener('resize', updateCardDimensions);
 
+// Placeholder cards: created when user clicks "add parent" but leaves the name
+// empty. They inflate the people array but carry no real data. We never render,
+// count, or export them.
+function isPlaceholder(p) {
+  if (!p) return true;
+  if (p.isYou) return false;
+  const name = (p.name || '').trim();
+  if (!name) return true;
+  if (name === 'Name' || name === 'Me' || name === 'You') return p.status === 'blank';
+  return false;
+}
+
 function getVisiblePeople() {
+  // Always exclude placeholder cards (name === 'Name' with status blank).
+  // In Overview: full tree minus placeholders.
+  // In Focus: subset around the focus person, minus placeholders.
+  if (viewMode === 'overview') {
+    return people.filter(p => !isPlaceholder(p));
+  }
   if (focusPersonId) {
     const focus = people.find(p => p.id === focusPersonId);
     if (!focus) return people;
@@ -1316,6 +1485,20 @@ function getVisiblePeople() {
         }
       }
     }
+    // Children of siblings (nieces/nephews) + their spouses
+    if (focus.parents && focus.parents.length > 0) {
+      for (const p of people) {
+        if (p.id === focusPersonId) continue;
+        if (p.parents && p.parents.some(pid => focus.parents.includes(pid))) {
+          // This is a sibling — add their children
+          for (const cid of (p.children || [])) {
+            visible.add(cid);
+            const nibling = getP(cid);
+            if (nibling && nibling.spouseId) visible.add(nibling.spouseId);
+          }
+        }
+      }
+    }
     // Parents of spouse (in-laws)
     if (focus.spouseId) {
       const spouse = getP(focus.spouseId);
@@ -1331,9 +1514,9 @@ function getVisiblePeople() {
       const child = getP(cid);
       if (child && child.spouseId) visible.add(child.spouseId);
     }
-    return people.filter(p => visible.has(p.id));
+    return people.filter(p => visible.has(p.id) && !isPlaceholder(p));
   }
-  return people;
+  return people.filter(p => !isPlaceholder(p));
 }
 
 function buildFamilyUnits(viewPeople) {
@@ -1396,423 +1579,1112 @@ function buildFamilyUnits(viewPeople) {
   return units;
 }
 
+// ═══════════════════════════════════════════════════════════════
+// GRID LAYOUT ENGINE (2026-08-19)
+// ═══════════════════════════════════════════════════════════════
+// Fixed grid: each person gets (row, col). Couples share a row.
+// Children on the row below their parents. Connectors are trivial
+// because endpoints are deterministic from grid coordinates.
+//
+// Replaces 6 previous dynamic-layout engines that all suffered from
+// the same problem: dynamic card placement + dynamic connector lines
+// drifting out of sync.
 function layoutTree() {
   const viewPeople = getVisiblePeople();
   if (viewPeople.length === 0) return { positions: new Map(), width: 100, height: 100, connections: [] };
 
-  const positions = new Map();
+  const positions = new Map();   // id -> {x, y, row, col}
   const connections = [];
   const viewSet = new Set(viewPeople.map(p => p.id));
-  const placed = new Set();
   const GEN_HEIGHT = CARD_H + CARD_GAP_Y;
+  const COL_WIDTH = CARD_W + CARD_GAP_X;
+  const TOP_MARGIN = 50;
+  const LEFT_MARGIN = 50;
 
-  // Helper: get person by id from full people array
+  // Grid occupancy: (row, col) -> id. Prevents two people sharing a cell.
+  const occupied = new Map();     // key "row,col" -> id
+  const gridPos = new Map();      // id -> {row, col}
+  const rowRightmost = new Map(); // row -> max col used on that row
+
   function getP(id) { return people.find(p => p.id === id); }
 
-  // ── PASS 1: compute subtree widths ──
-  // For each person, compute the total width needed for them + their spouse + children subtrees
-  const widthCache = new Map();
+  function key(r, c) { return r + ',' + c; }
 
-  function computeWidth(personId) {
-    if (widthCache.has(personId)) return widthCache.get(personId);
-    const person = getP(personId);
-    if (!person || !viewSet.has(personId)) return 0;
-
-    const hasSpouse = person.spouseId && viewSet.has(person.spouseId);
-    const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
-
-    // Only count children from the primary marriage for width calculation
-    const spouseId = person.spouseId;
-    const childEntries = (person.children || []).filter(cid => {
-      if (!viewSet.has(cid)) return false;
-      const child = getP(cid);
-      if (!child || !child.parents) return true;
-      return child.parents.includes(personId) && (spouseId ? child.parents.includes(spouseId) : child.parents.length === 1);
-    });
-    let childrenTotal = 0;
-    for (const cid of childEntries) {
-      childrenTotal += computeWidth(cid) + CARD_GAP_X;
-    }
-    if (childrenTotal > 0) childrenTotal -= CARD_GAP_X; // remove trailing gap
-
-    const w = Math.max(coupleWidth, childrenTotal);
-    widthCache.set(personId, w);
-    return w;
+  // Convert grid (row, col) to pixel coordinates
+  function toPixels(row, col) {
+    return {
+      x: LEFT_MARGIN + col * COL_WIDTH,
+      y: TOP_MARGIN + row * GEN_HEIGHT
+    };
   }
 
-  // ── PASS 2: assign positions (top-down, centered) ──
-  function assignPositions(personId, leftX, depth, visited) {
-    if (visited.has(personId)) return;
+  // Place a person at (row, col). Returns true if placed.
+  function placeAt(id, row, col, seen) {
+    if (id in seen || gridPos.has(id)) return false;
+    seen.add(id);
+    // If cell occupied, find next free col on this row
+    let actualCol = col;
+    while (occupied.has(key(row, actualCol))) {
+      actualCol++;
+    }
+    occupied.set(key(row, actualCol), id);
+    gridPos.set(id, { row, col: actualCol });
+    const px = toPixels(row, actualCol);
+    positions.set(id, { x: px.x, y: px.y, row, col: actualCol });
+    // Track rightmost column per row
+    if (!rowRightmost.has(row) || actualCol > rowRightmost.get(row)) {
+      rowRightmost.set(row, actualCol);
+    }
+    return true;
+  }
+
+  // Get the rightmost column used by a person and all their descendants
+  function getSubtreeRightmost(pid) {
+    if (!gridPos.has(pid)) return 0;
+    let maxCol = gridPos.get(pid).col;
+    const person = getP(pid);
+    if (!person) return maxCol;
+    // Spouses placed next to this person
+    for (const fam of (person.families || [])) {
+      const sid = fam.spouseId;
+      if (gridPos.has(sid) && gridPos.get(sid).row === gridPos.get(pid).row) {
+        maxCol = Math.max(maxCol, gridPos.get(sid).col);
+      }
+    }
+    // Walk descendants
+    const walkSeen = new Set();
+    function walk(cid) {
+      if (walkSeen.has(cid)) return;
+      walkSeen.add(cid);
+      if (gridPos.has(cid)) {
+        maxCol = Math.max(maxCol, gridPos.get(cid).col);
+      }
+      const child = getP(cid);
+      if (child) {
+        for (const gc of (child.children || [])) walk(gc);
+        for (const fam of (child.families || [])) {
+          if (gridPos.has(fam.spouseId)) {
+            maxCol = Math.max(maxCol, gridPos.get(fam.spouseId).col);
+          }
+        }
+      }
+    }
+    for (const cid of (person.children || [])) walk(cid);
+    return maxCol;
+  }
+
+  // Find a free column on a row, starting from a given column
+  function findFreeCol(row, startCol) {
+    let c = startCol;
+    while (occupied.has(key(row, c))) c++;
+    return c;
+  }
+
+  // Get all children of a person (from all relationships), sorted by birth year
+  function getAllChildren(pid) {
+    const person = getP(pid);
+    if (!person) return [];
+    const kids = [];
+    const seen = new Set();
+    for (const cid of (person.children || [])) {
+      if (viewSet.has(cid) && !seen.has(cid)) {
+        seen.add(cid);
+        kids.push(cid);
+      }
+    }
+    kids.sort((a, b) => {
+      const ca = getP(a), cb = getP(b);
+      const aY = (ca?.birthDate || '').match(/\d{4}/);
+      const bY = (cb?.birthDate || '').match(/\d{4}/);
+      if (aY && bY) return parseInt(aY[0]) - parseInt(bY[0]);
+      return a - b;
+    });
+    return kids;
+  }
+
+  // Get children of a specific couple (both parents)
+  function getCoupleChildren(personId, spouseId) {
     const person = getP(personId);
-    if (!person || !viewSet.has(personId)) return;
-    visited.add(personId);
+    if (!person) return [];
+    const kids = [];
+    const seen = new Set();
+    for (const cid of (person.children || [])) {
+      if (!viewSet.has(cid) || seen.has(cid)) continue;
+      const child = getP(cid);
+      if (!child) continue;
+      const parents = child.parents || [];
+      if (parents.includes(personId) && parents.includes(spouseId)) {
+        seen.add(cid);
+        kids.push(cid);
+      }
+    }
+    kids.sort((a, b) => {
+      const ca = getP(a), cb = getP(b);
+      const aY = (ca?.birthDate || '').match(/\d{4}/);
+      const bY = (cb?.birthDate || '').match(/\d{4}/);
+      if (aY && bY) return parseInt(aY[0]) - parseInt(bY[0]);
+      return a - b;
+    });
+    return kids;
+  }
 
-    const y = 50 + depth * GEN_HEIGHT;
-    const hasSpouse = person.spouseId && viewSet.has(person.spouseId) && !visited.has(person.spouseId);
-    const coupleWidth = hasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
+  // Get all marriages for a person, sorted by marriage date
+  function getMarriages(pid) {
+    const person = getP(pid);
+    if (!person) return [];
+    return (person.families || []).slice().sort((a, b) => {
+      const aY = (a.marriageDate || '').match(/\d{4}/);
+      const bY = (b.marriageDate || '').match(/\d{4}/);
+      if (aY && bY) return parseInt(aY[0]) - parseInt(bY[0]);
+      if (aY) return -1;
+      if (bY) return 1;
+      return 0;
+    });
+  }
 
-    // Center this couple in its allocated space
-    const myWidth = computeWidth(personId);
-    const centerX = leftX + myWidth / 2;
-    const myX = centerX - coupleWidth / 2;
+  // Find root ancestors (people with no parents in the view)
+  function findRoots() {
+    const roots = [];
+    for (const p of viewPeople) {
+      if (!p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid))) {
+        roots.push(p.id);
+      }
+    }
+    return roots;
+  }
 
-    positions.set(personId, { x: Math.round(myX), y });
+  // Count descendants (for choosing the main trunk root)
+  function countDescendants(pid, seen) {
+    if (!seen) seen = new Set();
+    if (seen.has(pid)) return 0;
+    seen.add(pid);
+    const person = getP(pid);
+    if (!person) return 0;
+    let count = 0;
+    for (const cid of (person.children || [])) {
+      if (!seen.has(cid) && viewSet.has(cid)) {
+        count += 1 + countDescendants(cid, seen);
+      }
+    }
+    return count;
+  }
 
-    if (hasSpouse) {
-      visited.add(person.spouseId);
-      positions.set(person.spouseId, { x: Math.round(myX + CARD_W + COUPLE_GAP), y });
-      // Spouse line
+  // Mark all people reachable from pid (through parent-child + spouse links)
+  function markReachable(pid, reachable, seen) {
+    if (!seen) seen = new Set();
+    if (seen.has(pid)) return;
+    seen.add(pid);
+    reachable.add(pid);
+    const person = getP(pid);
+    if (!person) return;
+    for (const cid of (person.children || [])) {
+      if (viewSet.has(cid)) markReachable(cid, reachable, seen);
+    }
+    for (const parentId of (person.parents || [])) {
+      if (viewSet.has(parentId)) markReachable(parentId, reachable, seen);
+    }
+    for (const fam of (person.families || [])) {
+      if (viewSet.has(fam.spouseId)) markReachable(fam.spouseId, reachable, seen);
+    }
+  }
+
+  // ── Add spouse connector ──
+  function addSpouseConn(id1, id2) {
+    const p1 = positions.get(id1);
+    const p2 = positions.get(id2);
+    if (!p1 || !p2) return;
+    const left = p1.x <= p2.x ? p1 : p2;
+    const right = p1.x <= p2.x ? p2 : p1;
+    // Check if spouses are adjacent (no cards between them)
+    const leftCol = left.col;
+    const rightCol = right.col;
+    const hasCardsBetween = (rightCol - leftCol) > 1;
+    if (hasCardsBetween) {
+      // Non-adjacent spouses: draw stepped line below the intervening cards
+      // Use a Y position below the row to avoid crossing cards
+      const stepY = left.y + CARD_H + 5; // just below the card row
       connections.push({
         type: 'spouse',
-        x1: myX + CARD_W, y1: y + CARD_H / 2,
-        x2: myX + CARD_W + COUPLE_GAP, y2: y + CARD_H / 2
+        x1: left.x + CARD_W / 2,
+        y1: left.y + CARD_H / 2,
+        x2: right.x + CARD_W / 2,
+        y2: right.y + CARD_H / 2,
+        stepY: stepY,
+        stepped: true,
+        personIds: [id1, id2]
+      });
+    } else {
+      // Adjacent spouses: simple horizontal line
+      connections.push({
+        type: 'spouse',
+        x1: left.x + CARD_W,
+        y1: left.y + CARD_H / 2,
+        x2: right.x,
+        y2: right.y + CARD_H / 2,
+        personIds: [id1, id2]
       });
     }
-
-    // Children: only those belonging to this specific couple (person + spouseId), not all marriages
-    const spouseId = person.spouseId;
-    const allChildren = new Set((person.children || []).filter(cid => viewSet.has(cid)));
-    if (spouseId) {
-      const spouse = getP(spouseId);
-      if (spouse) (spouse.children || []).filter(cid => viewSet.has(cid)).forEach(cid => allChildren.add(cid));
-    }
-    // Only include children whose parents are exactly this couple
-    const childEntries = [...allChildren].filter(cid => {
-      if (visited.has(cid)) return false;
-      const child = getP(cid);
-      if (!child || !child.parents) return true; // fallback: orphan/no-parent child stays with first family
-      return child.parents.includes(personId) && (spouseId ? child.parents.includes(spouseId) : child.parents.length === 1);
-    });
-    if (childEntries.length > 0) {
-      let childLeftX = leftX;
-      for (const cid of childEntries) {
-        const cw = computeWidth(cid);
-        assignPositions(cid, childLeftX, depth + 1, visited);
-        childLeftX += cw + CARD_GAP_X;
-      }
-
-      // Parent-child connectors — route from mother's card center
-      let parentMidX = centerX;
-      if (hasSpouse) {
-        // Identify mother: person is F → person's card, spouse is F → spouse's card
-        const motherIsPerson = person.sex === 'F';
-        const motherIsSpouse = !motherIsPerson && getP(person.spouseId)?.sex === 'F';
-        if (motherIsPerson) {
-          parentMidX = myX + CARD_W / 2;
-        } else if (motherIsSpouse) {
-          parentMidX = myX + CARD_W + COUPLE_GAP + CARD_W / 2;
-        } else {
-          parentMidX = myX + CARD_W + COUPLE_GAP / 2; // fallback to couple center
-        }
-      } else {
-        parentMidX = myX + CARD_W / 2;
-      }
-      const parentY = y + CARD_H;
-      for (const cid of childEntries) {
-        const childPos = positions.get(cid);
-        if (!childPos) continue;
-        const childX = childPos.x + CARD_W / 2;
-        const childY = childPos.y;
-        connections.push({ type: 'parent-child', midX: parentMidX, parentY, childX, childY });
-      }
-    }
-
-    // Parent-child connector (this person -> their parents)
-    const parentEntries = (person.parents || []).filter(pid => viewSet.has(pid) && !visited.has(pid));
-    if (parentEntries.length > 0) {
-      // Parents are at depth - 1, we need to lay them out
-      // But in a top-down layout, parents go above. We handle this separately.
-    }
   }
 
-  // ── LAYOUT PARENTS (upward from focus/root) ──
-  function assignParents(personId, depth, visited) {
-    const person = getP(personId);
-    if (!person || !viewSet.has(personId)) return;
+  // ── Add parent-child bus connector (for multiple children) ──
+  // marriageIndex: 0 for first marriage, 1 for second, etc.
+  // Used to offset bus Y so buses from different marriages don't overlap.
+  function addParentChildBus(parentId, spouseId, childIds, marriageIndex) {
+    if (!marriageIndex) marriageIndex = 0;
+    const parentPos = positions.get(parentId);
+    const spousePos = spouseId ? positions.get(spouseId) : null;
+    if (!parentPos) return;
 
-    const parentEntries = (person.parents || []).filter(pid => viewSet.has(pid) && !visited.has(pid));
-    if (parentEntries.length === 0) return;
+    // Compute midpoint: prefer mother's card center, else couple midpoint, else parent center
+    let midX;
+    const parent = getP(parentId);
+    const spouse = spouseId ? getP(spouseId) : null;
+    const motherIsParent = parent && parent.sex === 'F';
+    const motherIsSpouse = !motherIsParent && spouse && spouse.sex === 'F';
+    if (motherIsParent) midX = parentPos.x + CARD_W / 2;
+    else if (motherIsSpouse && spousePos) midX = spousePos.x + CARD_W / 2;
+    else if (spousePos) midX = (parentPos.x + spousePos.x) / 2 + CARD_W / 2;
+    else midX = parentPos.x + CARD_W / 2;
 
-    // Lay out parents side by side above this person
-    const myPos = positions.get(personId);
-    if (!myPos) return;
+    const childPositions = [];
+    for (const cid of childIds) {
+      const cp = positions.get(cid);
+      if (cp) childPositions.push({ childX: Math.round(cp.x + CARD_W / 2), childY: cp.y });
+    }
+    if (childPositions.length === 0) return;
 
-    const parentTotalWidth = parentEntries.length * CARD_W + (parentEntries.length - 1) * CARD_GAP_X;
-    let parentLeftX = myPos.x + CARD_W / 2 - parentTotalWidth / 2;
+    const parentY = parentPos.y + CARD_H;
 
-    for (const pid of parentEntries) {
-      if (visited.has(pid)) continue;
-      visited.add(pid);
-      const parent = getP(pid);
-      if (!parent) continue;
-
-      const parentY = 50 + (depth - 1) * GEN_HEIGHT;
-      positions.set(pid, { x: Math.round(parentLeftX), y: parentY });
-
-      // Check if parent has a spouse that's also a parent
-      const parentSpouseId = parent.spouseId;
-      if (parentSpouseId && viewSet.has(parentSpouseId) && !visited.has(parentSpouseId) && parentEntries.includes(parentSpouseId)) {
-        visited.add(parentSpouseId);
-        positions.set(parentSpouseId, { x: Math.round(parentLeftX + CARD_W + COUPLE_GAP), y: parentY });
-        connections.push({
-          type: 'spouse',
-          x1: parentLeftX + CARD_W, y1: parentY + CARD_H / 2,
-          x2: parentLeftX + CARD_W + COUPLE_GAP, y2: parentY + CARD_H / 2
-        });
-        parentLeftX += CARD_W + COUPLE_GAP + CARD_W + CARD_GAP_X;
-      } else {
-        parentLeftX += CARD_W + CARD_GAP_X;
-      }
-
-      // Parent-child connector
-      const parentMidX = positions.get(pid).x + CARD_W / 2;
-      const parentY2 = parentY + CARD_H;
-      const childX = myPos.x + CARD_W / 2;
-      const childY = myPos.y;
-      connections.push({ type: 'parent-child', midX: parentMidX, parentY: parentY2, childX, childY });
-
-      // Recurse upward for grandparents
-      assignParents(pid, depth - 1, visited);
+    if (childPositions.length === 1) {
+      // Single child: simple L-shaped connector
+      connections.push({
+        type: 'parent-child',
+        midX: Math.round(midX),
+        parentY: parentY,
+        childX: childPositions[0].childX,
+        childY: childPositions[0].childY,
+        personIds: { parentId, childId: childIds[0], spouseId }
+      });
+    } else {
+      // Multiple children: bus connector
+      // Offset busY per marriage so buses from different marriages don't overlap
+      const baseBusY = Math.round((parentY + childPositions[0].childY) / 2);
+      const busY = baseBusY + marriageIndex * 8; // 8px offset per marriage
+      connections.push({
+        type: 'parent-child-bus',
+        parentMidX: Math.round(midX),
+        parentY: parentY,
+        busY: busY,
+        children: childPositions,
+        personIds: { parentId, childIds: childIds.slice(), spouseId }
+      });
     }
   }
 
-  // ── MAIN: choose roots and run ──
-  let layoutRoots;
-  if (focusPersonId && viewSet.has(focusPersonId)) {
-    layoutRoots = [focusPersonId];
-  } else {
-    // People with no parents in the visible set
-    layoutRoots = viewPeople
-      .filter(p => !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid)))
-      .map(p => p.id);
-  }
+  // ── Place spouse's ancestors above as side branch ──
+  function placeAncestorsAbove(pid, currentRow, seen) {
+    const person = getP(pid);
+    if (!person) return;
+    const parents = (person.parents || []).filter(p => viewSet.has(p));
+    if (parents.length === 0) return;
 
-  const visited = new Set();
-  let currentX = 50;
+    const parentRow = currentRow - 1;
+    // Allow negative rows for anchor-based layout (ancestors go above row 0)
 
-  for (const rootId of layoutRoots) {
-    if (visited.has(rootId)) continue;
-    const w = computeWidth(rootId);
-    assignPositions(rootId, currentX, 0, visited);
-    // Also lay out ancestors upward
-    assignParents(rootId, 0, visited);
-    currentX += w + CARD_GAP_X * 2;
-  }
+    const myCol = gridPos.get(pid).col;
 
-  // ── MULTI-MARRIAGE PASS: place additional spouses and their children ──
-  // Must run BEFORE the disconnected pass so secondary spouses and their
-  // children aren't grabbed as disconnected cards.
-  function getRightmostAt(y, excludeId) {
-    let max = 0;
-    for (const [id, pos] of positions) {
-      if (id === excludeId) continue;
-      if (Math.abs(pos.y - y) < GEN_HEIGHT / 2) {
-        const right = pos.x + CARD_W;
-        if (right > max) max = right;
+    // Place parents on the row above
+    let col = findFreeCol(parentRow, myCol - 1);
+    const parentCols = [];
+
+    for (let i = 0; i < parents.length; i++) {
+      const parentId = parents[i];
+      if (seen.has(parentId) || gridPos.has(parentId)) {
+        // Already placed - record position
+        const existing = gridPos.get(parentId);
+        if (existing) parentCols.push(existing.col);
+        continue;
+      }
+      const pCol = findFreeCol(parentRow, col + i * 2);
+      placeAt(parentId, parentRow, pCol, seen);
+      parentCols.push(pCol);
+    }
+
+    // Draw spouse line between parents if both placed
+    if (parents.length >= 2 && gridPos.has(parents[0]) && gridPos.has(parents[1])) {
+      addSpouseConn(parents[0], parents[1]);
+    }
+
+    // Draw parent-child connector from parents down to this person
+    if (parentCols.length > 0 && gridPos.has(pid)) {
+      addParentChildBus(parents[0], parents.length > 1 ? parents[1] : null, [pid]);
+    }
+
+    // Recurse upward for grandparents
+    for (const parentId of parents) {
+      if (gridPos.has(parentId) && !seen.has(parentId + '_up')) {
+        seen.add(parentId + '_up');
+        placeAncestorsAbove(parentId, parentRow, seen);
       }
     }
-    return max;
   }
 
-  for (const p of viewPeople) {
-    if (!positions.has(p.id) || !p.families || p.families.length <= 1) continue;
+  // ── Recursively place a person and their descendants ──
+  // Key: after placing each child's subtree, track the rightmost column used.
+  // Next child starts AFTER that column. This keeps families contiguous.
+  function placeSubtree(pid, row, col, seen) {
+    if (!placeAt(pid, row, col, seen)) return;
 
-    let spouseIndex = 0;
-    for (const fam of p.families) {
+    const person = getP(pid);
+    if (!person) return;
+
+    const marriages = getMarriages(pid);
+    const myCol = gridPos.get(pid).col;
+
+    // Place each spouse in adjacent columns
+    const spouseCols = {};
+    let currentCol = myCol;
+
+    for (const fam of marriages) {
       const spouseId = fam.spouseId;
-      if (!viewSet.has(spouseId) || visited.has(spouseId)) continue;
-      spouseIndex++;
+      if (!viewSet.has(spouseId)) continue;
 
-      const personPos = positions.get(p.id);
-      const spouseY = personPos.y;
+      if (gridPos.has(spouseId)) {
+        // Already placed (by another branch)
+        spouseCols[spouseId] = gridPos.get(spouseId).col;
+        addSpouseConn(pid, spouseId);
+        continue;
+      }
 
-      // Place secondary spouse on the LEFT side to avoid crossing through primary spouse
-      // Primary spouse (spouseId) is already placed to the right by the main layout
-      let spouseX;
-      // Check if primary spouse is to the right of person
-      const primarySpousePos = positions.get(p.spouseId);
-      if (primarySpousePos && primarySpousePos.x > personPos.x) {
-        // Primary is on right, place secondary on left
-        spouseX = personPos.x - CARD_W - COUPLE_GAP;
-        // Ensure doesn't overlap with anything on the left
-        if (spouseX < 0) {
-          // Shift everything right to make room — but simpler: just use 0 and let it clip
-          // Actually, let's check what's to the left
-          const leftCard = Array.from(positions.values())
-            .filter(pos => Math.abs(pos.y - spouseY) < GEN_HEIGHT / 2 && pos.x < personPos.x)
-            .sort((a, b) => a.x - b.x);
-          if (leftCard.length > 0) {
-            const leftmost = leftCard[0];
-            spouseX = leftmost.x - CARD_W - CARD_GAP_X;
-          }
+      const spCol = findFreeCol(row, currentCol + 2);
+      placeAt(spouseId, row, spCol, seen);
+      spouseCols[spouseId] = spCol;
+      addSpouseConn(pid, spouseId);
+      currentCol = spCol;
+
+      // Place spouse's ancestors above
+      placeAncestorsAbove(spouseId, row, seen);
+    }
+
+    // For each marriage, place children on the row below
+    const childRow = row + 1;
+    const placedChildren = new Set();
+
+    // Track rightmost column used by children placed so far
+    let childrenRightmost = rowRightmost.has(childRow) ? rowRightmost.get(childRow) : myCol;
+
+    for (let mIdx = 0; mIdx < marriages.length; mIdx++) {
+      const fam = marriages[mIdx];
+      const spouseId = fam.spouseId;
+      if (!viewSet.has(spouseId)) continue;
+
+      const children = getCoupleChildren(pid, spouseId);
+      if (children.length === 0) continue;
+
+      // Start placing children after the rightmost col used so far,
+      // but try to start near the parents
+      const parentMid = Math.floor((myCol + (spouseCols[spouseId] !== undefined ? spouseCols[spouseId] : myCol)) / 2);
+      let startCol = Math.max(parentMid, childrenRightmost + 2);
+
+      const placedKids = [];
+
+      for (let i = 0; i < children.length; i++) {
+        const childId = children[i];
+        if (seen.has(childId) || gridPos.has(childId)) continue;
+        const childCol = findFreeCol(childRow, startCol);
+        placeSubtree(childId, childRow, childCol, seen);
+        placedKids.push(childId);
+        placedChildren.add(childId);
+        // After placing this child's subtree, find its rightmost column
+        // Next child starts after that
+        startCol = getSubtreeRightmost(childId) + 2;
+      }
+
+      // Draw parent-child connectors for this marriage
+      if (placedKids.length > 0) {
+        // Update childrenRightmost
+        for (const kid of placedKids) {
+          childrenRightmost = Math.max(childrenRightmost, getSubtreeRightmost(kid));
         }
-      } else {
-        // Primary is on left (or no primary), place secondary on right
-        spouseX = personPos.x + CARD_W + COUPLE_GAP;
-        const existingRight = getRightmostAt(spouseY, p.id);
-        if (existingRight >= spouseX) {
-          spouseX = existingRight + CARD_GAP_X;
+        addParentChildBus(pid, spouseId, placedKids, mIdx);
+      }
+    }
+
+    // Place any children not from a known marriage (edge case)
+    const allKids = getAllChildren(pid);
+    const unplacedKids = allKids.filter(cid => !placedChildren.has(cid) && !seen.has(cid) && !gridPos.has(cid));
+    if (unplacedKids.length > 0) {
+      let startCol = Math.max(childrenRightmost + 2, currentCol + 2);
+      const placedKids = [];
+      for (let i = 0; i < unplacedKids.length; i++) {
+        const childCol = findFreeCol(childRow, startCol);
+        placeSubtree(unplacedKids[i], childRow, childCol, seen);
+        placedKids.push(unplacedKids[i]);
+        startCol = getSubtreeRightmost(unplacedKids[i]) + 2;
+      }
+      if (placedKids.length > 0) {
+        addParentChildBus(pid, null, placedKids);
+      }
+    }
+  }
+
+  // Place descendants of an already-placed person (anchor mode).
+  // Same as placeSubtree but skips re-placing the person themselves.
+  function placeDescendantsOnly(pid, seen) {
+    const person = getP(pid);
+    if (!person) return;
+
+    const marriages = getMarriages(pid);
+    const myCol = gridPos.get(pid).col;
+
+    // Place each spouse in adjacent columns (if not already placed)
+    const spouseCols = {};
+    let currentCol = myCol;
+
+    for (const fam of marriages) {
+      const spouseId = fam.spouseId;
+      if (!viewSet.has(spouseId)) continue;
+
+      if (gridPos.has(spouseId)) {
+        spouseCols[spouseId] = gridPos.get(spouseId).col;
+        addSpouseConn(pid, spouseId);
+        continue;
+      }
+
+      const spCol = findFreeCol(gridPos.get(pid).row, currentCol + 2);
+      placeAt(spouseId, gridPos.get(pid).row, spCol, seen);
+      spouseCols[spouseId] = spCol;
+      addSpouseConn(pid, spouseId);
+      currentCol = spCol;
+
+      placeAncestorsAbove(spouseId, gridPos.get(pid).row, seen);
+    }
+
+    // For each marriage, place children on the row below
+    const childRow = gridPos.get(pid).row + 1;
+    const placedChildren = new Set();
+    let childrenRightmost = rowRightmost.has(childRow) ? rowRightmost.get(childRow) : myCol;
+
+    for (let mIdx = 0; mIdx < marriages.length; mIdx++) {
+      const fam = marriages[mIdx];
+      const spouseId = fam.spouseId;
+      if (!viewSet.has(spouseId)) continue;
+
+      const children = getCoupleChildren(pid, spouseId);
+      if (children.length === 0) continue;
+
+      const parentMid = Math.floor((myCol + (spouseCols[spouseId] !== undefined ? spouseCols[spouseId] : myCol)) / 2);
+      let startCol = Math.max(parentMid, childrenRightmost + 2);
+
+      const placedKids = [];
+
+      for (let i = 0; i < children.length; i++) {
+        const childId = children[i];
+        if (seen.has(childId) || gridPos.has(childId)) continue;
+        const childCol = findFreeCol(childRow, startCol);
+        placeSubtree(childId, childRow, childCol, seen);
+        placedKids.push(childId);
+        placedChildren.add(childId);
+        startCol = getSubtreeRightmost(childId) + 2;
+      }
+
+      if (placedKids.length > 0) {
+        for (const kid of placedKids) {
+          childrenRightmost = Math.max(childrenRightmost, getSubtreeRightmost(kid));
+        }
+        addParentChildBus(pid, spouseId, placedKids, mIdx);
+      }
+    }
+
+    // Place any children not from a known marriage
+    const allKids = getAllChildren(pid);
+    const unplacedKids = allKids.filter(cid => !placedChildren.has(cid) && !seen.has(cid) && !gridPos.has(cid));
+    if (unplacedKids.length > 0) {
+      let startCol = Math.max(childrenRightmost + 2, currentCol + 2);
+      const placedKids = [];
+      for (let i = 0; i < unplacedKids.length; i++) {
+        const childCol = findFreeCol(childRow, startCol);
+        placeSubtree(unplacedKids[i], childRow, childCol, seen);
+        placedKids.push(unplacedKids[i]);
+        startCol = getSubtreeRightmost(unplacedKids[i]) + 2;
+      }
+      if (placedKids.length > 0) {
+        addParentChildBus(pid, null, placedKids);
+      }
+    }
+  }
+
+  // ═══ MAIN LAYOUT ═══
+
+  if (focusPersonId && viewSet.has(focusPersonId)) {
+    // ── ANCHOR-BASED LAYOUT: FAMILY-ZONE ALGORITHM ──
+    // Places family UNITS (couple + children) as recursive zones with tight packing.
+    // Ported from grid-prototype.html assignSlots().
+    // Family units stay together as contiguous blocks; no extra column gaps between siblings.
+
+    // ── Step 1: BFS from anchor to assign generations ──
+    // (Same as before — keep the existing BFS.)
+    const genMap = new Map();  // id -> generation
+    const queue = [{ id: focusPersonId, gen: 0 }];
+    genMap.set(focusPersonId, 0);
+
+    while (queue.length > 0) {
+      const { id, gen } = queue.shift();
+      const person = getP(id);
+      if (!person) continue;
+
+      // Spouse: same generation
+      for (const fam of (person.families || [])) {
+        const sid = fam.spouseId;
+        if (viewSet.has(sid) && !genMap.has(sid)) {
+          genMap.set(sid, gen);
+          queue.push({ id: sid, gen: gen });
         }
       }
 
-      positions.set(spouseId, { x: spouseX, y: spouseY });
-      visited.add(spouseId);
+      // Parents: gen - 1
+      for (const pid of (person.parents || [])) {
+        if (viewSet.has(pid) && !genMap.has(pid)) {
+          genMap.set(pid, gen - 1);
+          queue.push({ id: pid, gen: gen - 1 });
+        }
+      }
 
-      // Spouse line
-      const lineStartX = spouseX < personPos.x ? spouseX + CARD_W : personPos.x + CARD_W;
-      const lineEndX = spouseX < personPos.x ? personPos.x : spouseX;
-      connections.push({
-        type: 'spouse',
-        x1: lineStartX, y1: spouseY + CARD_H / 2,
-        x2: lineEndX, y2: spouseY + CARD_H / 2
-      });
+      // Children: gen + 1
+      for (const cid of (person.children || [])) {
+        if (viewSet.has(cid) && !genMap.has(cid)) {
+          genMap.set(cid, gen + 1);
+          queue.push({ id: cid, gen: gen + 1 });
+        }
+      }
+    }
 
-      // Children below this couple
-      const familyChildren = (p.children || []).filter(cid => {
-        if (!viewSet.has(cid) || visited.has(cid)) return false;
-        const child = getP(cid);
-        if (!child || !child.parents) return false;
-        return child.parents.includes(p.id) && child.parents.includes(spouseId);
-      });
+    // ── Step 2: Build family registry from people data ──
+    // The prototype uses families[famId] = { husb, wife, children: [] }.
+    // We build the same structure from people[].families (each has spouseId, famId).
+    const families = {};           // famId -> { husb, wife, children: [], marr }
+    const personSpouseFams = {};   // personId -> [famId, ...]
+    const personParentFam = {};     // personId -> famId (first parent family found)
 
-      if (familyChildren.length > 0) {
-        const childY = spouseY + GEN_HEIGHT;
-        const childWidths = familyChildren.map(cid => computeWidth(cid));
-        const totalW = childWidths.reduce((a, b) => a + b, 0) + CARD_GAP_X * (familyChildren.length - 1);
+    function ensureFam(famId) {
+      if (!famId) return null;
+      if (!families[famId]) families[famId] = { husb: null, wife: null, children: [], marr: '' };
+      return families[famId];
+    }
 
-        const motherId = p.sex === 'F' ? p.id : spouseId;
-        const motherPos = positions.get(motherId);
-        const motherX = motherPos ? motherPos.x + CARD_W / 2 : (personPos.x + CARD_W / 2);
-        const parentY = spouseY + CARD_H;
-        const childDepth = Math.round((childY - 50) / GEN_HEIGHT);
+    for (const p of viewPeople) {
+      if (!genMap.has(p.id)) continue; // only people reachable from anchor
+      for (const fam of (p.families || [])) {
+        const famId = fam.famId || ('f_' + p.id + '_' + fam.spouseId);
+        const f = ensureFam(famId);
+        const spouse = getP(fam.spouseId);
+        // Assign husb/wife by sex
+        if (p.sex === 'M' && !f.husb) {
+          f.husb = p.id;
+          if (spouse && !f.wife) f.wife = fam.spouseId;
+        } else if (p.sex === 'F' && !f.wife) {
+          f.wife = p.id;
+          if (spouse && !f.husb) f.husb = fam.spouseId;
+        } else {
+          // Fallback: assign by slot if sex-based didn't work
+          if (!f.husb) f.husb = p.id;
+          else if (!f.wife && fam.spouseId) f.wife = fam.spouseId;
+        }
+        if (fam.marriageDate) f.marr = fam.marriageDate;
+        // Build personSpouseFams
+        if (!personSpouseFams[p.id]) personSpouseFams[p.id] = [];
+        if (!personSpouseFams[p.id].includes(famId)) personSpouseFams[p.id].push(famId);
+        if (spouse) {
+          if (!personSpouseFams[fam.spouseId]) personSpouseFams[fam.spouseId] = [];
+          if (!personSpouseFams[fam.spouseId].includes(famId)) personSpouseFams[fam.spouseId].push(famId);
+        }
+      }
+    }
 
-        // Separator gap between primary and secondary families' children
-        const SEPARATOR_GAP = CARD_GAP_X * 3; // 90px gap between the two groups
-
-        if (spouseX < personPos.x) {
-          // Secondary family on LEFT — children go LEFT of Rose's children
-          let leftmostAtChildY = Infinity;
-          for (const [id, pos] of positions) {
-            if (id === p.id || id === spouseId) continue;
-            if (Math.abs(pos.y - childY) < GEN_HEIGHT / 2) {
-              if (pos.x < leftmostAtChildY) leftmostAtChildY = pos.x;
-            }
+    // Add children to families and build personParentFam
+    for (const p of viewPeople) {
+      if (!genMap.has(p.id)) continue;
+      const parents = (p.parents || []).filter(pid => viewSet.has(pid) && genMap.has(pid));
+      if (parents.length === 0) continue;
+      // Find the family that contains both parents (or just the first parent)
+      let parentFamId = null;
+      for (const fid in families) {
+        const f = families[fid];
+        if (parents.length >= 2 && f.husb && f.wife &&
+            parents.includes(f.husb) && parents.includes(f.wife)) {
+          parentFamId = fid;
+          break;
+        }
+      }
+      if (!parentFamId && parents.length === 1) {
+        // Single parent: find a family where this person is husb or wife
+        for (const fid in families) {
+          const f = families[fid];
+          if (f.husb === parents[0] || f.wife === parents[0]) {
+            parentFamId = fid;
+            break;
           }
-          let childLeftX;
-          if (leftmostAtChildY !== Infinity) {
-            childLeftX = leftmostAtChildY - totalW - SEPARATOR_GAP;
-          } else {
-            childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
-          }
-          // DON'T clamp to 0 — let cards go negative X; normalize step at end shifts everything right
+        }
+      }
+      if (parentFamId) {
+        const f = ensureFam(parentFamId);
+        if (!f.children.includes(p.id)) f.children.push(p.id);
+        if (!personParentFam[p.id]) personParentFam[p.id] = parentFamId;
+      }
+    }
 
-          for (let i = 0; i < familyChildren.length; i++) {
-            const cid = familyChildren[i];
-            const cw = childWidths[i];
-            const child = getP(cid);
-            // Calculate the assignPositions leftX so the child CARD lands at childLeftX
-            // assignPositions does: myX = (leftX + myWidth/2) - coupleWidth/2
-            // We want: myX = childLeftX
-            // So: leftX = childLeftX + coupleWidth/2 - myWidth/2
-            const childHasSpouse = child?.spouseId && viewSet.has(child.spouseId);
-            const childCoupleW = childHasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
-            const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
-            assignPositions(cid, adjustedLeftX, childDepth, visited);
-            const placed = positions.get(cid);
-            const childX = (placed?.x || childLeftX) + CARD_W / 2;
-            connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
-            childLeftX += cw + CARD_GAP_X;
+    // Sort children in each family by birth year
+    for (const fid in families) {
+      families[fid].children.sort((a, b) => {
+        const ca = getP(a), cb = getP(b);
+        const aY = (ca?.birthDate || '').match(/\d{4}/);
+        const bY = (cb?.birthDate || '').match(/\d{4}/);
+        if (aY && bY) return parseInt(aY[0]) - parseInt(bY[0]);
+        return 0;
+      });
+    }
+
+    // ── Step 3: Build family units (same as prototype) ──
+    const familyUnits = {};
+    for (const fid in families) {
+      const fam = families[fid];
+      const parents = [fam.husb, fam.wife].filter(p => p && genMap.has(p) && viewSet.has(p));
+      const children = fam.children.filter(c => genMap.has(c) && viewSet.has(c));
+      if (parents.length === 0 && children.length === 0) continue;
+      familyUnits[fid] = { fid, parents, children };
+    }
+
+    // ── Step 4: Compute zone widths recursively (tight packing) ──
+    // Width = sum of child sub-zone widths. Min width = 2 (for parents).
+    const zoneWidths = {};
+    function computeZoneWidth(fid, visiting) {
+      if (zoneWidths[fid] !== undefined) return zoneWidths[fid];
+      if (!visiting) visiting = new Set();
+      if (visiting.has(fid)) return 2;
+      visiting.add(fid);
+      const unit = familyUnits[fid];
+      if (!unit) return 2;
+      let childrenWidth = 0;
+      for (let i = 0; i < unit.children.length; i++) {
+        const c = unit.children[i];
+        const sFams = (personSpouseFams[c] || []).filter(sf => {
+          const sfam = families[sf];
+          if (!sfam) return false;
+          const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
+          return spouse && genMap.has(spouse) && viewSet.has(spouse);
+        });
+        if (sFams.length > 0) {
+          for (let j = 0; j < sFams.length; j++) {
+            childrenWidth += computeZoneWidth(sFams[j], visiting);
           }
         } else {
-          // Secondary family on RIGHT — children go RIGHT of Rose's children
-          let rightmostAtChildY = 0;
-          for (const [id, pos] of positions) {
-            if (id === p.id || id === spouseId) continue;
-            if (Math.abs(pos.y - childY) < GEN_HEIGHT / 2) {
-              const right = pos.x + CARD_W;
-              if (right > rightmostAtChildY) rightmostAtChildY = right;
+          childrenWidth += 1;
+        }
+      }
+      zoneWidths[fid] = Math.max(2, childrenWidth);
+      return zoneWidths[fid];
+    }
+    for (const fid in families) computeZoneWidth(fid);
+
+    // ── Step 5: Find root family (anchor's grandfather family) ──
+    const anchorParentFam = personParentFam[focusPersonId];
+    let rootFam = anchorParentFam;
+    if (anchorParentFam && families[anchorParentFam]) {
+      const fam = families[anchorParentFam];
+      // Walk up through the father (husb) to find the grandfather family
+      if (fam.husb && genMap.has(fam.husb)) {
+        const grandFam = personParentFam[fam.husb];
+        if (grandFam && families[grandFam]) rootFam = grandFam;
+      }
+      // Also try wife if no husband path
+      if (rootFam === anchorParentFam && fam.wife && genMap.has(fam.wife)) {
+        const grandFam = personParentFam[fam.wife];
+        if (grandFam && families[grandFam]) rootFam = grandFam;
+      }
+    }
+
+    // ── Step 6: Place zones recursively from root family ──
+    const colMap = {};        // personId -> col
+    const placedZones = new Set();
+
+    function placeZone(fid, startCol) {
+      if (placedZones.has(fid)) return startCol + (zoneWidths[fid] || 2);
+      const unit = familyUnits[fid];
+      if (!unit) return startCol;
+      const width = zoneWidths[fid] || 2;
+      placedZones.add(fid);
+
+      // Parents at center of zone
+      if (unit.parents.length === 2) {
+        const center = startCol + (width / 2);
+        colMap[unit.parents[0]] = Math.floor(center) - 1;
+        colMap[unit.parents[1]] = Math.floor(center);
+        if (colMap[unit.parents[1]] <= colMap[unit.parents[0]]) {
+          colMap[unit.parents[1]] = colMap[unit.parents[0]] + 1;
+        }
+      } else if (unit.parents.length === 1) {
+        colMap[unit.parents[0]] = startCol + Math.floor(width / 2);
+      }
+
+      // Children left to right, tight packing — 1 col gap between siblings
+      // Skip children already placed (they're in the tree through their own
+      // descendants or through another family)
+      let col = startCol;
+      for (let i = 0; i < unit.children.length; i++) {
+        const c = unit.children[i];
+        if (colMap[c] !== undefined) {
+          // Already placed — skip but advance past its zone width
+          const sFams = (personSpouseFams[c] || []).filter(sf => {
+            const sfam = families[sf];
+            if (!sfam) return false;
+            const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
+            return spouse && genMap.has(spouse) && viewSet.has(spouse);
+          });
+          let cw = 1;
+          if (sFams.length > 0) {
+            cw = sFams.reduce((sum, sf) => sum + (zoneWidths[sf] || 2), 0);
+          }
+          col += cw;
+          continue;
+        }
+        const sFams = (personSpouseFams[c] || []).filter(sf => {
+          const sfam = families[sf];
+          if (!sfam) return false;
+          const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
+          return spouse && genMap.has(spouse) && viewSet.has(spouse);
+        });
+        if (sFams.length > 0) {
+          for (let j = 0; j < sFams.length; j++) {
+            const sf = sFams[j];
+            if (placedZones.has(sf)) {
+              const cw = zoneWidths[sf] || 2;
+              col += cw;
+              continue;
+            }
+            const cw = zoneWidths[sf] || 2;
+            // Child + spouse placed at current col
+            colMap[c] = col;
+            const sfam = families[sf];
+            const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
+            if (spouse && colMap[spouse] === undefined) colMap[spouse] = col + 1;
+            // Place sub-zone starting at child's position
+            placeZone(sf, col);
+            col += cw;
+          }
+        } else {
+          colMap[c] = col;
+          col += 1;
+        }
+        // No extra gap between siblings — just Gap X handles spacing
+      }
+      return startCol + width;
+    }
+
+    // Place root family zone
+    if (rootFam && familyUnits[rootFam]) {
+      placeZone(rootFam, 100);
+    } else if (!rootFam) {
+      // No parent family — just place the anchor
+      colMap[focusPersonId] = 100;
+    }
+
+    // Place anchor's own family (spouse + children)
+    const anchorSFams = (personSpouseFams[focusPersonId] || []).filter(
+      fid => families[fid] && !placedZones.has(fid)
+    );
+    for (const fid of anchorSFams) {
+      if (colMap[focusPersonId] !== undefined) {
+        const fam = families[fid];
+        const spouse = fam.husb === focusPersonId ? fam.wife : fam.husb;
+        if (spouse && colMap[spouse] === undefined) {
+          colMap[spouse] = colMap[focusPersonId] + 1;
+        }
+        placeZone(fid, colMap[focusPersonId]);
+      }
+    }
+
+    // Place ancestors above root — only place parents, don't re-place children
+    // that are already in the tree through their own descendants.
+    let waves = 0;
+    while (waves < 30) {
+      waves++;
+      const current = [...placedZones];
+      let newPlacements = false;
+      for (const fid of current) {
+        const fam = families[fid];
+        for (const pid of [fam.husb, fam.wife].filter(p => p && genMap.has(p))) {
+          const pfid = personParentFam[pid];
+          if (pfid && families[pfid] && !placedZones.has(pfid)) {
+            const pw = zoneWidths[pfid] || 2;
+            // Place parent family centered above this person
+            placeZone(pfid, Math.round((colMap[pid] || 100) - pw / 2));
+            newPlacements = true;
+          }
+        }
+      }
+      if (!newPlacements) break;
+    }
+
+    // Place any remaining unplaced people (disconnected from anchor's family graph)
+    let nextCol = 1000;
+    for (const p of viewPeople) {
+      if (!genMap.has(p.id)) continue;
+      if (colMap[p.id] === undefined) colMap[p.id] = nextCol++;
+    }
+
+    // ── Step 7: Overlap resolution ──
+    // Per-generation: sort by col, shift right if cards are less than 1 col apart.
+    const byGen = {};
+    for (const [id, gen] of genMap) {
+      if (colMap[id] === undefined) continue;
+      (byGen[gen] ||= []).push(id);
+    }
+    const genList = Object.keys(byGen).map(Number).sort((a, b) => a - b);
+
+    let shiftPasses = 0;
+    while (shiftPasses < 10) {
+      shiftPasses++;
+      let shifts = 0;
+      for (const gen of genList) {
+        const people = byGen[gen] || [];
+        people.sort((a, b) => colMap[a] - colMap[b]);
+        for (let i = 0; i < people.length - 1; i++) {
+          // Cards are 1 col wide. Overlap if positions are less than 1 col apart.
+          if (colMap[people[i]] + 1 > colMap[people[i + 1]]) {
+            colMap[people[i + 1]] = colMap[people[i]] + 1;
+            shifts++;
+          }
+        }
+      }
+      if (shifts === 0) break;
+    }
+
+    // ── Step 8: Assign rows from genMap, normalize, and write to gridPos/positions ──
+    // Find min gen for row normalization
+    let minGen = Infinity;
+    let minCol = Infinity;
+    for (const [id, gen] of genMap) {
+      if (colMap[id] === undefined) continue;
+      if (gen < minGen) minGen = gen;
+      if (colMap[id] < minCol) minCol = colMap[id];
+    }
+    if (minGen === Infinity) { minGen = 0; minCol = 0; }
+
+    // Place everyone into gridPos/positions using placeAt (for occupied tracking)
+    for (const [id, gen] of genMap) {
+      if (colMap[id] === undefined) continue;
+      const row = gen - minGen;
+      const col = colMap[id] - minCol;
+      placeAt(id, row, col, new Set());
+    }
+
+    // ── Step 9: Generate connections ──
+    // Spouse lines: for every couple in a placed family
+    for (const fid in families) {
+      const fam = families[fid];
+      if (fam.husb && fam.wife && gridPos.has(fam.husb) && gridPos.has(fam.wife)) {
+        addSpouseConn(fam.husb, fam.wife);
+      }
+    }
+
+    // Parent-child lines: group children by parent couple, draw bus
+    const parentChildMap = new Map();  // parentKey -> { parents, children }
+    for (const p of viewPeople) {
+      if (!genMap.has(p.id) || !gridPos.has(p.id)) continue;
+      const parents = (p.parents || []).filter(pid => viewSet.has(pid) && gridPos.has(pid));
+      if (parents.length === 0) continue;
+      const parentKey = parents.sort().join(',');
+      if (!parentChildMap.has(parentKey)) {
+        parentChildMap.set(parentKey, { parents, children: [] });
+      }
+      parentChildMap.get(parentKey).children.push(p.id);
+    }
+
+    for (const [key, group] of parentChildMap) {
+      const { parents, children } = group;
+      const parentId = parents[0];
+      const spouseId = parents.length > 1 ? parents[1] : null;
+      // Only draw if children are exactly one generation below
+      const parentGen = genMap.get(parentId);
+      const childGens = children.map(cid => genMap.get(cid));
+      const minChildGen = Math.min(...childGens);
+      if (minChildGen === parentGen + 1) {
+        // Determine marriage index for bus Y offset
+        let marriageIndex = 0;
+        if (spouseId) {
+          const parent = getP(parentId);
+          if (parent && parent.families) {
+            for (let mi = 0; mi < parent.families.length; mi++) {
+              if (parent.families[mi].spouseId === spouseId) {
+                marriageIndex = mi;
+                break;
+              }
             }
           }
-          let childLeftX = Math.round(spouseX + CARD_W / 2 - totalW / 2);
-          if (rightmostAtChildY >= childLeftX) {
-            childLeftX = rightmostAtChildY + SEPARATOR_GAP;
-          }
+        }
+        addParentChildBus(parentId, spouseId, children, marriageIndex);
+      }
+    }
 
-          for (let i = 0; i < familyChildren.length; i++) {
-            const cid = familyChildren[i];
-            const cw = childWidths[i];
-            const child = getP(cid);
-            const childHasSpouse = child?.spouseId && viewSet.has(child.spouseId);
-            const childCoupleW = childHasSpouse ? (CARD_W + COUPLE_GAP + CARD_W) : CARD_W;
-            const adjustedLeftX = childLeftX + childCoupleW / 2 - cw / 2;
-            assignPositions(cid, adjustedLeftX, childDepth, visited);
-            const placed = positions.get(cid);
-            const childX = (placed?.x || childLeftX) + CARD_W / 2;
-            connections.push({ type: 'parent-child', midX: motherX, parentY, childX, childY });
-            childLeftX += cw + CARD_GAP_X;
+    // Place any unconnected people (not reachable from anchor BFS)
+    const unplaced = viewPeople.filter(p => !genMap.has(p.id) && !gridPos.has(p.id));
+    if (unplaced.length > 0) {
+      let maxUsedRow = 0;
+      for (const [id, gp] of gridPos) {
+        if (gp.row > maxUsedRow) maxUsedRow = gp.row;
+      }
+      const orphanRow = maxUsedRow + 2;
+      let col = 0;
+      const orphanRoots = unplaced.filter(p =>
+        !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid))
+      );
+      for (const root of orphanRoots) {
+        if (gridPos.has(root.id)) continue;
+        const startCol = findFreeCol(orphanRow, col);
+        placeSubtree(root.id, orphanRow, startCol, new Set());
+        col = getSubtreeRightmost(root.id) + 2;
+      }
+      // Anyone still unplaced
+      const stillUnplaced = viewPeople.filter(p => !genMap.has(p.id) && !gridPos.has(p.id));
+      let orphanCol = 0;
+      for (const p of stillUnplaced) {
+        const c = findFreeCol(orphanRow, orphanCol);
+        placeAt(p.id, orphanRow, c, new Set());
+        orphanCol = c + 2;
+      }
+    }
+
+    // ── Step 10: Normalize rows and columns to start at 0 ──
+    let normMinRow = Infinity, normMinCol = Infinity;
+    for (const [id, gp] of gridPos) {
+      if (gp.row < normMinRow) normMinRow = gp.row;
+      if (gp.col < normMinCol) normMinCol = gp.col;
+    }
+    if (normMinRow !== Infinity) {
+      const rowDelta = -normMinRow;
+      const colDelta = -normMinCol;
+      const yShift = rowDelta * GEN_HEIGHT;
+      const xShift = colDelta * COL_WIDTH;
+      for (const [id, gp] of gridPos) {
+        gp.row += rowDelta;
+        gp.col += colDelta;
+        const pos = positions.get(id);
+        if (pos) {
+          pos.row = gp.row;
+          pos.col = gp.col;
+          pos.y = TOP_MARGIN + gp.row * GEN_HEIGHT;
+          pos.x = LEFT_MARGIN + gp.col * COL_WIDTH;
+        }
+      }
+      // Shift all connection coordinates to match the new positions
+      for (const conn of connections) {
+        if (conn.y1 !== undefined) conn.y1 += yShift;
+        if (conn.y2 !== undefined) conn.y2 += yShift;
+        if (conn.parentY !== undefined) conn.parentY += yShift;
+        if (conn.childY !== undefined) conn.childY += yShift;
+        if (conn.busY !== undefined) conn.busY += yShift;
+        if (conn.stepY !== undefined) conn.stepY += yShift;
+        if (conn.x1 !== undefined) conn.x1 += xShift;
+        if (conn.x2 !== undefined) conn.x2 += xShift;
+        if (conn.midX !== undefined) conn.midX += xShift;
+        if (conn.parentMidX !== undefined) conn.parentMidX += xShift;
+        if (conn.childX !== undefined) conn.childX += xShift;
+        if (conn.children) {
+          for (const c of conn.children) {
+            if (c.childX !== undefined) c.childX += xShift;
           }
         }
       }
     }
-  }
 
-  // Layout any unplaced people (disconnected)
-  for (const p of viewPeople) {
-    if (!visited.has(p.id)) {
-      positions.set(p.id, { x: currentX, y: 50 });
-      visited.add(p.id);
-      currentX += CARD_W + CARD_GAP_X;
+  } else {    // ── FALLBACK: AUTO-ROOT LAYOUT (no focus person) ──
+    // Find roots and sort by descendant count (most descendants = main trunk)
+    const roots = findRoots();
+    roots.sort((a, b) => countDescendants(b) - countDescendants(a));
+
+    // Process each root as a potentially disconnected component
+    const processedRoots = new Set();
+
+    for (const rootId of roots) {
+      if (processedRoots.has(rootId) || gridPos.has(rootId)) continue;
+
+      // Fix: If this root's children are already placed, place root above them
+      const rootPerson = getP(rootId);
+      if (rootPerson) {
+        const placedKids = (rootPerson.children || []).filter(cid => viewSet.has(cid) && gridPos.has(cid));
+        if (placedKids.length > 0) {
+          const childRows = placedKids.map(cid => gridPos.get(cid).row);
+          const minChildRow = Math.min(...childRows);
+          const parentRow = minChildRow - 1;
+          if (parentRow >= 0) {
+            const childCols = placedKids.map(cid => gridPos.get(cid).col);
+            const midCol = Math.floor(childCols.reduce((a, b) => a + b, 0) / placedKids.length);
+            const col = findFreeCol(parentRow, midCol);
+            placeSubtree(rootId, parentRow, col, new Set());
+
+            const reachable = new Set();
+            markReachable(rootId, reachable, new Set());
+            for (const rid of reachable) processedRoots.add(rid);
+            continue;
+          }
+        }
+      }
+
+      // Normal placement: start from row 0
+      const startRow = 0;
+      const startCol = findFreeCol(startRow, 0);
+
+      // Place this subtree
+      placeSubtree(rootId, startRow, startCol, new Set());
+
+      // Mark all reachable people as processed
+      const reachable = new Set();
+      markReachable(rootId, reachable, new Set());
+      for (const rid of reachable) processedRoots.add(rid);
     }
-  }
 
-  // Normalize: shift all y values so minimum y is 50 (no negative offsets)
-  let minY = Infinity;
-  for (const [id, pos] of positions) {
-    if (pos.y < minY) minY = pos.y;
-  }
-  let yShift = 0;
-  if (minY < 50) {
-    yShift = 50 - minY;
-    for (const [id, pos] of positions) {
-      pos.y += yShift;
+    // Place any remaining unplaced people (completely disconnected)
+    const unplaced = viewPeople.filter(p => !gridPos.has(p.id));
+    if (unplaced.length > 0) {
+      let maxUsedRow = 0;
+      for (const [id, gp] of gridPos) {
+        if (gp.row > maxUsedRow) maxUsedRow = gp.row;
+      }
+      const orphanRow = maxUsedRow + 2;
+      let col = 0;
+
+      const orphanRoots = unplaced.filter(p =>
+        !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid))
+      );
+
+      for (const root of orphanRoots) {
+        if (gridPos.has(root.id)) continue;
+        const startCol = findFreeCol(orphanRow, col);
+        placeSubtree(root.id, orphanRow, startCol, new Set());
+        col += 20;
+      }
+
+      const stillUnplaced = viewPeople.filter(p => !gridPos.has(p.id));
+      let orphanCol = 0;
+      for (const p of stillUnplaced) {
+        const c = findFreeCol(orphanRow, orphanCol);
+        placeAt(p.id, orphanRow, c, new Set());
+        orphanCol = c + 2;
+      }
     }
   }
 
   // Calculate bounds
-  let maxX = 0, maxY = 0, minX = Infinity;
+  let maxX = 0, maxY = 0;
   for (const [id, pos] of positions) {
     maxX = Math.max(maxX, pos.x + CARD_W);
     maxY = Math.max(maxY, pos.y + CARD_H);
-    minX = Math.min(minX, pos.x);
-  }
-
-  // Shift everything right so minX is at least 50
-  let xShift = 0;
-  if (minX < 50) {
-    xShift = 50 - minX;
-    for (const [id, pos] of positions) {
-      pos.x += xShift;
-    }
-    maxX += xShift;
-  }
-
-  // Apply the same shifts to connection coordinates
-  if (yShift !== 0 || xShift !== 0) {
-    for (const conn of connections) {
-      if (conn.type === 'spouse') {
-        conn.x1 += xShift; conn.x2 += xShift;
-        conn.y1 += yShift; conn.y2 += yShift;
-      } else if (conn.type === 'parent-child') {
-        conn.midX += xShift; conn.parentY += yShift;
-        conn.childX += xShift; conn.childY += yShift;
-      }
-    }
   }
 
   return {
     positions,
-    width: Math.max(maxX + 100, 200),
-    height: Math.max(maxY + 100, 200),
+    width: Math.max(maxX + LEFT_MARGIN, 200),
+    height: Math.max(maxY + TOP_MARGIN, 200),
     connections
   };
 }
@@ -1831,26 +2703,117 @@ function renderFreeBuild() {
   wrap.style.width = width + 'px';
   wrap.style.height = height + 'px';
 
-  // Draw connections
+  // Calculate viewport bounds for virtualized rendering
+  const scrollArea = document.getElementById('treeScroll');
+  const viewLeft = scrollArea ? scrollArea.scrollLeft / zoom : -1000;
+  const viewTop = scrollArea ? scrollArea.scrollTop / zoom : -1000;
+  const viewRight = scrollArea ? viewLeft + (scrollArea.clientWidth / zoom) + 200 : Infinity;
+  const viewBottom = scrollArea ? viewTop + (scrollArea.clientHeight / zoom) + 200 : Infinity;
+
+  // Draw connections — only those touching the viewport
   let svgContent = '';
   for (const conn of connections) {
+    // Quick viewport cull for connections
+    let connMinX, connMaxX, connMinY, connMaxY;
+    if (conn.type === 'parent-child-bus') {
+      connMinX = Math.min(conn.parentMidX, conn.children[0].childX);
+      connMaxX = Math.max(conn.parentMidX, conn.children[conn.children.length - 1].childX);
+      connMinY = conn.parentY;
+      connMaxY = conn.children[0].childY;
+    } else {
+      connMinX = Math.min(conn.x1 || conn.midX || 0, conn.x2 || conn.childX || 0);
+      connMaxX = Math.max((conn.x1 || conn.midX || 0) + CARD_W, (conn.x2 || conn.childX || 0) + CARD_W);
+      connMinY = Math.min(conn.y1 || conn.parentY || 0, conn.y2 || conn.childY || 0);
+      connMaxY = Math.max(conn.y1 || conn.parentY || 0, conn.y2 || conn.childY || 0);
+    }
+    if (connMaxX < viewLeft || connMinX > viewRight || connMaxY < viewTop || connMinY > viewBottom) continue;
     if (conn.type === 'spouse') {
-      svgContent += `<line x1="${conn.x1}" y1="${conn.y1}" x2="${conn.x2}" y2="${conn.y2}"
-                    stroke="var(--line-stroke)" stroke-width="2" />`;
+      if (conn.stepped) {
+        // Non-adjacent spouses: stepped line going below intervening cards
+        // Down from left card center, horizontal below row, up to right card center
+        const midX = (conn.x1 + conn.x2) / 2;
+        const path = `M ${conn.x1} ${conn.y1} L ${conn.x1} ${conn.stepY} L ${conn.x2} ${conn.stepY} L ${conn.x2} ${conn.y2}`;
+        svgContent += `<path d=\"${path}\" fill=\"none\" stroke=\"var(--line-stroke)\" stroke-width=\"2\" stroke-linejoin=\"round\" />`;
+      } else if (Math.abs(conn.y1 - conn.y2) < 2) {
+        // Same Y — simple horizontal line
+        svgContent += `<line x1="${conn.x1}" y1="${conn.y1}" x2="${conn.x2}" y2="${conn.y2}"
+                      stroke="var(--line-stroke)" stroke-width="2" />`;
+      } else {
+        // Different Y — step connector: horizontal from left card, vertical, horizontal to right card
+        // Use the midpoint X between the two cards for the vertical segment
+        const midX = (conn.x1 + conn.x2) / 2;
+        svgContent += `<path d="M ${conn.x1} ${conn.y1} L ${midX} ${conn.y1} L ${midX} ${conn.y2} L ${conn.x2} ${conn.y2}"
+                      fill="none" stroke="var(--line-stroke)" stroke-width="2" stroke-linejoin="round" />`;
+      }
     } else if (conn.type === 'parent-child') {
-      // L-shaped: vertical down from midpoint, horizontal to child, vertical down to child top
-      const midY = (conn.parentY + conn.childY) / 2;
-      svgContent += `<path d="M ${conn.midX} ${conn.parentY} L ${conn.midX} ${midY} L ${conn.childX} ${midY} L ${conn.childX} ${conn.childY}"
-                    fill="none" stroke="var(--line-stroke)" stroke-width="1.5" />`;
+      // Single child — L-shaped or straight line
+      const baseMidY = (conn.parentY + conn.childY) / 2;
+      if (Math.abs(conn.parentY - conn.childY) < 2) {
+        // Horizontal line (same generation)
+        svgContent += `<line x1="${conn.midX}" y1="${conn.parentY}" x2="${conn.childX}" y2="${conn.childY}"
+                      stroke="var(--line-stroke)" stroke-width="1.5" />`;
+      } else if (Math.abs(conn.midX - conn.childX) < 2) {
+        // Straight vertical line
+        svgContent += `<line x1="${conn.midX}" y1="${conn.parentY}" x2="${conn.childX}" y2="${conn.childY}"
+                      stroke="var(--line-stroke)" stroke-width="1.5" />`;
+      } else {
+        // L-shaped with rounded corners
+        const r = 6;
+        const dy = baseMidY - conn.parentY;
+        const dx = conn.childX - conn.midX;
+        const rV = Math.min(r, Math.abs(dy) / 2);
+        const rH = Math.min(r, Math.abs(dx) / 2);
+        const rEff = Math.min(rV, rH);
+        let path = `M ${conn.midX} ${conn.parentY}`;
+        if (dx > 0) {
+          path += ` L ${conn.midX} ${baseMidY - rEff} Q ${conn.midX} ${baseMidY} ${conn.midX + rEff} ${baseMidY}`;
+          path += ` L ${conn.childX - rEff} ${baseMidY} Q ${conn.childX} ${baseMidY} ${conn.childX} ${baseMidY + rEff}`;
+          path += ` L ${conn.childX} ${conn.childY}`;
+        } else {
+          path += ` L ${conn.midX} ${baseMidY - rEff} Q ${conn.midX} ${baseMidY} ${conn.midX - rEff} ${baseMidY}`;
+          path += ` L ${conn.childX + rEff} ${baseMidY} Q ${conn.childX} ${baseMidY} ${conn.childX} ${baseMidY + rEff}`;
+          path += ` L ${conn.childX} ${conn.childY}`;
+        }
+        svgContent += `<path d="${path}" fill="none" stroke="var(--line-stroke)" stroke-width="1.5" stroke-linejoin="round" />`;
+      }
+    } else if (conn.type === 'parent-child-bus') {
+      // Bus connector: vertical drop from parent, horizontal bus, verticals to each child
+      const busY = conn.busY;
+      const r = 6; // corner radius
+
+      // 1. Vertical drop from parent down to busY
+      svgContent += `<line x1="${conn.parentMidX}" y1="${conn.parentY}" x2="${conn.parentMidX}" y2="${busY}"
+                    stroke="var(--line-stroke)" stroke-width="1.5" />`;
+
+      // 2. Horizontal bus line from leftmost child to rightmost child
+      const leftX = conn.children[0].childX;
+      const rightX = conn.children[conn.children.length - 1].childX;
+      svgContent += `<line x1="${leftX}" y1="${busY}" x2="${rightX}" y2="${busY}"
+                    stroke="var(--line-stroke)" stroke-width="1.5" />`;
+
+      // 3. Vertical from bus up to each child's top edge
+      for (const child of conn.children) {
+        if (Math.abs(child.childX - conn.parentMidX) < 2) {
+          // Child is directly below parent — skip, the drop line already covers it
+          continue;
+        }
+        svgContent += `<line x1="${child.childX}" y1="${busY}" x2="${child.childX}" y2="${child.childY}"
+                      stroke="var(--line-stroke)" stroke-width="1.5" />`;
+      }
     }
   }
   svg.innerHTML = svgContent;
 
   // Draw cards
+  // Draw cards — only render those visible in the viewport (virtualized)
   const viewPeople = getVisiblePeople();
+  let renderedCount = 0;
   for (const person of viewPeople) {
     const pos = positions.get(person.id);
     if (!pos) continue;
+    // Skip cards outside the viewport (plus margin)
+    if (pos.x + CARD_W < viewLeft || pos.x > viewRight || pos.y + CARD_H < viewTop || pos.y > viewBottom) continue;
+    renderedCount++;
 
     const el = document.createElement('div');
     el.className = 'fb-card ' + person.status + (person.id === selectedPersonId ? ' selected' : '');
@@ -1887,6 +2850,9 @@ function renderFreeBuild() {
       });
       h += '</div>';
     }
+    if (person.status === 'you' && (person.name === 'Me' || person.name === 'You' || person.isYou) && !person.birthDate) {
+      h += '<div class="tap-hint">tap to start</div>';
+    }
 
     el.innerHTML = h;
     el.onclick = () => { focusOnPerson(person.id); openDetail(person); };
@@ -1897,18 +2863,28 @@ function renderFreeBuild() {
   wrap.style.setProperty('--zoom', zoom);
   wrap.style.transform = 'scale(' + zoom + ')';
 
-  // Auto-scroll to center on focus person
-  setTimeout(() => {
-    const scrollArea = document.getElementById('treeScroll');
-    if (!scrollArea) return;
-    let targetId = focusPersonId || (viewPeople.length > 0 ? viewPeople[0].id : null);
-    if (!targetId) return;
-    const targetPos = positions.get(targetId);
-    if (!targetPos) return;
-    const cx = (targetPos.x + CARD_W / 2) * zoom;
-    const cy = (targetPos.y + CARD_H / 2) * zoom;
-    scrollArea.scrollTo({ left: Math.max(0, cx - scrollArea.clientWidth / 2), top: Math.max(0, cy - scrollArea.clientHeight / 2), behavior: 'auto' });
-  }, 50);
+  // Update header stats
+  const statPeople = document.getElementById('statPeople');
+  const statConfirmed = document.getElementById('statConfirmed');
+  const statWalls = document.getElementById('statWalls');
+  if (statPeople) statPeople.textContent = people.filter(p => !isPlaceholder(p)).length;
+  if (statConfirmed) statConfirmed.textContent = people.filter(p => p.status === 'confirmed' || p.status === 'you').length;
+  if (statWalls) statWalls.textContent = people.filter(p => p.status === 'brickwall').length;
+
+  // Auto-scroll to center on focus person (skip during scroll-triggered re-renders)
+  if (!skipAutoScroll) {
+    setTimeout(() => {
+      const scrollArea = document.getElementById('treeScroll');
+      if (!scrollArea) return;
+      let targetId = focusPersonId || (viewPeople.length > 0 ? viewPeople[0].id : null);
+      if (!targetId) return;
+      const targetPos = positions.get(targetId);
+      if (!targetPos) return;
+      const cx = (targetPos.x + CARD_W / 2) * zoom;
+      const cy = (targetPos.y + CARD_H / 2) * zoom;
+      scrollArea.scrollTo({ left: Math.max(0, cx - scrollArea.clientWidth / 2), top: Math.max(0, cy - scrollArea.clientHeight / 2), behavior: 'auto' });
+    }, 50);
+  }
 }
 
 function escapeHtml(s) {
@@ -2016,6 +2992,21 @@ document.addEventListener('touchmove', function(e) {
   }, { passive: false });
 })();
 
+// Virtualized rendering: re-render on scroll to swap visible cards
+(function setupScrollRender() {
+  const scrollEl = document.getElementById('treeScroll');
+  if (!scrollEl) return;
+  let scrollTimer = null;
+  scrollEl.addEventListener('scroll', function() {
+    if (scrollTimer) clearTimeout(scrollTimer);
+    scrollTimer = setTimeout(function() {
+      skipAutoScroll = true;
+      renderFreeBuild();
+      skipAutoScroll = false;
+    }, 80);
+  }, { passive: true });
+})();
+
 // ═══════════════════════════════════════════════════════════════
 // DETAIL PANEL
 // ═══════════════════════════════════════════════════════════════
@@ -2031,15 +3022,24 @@ function openDetail(person) {
 
   detailTitle.textContent = displayName;
   detailBody.innerHTML = `
-    <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${escapeHtml(person.fullName || person.name)}"></div>
-    <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${escapeHtml(person.name)}"></div>
-    <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${escapeHtml(person.birthDate)}"></div>
-    <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${escapeHtml(person.deathDate || '')}"></div>
-    <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${escapeHtml(person.marriageDate || '')}"></div>
-    <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${escapeHtml(person.maidenName)}"></div>
-    <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${escapeHtml(person.spouseName)}"></div>
-    <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${escapeHtml(person.occupation)}"></div>
-    <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${escapeHtml(person.birthplace)}"></div>
+    <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${escapeHtml(person.fullName && person.fullName !== person.name ? person.fullName : '')}" placeholder="Enter full name"></div>
+    <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${escapeHtml(person.name && person.name !== 'Me' && person.name !== 'Name' ? person.name : '')}" placeholder="Enter display name"></div>
+    <div class="detail-field"><label>Sex</label>
+      <select id="d_sex">
+        <option value=""${!person.sex ? ' selected' : ''}>—</option>
+        <option value="M"${person.sex === 'M' ? ' selected' : ''}>Male</option>
+        <option value="F"${person.sex === 'F' ? ' selected' : ''}>Female</option>
+      </select>
+    </div>
+    <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${escapeHtml(person.birthDate)}" placeholder="e.g. 1950 or 1950-03-15"></div>
+    <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${escapeHtml(person.deathDate || '')}" placeholder="e.g. 2020 or 2020-06-10"></div>
+    <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${escapeHtml(person.ageAtDeath || '')}" placeholder="e.g. 75"></div>
+    <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${escapeHtml(person.marriageDate || '')}" placeholder="e.g. 1975 or 1975-06-01"></div>
+    <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${escapeHtml(person.maidenName)}" placeholder="Enter maiden name"></div>
+    <div class="detail-field"><label>Married Name</label><input type="text" id="d_marriedName" value="${escapeHtml(person.marriedName || '')}" placeholder="Enter married name"></div>
+    <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${escapeHtml(person.spouseName)}" placeholder="Enter spouse name"></div>
+    <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${escapeHtml(person.occupation)}" placeholder="Enter occupation"></div>
+    <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${escapeHtml(person.birthplace)}" placeholder="Enter birthplace"></div>
     <div class="detail-field"><label>Status</label>
       <select id="d_status">
         <option value="confirmed" ${person.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
@@ -2049,7 +3049,7 @@ function openDetail(person) {
         <option value="you" ${person.status === 'you' ? 'selected' : ''}>You</option>
       </select>
     </div>
-    <div class="detail-field"><label>Notes</label><textarea id="d_notes">${escapeHtml(person.notes)}</textarea></div>
+    <div class="detail-field"><label>Notes</label><textarea id="d_notes" placeholder="Add notes about this person">${escapeHtml(person.notes)}</textarea></div>
 
     <div class="detail-field" style="margin-top:16px;">
       <label>Focus / Navigate</label>
@@ -2066,16 +3066,18 @@ function openDetail(person) {
 
     <div class="detail-field" style="margin-top:8px;">
       <label>Documents (${person.docs ? person.docs.length : 0})</label>
-      <div style="display:flex;gap:4px;flex-wrap:wrap;margin-top:3px;">
-        ${(person.docs || []).map(d => {
+      <div id="docThumbs" style="display:flex;gap:6px;flex-wrap:wrap;margin-top:3px;">
+        ${(person.docs || []).map((d, i) => {
           const t = (d.type || 'bc').toUpperCase();
           const color = d.type === 'bc' ? '#dcfce7' : d.type === 'mc' ? '#dbeafe' : d.type === 'dc' ? '#fee2e2' : '#e5e7eb';
           const text = d.type === 'bc' ? '#166534' : d.type === 'mc' ? '#1e40af' : d.type === 'dc' ? '#991b1b' : '#374151';
-          return `<span style="font-size:11px;font-family:'Cinzel Decorative',serif;padding:2px 6px;border-radius:4px;background:${color};color:${text};font-weight:600;">${t}</span>`;
+          return `<div class="doc-thumb" data-doc-id="${d.docId || ''}" data-person-id="${person.id}" data-doc-index="${i}" style="position:relative;width:60px;height:60px;border:1px solid #8a7a5a;border-radius:4px;overflow:hidden;cursor:pointer;background:#f0e6d2;">
+            <div class="doc-thumb-label" style="position:absolute;bottom:0;left:0;right:0;font-size:8px;font-family:'Cinzel Decorative',serif;text-align:center;padding:1px;background:${color};color:${text};font-weight:600;">${t}</div>
+          </div>`;
         }).join('')}
       </div>
-      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson('${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
-      <button class="fb-add-btn" onclick="closeDetail(); pendingDirectAttachId=${person.id}; document.getElementById('certFileInput').click();" style="background:var(--bg-btn);color:var(--text-logo);margin-top:4px;">📎 Attach Document</button>
+      <button class="fb-add-btn" onclick="closeDetail(); openCertForPerson(${person.id}, '${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:6px;">📷 Scan Certificate</button>
+      <button class="fb-add-btn" onclick="openDirectAttach(${person.id}, '${escapeHtml(person.name).replace(/'/g, "\\'")}');" style="background:var(--bg-btn);color:var(--text-logo);margin-top:4px;">📎 Attach Document</button>
 
     <div class="detail-actions">
       <button class="cancel-btn" onclick="closeDetail()">Cancel</button>
@@ -2086,8 +3088,54 @@ function openDetail(person) {
     </div>
   `;
   detailPanel.classList.add('active');
+
   renderFreeBuild(); // re-render to show selection highlight
+  loadDocThumbnails(person);
 }
+
+// ── Load doc thumbnails into detail panel ──
+async function loadDocThumbnails(person) {
+  const thumbs = document.querySelectorAll('#docThumbs .doc-thumb');
+  for (let i = 0; i < thumbs.length; i++) {
+    const thumb = thumbs[i];
+    const docId = thumb.dataset.docId;
+    if (!docId) continue;
+    try {
+      const doc = await getDocById(docId);
+      if (doc && doc.image) {
+        const img = document.createElement('img');
+        img.src = doc.image;
+        img.style.cssText = 'width:100%;height:100%;object-fit:cover;';
+        thumb.insertBefore(img, thumb.firstChild);
+        thumb.addEventListener('click', () => openDocViewer(doc.image, person.name));
+      }
+    } catch (e) { /* skip */ }
+  }
+}
+
+// ── Document viewer modal ──
+function openDocViewer(imageSrc, personName) {
+  const modal = document.getElementById('docViewerModal');
+  const img = document.getElementById('docViewerImg');
+  img.src = imageSrc;
+  modal.style.display = 'flex';
+}
+
+function closeDocViewer() {
+  const modal = document.getElementById('docViewerModal');
+  modal.style.display = 'none';
+  document.getElementById('docViewerImg').src = '';
+}
+
+// Click outside image to close
+document.addEventListener('DOMContentLoaded', () => {
+  const modal = document.getElementById('docViewerModal');
+  if (modal) {
+    modal.addEventListener('click', (e) => {
+      if (e.target === modal) closeDocViewer();
+    });
+  }
+});
 
 function closeDetail() {
   detailPanel.classList.remove('active');
@@ -2100,19 +3148,23 @@ function saveDetail() {
   const person = people.find(p => p.id === selectedPersonId);
   if (!person) return;
   person.fullName = document.getElementById('d_fullName').value;
-  person.name = document.getElementById('d_name').value;
+  person.name = document.getElementById('d_name').value || (person.status === 'you' ? 'Me' : 'Name');
+  const sexEl = document.getElementById('d_sex');
+  if (sexEl) person.sex = sexEl.value;
   person.birthDate = document.getElementById('d_birthDate').value;
   person.deathDate = document.getElementById('d_deathDate').value;
+  person.ageAtDeath = document.getElementById('d_ageAtDeath').value;
   person.marriageDate = document.getElementById('d_marriageDate').value;
   person.maidenName = document.getElementById('d_maidenName').value;
+  person.marriedName = document.getElementById('d_marriedName').value;
   person.spouseName = document.getElementById('d_spouseName').value;
   person.occupation = document.getElementById('d_occupation').value;
   person.birthplace = document.getElementById('d_birthplace').value;
   person.status = document.getElementById('d_status').value;
   person.notes = document.getElementById('d_notes').value;
 
-  // Auto-upgrade from 'blank' to 'probable' when user enters a real name
-  if (person.status === 'blank' && person.name && person.name.trim() !== '' && person.name !== 'Name') {
+  // Auto-upgrade from 'blank'/'you' to 'probable' when user enters a real name
+  if ((person.status === 'blank' || person.status === 'you') && person.name && person.name.trim() !== '' && person.name !== 'Name' && person.name !== 'Me') {
     person.status = 'probable';
   }
 
@@ -2143,11 +3195,23 @@ function fbAddParent() {
     return;
   }
   const parentGen = person.gen + 1;
-  const newParent = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+  // First parent slot defaults to father (M), second to mother (F)
+  const parentSex = (!person.parents || person.parents.length === 0) ? 'M' : 'F';
+  const newParent = createPerson(nextId++, parentGen, 'Name', '?', 'blank', { sex: parentSex });
+  newParent.children = [person.id];
   people.push(newParent);
 
   if (!person.parents) person.parents = [];
   person.parents.push(newParent.id);
+
+  // If this is the second parent, link the couple as spouses
+  if (person.parents.length === 2) {
+    const otherParent = people.find(p => p.id === person.parents[0]);
+    if (otherParent) {
+      otherParent.spouseId = newParent.id;
+      newParent.spouseId = otherParent.id;
+    }
+  }
 
   autoSave();
   closeDetail();
@@ -2160,23 +3224,71 @@ function fbAddSpouse() {
   if (!selectedPersonId) return;
   const person = people.find(p => p.id === selectedPersonId);
   if (!person) return;
+  
+  // Ensure the person has a families array
+  if (!person.families) person.families = [];
+  
+  // If the person already has a spouseId but that spouse is NOT in the
+  // families array, we need to add the existing marriage to families
+  // BEFORE adding the new one. This happens when the first spouse was
+  // added by the old code that only set spouseId (no families entry).
   if (person.spouseId) {
-    showToast('This person already has a spouse');
-    return;
+    const alreadyInFamilies = person.families.some(f => f.spouseId === person.spouseId);
+    if (!alreadyInFamilies) {
+      const existingSpouse = people.find(p => p.id === person.spouseId);
+      const existingName = existingSpouse ? existingSpouse.name : 'Unknown';
+      person.families.push({
+        spouseId: person.spouseId,
+        spouseName: existingName,
+        marriageDate: person.marriageDate || '',
+        famId: 'manual-' + person.spouseId
+      });
+      // Also add the reverse entry to the existing spouse
+      if (existingSpouse) {
+        if (!existingSpouse.families) existingSpouse.families = [];
+        if (!existingSpouse.families.some(f => f.spouseId === person.id)) {
+          existingSpouse.families.push({
+            spouseId: person.id,
+            spouseName: person.name,
+            marriageDate: person.marriageDate || '',
+            famId: 'manual-' + person.spouseId
+          });
+        }
+      }
+    }
   }
-  const newSpouse = createPerson(nextId++, person.gen, 'Name', '?', 'blank', {});
+  
+  // Count existing spouses
+  const existingSpouseCount = person.families.length;
+  
+  // Infer opposite sex from existing person
+  const spouseSex = person.sex === 'F' ? 'M' : (person.sex === 'M' ? 'F' : '');
+  const newSpouse = createPerson(nextId++, person.gen, 'Name', '?', 'blank', { sex: spouseSex });
   newSpouse.spouseId = person.id;
   newSpouse.spouseName = person.name;
+  
+  // Initialize families array on the new spouse
+  if (!newSpouse.families) newSpouse.families = [];
+  const famId = 'manual-' + newSpouse.id;
+  newSpouse.families.push({ spouseId: person.id, spouseName: person.name, marriageDate: '', famId: famId });
+  
   people.push(newSpouse);
-
+  
+  // Add this marriage to the person's families array
+  person.families.push({ spouseId: newSpouse.id, spouseName: 'Name', marriageDate: '', famId: famId });
+  
+  // Update spouseId to the new spouse (most recently added)
+  // The layout engine uses families[] for multi-marriage handling,
+  // but spouseId is still needed for focus mode and detail panel.
   person.spouseId = newSpouse.id;
   person.spouseName = 'Name'; // will be updated when spouse is edited
-
+  
   autoSave();
   closeDetail();
   renderFreeBuild();
   setTimeout(() => openDetail(newSpouse), 100);
-  showToast('Added spouse for ' + person.name);
+  const spouseWord = existingSpouseCount > 0 ? 'another spouse' : 'a spouse';
+  showToast('Added ' + spouseWord + ' for ' + person.name);
 }
 
 function fbAddChild() {
@@ -2283,7 +3395,44 @@ function fbDeletePerson() {
 // ═══════════════════════════════════════════════════════════════
 // FOCUS MODE
 // ═══════════════════════════════════════════════════════════════
+function setViewMode(mode) {
+  viewMode = mode;
+  const f = document.getElementById('viewModeFocus');
+  const o = document.getElementById('viewModeOverview');
+  if (f) f.classList.toggle('active', mode === 'focus');
+  if (o) o.classList.toggle('active', mode === 'overview');
+  const back = document.getElementById('focusBack');
+  if (mode === 'overview') {
+    if (back) back.classList.remove('visible');
+    renderFreeBuild();
+    // Don't auto-zoom to fit the whole tree — for a wide tree that means zooming
+    // out to 8% where nothing is readable. Keep the current zoom level so cards
+    // stay at the same size the user was viewing. Scroll to top-left so the
+    // earliest ancestor (root) is visible. User can scroll/zoom from there.
+    setTimeout(function() {
+      const sa = document.getElementById('treeScroll');
+      if (sa) { sa.scrollTo({ left: 0, top: 0, behavior: 'auto' }); }
+    }, 50);
+  } else {
+    if (focusPersonId && back) back.classList.add('visible');
+    renderFreeBuild();
+    if (focusPersonId) {
+      setTimeout(function() { fitToScreen(); centerOnPerson(focusPersonId); }, 100);
+    } else {
+      setTimeout(function() { fitToScreen(); }, 100);
+    }
+  }
+}
+
 function focusOnPerson(id) {
+  if (viewMode === 'overview') {
+    // Clicking a person in Overview switches to Focus mode on that person
+    viewMode = 'focus';
+    const f = document.getElementById('viewModeFocus');
+    const o = document.getElementById('viewModeOverview');
+    if (f) f.classList.add('active');
+    if (o) o.classList.remove('active');
+  }
   if (focusPersonId) viewHistory.push(focusPersonId);
   focusPersonId = id;
   document.getElementById('focusBack').classList.add('visible');
@@ -2306,52 +3455,167 @@ function resetFocus() {
 }
 
 // ═══════════════════════════════════════════════════════════════
+// ANCHOR PERSON PICKER — shown after GEDCOM import
+// ═══════════════════════════════════════════════════════════════
+function showAnchorPicker(callback) {
+  // Build a searchable modal listing all people
+  const modal = document.createElement('div');
+  modal.id = 'anchorPickerModal';
+  modal.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(42,31,16,0.9);z-index:10000;display:flex;align-items:center;justify-content:center;flex-direction:column;';
+
+  const panel = document.createElement('div');
+  panel.style.cssText = 'background:#2a1f10;border:2px solid #5c4a2e;border-radius:12px;padding:0;width:500px;max-width:90vw;max-height:80vh;display:flex;flex-direction:column;box-shadow:0 8px 32px rgba(0,0,0,0.6);';
+
+  // Header
+  const header = document.createElement('div');
+  header.style.cssText = 'padding:20px 24px 16px;text-align:center;border-bottom:1px solid #3e2b1f;';
+  header.innerHTML = '<div style="font-family:Cinzel Decorative,serif;font-size:20px;color:#7dd3fc;letter-spacing:2px;margin-bottom:8px;">VAULTED ROOTS</div>'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:18px;color:#e8dcc8;margin-bottom:4px;">Who are you in this tree?</div>'
+    + '<div style="font-family:Cormorant Garamond,serif;font-size:13px;color:#a89878;">Select the person the tree should grow outward from.</div>';
+  panel.appendChild(header);
+
+  // Search box
+  const searchBox = document.createElement('div');
+  searchBox.style.cssText = 'padding:12px 24px;border-bottom:1px solid #3e2b1f;';
+  const searchInput = document.createElement('input');
+  searchInput.type = 'text';
+  searchInput.placeholder = 'Search by name...';
+  searchInput.style.cssText = 'width:100%;padding:10px 14px;background:#1a1208;border:1px solid #5c4a2e;border-radius:6px;color:#e8dcc8;font-family:Cormorant Garamond,serif;font-size:16px;outline:none;box-sizing:border-box;';
+  searchInput.addEventListener('focus', function() { this.style.borderColor = '#7dd3fc'; });
+  searchInput.addEventListener('blur', function() { this.style.borderColor = '#5c4a2e'; });
+  searchBox.appendChild(searchInput);
+  panel.appendChild(searchBox);
+
+  // List container
+  const listContainer = document.createElement('div');
+  listContainer.style.cssText = 'flex:1;overflow-y:auto;padding:8px 12px;';
+
+  // Skip button
+  const skipRow = document.createElement('div');
+  skipRow.style.cssText = 'padding:12px 24px;border-top:1px solid #3e2b1f;text-align:center;';
+
+  function renderList(filter) {
+    listContainer.innerHTML = '';
+    const filtered = people.filter(function(p) {
+      if (!filter) return true;
+      return p.name.toLowerCase().indexOf(filter.toLowerCase()) > -1;
+    }).sort(function(a, b) {
+      // Sort by birth year ascending
+      const aY = (a.birthDate || '').match(/\d{4}/);
+      const bY = (b.birthDate || '').match(/\d{4}/);
+      if (aY && bY) return parseInt(aY[0]) - parseInt(bY[0]);
+      if (aY) return -1;
+      if (bY) return 1;
+      return 0;
+    });
+
+    if (filtered.length === 0) {
+      listContainer.innerHTML = '<div style="text-align:center;padding:20px;color:#a89878;font-family:Cormorant Garamond,serif;">No matches found</div>';
+      return;
+    }
+
+    for (const p of filtered) {
+      const item = document.createElement('div');
+      item.style.cssText = 'padding:10px 14px;margin:4px 0;background:#1a1208;border:1px solid #3e2b1f;border-radius:6px;cursor:pointer;transition:background 0.15s,border-color 0.15s;';
+      item.addEventListener('mouseenter', function() { item.style.background = '#3e2b1f'; item.style.borderColor = '#7dd3fc'; });
+      item.addEventListener('mouseleave', function() { item.style.background = '#1a1208'; item.style.borderColor = '#3e2b1f'; });
+      const yearStr = p.birthDate ? 'b. ' + p.birthDate : '';
+      item.innerHTML = '<span style="color:#e8dcc8;font-family:Cormorant Garamond,serif;font-size:16px;">' + p.name + '</span>'
+        + (yearStr ? '<span style="color:#a89878;font-size:13px;margin-left:8px;">' + yearStr + '</span>' : '');
+      item.addEventListener('click', function() {
+        document.body.removeChild(modal);
+        callback(p.id);
+      });
+      listContainer.appendChild(item);
+    }
+  }
+
+  renderList('');
+  panel.appendChild(listContainer);
+
+  const skipBtn = document.createElement('button');
+  skipBtn.textContent = 'Skip — show full tree';
+  skipBtn.style.cssText = 'padding:8px 24px;background:transparent;border:1px solid #5c4a2e;border-radius:6px;color:#a89878;font-family:Cormorant Garamond,serif;font-size:14px;cursor:pointer;';
+  skipBtn.addEventListener('mouseenter', function() { skipBtn.style.color = '#e8dcc8'; skipBtn.style.borderColor = '#7dd3fc'; });
+  skipBtn.addEventListener('mouseleave', function() { skipBtn.style.color = '#a89878'; skipBtn.style.borderColor = '#5c4a2e'; });
+  skipBtn.addEventListener('click', function() {
+    document.body.removeChild(modal);
+    callback(null);
+  });
+  skipRow.appendChild(skipBtn);
+  panel.appendChild(skipRow);
+
+  modal.appendChild(panel);
+  document.body.appendChild(modal);
+
+  // Focus the search input
+  setTimeout(function() { searchInput.focus(); }, 50);
+
+  // Filter as you type
+  searchInput.addEventListener('input', function() {
+    renderList(searchInput.value);
+  });
+}
+
+// ═══════════════════════════════════════════════════════════════
 // GEDCOM IMPORT
 // ═══════════════════════════════════════════════════════════════
 document.getElementById('gedcomInput').addEventListener('change', async (e) => {
   const file = e.target.files[0];
   if (!file) return;
-  showToast('Importing GEDCOM...');
+  // Show loading overlay
+  const overlay = document.createElement('div');
+  overlay.id = 'gedcomLoading';
+  overlay.style.cssText = 'position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(42,31,16,0.85);z-index:9999;display:flex;align-items:center;justify-content:center;flex-direction:column;gap:20px;';
+  overlay.innerHTML = '<div style="font-family:Cinzel Decorative,serif;font-size:24px;color:#7dd3fc;letter-spacing:2px;">VAULTED ROOTS</div><div style="font-family:Cormorant Garamond,serif;font-size:18px;color:#e8dcc8;">Building your family tree...</div><div style="width:200px;height:4px;background:#3e2b1f;border-radius:2px;overflow:hidden;"><div style="width:100%;height:100%;background:#7dd3fc;animation:vrLoad 1s ease-in-out infinite;"></div></div><div style="font-family:Cormorant Garamond,serif;font-size:13px;color:#a89878;">' + (file.name || 'file') + '</div>';
+  // Add animation if not already defined
+  if (!document.getElementById('vrLoadKeyframes')) {
+    const style = document.createElement('style');
+    style.id = 'vrLoadKeyframes';
+    style.textContent = '@keyframes vrLoad { 0% { transform: translateX(-100%); } 100% { transform: translateX(100%); } }';
+    document.head.appendChild(style);
+  }
+  document.body.appendChild(overlay);
+
+  // Let the browser paint the overlay before doing heavy work
+  await new Promise(resolve => setTimeout(resolve, 50));
+
   const text = await file.text();
   const result = parseGedcom(text);
   people = result.people;
   nextId = result.nextId;
 
-  // Auto-focus on best candidate
-  if (people.length > 30) {
-    let best = null, bestScore = -1;
-    function countAncestors(id, depth) {
-      if (depth > 4) return 0;
-      const p = people.find(pp => pp.id === id);
-      if (!p || !p.parents || p.parents.length === 0) return 0;
-      return p.parents.length + p.parents.reduce((s, pid) => s + countAncestors(pid, depth+1), 0);
-    }
-    for (const p of people) {
-      if (!p.parents || p.parents.length === 0) continue;
-      const ancestors = countAncestors(p.id, 0);
-      const childCount = (p.children || []).length;
-      const bY = (p.birthDate || '').match(/\d{4}/);
-      const yearScore = bY ? parseInt(bY[0]) / 100 : 0;
-      const score = ancestors * 5 + childCount * 10 + yearScore;
-      if (score > bestScore) { bestScore = score; best = p; }
-    }
-    if (best) {
-      focusPersonId = best.id;
-      document.getElementById('focusBack').classList.add('visible');
-    }
-  }
-
   autoSave();
-  renderFreeBuild();
-  showToast('Imported ' + people.length + ' people');
 
-  // Auto-fit and center on focus person
-  if (focusPersonId) {
+  // Remove loading overlay
+  const loadingEl = document.getElementById('gedcomLoading');
+  if (loadingEl) loadingEl.remove();
+
+  // Show person picker: "Who is the starting point for your tree?"
+  showAnchorPicker(function(chosenId) {
+    if (chosenId) {
+      const p = people.find(pp => pp.id === chosenId);
+      if (p) {
+        p.status = 'you';
+        p.isYou = true;
+        p.gen = 0;
+        focusPersonId = chosenId;
+        document.getElementById('focusBack').classList.add('visible');
+      }
+    }
+    renderFreeBuild();
+    showToast('Imported ' + people.length + ' people');
+
+    // Center on the anchor person at a readable zoom level.
     setTimeout(function() {
-      fitToScreen();
-      centerOnPerson(focusPersonId);
+      if (focusPersonId) {
+        centerOnPerson(focusPersonId);
+      } else {
+        const sa = document.getElementById('treeScroll');
+        if (sa) { sa.scrollTo({ left: 0, top: 0, behavior: 'auto' }); }
+      }
     }, 200);
-  }
+  });
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -2409,29 +3673,135 @@ function exportGedcom() {
 const STORAGE_KEY = 'vr_freebuild_data_v1';
 
 // SAVE / LOAD / SHARE (matching data-tree.html functionality)
-function saveSession() {
-  const payload = { version: 5, exportedAt: new Date().toISOString(), people: people, nextId: nextId };
+async function saveSession() {
+  const docs = await getAllDocsFromDB();
+  // Filter out placeholder cards (name='Name', status='blank') — they bloat
+  // the file and break layout for anyone who loads it later. Also scrub
+  // dangling parent/child/spouse refs to removed placeholders.
+  const keptIds = new Set(people.filter(p => !isPlaceholder(p)).map(p => p.id));
+  const payloadPeople = JSON.parse(JSON.stringify(people.filter(p => !isPlaceholder(p))));
+  for (const p of payloadPeople) {
+    if (!p.children) p.children = [];
+    if (!p.sex) p.sex = '';
+    if (p.parents) p.parents = p.parents.filter(pid => keptIds.has(pid));
+    if (p.children) p.children = p.children.filter(cid => keptIds.has(cid));
+    if (p.spouseId && !keptIds.has(p.spouseId)) p.spouseId = null;
+    if (p.families) p.families = p.families.filter(f => !f.spouseId || keptIds.has(f.spouseId));
+  }
+  const payload = { version: 7, exportedAt: new Date().toISOString(), people: payloadPeople, nextId: nextId, docs: docs };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
   a.href = url; a.download = 'familytree_' + new Date().toISOString().slice(0, 10) + '.familytree';
   a.click(); URL.revokeObjectURL(url);
-  showToast('Session saved');
+  showToast('Session saved' + (docs.length ? ' (' + docs.length + ' document images)' : ''));
 }
 
-function loadSession(file) {
+// Infer sex for legacy files (pre-v7) based on parent order in children's parents[] arrays.
+// Convention: first parent ID = father (M), second parent ID = mother (F).
+// Only sets sex if it's currently empty/missing. Does not override existing values.
+// NOTE: This is a heteronormative heuristic. Same-sex couples where both parents
+// are listed will get the second-listed parent tagged 'F' incorrectly. Users can
+// manually correct the sex on any card; manual values are never overwritten.
+function inferSex() {
+  for (const p of people) {
+    const parents = p.parents || [];
+    if (parents.length >= 1) {
+      const father = people.find(q => q.id === parents[0]);
+      if (father && !father.sex) father.sex = 'M';
+    }
+    if (parents.length >= 2) {
+      const mother = people.find(q => q.id === parents[1]);
+      if (mother && !mother.sex) mother.sex = 'F';
+    }
+  }
+}
+
+async function loadSession(file) {
   file.text().then(text => {
     try {
       const data = JSON.parse(text);
       if (!data.people) { showToast('Invalid session file'); return; }
       people = data.people;
+      // Strip placeholder cards (name='Name', status='blank') from legacy files.
+      // Also scrub dangling parent/child/spouse refs so layout doesn't break.
+      const keptIds = new Set(people.filter(p => !isPlaceholder(p)).map(p => p.id));
+      const hadPlaceholders = people.length > keptIds.size;
+      if (hadPlaceholders) {
+        people = people.filter(p => !isPlaceholder(p));
+        for (const p of people) {
+          if (p.parents) p.parents = p.parents.filter(pid => keptIds.has(pid));
+          if (p.children) p.children = p.children.filter(cid => keptIds.has(cid));
+          if (p.spouseId && !keptIds.has(p.spouseId)) p.spouseId = null;
+          if (p.families) p.families = p.families.filter(f => !f.spouseId || keptIds.has(f.spouseId));
+        }
+      }
+      // Rebuild children[] arrays from parents[] if they're empty
+      // (files exported from data-tree.html don't populate children arrays)
+      const hasChildren = people.some(p => p.children && p.children.length > 0);
+      if (!hasChildren) {
+        const childMap = new Map();
+        for (const p of people) {
+          const parents = p.parents || [];
+          for (const pid of parents) {
+            if (!childMap.has(pid)) childMap.set(pid, []);
+            childMap.get(pid).push(p.id);
+          }
+        }
+        for (const p of people) {
+          const myChildren = childMap.get(p.id) || [];
+          p.children = myChildren;
+        }
+      }
       nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+      // Infer sex for legacy files (pre-v7) or any file where most people lack sex
+      const noSexCount = people.filter(p => !p.sex).length;
+      if (!data.version || data.version < 7 || noSexCount > people.length / 2) {
+        inferSex();
+      }
       focusPersonId = null; viewHistory = [];
-      autoSave();
-      renderFreeBuild();
-      showToast('Loaded ' + people.length + ' people from file');
+      // Restore document images to IndexedDB (v6+ save files)
+      if (data.docs && Array.isArray(data.docs) && data.docs.length) {
+        restoreDocsToDB(data.docs).then(restoredCount => {
+          autoSave();
+          renderFreeBuild();
+          const msg = hadPlaceholders
+            ? `Loaded ${people.length} people (${data.people.length - people.length} placeholders removed)`
+            : 'Loaded ' + people.length + ' people from file';
+          showToast(msg + (restoredCount ? ' (' + restoredCount + ' docs restored)' : ''));
+        });
+      } else {
+        autoSave();
+        renderFreeBuild();
+        const msg = hadPlaceholders
+          ? `Loaded ${people.length} people (${data.people.length - people.length} placeholders removed)`
+          : 'Loaded ' + people.length + ' people from file';
+        showToast(msg);
+      }
     } catch (e) { showToast('Invalid session file'); }
   });
+}
+
+async function restoreDocsToDB(docs) {
+  try {
+    if (!_docDB) await openDocDB();
+    let restored = 0;
+    for (const doc of docs) {
+      if (!doc.id || !doc.image) continue;
+      // Only restore if not already present (don't overwrite newer IndexedDB state)
+      const existing = await getDocById(doc.id);
+      if (existing) continue;
+      const tx = _docDB.transaction(DOC_STORE_NAME, 'readwrite');
+      const store = tx.objectStore(DOC_STORE_NAME);
+      await new Promise((resolve, reject) => {
+        const req = store.put(doc);
+        req.onsuccess = () => resolve();
+        req.onerror = () => reject(req.error);
+      });
+      restored++;
+    }
+    return restored;
+  } catch (e) { console.warn('[restoreDocsToDB] failed', e); return 0; }
 }
 
 function shareTree() {
@@ -2500,6 +3870,25 @@ function autoRestore() {
       const data = JSON.parse(saved);
       if (data.people && data.people.length > 0) {
         people = data.people;
+        // Rebuild children[] arrays from parents[] if they're empty
+        const hasChildren = people.some(p => p.children && p.children.length > 0);
+        if (!hasChildren) {
+          const childMap = new Map();
+          for (const p of people) {
+            const parents = p.parents || [];
+            for (const pid of parents) {
+              if (!childMap.has(pid)) childMap.set(pid, []);
+              childMap.get(pid).push(p.id);
+            }
+          }
+          for (const p of people) {
+            p.children = childMap.get(p.id) || [];
+          }
+        }
+        // Upgrade old 'blank' Me card to 'you' status
+        people.forEach(p => {
+          if (p.status === 'blank' && (p.isYou || p.name === 'Me' || p.name === 'You')) p.status = 'you';
+        });
         nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
         if (fromDT) showToast('Loaded ' + people.length + ' people from Pedigree Tree');
         return true;
@@ -2527,7 +3916,7 @@ function resetTree() {
 
 function initDefault() {
   people = []; nextId = 1;
-  const me = createPerson(nextId++, 0, 'Me', '?', 'blank', { status: 'you' });
+  const me = createPerson(nextId++, 0, 'Me', '?', 'you', {});
   people.push(me);
   autoSave();
 }
@@ -2642,24 +4031,37 @@ function openFoundingForm() {
   if (submitBtn) submitBtn.textContent = 'Join the list';
   modal.style.display = 'flex';
 }
-document.getElementById('privacyModalOk').addEventListener('click', () => {
-  document.getElementById('privacyModal').style.display = 'none';
-  updateExpandGenBtn();
-});
-document.getElementById('privacyModalDismissForever').addEventListener('click', () => {
-  document.getElementById('privacyModal').style.display = 'none';
-  localStorage.setItem('vaultedRootsPrivacySeen', '1');
-  updateExpandGenBtn();
-});
-if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', () => showPrivacyModal());
-  } else {
+function initPrivacyModalListeners() {
+  const okBtn = document.getElementById('privacyModalOk');
+  const foreverBtn = document.getElementById('privacyModalDismissForever');
+  if (okBtn) {
+    okBtn.addEventListener('click', () => {
+      const m = document.getElementById('privacyModal');
+      if (m) m.style.display = 'none';
+      // Set session-level flag so SW reload doesn't re-trigger the modal
+      sessionStorage.setItem('vaultedRootsPrivacySeen', '1');
+      if (typeof updateExpandGenBtn === 'function') updateExpandGenBtn();
+    });
+  }
+  if (foreverBtn) {
+    foreverBtn.addEventListener('click', () => {
+      const m = document.getElementById('privacyModal');
+      if (m) m.style.display = 'none';
+      localStorage.setItem('vaultedRootsPrivacySeen', '1');
+      sessionStorage.setItem('vaultedRootsPrivacySeen', '1');
+      if (typeof updateExpandGenBtn === 'function') updateExpandGenBtn();
+    });
+  }
+  // Show only if not seen in this session OR ever
+  if (!sessionStorage.getItem('vaultedRootsPrivacySeen') && !localStorage.getItem('vaultedRootsPrivacySeen')) {
     showPrivacyModal();
   }
 }
 
-
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', initPrivacyModalListeners);
+} else {
+  initPrivacyModalListeners();
 }
 
 // FEEDBACK MODAL
@@ -2718,6 +4120,19 @@ function openDocDB() {
       }
     };
   });
+}
+
+async function getAllDocsFromDB() {
+  try {
+    if (!_docDB) await openDocDB();
+    const tx = _docDB.transaction(DOC_STORE_NAME, 'readonly');
+    const store = tx.objectStore(DOC_STORE_NAME);
+    return new Promise((resolve, reject) => {
+      const req = store.getAll();
+      req.onsuccess = () => resolve(req.result || []);
+      req.onerror = () => reject(req.error);
+    });
+  } catch (e) { return []; }
 }
 
 async function saveDocToDB(personId, type, base64Image, meta) {
@@ -2800,7 +4215,8 @@ function toggleCertPanel() {
   }
 }
 
-function openCertForPerson(personName) {
+function openCertForPerson(personId, personName) {
+  pendingDirectAttachId = personId;
   certPanel.classList.add('active');
   clearCertPanel();
   const headerTitle = certPanel.querySelector('.cert-header div');
@@ -2808,10 +4224,72 @@ function openCertForPerson(personName) {
   showToast('Select Upload (private), Venice, or Gemini for ' + personName);
 }
 
+function openDirectAttach(personId, personName) {
+  pendingDirectAttachId = personId;
+  showToast('Select a document for ' + personName);
+  const input = document.getElementById('directAttachInput');
+  input.value = '';
+  input.click();
+}
+
+// ── Direct attach handler (no transcription, just attach file) ──
+document.getElementById('directAttachInput')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) { pendingDirectAttachId = null; return; }
+  const personId = pendingDirectAttachId;
+  if (!personId) return;
+  const person = people.find(p => p.id === personId);
+  if (!person) { pendingDirectAttachId = null; return; }
+
+  showToast('Attaching document...');
+  try {
+    // Read file as base64
+    const base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = (ev) => resolve(ev.target.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+
+    // Compress if large
+    let finalImage = base64;
+    const sizeKB = Math.round(base64.length * 0.75 / 1024);
+    if (sizeKB > 800) {
+      finalImage = await resizeAndCompressImage(file, 1600, 0.90);
+      const kb2 = Math.round(finalImage.length * 0.75 / 1024);
+      if (kb2 > 800) {
+        finalImage = await resizeAndCompressImage(file, 1200, 0.85);
+      }
+    }
+
+    // Add doc entry to person (not saved yet — user clicks Save Changes)
+    const docEntry = { type: 'doc', date: '', docId: null, filename: file.name || '' };
+    person.docs = person.docs || [];
+    person.docs.push(docEntry);
+
+    // Store image in IndexedDB so it survives
+    saveDocToDB(person.id, 'doc', finalImage, { personName: person.name, filename: file.name || '' }).then(id => {
+      if (id && person.docs.length) {
+        person.docs[person.docs.length - 1].docId = id;
+      }
+    });
+
+    // Re-open detail panel so the new DOC badge shows
+    openDetail(person);
+    showToast('Document attached. Click Save Changes to save.');
+  } catch (err) {
+    console.error('[ATTACH ERROR]', err);
+    showToast('Error attaching document: ' + (err.message || 'Unknown error'));
+  }
+  pendingDirectAttachId = null;
+  e.target.value = '';
+});
+
 function clearCertPanel() {
   lastTranscription = null;
   pendingDocFile = null;
   pendingDocImage = null;
+  // Reset all inline display styles that processDocFile may have set
   document.getElementById('certPreviewImg').src = '';
   document.getElementById('certPreviewArea').style.display = 'none';
   document.getElementById('certStatus').style.display = 'none';
@@ -2819,10 +4297,16 @@ function clearCertPanel() {
   document.getElementById('certStatus').className = 'cert-status';
   document.getElementById('certResults').innerHTML = '';
   document.getElementById('certMethodSelect').style.display = 'flex';
-  document.getElementById('uploadSection')?.classList.remove('active');
-  document.getElementById('veniceSection')?.classList.remove('active');
+  // Reset inline display on sections (processDocFile sets style.display directly)
+  const upload = document.getElementById('uploadSection');
+  if (upload) { upload.classList.remove('active'); upload.style.display = ''; }
+  const venice = document.getElementById('veniceSection');
+  if (venice) { venice.classList.remove('active'); venice.style.display = ''; }
+  const gemini = document.getElementById('geminiSection');
+  if (gemini) { gemini.classList.remove('active'); gemini.style.display = ''; }
+  const uploadArea = document.getElementById('certUploadArea');
+  if (uploadArea) { uploadArea.style.display = 'none'; }
   document.getElementById('venicePasteBox').value = '';
-  document.getElementById('geminiSection').classList.remove('active');
   document.getElementById('geminiPasteBox').value = '';
   certPanel.classList.remove('has-results');
 }
@@ -2848,6 +4332,46 @@ document.getElementById('certFileInput')?.addEventListener('change', async (e) =
     cs.innerHTML = 'Error: ' + escapeHtml(err.message || 'Could not process image') + '<br><small>Tap Retry to try again</small>';
     document.getElementById('certRetry').style.display = 'block';
   }
+  // reset so selecting the same file again still fires onchange
+  e.target.value = '';
+});
+
+// ── Attach-only handler (Gemini/Venice parsed data, no transcription) ──
+document.getElementById('certAttachInput')?.addEventListener('change', async (e) => {
+  const file = e.target.files[0];
+  if (!file) return;
+  const cs = document.getElementById('certStatus');
+  cs.className = 'cert-status loading';
+  cs.textContent = 'Reading image...';
+  cs.style.display = 'block';
+  try {
+    let base64 = await new Promise((resolve, reject) => {
+      const r = new FileReader();
+      r.onload = (ev) => resolve(ev.target.result);
+      r.onerror = reject;
+      r.readAsDataURL(file);
+    });
+    // Compress if large
+    const sizeKB = Math.round(base64.length * 0.75 / 1024);
+    if (sizeKB > 800) {
+      base64 = await resizeAndCompressImage(file, 1600, 0.90);
+      const kb2 = Math.round(base64.length * 0.75 / 1024);
+      if (kb2 > 800) {
+        base64 = await resizeAndCompressImage(file, 1200, 0.85);
+      }
+    }
+    pendingDocImage = base64;
+    document.getElementById('certPreviewImg').src = base64;
+    document.getElementById('certPreviewArea').style.display = 'block';
+    document.getElementById('certUploadArea').style.display = 'none';
+    cs.className = 'cert-status success';
+    cs.textContent = '\u2713 Certificate image attached';
+  } catch (err) {
+    console.error('[ATTACH IMAGE ERROR]', err);
+    cs.className = 'cert-status error';
+    cs.textContent = 'Error: ' + (err.message || 'Could not read image');
+  }
+  e.target.value = '';
 });
 
 document.getElementById('certCameraInput')?.addEventListener('change', async (e) => {
@@ -2878,7 +4402,7 @@ async function processDocFile(file) {
       document.getElementById('certPreviewImg').src = e.target.result;
       document.getElementById('certPreviewArea').style.display = 'block';
       document.getElementById('certMethodSelect').style.display = 'none';
-      document.getElementById('uploadSection').style.display = 'none';
+      document.getElementById('uploadSection').classList.remove('active');
       document.getElementById('certUploadArea').style.display = 'none';
       resolve(e.target.result);
     };
@@ -3108,11 +4632,12 @@ function extractEntryFields(entry, type) {
     if (entry.groom?.age) fields.push({ label: 'Groom Age', value: entry.groom.age, key: 'groom.age' });
     if (entry.bride?.name) fields.push({ label: 'Bride', value: entry.bride.name, key: 'bride.name' });
     if (entry.bride?.age) fields.push({ label: 'Bride Age', value: entry.bride.age, key: 'bride.age' });
-    if (entry.groomFather?.name) fields.push({ label: "Groom's Father", value: entry.groomFather.name, key: 'groomFather.name' });
-    if (entry.groomMother?.name) fields.push({ label: "Groom's Mother", value: entry.groomMother.name + (entry.groomMother.maidenName ? ' (m.s. ' + entry.groomMother.maidenName + ')' : ''), key: 'groomMother.name' });
+    // Always show parent fields — users can fill them in if the AI missed them
+    fields.push({ label: "Groom's Father", value: entry.groomFather?.name || '', key: 'groomFather.name' });
+    fields.push({ label: "Groom's Mother", value: (entry.groomMother?.name || '') + (entry.groomMother?.maidenName ? ' (m.s. ' + entry.groomMother.maidenName + ')' : ''), key: 'groomMother.name' });
     if (entry.groomMother?.maidenName) fields.push({ label: "Groom's Mother m.s.", value: entry.groomMother.maidenName, key: 'groomMother.maidenName' });
-    if (entry.brideFather?.name) fields.push({ label: "Bride's Father", value: entry.brideFather.name, key: 'brideFather.name' });
-    if (entry.brideMother?.name) fields.push({ label: "Bride's Mother", value: entry.brideMother.name + (entry.brideMother.maidenName ? ' (m.s. ' + entry.brideMother.maidenName + ')' : ''), key: 'brideMother.name' });
+    fields.push({ label: "Bride's Father", value: entry.brideFather?.name || '', key: 'brideFather.name' });
+    fields.push({ label: "Bride's Mother", value: (entry.brideMother?.name || '') + (entry.brideMother?.maidenName ? ' (m.s. ' + entry.brideMother.maidenName + ')' : ''), key: 'brideMother.name' });
     if (entry.brideMother?.maidenName) fields.push({ label: "Bride's Mother m.s.", value: entry.brideMother.maidenName, key: 'brideMother.maidenName' });
     if (entry.date) fields.push({ label: 'Date', value: entry.date, key: 'date' });
   } else if (type === 'birth') {
@@ -3355,6 +4880,8 @@ function parseVeniceResult() {
   cs.textContent = '\u2713 Parsed ' + veniceCertType + ' certificate';
   renderTranscriptionResults(lastTranscription);
   certPanel.classList.add('has-results');
+  // Show the "Tap to upload cert" area so the user can attach the cert image
+  document.getElementById('certUploadArea').style.display = 'block';
 }
 
 function transformGeminiToNested(flat, type) {
@@ -3441,6 +4968,8 @@ function parseGeminiResult() {
   cs.textContent = '\u2713 Parsed ' + geminiCertType + ' certificate';
   renderTranscriptionResults(lastTranscription);
   certPanel.classList.add('has-results');
+  // Show the "Tap to upload cert" area so the user can attach the cert image
+  document.getElementById('certUploadArea').style.display = 'block';
 }
 
 // ── Name matching helpers (ported from data-tree) ──
@@ -3639,23 +5168,29 @@ function applyCertToPerson(entry, type, docImage) {
   }
   if (type === 'death' && entry.deceased?.name) primaryNames.push({ name: entry.deceased.name, certKey: 'deceased.name' });
 
-  for (const pn of primaryNames) {
-    const refYear = type === 'marriage' ? (extractYear(entry.date) ? extractYear(entry.date) - parseInt(entry.groom?.age || entry.bride?.age || 0) : null)
-      : type === 'birth' ? (extractYear(entry.child?.birthDate) || null)
-      : type === 'death' ? (extractYear(entry.deathDate) ? extractYear(entry.deathDate) - parseInt(entry.deceased?.age || 0) : null)
-      : null;
-    const certYear = extractYear(entry.date || entry.deathDate || entry.child?.birthDate);
-    const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
-    if (matches.length >= 2) {
-      const top2ScoreDiff = matches[0].score - matches[1].score;
-      if (top2ScoreDiff < 30 || matches[0].person.status === 'confirmed') {
-        openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
-        return;
+  // If user opened cert panel from a specific person's detail (pendingDirectAttachId set),
+  // skip ambiguity detection and trust their choice.
+  if (!pendingDirectAttachId) {
+    for (const pn of primaryNames) {
+      const refYear = type === 'marriage' ? (extractYear(entry.date) ? extractYear(entry.date) - parseInt(entry.groom?.age || entry.bride?.age || 0) : null)
+        : type === 'birth' ? (extractYear(entry.child?.birthDate) || null)
+        : type === 'death' ? (extractYear(entry.deathDate) ? extractYear(entry.deathDate) - parseInt(entry.deceased?.age || 0) : null)
+        : null;
+      const certYear = extractYear(entry.date || entry.deathDate || entry.child?.birthDate);
+      const matches = findAllMatches(pn.name, { refYear, certType: type, certYear });
+      if (matches.length >= 2) {
+        const top2ScoreDiff = matches[0].score - matches[1].score;
+        // Only show ambiguity dialog if scores are close AND top match isn't a clear winner
+        // A score >= 80 with a 30+ point gap is a clear match, not ambiguous
+        if (top2ScoreDiff < 30 && matches[0].score < 80) {
+          openAmbigDialog(entry, type, docImage, pn.name, matches, pn.certKey);
+          return;
+        }
       }
     }
   }
 
-  _applyCertToPersonResolved(entry, type, docImage, null, null);
+  _applyCertToPersonResolved(entry, type, docImage, null, pendingDirectAttachId);
 }
 
 function _applyCertToPersonResolved(entry, type, docImage, resolveName, resolveId) {
@@ -3663,7 +5198,15 @@ function _applyCertToPersonResolved(entry, type, docImage, resolveName, resolveI
   if (type === 'birth') applyBirthEntry(entry, changed, docImage, resolveId);
   else if (type === 'marriage') applyMarriageEntry(entry, changed, docImage, resolveName, resolveId);
   else if (type === 'death') applyDeathEntry(entry, changed, docImage, resolveId);
-  if (changed.length) { renderFreeBuild(); autoSave(); showToast('Applied to ' + changed.length + ' people'); }
+  if (changed.length) {
+    // Focus on the first changed person so new family members are visible
+    focusPersonId = changed[0].id;
+    viewHistory = [];
+    renderFreeBuild();
+    autoSave();
+    showToast('Applied to ' + changed.length + ' people');
+    setTimeout(function() { fitToScreen(); centerOnPerson(changed[0].id); }, 100);
+  }
   else { showToast('No matching people found'); }
 }
 
@@ -3740,7 +5283,7 @@ function applyBirthEntry(entry, changed, docImage, forceChildId) {
     people.push(child);
   }
 
-  if (child.name === 'Name' || child.status === 'blank') {
+  if (child.name === 'Name' || child.name === 'Me' || child.name === 'You' || child.status === 'blank' || child.status === 'you') {
     child.name = childName;
   }
   child.fullName = childName;
@@ -3825,19 +5368,39 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   const marriageYear = extractYear(entry.date);
 
   let groom = null;
-  if (forceResolveId && forceResolveName === groomName) {
-    groom = people.find(p => p.id === forceResolveId);
+  let bride = null;
+  // Direct-attach path: pendingDirectAttachId is the person the user attached
+  // the cert to. Match against cert's groom OR bride name; assign to the right
+  // one. forceResolveName may be null when called from pendingDirectAttachId,
+  // so we compare the resolved person's name against the cert names.
+  if (forceResolveId) {
+    const resolved = people.find(p => p.id === forceResolveId);
+    if (resolved) {
+      const resolvedNorm = normalizeName(resolved.name);
+      const resolvedFirst = resolved.name.split(/\s+/)[0]?.toLowerCase();
+      const groomFirst = groomName.split(/\s+/)[0]?.toLowerCase();
+      const brideFirst = brideName.split(/\s+/)[0]?.toLowerCase();
+      // Prefer an exact first-name match to avoid ambiguity (e.g. Joseph Sr vs Jr)
+      if (resolvedFirst === groomFirst && resolvedFirst !== brideFirst) {
+        groom = resolved;
+      } else if (resolvedFirst === brideFirst && resolvedFirst !== groomFirst) {
+        bride = resolved;
+      } else if (forceResolveName) {
+        // Fall back to forceResolveName if explicitly provided
+        if (normalizeName(forceResolveName) === normalizeName(groomName)) groom = resolved;
+        else if (normalizeName(forceResolveName) === normalizeName(brideName)) bride = resolved;
+      } else {
+        // First-name clash (or no first name); match by normalized full name
+        if (resolvedNorm === normalizeName(groomName)) groom = resolved;
+        else if (resolvedNorm === normalizeName(brideName)) bride = resolved;
+      }
+    }
   }
   if (!groom) {
     groom = findPersonGenAware(groomName, { certType: 'marriage', certYear: marriageYear });
     if (!groom) {
       groom = findPersonBySurname(groomName, { certType: 'marriage', certYear: marriageYear });
     }
-  }
-
-  let bride = null;
-  if (forceResolveId && forceResolveName === brideName) {
-    bride = people.find(p => p.id === forceResolveId);
   }
   if (!bride && groom && groom.spouseId) {
     const spouse = people.find(p => p.id === groom.spouseId);
@@ -3890,13 +5453,27 @@ function applyMarriageEntry(entry, changed, docImage, forceResolveName, forceRes
   // Update parents
   function updateParents(person, fatherName, motherName, motherMaiden) {
     if (!person) return;
-    if (!person.parents || person.parents.length < 2) {
+    // Ensure person.parents is an array; fix partial state where only one parent
+    // is set. Never orphan existing parents by recreating both.
+    if (!person.parents || person.parents.length === 0) {
       const parentGen = (person.gen || 0) + 1;
       const father = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
       const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
       father.spouseId = mother.id; mother.spouseId = father.id;
       people.push(father); people.push(mother);
       person.parents = [father.id, mother.id];
+    } else if (person.parents.length === 1) {
+      // Only one parent exists; create the missing mother slot if the first is
+      // treated as the father. Mirror the createPerson pattern.
+      const parentGen = (person.gen || 0) + 1;
+      const mother = createPerson(nextId++, parentGen, 'Name', '?', 'blank', {});
+      const existingFather = people.find(p => p.id === person.parents[0]);
+      if (existingFather) {
+        existingFather.spouseId = mother.id; mother.spouseId = existingFather.id;
+        existingFather.spouseName = mother.name; mother.spouseName = existingFather.name;
+      }
+      people.push(mother);
+      person.parents.push(mother.id);
     }
     const father = people.find(p => p.id === person.parents[0]);
     const mother = people.find(p => p.id === person.parents[1]);
@@ -4008,7 +5585,13 @@ document.getElementById('certConfirm').addEventListener('click', () => {
     if (type === 'birth') applyBirthEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
     else if (type === 'marriage') applyMarriageEntry(entry, changed, pendingDocImage, null, pendingDirectAttachId);
     else if (type === 'death') applyDeathEntry(entry, changed, pendingDocImage, pendingDirectAttachId);
-    if (changed.length) { renderFreeBuild(); autoSave(); showToast('Document attached to ' + changed[0].name); }
+    if (changed.length) {
+      focusPersonId = changed[0].id;
+      viewHistory = [];
+      renderFreeBuild(); autoSave();
+      showToast('Document attached to ' + changed[0].name);
+      setTimeout(function() { fitToScreen(); centerOnPerson(changed[0].id); }, 100);
+    }
     pendingDirectAttachId = null;
     certPanel.classList.remove('active');
     certPanel.classList.remove('has-results');
@@ -4104,29 +5687,35 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
     if (!autoRestore() && people.length === 0) initDefault();
   }
 
-  // Auto-focus on best candidate if tree is large
-  if (people.length > 30) {
-    let best = null, bestScore = -1;
-    function countAncestors(id, depth) {
-      if (depth > 4) return 0;
-      const p = people.find(pp => pp.id === id);
-      if (!p || !p.parents || p.parents.length === 0) return 0;
-      return p.parents.length + p.parents.reduce((s, pid) => s + countAncestors(pid, depth+1), 0);
+  // Show anchor picker for large trees (whether from autoRestore or GEDCOM pickup)
+  if (people.length > 10 && !focusPersonId) {
+    // Render first so the tree is visible behind the picker
+    if (window.innerWidth > 768 && !('ontouchstart' in window)) {
+      zoom = 1;
+    } else {
+      zoom = 0.75;
     }
-    for (const p of people) {
-      if (!p.parents || p.parents.length === 0) continue;
-      const ancestors = countAncestors(p.id, 0);
-      const childCount = (p.children || []).length;
-      const bY = (p.birthDate || '').match(/\d{4}/);
-      const yearScore = bY ? parseInt(bY[0]) / 100 : 0;
-      // Prefer people with lots of ancestors AND children (3-gen view)
-      const score = ancestors * 5 + childCount * 10 + yearScore;
-      if (score > bestScore) { bestScore = score; best = p; }
-    }
-    if (best) {
-      focusPersonId = best.id;
-      document.getElementById('focusBack').classList.add('visible');
-    }
+    document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
+    renderFreeBuild();
+
+    showAnchorPicker(function(chosenId) {
+      if (chosenId) {
+        const p = people.find(pp => pp.id === chosenId);
+        if (p) {
+          p.status = 'you';
+          p.isYou = true;
+          p.gen = 0;
+          focusPersonId = chosenId;
+          document.getElementById('focusBack').classList.add('visible');
+          autoSave();
+        }
+      }
+      renderFreeBuild();
+      if (focusPersonId) {
+        setTimeout(function() { centerOnPerson(focusPersonId); }, 100);
+      }
+    });
+    return;
   }
 
   if (window.innerWidth > 768 && !('ontouchstart' in window)) {
@@ -4138,17 +5727,61 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
   renderFreeBuild();
 
   // Auto-center on focus person and fit to screen
+  // On mobile, offset the centering by the header height so the ME card isn't hidden behind the header
+  function centerOnPersonOffset(personId, extraOffsetY) {
+    const scrollArea = document.getElementById('treeScroll');
+    if (!scrollArea) return;
+    const target = people.find(p => p.id === personId);
+    if (!target) return;
+    const { positions } = layoutTree();
+    const targetPos = positions.get(personId);
+    if (!targetPos) return;
+    const cx = (targetPos.x + CARD_W / 2) * zoom;
+    const cy = (targetPos.y + CARD_H / 2) * zoom;
+    setTimeout(function() {
+      scrollArea.scrollTo({
+        left: Math.max(0, cx - scrollArea.clientWidth / 2),
+        top: Math.max(0, cy - scrollArea.clientHeight / 2 + (extraOffsetY || 0)),
+        behavior: 'auto'
+      });
+    }, 100);
+  }
+
+  // Dynamic header offset: measure actual header height and set tree-scroll top
+  // so cards never hide behind the banner. Runs once on load + on resize.
+  function syncHeaderOffset() {
+    var headerEl = document.querySelector('.header');
+    var scrollEl = document.getElementById('treeScroll');
+    if (!headerEl || !scrollEl) return;
+    var headerH = headerEl.offsetHeight;
+    scrollEl.style.top = headerH + 'px';
+  }
+  syncHeaderOffset();
+  window.addEventListener('resize', syncHeaderOffset);
+  // Also sync after fonts/Cinzel load (can change header height)
+  setTimeout(syncHeaderOffset, 200);
+  setTimeout(syncHeaderOffset, 1000);
+
+  // Calculate header height to offset centering on mobile
+  var headerEl = document.querySelector('.header');
+  var headerH = headerEl ? headerEl.offsetHeight : 90;
+  // On mobile, shift the card down by half the header overflow so it's visible
+  var offsetY = 0;
+  if (window.innerWidth <= 600) {
+    offsetY = (headerH - 90) / 2;
+  }
+
   if (focusPersonId) {
     setTimeout(function() {
       fitToScreen();
-      centerOnPerson(focusPersonId);
+      centerOnPersonOffset(focusPersonId, offsetY);
+    }, 100);
+  } else if (people.length > 0) {
+    setTimeout(function() {
+      centerOnPersonOffset(people[0].id, offsetY);
     }, 100);
   }
 })();
 </script>
-<div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
-  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
-    <div style="text-align:center;margin-bottom:16px;">
-      <div style="font-size:48px;margin-bottom:8px;">🔒</div>
 </body>
 </html>
