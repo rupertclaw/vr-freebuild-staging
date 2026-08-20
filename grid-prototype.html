@@ -282,7 +282,10 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     familyUnits[fid] = { fid, parents, children };
   }
   
-  // Compute zone width recursively
+  // Compute zone width recursively — tight packing
+  // Single child = 1 col, child with family = their zone width
+  // Gap between children = 1 col, gap between sub-zones = 1 col
+  const ZONE_GAP = 1;
   const zoneWidths = {};
   function computeZoneWidth(fid, visiting = new Set()) {
     if (zoneWidths[fid] !== undefined) return zoneWidths[fid];
@@ -292,19 +295,23 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
     if (!unit) return 2;
     const parentWidth = unit.parents.length;
     let childrenWidth = 0;
-    for (const c of unit.children) {
+    for (let i = 0; i < unit.children.length; i++) {
+      const c = unit.children[i];
       const sFams = (personSpouseFams[c] || []).filter(sf => {
         const sfam = families[sf]; if (!sfam) return false;
         const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
         return spouse && visited.has(spouse);
       });
       if (sFams.length > 0) {
-        for (const sf of sFams) { childrenWidth += computeZoneWidth(sf, visiting) + 1; }
-        childrenWidth--;
-      } else { childrenWidth += 1; }
-      childrenWidth += 1;
+        for (let j = 0; j < sFams.length; j++) {
+          childrenWidth += computeZoneWidth(sFams[j], visiting);
+          if (j < sFams.length - 1) childrenWidth += ZONE_GAP;
+        }
+      } else {
+        childrenWidth += 1;
+      }
+      if (i < unit.children.length - 1) childrenWidth += 1;
     }
-    if (unit.children.length > 0) childrenWidth--;
     zoneWidths[fid] = Math.max(parentWidth, childrenWidth, 1);
     return zoneWidths[fid];
   }
@@ -342,16 +349,18 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
       colMap[unit.parents[0]] = startCol + Math.floor(width / 2);
     }
     
-    // Children left to right
+    // Children left to right, tight packing
     let col = startCol;
-    for (const c of unit.children) {
+    for (let i = 0; i < unit.children.length; i++) {
+      const c = unit.children[i];
       const sFams = (personSpouseFams[c] || []).filter(sf => {
         const sfam = families[sf]; if (!sfam) return false;
         const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
         return spouse && visited.has(spouse);
       });
       if (sFams.length > 0) {
-        for (const sf of sFams) {
+        for (let j = 0; j < sFams.length; j++) {
+          const sf = sFams[j];
           if (placedZones.has(sf)) continue;
           const cw = zoneWidths[sf] || 2;
           colMap[c] = col;
@@ -359,12 +368,14 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
           const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
           if (spouse && colMap[spouse] === undefined) colMap[spouse] = col + 1;
           placeZone(sf, col);
-          col += cw + 1;
+          col += cw;
+          if (j < sFams.length - 1) col += 1;
         }
       } else {
         colMap[c] = col;
-        col += 2;
+        col += 1;
       }
+      if (i < unit.children.length - 1) col += 1;
     }
     return startCol + width;
   }
