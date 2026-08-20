@@ -633,7 +633,7 @@ function render(individuals, generations, positions, connections, visited, ancho
   // Draw generation labels
   const genSet = new Set(Object.values(generations));
   const minGen = Math.min(...genSet);
-  const STEP_Y = parseInt(document.getElementById('cardH').value) + parseInt(document.getElementById('gapY').value);
+  // STEP_Y already declared above for family panels
   for (const gen of genSet) {
     const normGen = gen - minGen;
     const label = document.createElement('div');
