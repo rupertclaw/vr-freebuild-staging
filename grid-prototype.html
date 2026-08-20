@@ -427,7 +427,8 @@ function assignSlots(individuals, families, childToFamily, generations, visited,
       const people = byGen[gen] || [];
       people.sort((a, b) => colMap[a] - colMap[b]);
       for (let i = 0; i < people.length - 1; i++) {
-        if (colMap[people[i]] >= colMap[people[i + 1]]) {
+        // Cards are 1 col wide. Overlap if positions are less than 1 col apart.
+        if (colMap[people[i]] + 1 > colMap[people[i + 1]]) {
           colMap[people[i + 1]] = colMap[people[i]] + 1;
           shifts++;
         }
