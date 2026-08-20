@@ -1626,6 +1626,85 @@ function layoutTree() {
 
   function key(r, c) { return r + ',' + c; }
 
+  // ═══ Build families from GEDCOM FAM records (shared by both layout paths) ═══
+  // This is the authoritative source for parent-child relationships.
+  // Matches the prototype's approach: read FAM records directly, no reconstruction.
+  const families = {};
+  const personSpouseFams = {};   // personId -> [famId, ...]
+  const personParentFam = {};    // personId -> famId
+
+  for (const [famId, gfam] of Object.entries(gedcomFams)) {
+    // Only include families that have at least one person in the current view
+    const husb = gfam.husb && viewSet.has(gfam.husb) ? gfam.husb : null;
+    const wife = gfam.wife && viewSet.has(gfam.wife) ? gfam.wife : null;
+    const children = gfam.children.filter(c => viewSet.has(c));
+    if (!husb && !wife && children.length === 0) continue;
+
+    families[famId] = { husb, wife, children, marr: gfam.marr || '' };
+
+    if (husb && wife) {
+      if (!personSpouseFams[husb]) personSpouseFams[husb] = [];
+      if (!personSpouseFams[husb].includes(famId)) personSpouseFams[husb].push(famId);
+      if (!personSpouseFams[wife]) personSpouseFams[wife] = [];
+      if (!personSpouseFams[wife].includes(famId)) personSpouseFams[wife].push(famId);
+    }
+    for (const cid of children) {
+      if (!personParentFam[cid]) personParentFam[cid] = famId;
+    }
+  }
+
+  // Fallback: for people NOT in any GEDCOM family (manual adds, no GEDCOM loaded),
+  // reconstruct from people[].families and people[].parents.
+  const peopleInFams = new Set();
+  for (const fid in families) {
+    const f = families[fid];
+    if (f.husb) peopleInFams.add(f.husb);
+    if (f.wife) peopleInFams.add(f.wife);
+    for (const c of f.children) peopleInFams.add(c);
+  }
+
+  for (const p of viewPeople) {
+    if (peopleInFams.has(p.id)) continue;
+    for (const fam of (p.families || [])) {
+      const famId = fam.famId || ('manual_' + p.id + '_' + fam.spouseId);
+      if (!families[famId]) families[famId] = { husb: null, wife: null, children: [], marr: fam.marriageDate || '' };
+      const f = families[famId];
+      if (p.sex === 'M' && !f.husb) f.husb = p.id;
+      else if (p.sex === 'F' && !f.wife) f.wife = p.id;
+      else if (!f.husb) f.husb = p.id;
+      else if (!f.wife && fam.spouseId) f.wife = fam.spouseId;
+      if (fam.spouseId && viewSet.has(fam.spouseId)) {
+        if (!personSpouseFams[p.id]) personSpouseFams[p.id] = [];
+        if (!personSpouseFams[p.id].includes(famId)) personSpouseFams[p.id].push(famId);
+        if (!personSpouseFams[fam.spouseId]) personSpouseFams[fam.spouseId] = [];
+        if (!personSpouseFams[fam.spouseId].includes(famId)) personSpouseFams[fam.spouseId].push(famId);
+      }
+    }
+    // Add children for manually-added people
+    for (const cid of (p.children || [])) {
+      if (!viewSet.has(cid) || peopleInFams.has(cid)) continue;
+      for (const fid in families) {
+        const f = families[fid];
+        if ((f.husb === p.id || f.wife === p.id) && !f.children.includes(cid)) {
+          f.children.push(cid);
+          if (!personParentFam[cid]) personParentFam[cid] = fid;
+          break;
+        }
+      }
+    }
+  }
+
+  // Sort children in each family by birth year
+  for (const fid in families) {
+    families[fid].children.sort((a, b) => {
+      const ca = getP(a), cb = getP(b);
+      const aY = (ca?.birthDate || '').match(/\d{4}/);
+      const bY = (cb?.birthDate || '').match(/\d{4}/);
+      if (aY && bY) return parseInt(aY[0]) - parseInt(bY[0]);
+      return 0;
+    });
+  }
+
   // Convert grid (row, col) to pixel coordinates
   function toPixels(row, col) {
     return {
@@ -2151,89 +2230,7 @@ function layoutTree() {
       }
     }
 
-    // ── Step 2: Use GEDCOM family records directly (prototype approach) ──
-    // The prototype reads FAM records directly from the GEDCOM file:
-    //   families[famId] = { husb, wife, children: [], marr }
-    // No reconstruction, no matching, no guessing. This is the authoritative
-    // source for parent-child relationships.
-    const families = {};
-    const personSpouseFams = {};   // personId -> [famId, ...]
-    const personParentFam = {};    // personId -> famId
-
-    for (const [famId, gfam] of Object.entries(gedcomFams)) {
-      // Only include families that have at least one person in the current view
-      const husb = gfam.husb && viewSet.has(gfam.husb) ? gfam.husb : null;
-      const wife = gfam.wife && viewSet.has(gfam.wife) ? gfam.wife : null;
-      const children = gfam.children.filter(c => viewSet.has(c));
-      if (!husb && !wife && children.length === 0) continue;
-
-      families[famId] = { husb, wife, children, marr: gfam.marr || '' };
-
-      // Build personSpouseFams and personParentFam
-      if (husb && wife) {
-        if (!personSpouseFams[husb]) personSpouseFams[husb] = [];
-        if (!personSpouseFams[husb].includes(famId)) personSpouseFams[husb].push(famId);
-        if (!personSpouseFams[wife]) personSpouseFams[wife] = [];
-        if (!personSpouseFams[wife].includes(famId)) personSpouseFams[wife].push(famId);
-      }
-      for (const cid of children) {
-        if (!personParentFam[cid]) personParentFam[cid] = famId;
-      }
-    }
-
-    // Fallback: for people NOT in any GEDCOM family (manual adds, no GEDCOM loaded),
-    // reconstruct from people[].families and people[].parents.
-    // This preserves manual tree building functionality.
-    const peopleInFams = new Set();
-    for (const fid in families) {
-      const f = families[fid];
-      if (f.husb) peopleInFams.add(f.husb);
-      if (f.wife) peopleInFams.add(f.wife);
-      for (const c of f.children) peopleInFams.add(c);
-    }
-
-    for (const p of viewPeople) {
-      if (!genMap.has(p.id)) continue;
-      if (peopleInFams.has(p.id)) continue; // already covered by GEDCOM family
-      for (const fam of (p.families || [])) {
-        const famId = fam.famId || ('manual_' + p.id + '_' + fam.spouseId);
-        if (!families[famId]) families[famId] = { husb: null, wife: null, children: [], marr: fam.marriageDate || '' };
-        const f = families[famId];
-        if (p.sex === 'M' && !f.husb) f.husb = p.id;
-        else if (p.sex === 'F' && !f.wife) f.wife = p.id;
-        else if (!f.husb) f.husb = p.id;
-        else if (!f.wife && fam.spouseId) f.wife = fam.spouseId;
-        if (fam.spouseId && viewSet.has(fam.spouseId)) {
-          if (!personSpouseFams[p.id]) personSpouseFams[p.id] = [];
-          if (!personSpouseFams[p.id].includes(famId)) personSpouseFams[p.id].push(famId);
-          if (!personSpouseFams[fam.spouseId]) personSpouseFams[fam.spouseId] = [];
-          if (!personSpouseFams[fam.spouseId].includes(famId)) personSpouseFams[fam.spouseId].push(famId);
-        }
-      }
-      // Add children for manually-added people
-      for (const cid of (p.children || [])) {
-        if (!viewSet.has(cid) || peopleInFams.has(cid)) continue;
-        for (const fid in families) {
-          const f = families[fid];
-          if ((f.husb === p.id || f.wife === p.id) && !f.children.includes(cid)) {
-            f.children.push(cid);
-            if (!personParentFam[cid]) personParentFam[cid] = fid;
-            break;
-          }
-        }
-      }
-    }
-
-    // Sort children in each family by birth year
-    for (const fid in families) {
-      families[fid].children.sort((a, b) => {
-        const ca = getP(a), cb = getP(b);
-        const aY = (ca?.birthDate || '').match(/\d{4}/);
-        const bY = (cb?.birthDate || '').match(/\d{4}/);
-        if (aY && bY) return parseInt(aY[0]) - parseInt(bY[0]);
-        return 0;
-      });
-    }
+    // ── Step 2: families already built at top of layoutTree() (shared by both paths) ──
 
     // ── Step 3: Build family units (same as prototype) ──
     const familyUnits = {};
