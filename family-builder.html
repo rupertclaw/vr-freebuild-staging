@@ -2334,9 +2334,9 @@ function layoutTree() {
 
     // Place ancestors above root — only place parents, don't re-place children
     // that are already in the tree through their own descendants.
-    // For ancestor families, place parents as a couple to the LEFT of the
-    // already-placed child (cols childCol-2, childCol-1), NOT at childCol
-    // (which would overlap the child and get separated by overlap resolution).
+    // For ancestor families, place parents as a couple adjacent to each other,
+    // near the already-placed child. Find free columns at the parents' generation
+    // to avoid overlap resolution separating the couple.
     let waves = 0;
     while (waves < 30) {
       waves++;
@@ -2352,13 +2352,41 @@ function layoutTree() {
             placedZones.add(pfid);
             const childCol = colMap[pid] !== undefined ? colMap[pid] : 100;
 
-            // Place parents as a couple LEFT of the already-placed child.
-            // father at childCol-2, mother at childCol-1 — adjacent, not overlapping child.
+            // Find the parents' generation
+            const pGen = genMap.get(pid) - 1;
+
+            // Build a set of occupied columns at the parents' generation
+            const occCols = new Set();
+            for (const [oid, ogen] of genMap) {
+              if (ogen === pGen && colMap[oid] !== undefined) occCols.add(colMap[oid]);
+            }
+
+            // Find the nearest free pair of adjacent columns at pGen,
+            // starting from childCol-2 (left of child) and expanding outward.
+            let pCol0 = -1, pCol1 = -1;
+            for (let offset = 0; offset < 200; offset++) {
+              // Try left: childCol - 2 - offset, childCol - 1 - offset
+              const lc0 = childCol - 2 - offset, lc1 = childCol - 1 - offset;
+              if (!occCols.has(lc0) && !occCols.has(lc1)) {
+                pCol0 = lc0; pCol1 = lc1; break;
+              }
+              // Try right: childCol + 1 + offset, childCol + 2 + offset
+              const rc0 = childCol + 1 + offset, rc1 = childCol + 2 + offset;
+              if (!occCols.has(rc0) && !occCols.has(rc1)) {
+                pCol0 = rc0; pCol1 = rc1; break;
+              }
+            }
+            if (pCol0 === -1) { pCol0 = childCol - 2; pCol1 = childCol - 1; }
+
             if (punit.parents.length === 2) {
-              colMap[punit.parents[0]] = childCol - 2;
-              colMap[punit.parents[1]] = childCol - 1;
+              colMap[punit.parents[0]] = pCol0;
+              colMap[punit.parents[1]] = pCol1;
+              // Mark these as occupied so the next ancestor placement doesn't overlap
+              occCols.add(pCol0);
+              occCols.add(pCol1);
             } else if (punit.parents.length === 1) {
-              colMap[punit.parents[0]] = childCol - 1;
+              colMap[punit.parents[0]] = pCol0 + 1;
+              occCols.add(pCol0 + 1);
             }
 
             // Place unplaced siblings to the right of the child
