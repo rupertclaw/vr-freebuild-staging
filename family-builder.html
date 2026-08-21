@@ -2430,8 +2430,22 @@ function layoutTree() {
       if (colMap[p.id] === undefined) colMap[p.id] = nextCol++;
     }
 
-    // ── Step 7: Overlap resolution ──
+    // ── Step 7: Overlap resolution (couple-aware) ──
     // Per-generation: sort by col, shift right if cards are less than 1 col apart.
+    // Couples (spouses at same gen) are treated as a unit: when one is shifted,
+    // the other shifts too, keeping them adjacent.
+    
+    // Build spouse map for same-gen couples
+    const spouseOf = {};
+    for (const fid in families) {
+      const fam = families[fid];
+      if (fam.husb && fam.wife && genMap.has(fam.husb) && genMap.has(fam.wife) &&
+          genMap.get(fam.husb) === genMap.get(fam.wife)) {
+        spouseOf[fam.husb] = fam.wife;
+        spouseOf[fam.wife] = fam.husb;
+      }
+    }
+
     const byGen = {};
     for (const [id, gen] of genMap) {
       if (colMap[id] === undefined) continue;
@@ -2449,8 +2463,18 @@ function layoutTree() {
         for (let i = 0; i < people.length - 1; i++) {
           // Cards are 1 col wide. Overlap if positions are less than 1 col apart.
           if (colMap[people[i]] + 1 > colMap[people[i + 1]]) {
-            colMap[people[i + 1]] = colMap[people[i]] + 1;
+            const shiftTo = colMap[people[i]] + 1;
+            const shifted = people[i + 1];
+            colMap[shifted] = shiftTo;
             shifts++;
+            // If shifted person has a spouse at same gen, shift spouse too
+            const spouse = spouseOf[shifted];
+            if (spouse && colMap[spouse] !== undefined) {
+              // Only shift spouse right (never left) to avoid new overlaps
+              if (colMap[spouse] < shiftTo + 1 && colMap[spouse] > shiftTo - 2) {
+                colMap[spouse] = shiftTo + 1;
+              }
+            }
           }
         }
       }
