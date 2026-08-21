@@ -2266,15 +2266,14 @@ function layoutTree() {
     }
     for (const p of viewPeople) computeAncWidth(p.id, new Set());
 
-    // ── Step 6: Place ancestor tree (pedigree) then descendants ──
-    // Anchor at gen 0. Parents at gen -1 (couple centered above).
-    // Grandparents at gen -2: paternal couple on left, maternal on right.
-    // Each generation doubles, expanding outward. Couples stay adjacent.
-    // After ancestors, place anchor's own family (spouse + children) and descendants.
+    // ── Step 6: Place descendant tree (prototype approach) then ancestors (pedigree) ──
+    // 1. Find root family (anchor's grandfather family) and place descendant zones.
+    // 2. Place ancestors above root family using recursive pedigree (both parents).
+    // 3. Place siblings of ancestors as separate family zones.
     const colMap = {};
     const placedZones = new Set();
 
-    // placeZone: places a family zone (couple + children) for descendants.
+    // placeZone: places a family zone (couple + children) — same as prototype.
     function placeZone(fid, startCol) {
       if (placedZones.has(fid)) return startCol + (zoneWidths[fid] || 2);
       const unit = familyUnits[fid];
@@ -2322,11 +2321,10 @@ function layoutTree() {
       return startCol + width;
     }
 
-    // placeAncTree: recursively places personId's ancestors (parents, grandparents, etc.)
+    // placeAncTree: recursively places personId's PARENTS only (no siblings).
     // personId is already placed in colMap. subtreeStartCol is the leftmost col
-    // for this person's ancestor subtree (= ancWidths[personId] columns wide).
-    // Father gets the left portion, mother gets the right portion.
-    // They're placed adjacent as a couple. Their ancestors spread outward.
+    // for this person's ancestor subtree. Father gets left portion, mother gets
+    // right portion. They're placed adjacent as a couple. Recurses upward.
     function placeAncTree(personId, subtreeStartCol, visiting) {
       if (visiting.has(personId)) return;
       visiting.add(personId);
@@ -2342,67 +2340,37 @@ function layoutTree() {
 
       if (parents.length === 2) {
         const fw = ancWidths[parents[0]] || 1;
-        // Father at rightmost of his subtree, mother at leftmost of hers.
-        // This makes them adjacent as a couple.
         const fatherCol = subtreeStartCol + fw - 1;
         const motherCol = subtreeStartCol + fw;
         colMap[parents[0]] = fatherCol;
         colMap[parents[1]] = motherCol;
 
-        // Recurse: father's ancestors in [subtreeStartCol, subtreeStartCol+fw-1]
+        // Recurse upward: father's ancestors in his subtree, mother's in hers
         placeAncTree(parents[0], subtreeStartCol, visiting);
-        // Mother's ancestors in [subtreeStartCol+fw, ...]
         placeAncTree(parents[1], subtreeStartCol + fw, visiting);
-
-        // Place siblings (other children of this couple) to the right of mother
-        let sibCol = motherCol + 2;
-        for (let si = 0; si < unit.children.length; si++) {
-          const sc = unit.children[si];
-          if (sc === personId) continue;
-          if (colMap[sc] !== undefined) continue;
-          const ssFams = (personSpouseFams[sc] || []).filter(sf => {
-            const sfam = families[sf]; if (!sfam) return false;
-            const spouse = sfam.husb === sc ? sfam.wife : sfam.husb;
-            return spouse && genMap.has(spouse) && viewSet.has(spouse);
-          });
-          if (ssFams.length > 0) {
-            for (let sj = 0; sj < ssFams.length; sj++) {
-              const ssf = ssFams[sj];
-              if (placedZones.has(ssf)) continue;
-              const scw = zoneWidths[ssf] || 2;
-              colMap[sc] = sibCol;
-              const sfam = families[ssf];
-              const spouse = sfam.husb === sc ? sfam.wife : sfam.husb;
-              if (spouse && colMap[spouse] === undefined) colMap[spouse] = sibCol + 1;
-              placeZone(ssf, sibCol);
-              sibCol += scw;
-            }
-          } else {
-            colMap[sc] = sibCol;
-            sibCol += 1;
-          }
-        }
       } else if (parents.length === 1) {
         colMap[parents[0]] = subtreeStartCol;
         placeAncTree(parents[0], subtreeStartCol, visiting);
-        // Siblings to the right
-        let sibCol = subtreeStartCol + 2;
-        for (let si = 0; si < unit.children.length; si++) {
-          const sc = unit.children[si];
-          if (sc === personId) continue;
-          if (colMap[sc] !== undefined) continue;
-          colMap[sc] = sibCol;
-          sibCol += 1;
-        }
       }
     }
 
-    // Place anchor at center of its ancestor tree
-    const ancW = ancWidths[anchorId] || 1;
-    colMap[anchorId] = Math.floor(ancW / 2);
+    // ── 6a: Find root family (prototype: walk up father to grandfather family) ──
+    const anchorParentFam = personParentFam[anchorId];
+    let rootFam = anchorParentFam;
+    if (anchorParentFam && families[anchorParentFam]) {
+      const fam = families[anchorParentFam];
+      if (fam.husb && genMap.has(fam.husb)) {
+        const grandFam = personParentFam[fam.husb];
+        if (grandFam && families[grandFam]) rootFam = grandFam;
+      }
+    }
 
-    // Place ancestors upward from anchor (full pedigree: both parents, all generations)
-    placeAncTree(anchorId, 0, new Set());
+    // ── 6b: Place descendant tree from root family (same as prototype) ──
+    if (rootFam && familyUnits[rootFam]) {
+      placeZone(rootFam, 100);
+    } else if (!rootFam) {
+      colMap[anchorId] = 100;
+    }
 
     // Place anchor's own family (spouse + children) if not already placed
     const anchorSFams = (personSpouseFams[anchorId] || []).filter(
@@ -2419,7 +2387,23 @@ function layoutTree() {
       }
     }
 
-    // Place off-chain ancestors (spouse's parents, etc.) via wave-based search
+    // ── 6c: Place ancestors above root family using pedigree tree ──
+    // For each parent in the root family, recursively place their ancestors
+    // using the pedigree approach (both parents at each generation, couples adjacent).
+    if (rootFam && families[rootFam]) {
+      const rootFamObj = families[rootFam];
+      for (const pid of [rootFamObj.husb, rootFamObj.wife].filter(p => p && genMap.has(p))) {
+        if (colMap[pid] === undefined) continue;
+        const aw = ancWidths[pid] || 1;
+        // Place this person's ancestor tree centered above them
+        const subtreeStart = colMap[pid] - Math.floor(aw / 2);
+        placeAncTree(pid, subtreeStart, new Set());
+      }
+    }
+
+    // ── 6d: Place siblings of ancestors + off-chain ancestors via wave search ──
+    // For each placed ancestor family, place unplaced siblings as family zones.
+    // Also find any remaining ancestor families (off-chain like spouse's parents).
     let waves = 0;
     while (waves < 30) {
       waves++;
@@ -2461,7 +2445,16 @@ function layoutTree() {
               occCols.add(pCol0 + 1);
             }
 
-            // Place unplaced siblings
+            // Recursively place this couple's ancestors via pedigree tree
+            if (punit.parents.length === 2) {
+              const faw = ancWidths[punit.parents[0]] || 1;
+              placeAncTree(punit.parents[0], pCol0 - faw + 1, new Set());
+              placeAncTree(punit.parents[1], pCol1, new Set());
+            } else if (punit.parents.length === 1) {
+              placeAncTree(punit.parents[0], pCol0 + 1, new Set());
+            }
+
+            // Place unplaced siblings to the right
             let sibCol = childCol + 2;
             for (let si = 0; si < punit.children.length; si++) {
               const sc = punit.children[si];
@@ -2488,16 +2481,6 @@ function layoutTree() {
                 sibCol += 1;
               }
             }
-
-            // Recursively place this couple's ancestors via pedigree tree
-            if (punit.parents.length === 2) {
-              const faw = ancWidths[punit.parents[0]] || 1;
-              placeAncTree(punit.parents[0], pCol0 - faw + 1, new Set());
-              placeAncTree(punit.parents[1], pCol1, new Set());
-            } else if (punit.parents.length === 1) {
-              placeAncTree(punit.parents[0], pCol0 + 1, new Set());
-            }
-
             newPlacements = true;
           }
         }
