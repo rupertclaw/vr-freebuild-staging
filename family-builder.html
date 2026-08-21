@@ -1883,123 +1883,48 @@ function layoutTree() {
     }
   }
 
-  // ── Add spouse connector ──
+  // ── Add spouse connector (prototype style: simple marriage line) ──
   function addSpouseConn(id1, id2) {
     const p1 = positions.get(id1);
     const p2 = positions.get(id2);
     if (!p1 || !p2) return;
-    const left = p1.x <= p2.x ? p1 : p2;
-    const right = p1.x <= p2.x ? p2 : p1;
-    // Check if spouses are adjacent (no cards between them)
-    const leftCol = left.col;
-    const rightCol = right.col;
-    const hasCardsBetween = (rightCol - leftCol) > 1;
-    if (hasCardsBetween) {
-      // Non-adjacent spouses: draw stepped line below the intervening cards
-      // Use a Y position below the row to avoid crossing cards
-      const stepY = left.y + CARD_H + 5; // just below the card row
-      connections.push({
-        type: 'spouse',
-        x1: left.x + CARD_W / 2,
-        y1: left.y + CARD_H / 2,
-        x2: right.x + CARD_W / 2,
-        y2: right.y + CARD_H / 2,
-        stepY: stepY,
-        stepped: true,
-        personIds: [id1, id2]
-      });
-    } else {
-      // Adjacent spouses: simple horizontal line
-      connections.push({
-        type: 'spouse',
-        x1: left.x + CARD_W,
-        y1: left.y + CARD_H / 2,
-        x2: right.x,
-        y2: right.y + CARD_H / 2,
-        personIds: [id1, id2]
-      });
-    }
+    connections.push({
+      type: 'marriage',
+      x1: p1.x, y1: p1.y,
+      x2: p2.x, y2: p2.y,
+      husbId: id1, wifeId: id2
+    });
   }
 
-  // ── Add parent-child bus connector (for multiple children) ──
-  // marriageIndex: 0 for first marriage, 1 for second, etc.
-  // Used to offset bus Y so buses from different marriages don't overlap.
+  // ── Add parent-child bus connector (prototype style: simple bus) ──
+  // One bus per family: midpoint from parents, horizontal bus, verticals to children.
+  // No sex-based midpoint, no far-child splitting, no marriage index offset.
   function addParentChildBus(parentId, spouseId, childIds, marriageIndex) {
-    if (!marriageIndex) marriageIndex = 0;
     const parentPos = positions.get(parentId);
     const spousePos = spouseId ? positions.get(spouseId) : null;
     if (!parentPos) return;
 
-    // Compute midpoint: prefer mother's card center, else couple midpoint, else parent center
-    // But if spouse is far from the parent (different component), use parent center only
-    let midX;
-    const parent = getP(parentId);
-    const spouse = spouseId ? getP(spouseId) : null;
-    const motherIsParent = parent && parent.sex === 'F';
-    const motherIsSpouse = !motherIsParent && spouse && spouse.sex === 'F';
-    const spouseFar = spousePos && Math.abs(spousePos.col - parentPos.col) > 40;
-    if (motherIsParent) midX = parentPos.x + CARD_W / 2;
-    else if (motherIsSpouse && spousePos && !spouseFar) midX = spousePos.x + CARD_W / 2;
-    else if (spousePos && !spouseFar) midX = (parentPos.x + spousePos.x) / 2 + CARD_W / 2;
-    else midX = parentPos.x + CARD_W / 2;
-
-    // Split children into near (bus) and far (individual lines)
-    // Far children are in disconnected components; including them in the bus
-    // creates lines spanning the entire canvas.
-    const MAX_BUS_COL_DIST = 40;
-    const parentCol = parentPos.col;
-    const childPositions = [];
-    const farChildren = [];
-    for (const cid of childIds) {
-      const cp = positions.get(cid);
-      if (!cp) continue;
-      if (Math.abs(cp.col - parentCol) > MAX_BUS_COL_DIST) {
-        farChildren.push({ childX: Math.round(cp.x + CARD_W / 2), childY: cp.y, childId: cid });
-      } else {
-        childPositions.push({ childX: Math.round(cp.x + CARD_W / 2), childY: cp.y });
-      }
-    }
-
-    const parentY = parentPos.y + CARD_H;
-
-    // Far children get individual L-shaped lines
-    for (const fc of farChildren) {
-      connections.push({
-        type: 'parent-child',
-        midX: Math.round(midX),
-        parentY: parentY,
-        childX: fc.childX,
-        childY: fc.childY,
-        personIds: { parentId, childId: fc.childId, spouseId }
-      });
-    }
-
-    if (childPositions.length === 0) return;
-
-    if (childPositions.length === 1) {
-      // Single child: simple L-shaped connector
-      connections.push({
-        type: 'parent-child',
-        midX: Math.round(midX),
-        parentY: parentY,
-        childX: childPositions[0].childX,
-        childY: childPositions[0].childY,
-        personIds: { parentId, childId: childIds[0], spouseId }
-      });
+    let parentMidX, parentY;
+    if (parentPos && spousePos) {
+      parentMidX = (parentPos.x + spousePos.x) / 2 + CARD_W / 2;
+      parentY = (parentPos.y + spousePos.y) / 2 + CARD_H;
     } else {
-      // Multiple children: bus connector
-      // Offset busY per marriage so buses from different marriages don't overlap
-      const baseBusY = Math.round((parentY + childPositions[0].childY) / 2);
-      const busY = baseBusY + marriageIndex * 8; // 8px offset per marriage
-      connections.push({
-        type: 'parent-child-bus',
-        parentMidX: Math.round(midX),
-        parentY: parentY,
-        busY: busY,
-        children: childPositions,
-        personIds: { parentId, childIds: childIds.slice(), spouseId }
-      });
+      parentMidX = parentPos.x + CARD_W / 2;
+      parentY = parentPos.y;
     }
+
+    const placedChildren = childIds.filter(cid => positions.get(cid));
+    if (placedChildren.length === 0) return;
+
+    connections.push({
+      type: 'parent-child-bus',
+      parentMidX: parentMidX,
+      parentY: parentY,
+      children: placedChildren.map(cid => {
+        const cp = positions.get(cid);
+        return { childX: cp.x + CARD_W / 2, childY: cp.y };
+      })
+    });
   }
 
   // ── Place spouse's ancestors above as side branch ──
@@ -2321,11 +2246,6 @@ function layoutTree() {
         const grandFam = personParentFam[fam.husb];
         if (grandFam && families[grandFam]) rootFam = grandFam;
       }
-      // Also try wife if no husband path
-      if (rootFam === anchorParentFam && fam.wife && genMap.has(fam.wife)) {
-        const grandFam = personParentFam[fam.wife];
-        if (grandFam && families[grandFam]) rootFam = grandFam;
-      }
     }
 
     // ── Step 6: Place zones recursively from root family ──
@@ -2357,35 +2277,16 @@ function layoutTree() {
       let col = startCol;
       for (let i = 0; i < unit.children.length; i++) {
         const c = unit.children[i];
-        if (colMap[c] !== undefined) {
-          // Already placed — skip but advance past its zone width
-          const sFams = (personSpouseFams[c] || []).filter(sf => {
-            const sfam = families[sf];
-            if (!sfam) return false;
-            const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
-            return spouse && genMap.has(spouse) && viewSet.has(spouse);
-          });
-          let cw = 1;
-          if (sFams.length > 0) {
-            cw = sFams.reduce((sum, sf) => sum + (zoneWidths[sf] || 2), 0);
-          }
-          col += cw;
-          continue;
-        }
+        if (colMap[c] !== undefined) continue;
         const sFams = (personSpouseFams[c] || []).filter(sf => {
-          const sfam = families[sf];
-          if (!sfam) return false;
+          const sfam = families[sf]; if (!sfam) return false;
           const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
           return spouse && genMap.has(spouse) && viewSet.has(spouse);
         });
         if (sFams.length > 0) {
           for (let j = 0; j < sFams.length; j++) {
             const sf = sFams[j];
-            if (placedZones.has(sf)) {
-              const cw = zoneWidths[sf] || 2;
-              col += cw;
-              continue;
-            }
+            if (placedZones.has(sf)) continue;
             const cw = zoneWidths[sf] || 2;
             // Child + spouse placed at current col
             colMap[c] = col;
@@ -2503,290 +2404,6 @@ function layoutTree() {
       placeAt(id, row, col, new Set());
     }
 
-    // ── Step 9: Place disconnected components using zone-based layout ──
-    // For each component not reachable from the anchor, run a mini BFS +
-    // zone-based layout at a column offset. This avoids placeSubtree which
-    // spreads children across hundreds of columns creating mega bus lines.
-    const placedIds = new Set([...genMap.keys()].filter(id => gridPos.has(id)));
-    const unplaced = viewPeople.filter(p => !genMap.has(p.id) && !gridPos.has(p.id));
-    if (unplaced.length > 0) {
-      // Find disconnected components among unplaced people
-      const assigned = new Set();
-      const components = [];
-      for (const p of unplaced) {
-        if (assigned.has(p.id)) continue;
-        // BFS within unplaced set
-        const comp = new Set();
-        const q = [p.id];
-        while (q.length > 0) {
-          const pid = q.shift();
-          if (comp.has(pid)) continue;
-          comp.add(pid);
-          assigned.add(pid);
-          const person = getP(pid);
-          if (!person) continue;
-          for (const cid of (person.children || [])) {
-            if (viewSet.has(cid) && !genMap.has(cid) && !comp.has(cid)) q.push(cid);
-          }
-          for (const pp of (person.parents || [])) {
-            if (viewSet.has(pp) && !genMap.has(pp) && !comp.has(pp)) q.push(pp);
-          }
-          for (const fam of (person.families || [])) {
-            if (viewSet.has(fam.spouseId) && !genMap.has(fam.spouseId) && !comp.has(fam.spouseId)) q.push(fam.spouseId);
-          }
-        }
-        // Find root of this component
-        const compRoots = [...comp].filter(pid => {
-          const person = getP(pid);
-          return !person.parents || person.parents.length === 0 || !person.parents.some(pp => viewSet.has(pp));
-        });
-        // Sort by descendant count
-        compRoots.sort((a, b) => countDescendants(b) - countDescendants(a));
-        components.push({ people: [...comp], rootId: compRoots[0] || [...comp][0] });
-      }
-
-      // Place each component using zone-based layout at a column offset
-      let compOffset = 500; // start far right of main tree
-      for (const comp of components) {
-        if (comp.people.length === 0) continue;
-        const compSet = new Set(comp.people);
-
-        // Mini BFS from component root
-        const compGenMap = new Map();
-        const q2 = [{ id: comp.rootId, gen: 0 }];
-        compGenMap.set(comp.rootId, 0);
-        while (q2.length > 0) {
-          const { id, gen } = q2.shift();
-          const person = getP(id);
-          if (!person) continue;
-          for (const fam of (person.families || [])) {
-            if (viewSet.has(fam.spouseId) && !compGenMap.has(fam.spouseId) && compSet.has(fam.spouseId)) {
-              compGenMap.set(fam.spouseId, gen); q2.push({ id: fam.spouseId, gen });
-            }
-          }
-          for (const pp of (person.parents || [])) {
-            if (viewSet.has(pp) && !compGenMap.has(pp) && compSet.has(pp)) {
-              compGenMap.set(pp, gen - 1); q2.push({ id: pp, gen: gen - 1 });
-            }
-          }
-          for (const cid of (person.children || [])) {
-            if (viewSet.has(cid) && !compGenMap.has(cid) && compSet.has(cid)) {
-              compGenMap.set(cid, gen + 1); q2.push({ id: cid, gen: gen + 1 });
-            }
-          }
-        }
-
-        // Build family units for this component
-        const compFamilyUnits = {};
-        for (const fid in families) {
-          const fam = families[fid];
-          const parents = [fam.husb, fam.wife].filter(p => p && compGenMap.has(p) && viewSet.has(p));
-          const children = fam.children.filter(c => compGenMap.has(c) && viewSet.has(c));
-          if (parents.length === 0 && children.length === 0) continue;
-          compFamilyUnits[fid] = { fid, parents, children };
-        }
-
-        // Compute zone widths for this component
-        const compZoneWidths = {};
-        function compComputeZoneWidth(fid, visiting) {
-          if (compZoneWidths[fid] !== undefined) return compZoneWidths[fid];
-          if (!visiting) visiting = new Set();
-          if (visiting.has(fid)) return 2;
-          visiting.add(fid);
-          const unit = compFamilyUnits[fid]; if (!unit) return 2;
-          let cw = 0;
-          for (const c of unit.children) {
-            const sFams = (personSpouseFams[c] || []).filter(sf => {
-              const sfam = families[sf]; if (!sfam) return false;
-              const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
-              return spouse && compGenMap.has(spouse) && viewSet.has(spouse);
-            });
-            if (sFams.length > 0) {
-              for (const sf of sFams) cw += compComputeZoneWidth(sf, visiting);
-            } else { cw += 1; }
-          }
-          compZoneWidths[fid] = Math.max(2, cw);
-          return compZoneWidths[fid];
-        }
-        for (const fid in compFamilyUnits) compComputeZoneWidth(fid);
-
-        // Find root family for this component
-        const compRootParentFam = personParentFam[comp.rootId];
-        let compRootFam = compRootParentFam;
-        if (compRootParentFam && families[compRootParentFam] && compFamilyUnits[compRootParentFam]) {
-          const fam = families[compRootParentFam];
-          if (fam.husb && compGenMap.has(fam.husb)) {
-            const grandFam = personParentFam[fam.husb];
-            if (grandFam && compFamilyUnits[grandFam]) compRootFam = grandFam;
-          }
-        }
-
-        // Place zones for this component
-        const compColMap = {};
-        const compPlacedZones = new Set();
-
-        function compPlaceZone(fid, startCol) {
-          if (compPlacedZones.has(fid)) return startCol + (compZoneWidths[fid] || 2);
-          const unit = compFamilyUnits[fid]; if (!unit) return startCol;
-          const width = compZoneWidths[fid] || 2;
-          compPlacedZones.add(fid);
-
-          if (unit.parents.length === 2) {
-            const center = startCol + (width / 2);
-            compColMap[unit.parents[0]] = Math.floor(center) - 1;
-            compColMap[unit.parents[1]] = Math.floor(center);
-            if (compColMap[unit.parents[1]] <= compColMap[unit.parents[0]]) {
-              compColMap[unit.parents[1]] = compColMap[unit.parents[0]] + 1;
-            }
-          } else if (unit.parents.length === 1) {
-            compColMap[unit.parents[0]] = startCol + Math.floor(width / 2);
-          }
-
-          let col = startCol;
-          for (const c of unit.children) {
-            if (compColMap[c] !== undefined) {
-              const sFams = (personSpouseFams[c] || []).filter(sf => {
-                const sfam = families[sf]; if (!sfam) return false;
-                const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
-                return spouse && compGenMap.has(spouse) && viewSet.has(spouse);
-              });
-              let cw = 1;
-              if (sFams.length > 0) cw = sFams.reduce((s, sf) => s + (compZoneWidths[sf] || 2), 0);
-              col += cw; continue;
-            }
-            const sFams = (personSpouseFams[c] || []).filter(sf => {
-              const sfam = families[sf]; if (!sfam) return false;
-              const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
-              return spouse && compGenMap.has(spouse) && viewSet.has(spouse);
-            });
-            if (sFams.length > 0) {
-              for (const sf of sFams) {
-                if (compPlacedZones.has(sf)) { col += compZoneWidths[sf] || 2; continue; }
-                const cw = compZoneWidths[sf] || 2;
-                compColMap[c] = col;
-                const sfam = families[sf];
-                const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
-                if (spouse && compColMap[spouse] === undefined) compColMap[spouse] = col + 1;
-                compPlaceZone(sf, col);
-                col += cw;
-              }
-            } else {
-              compColMap[c] = col; col += 1;
-            }
-          }
-          return startCol + width;
-        }
-
-        if (compRootFam && compFamilyUnits[compRootFam]) {
-          compPlaceZone(compRootFam, compOffset);
-        } else {
-          compColMap[comp.rootId] = compOffset;
-        }
-
-        // Place anchor's own family
-        const compAnchorSFams = (personSpouseFams[comp.rootId] || []).filter(
-          fid => families[fid] && !compPlacedZones.has(fid) && compFamilyUnits[fid]
-        );
-        for (const fid of compAnchorSFams) {
-          if (compColMap[comp.rootId] !== undefined) {
-            const fam = families[fid];
-            const spouse = fam.husb === comp.rootId ? fam.wife : fam.husb;
-            if (spouse && compColMap[spouse] === undefined) {
-              compColMap[spouse] = compColMap[comp.rootId] + 1;
-            }
-            compPlaceZone(fid, compColMap[comp.rootId]);
-          }
-        }
-
-        // Place ancestors above root (same wave approach as main)
-        let compWaves = 0;
-        while (compWaves < 30) {
-          compWaves++;
-          const current = [...compPlacedZones];
-          let newPlacements = false;
-          for (const fid of current) {
-            const fam = families[fid];
-            for (const pid of [fam.husb, fam.wife].filter(p => p && compGenMap.has(p))) {
-              const pfid = personParentFam[pid];
-              if (pfid && compFamilyUnits[pfid] && !compPlacedZones.has(pfid)) {
-                const pw = compZoneWidths[pfid] || 2;
-                compPlaceZone(pfid, Math.round((compColMap[pid] || compOffset) - pw / 2));
-                newPlacements = true;
-              }
-            }
-          }
-          if (!newPlacements) break;
-        }
-
-        // Place any remaining people in this component
-        let compNextCol = compOffset + 200;
-        for (const pid of comp.people) {
-          if (!compGenMap.has(pid)) continue;
-          if (compColMap[pid] === undefined) compColMap[pid] = compNextCol++;
-        }
-
-        // Overlap resolution within this component
-        const compByGen = {};
-        for (const [id, gen] of compGenMap) {
-          if (compColMap[id] === undefined) continue;
-          (compByGen[gen] ||= []).push(id);
-        }
-        const compGenList = Object.keys(compByGen).map(Number).sort((a, b) => a - b);
-        let compShiftPasses = 0;
-        while (compShiftPasses < 10) {
-          compShiftPasses++;
-          let shifts = 0;
-          for (const gen of compGenList) {
-            const ppl = compByGen[gen] || [];
-            ppl.sort((a, b) => compColMap[a] - compColMap[b]);
-            for (let i = 0; i < ppl.length - 1; i++) {
-              if (compColMap[ppl[i]] + 1 > compColMap[ppl[i + 1]]) {
-                compColMap[ppl[i + 1]] = compColMap[ppl[i]] + 1;
-                shifts++;
-              }
-            }
-          }
-          if (shifts === 0) break;
-        }
-
-        // Merge into main gridPos/positions
-        let compMinGen = Infinity;
-        for (const [id, gen] of compGenMap) {
-          if (compColMap[id] === undefined) continue;
-          if (gen < compMinGen) compMinGen = gen;
-        }
-        if (compMinGen === Infinity) compMinGen = 0;
-
-        for (const [id, gen] of compGenMap) {
-          if (compColMap[id] === undefined) continue;
-          const row = gen - compMinGen;
-          const col = compColMap[id];
-          placeAt(id, row, col, new Set());
-        }
-
-        // Advance offset for next component
-        let compMaxCol = 0;
-        for (const [id, gp] of gridPos) {
-          if (compGenMap.has(id) && gp.col > compMaxCol) compMaxCol = gp.col;
-        }
-        compOffset = compMaxCol + 5;
-      }
-
-      // Anyone still unplaced (not in any component BFS)
-      const stillUnplaced = viewPeople.filter(p => !genMap.has(p.id) && !gridPos.has(p.id));
-      if (stillUnplaced.length > 0) {
-        let maxUsedRow = 0;
-        for (const [id, gp] of gridPos) { if (gp.row > maxUsedRow) maxUsedRow = gp.row; }
-        const orphanRow = maxUsedRow + 2;
-        let orphanCol = 0;
-        for (const p of stillUnplaced) {
-          const c = findFreeCol(orphanRow, orphanCol);
-          placeAt(p.id, orphanRow, c, new Set());
-          orphanCol = c + 2;
-        }
-      }
-    }
-
     // ── Step 10: Normalize rows and columns to start at 0 ──
     let normMinRow = Infinity, normMinCol = Infinity;
     for (const [id, gp] of gridPos) {
@@ -2831,21 +2448,7 @@ function layoutTree() {
       );
       if (placedChildren.length === 0) continue;
 
-      // Determine marriage index (for bus Y offset on multi-marriage parents)
-      let marriageIndex = 0;
-      if (fam.husb && fam.wife) {
-        const parent = getP(fam.husb);
-        if (parent && parent.families) {
-          for (let mi = 0; mi < parent.families.length; mi++) {
-            if (parent.families[mi].spouseId === fam.wife) {
-              marriageIndex = mi;
-              break;
-            }
-          }
-        }
-      }
-
-      addParentChildBus(fam.husb || fam.wife, fam.husb ? fam.wife : null, placedChildren, marriageIndex);
+      addParentChildBus(fam.husb || fam.wife, fam.husb ? fam.wife : null, placedChildren);
     }
 
   } else {    // ── NO ANCHOR FOUND: place everyone as orphans ──
@@ -2890,20 +2493,7 @@ function layoutTree() {
       );
       if (placedChildren.length === 0) continue;
 
-      let marriageIndex = 0;
-      if (fam.husb && fam.wife) {
-        const parent = getP(fam.husb);
-        if (parent && parent.families) {
-          for (let mi = 0; mi < parent.families.length; mi++) {
-            if (parent.families[mi].spouseId === fam.wife) {
-              marriageIndex = mi;
-              break;
-            }
-          }
-        }
-      }
-
-      addParentChildBus(fam.husb || fam.wife, fam.husb ? fam.wife : null, placedChildren, marriageIndex);
+      addParentChildBus(fam.husb || fam.wife, fam.husb ? fam.wife : null, placedChildren);
     }
   }
 
@@ -2944,82 +2534,29 @@ function renderFreeBuild() {
   const viewBottom = scrollArea ? viewTop + (scrollArea.clientHeight / zoom) + 200 : Infinity;
 
   // Draw connections — render ALL connections statically (no viewport culling)
-  // Virtualized culling causes lines to appear/disappear on scroll, which looks broken.
-  // For 513 people the connection count is manageable.
+  // Prototype style: simple SVG lines, no rounded corners, no stepped paths.
   let svgContent = '';
   for (const conn of connections) {
-    if (conn.type === 'spouse') {
-      if (conn.stepped) {
-        // Non-adjacent spouses: stepped line going below intervening cards
-        // Down from left card center, horizontal below row, up to right card center
-        const midX = (conn.x1 + conn.x2) / 2;
-        const path = `M ${conn.x1} ${conn.y1} L ${conn.x1} ${conn.stepY} L ${conn.x2} ${conn.stepY} L ${conn.x2} ${conn.y2}`;
-        svgContent += `<path d=\"${path}\" fill=\"none\" stroke=\"var(--line-stroke)\" stroke-width=\"2\" stroke-linejoin=\"round\" />`;
-      } else if (Math.abs(conn.y1 - conn.y2) < 2) {
-        // Same Y — simple horizontal line
-        svgContent += `<line x1="${conn.x1}" y1="${conn.y1}" x2="${conn.x2}" y2="${conn.y2}"
-                      stroke="var(--line-stroke)" stroke-width="2" />`;
-      } else {
-        // Different Y — step connector: horizontal from left card, vertical, horizontal to right card
-        // Use the midpoint X between the two cards for the vertical segment
-        const midX = (conn.x1 + conn.x2) / 2;
-        svgContent += `<path d="M ${conn.x1} ${conn.y1} L ${midX} ${conn.y1} L ${midX} ${conn.y2} L ${conn.x2} ${conn.y2}"
-                      fill="none" stroke="var(--line-stroke)" stroke-width="2" stroke-linejoin="round" />`;
-      }
-    } else if (conn.type === 'parent-child') {
-      // Single child — L-shaped or straight line
-      const baseMidY = (conn.parentY + conn.childY) / 2;
-      if (Math.abs(conn.parentY - conn.childY) < 2) {
-        // Horizontal line (same generation)
-        svgContent += `<line x1="${conn.midX}" y1="${conn.parentY}" x2="${conn.childX}" y2="${conn.childY}"
-                      stroke="var(--line-stroke)" stroke-width="1.5" />`;
-      } else if (Math.abs(conn.midX - conn.childX) < 2) {
-        // Straight vertical line
-        svgContent += `<line x1="${conn.midX}" y1="${conn.parentY}" x2="${conn.childX}" y2="${conn.childY}"
-                      stroke="var(--line-stroke)" stroke-width="1.5" />`;
-      } else {
-        // L-shaped with rounded corners
-        const r = 6;
-        const dy = baseMidY - conn.parentY;
-        const dx = conn.childX - conn.midX;
-        const rV = Math.min(r, Math.abs(dy) / 2);
-        const rH = Math.min(r, Math.abs(dx) / 2);
-        const rEff = Math.min(rV, rH);
-        let path = `M ${conn.midX} ${conn.parentY}`;
-        if (dx > 0) {
-          path += ` L ${conn.midX} ${baseMidY - rEff} Q ${conn.midX} ${baseMidY} ${conn.midX + rEff} ${baseMidY}`;
-          path += ` L ${conn.childX - rEff} ${baseMidY} Q ${conn.childX} ${baseMidY} ${conn.childX} ${baseMidY + rEff}`;
-          path += ` L ${conn.childX} ${conn.childY}`;
-        } else {
-          path += ` L ${conn.midX} ${baseMidY - rEff} Q ${conn.midX} ${baseMidY} ${conn.midX - rEff} ${baseMidY}`;
-          path += ` L ${conn.childX + rEff} ${baseMidY} Q ${conn.childX} ${baseMidY} ${conn.childX} ${baseMidY + rEff}`;
-          path += ` L ${conn.childX} ${conn.childY}`;
-        }
-        svgContent += `<path d="${path}" fill="none" stroke="var(--line-stroke)" stroke-width="1.5" stroke-linejoin="round" />`;
-      }
+    if (conn.type === 'marriage') {
+      // Horizontal line between spouse cards at card center height
+      const y = conn.y1 + CARD_H / 2;
+      svgContent += `<line x1="${conn.x1 + (conn.x2 > conn.x1 ? CARD_W : 0)}" y1="${y}" x2="${conn.x2 + (conn.x2 > conn.x1 ? 0 : CARD_W)}" y2="${y}" stroke="var(--line-stroke)" stroke-width="1.5" />`;
     } else if (conn.type === 'parent-child-bus') {
-      // Bus connector: vertical drop from parent, horizontal bus, verticals to each child
-      const busY = conn.busY;
-      const r = 6; // corner radius
+      const busY = (conn.parentY + conn.children[0].childY) / 2;
 
-      // 1. Vertical drop from parent down to busY
-      svgContent += `<line x1="${conn.parentMidX}" y1="${conn.parentY}" x2="${conn.parentMidX}" y2="${busY}"
-                    stroke="var(--line-stroke)" stroke-width="1.5" />`;
+      // Vertical from parent midpoint down to bus
+      svgContent += `<line x1="${conn.parentMidX}" y1="${conn.parentY}" x2="${conn.parentMidX}" y2="${busY}" stroke="var(--line-stroke)" stroke-width="1.5" />`;
 
-      // 2. Horizontal bus line from leftmost child to rightmost child
-      const leftX = conn.children[0].childX;
-      const rightX = conn.children[conn.children.length - 1].childX;
-      svgContent += `<line x1="${leftX}" y1="${busY}" x2="${rightX}" y2="${busY}"
-                    stroke="var(--line-stroke)" stroke-width="1.5" />`;
+      // Horizontal bus from leftmost to rightmost child
+      const minChildX = Math.min(...conn.children.map(c => c.childX));
+      const maxChildX = Math.max(...conn.children.map(c => c.childX));
+      if (conn.children.length > 1) {
+        svgContent += `<line x1="${Math.min(minChildX, conn.parentMidX)}" y1="${busY}" x2="${Math.max(maxChildX, conn.parentMidX)}" y2="${busY}" stroke="var(--line-stroke)" stroke-width="1.5" />`;
+      }
 
-      // 3. Vertical from bus up to each child's top edge
+      // Vertical from bus down to each child
       for (const child of conn.children) {
-        if (Math.abs(child.childX - conn.parentMidX) < 2) {
-          // Child is directly below parent — skip, the drop line already covers it
-          continue;
-        }
-        svgContent += `<line x1="${child.childX}" y1="${busY}" x2="${child.childX}" y2="${child.childY}"
-                      stroke="var(--line-stroke)" stroke-width="1.5" />`;
+        svgContent += `<line x1="${child.childX}" y1="${busY}" x2="${child.childX}" y2="${child.childY}" stroke="var(--line-stroke)" stroke-width="1.5" />`;
       }
     }
   }
