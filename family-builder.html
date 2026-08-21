@@ -2467,12 +2467,17 @@ function layoutTree() {
             const shifted = people[i + 1];
             colMap[shifted] = shiftTo;
             shifts++;
-            // If shifted person has a spouse at same gen, shift spouse too
+            // If shifted person has a spouse at same gen, shift spouse to stay adjacent
             const spouse = spouseOf[shifted];
-            if (spouse && colMap[spouse] !== undefined) {
-              // Only shift spouse right (never left) to avoid new overlaps
-              if (colMap[spouse] < shiftTo + 1 && colMap[spouse] > shiftTo - 2) {
-                colMap[spouse] = shiftTo + 1;
+            if (spouse && colMap[spouse] !== undefined && genMap.get(spouse) === gen) {
+              // Determine which side the spouse is on
+              const spouseCol = colMap[spouse];
+              if (spouseCol < shiftTo) {
+                // Spouse is to the left — keep them at shiftTo - 1
+                if (spouseCol !== shiftTo - 1) colMap[spouse] = shiftTo - 1;
+              } else {
+                // Spouse is to the right — keep them at shiftTo + 1
+                if (spouseCol !== shiftTo + 1) colMap[spouse] = shiftTo + 1;
               }
             }
           }
