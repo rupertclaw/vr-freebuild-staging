@@ -2334,6 +2334,8 @@ function layoutTree() {
 
     // Place ancestors above root — only place parents, don't re-place children
     // that are already in the tree through their own descendants.
+    // For ancestor families, place parents directly above the already-placed child,
+    // not centered in a theoretical zone. This keeps couples together.
     let waves = 0;
     while (waves < 30) {
       waves++;
@@ -2344,9 +2346,46 @@ function layoutTree() {
         for (const pid of [fam.husb, fam.wife].filter(p => p && genMap.has(p))) {
           const pfid = personParentFam[pid];
           if (pfid && families[pfid] && !placedZones.has(pfid)) {
-            const pw = zoneWidths[pfid] || 2;
-            // Place parent family centered above this person
-            placeZone(pfid, Math.round((colMap[pid] || 100) - pw / 2));
+            const punit = familyUnits[pfid];
+            if (!punit) continue;
+            placedZones.add(pfid);
+            const childCol = colMap[pid] !== undefined ? colMap[pid] : 100;
+
+            // Place parents centered above the already-placed child
+            if (punit.parents.length === 2) {
+              colMap[punit.parents[0]] = childCol - 1;
+              colMap[punit.parents[1]] = childCol;
+            } else if (punit.parents.length === 1) {
+              colMap[punit.parents[0]] = childCol;
+            }
+
+            // Place unplaced siblings to the right of parents
+            let sibCol = childCol + 2;
+            for (let si = 0; si < punit.children.length; si++) {
+              const sc = punit.children[si];
+              if (colMap[sc] !== undefined) continue;
+              const ssFams = (personSpouseFams[sc] || []).filter(sf => {
+                const sfam = families[sf]; if (!sfam) return false;
+                const spouse = sfam.husb === sc ? sfam.wife : sfam.husb;
+                return spouse && genMap.has(spouse) && viewSet.has(spouse);
+              });
+              if (ssFams.length > 0) {
+                for (let sj = 0; sj < ssFams.length; sj++) {
+                  const ssf = ssFams[sj];
+                  if (placedZones.has(ssf)) continue;
+                  const scw = zoneWidths[ssf] || 2;
+                  colMap[sc] = sibCol;
+                  const sfam = families[ssf];
+                  const spouse = sfam.husb === sc ? sfam.wife : sfam.husb;
+                  if (spouse && colMap[spouse] === undefined) colMap[spouse] = sibCol + 1;
+                  placeZone(ssf, sibCol);
+                  sibCol += scw;
+                }
+              } else {
+                colMap[sc] = sibCol;
+                sibCol += 1;
+              }
+            }
             newPlacements = true;
           }
         }
