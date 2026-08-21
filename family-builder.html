@@ -2480,31 +2480,6 @@ function layoutTree() {
       });
     }
 
-    // ── DIAGNOSTIC: Log family child spans to understand bus line width ──
-    {
-      const diag = [];
-      for (const fid in families) {
-        const fam = families[fid];
-        const placedChildren = (fam.children || []).filter(c => gridPos.has(c));
-        if (placedChildren.length <= 1) continue;
-        const cols = placedChildren.map(c => gridPos.get(c).col);
-        const minC = Math.min(...cols), maxC = Math.max(...cols);
-        const husbG = fam.husb && gridPos.has(fam.husb) ? gridPos.get(fam.husb).col : null;
-        const wifeG = fam.wife && gridPos.has(fam.wife) ? gridPos.get(fam.wife).col : null;
-        diag.push({
-          fid, nChildren: placedChildren.length, childColSpan: maxC - minC,
-          minCol: minC, maxCol: maxC, husbCol: husbG, wifeCol: wifeG,
-          husbName: fam.husb ? (getP(fam.husb)?.name || '?') : null,
-          wifeName: fam.wife ? (getP(fam.wife)?.name || '?') : null,
-          children: placedChildren.map(c => ({ id: c, name: getP(c)?.name || '?', col: gridPos.get(c).col, gen: genMap.get(c) }))
-        });
-      }
-      diag.sort((a,b) => b.childColSpan - a.childColSpan);
-      console.log('=== FAMILY BUS SPAN DIAGNOSTICS (top 10 widest) ===');
-      console.log(JSON.stringify(diag.slice(0, 10), null, 2));
-      console.log('=== TOTAL FAMILIES WITH BUS:', diag.length, '===');
-    }
-
     // ── Step 11: Generate connections (prototype approach) ──
     // Iterate ALL families after ALL placement + normalization is done.
     // This is exactly what grid-prototype.html buildConnections() does:
