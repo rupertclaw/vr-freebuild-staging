@@ -2389,7 +2389,7 @@ function layoutTree() {
     }
 
     // ── Step 8: Assign rows from genMap, normalize, and write to gridPos/positions ──
-    // Find min gen for row normalization
+    // Direct conversion from colMap to positions (matches prototype exactly — no placeAt occupied check)
     let minGen = Infinity;
     let minCol = Infinity;
     for (const [id, gen] of genMap) {
@@ -2399,34 +2399,16 @@ function layoutTree() {
     }
     if (minGen === Infinity) { minGen = 0; minCol = 0; }
 
-    // Place everyone into gridPos/positions using placeAt (for occupied tracking)
     for (const [id, gen] of genMap) {
       if (colMap[id] === undefined) continue;
       const row = gen - minGen;
       const col = colMap[id] - minCol;
-      placeAt(id, row, col, new Set());
-    }
-
-    // ── Step 10: Normalize rows and columns to start at 0 ──
-    let normMinRow = Infinity, normMinCol = Infinity;
-    for (const [id, gp] of gridPos) {
-      if (gp.row < normMinRow) normMinRow = gp.row;
-      if (gp.col < normMinCol) normMinCol = gp.col;
-    }
-    if (normMinRow !== Infinity) {
-      const rowDelta = -normMinRow;
-      const colDelta = -normMinCol;
-      for (const [id, gp] of gridPos) {
-        gp.row += rowDelta;
-        gp.col += colDelta;
-        const pos = positions.get(id);
-        if (pos) {
-          pos.row = gp.row;
-          pos.col = gp.col;
-          pos.y = TOP_MARGIN + gp.row * GEN_HEIGHT;
-          pos.x = LEFT_MARGIN + gp.col * COL_WIDTH;
-        }
-      }
+      gridPos.set(id, { row, col });
+      positions.set(id, {
+        x: LEFT_MARGIN + col * COL_WIDTH,
+        y: TOP_MARGIN + row * GEN_HEIGHT,
+        row, col
+      });
     }
 
     // ── Step 11: Generate connections (prototype approach) ──
@@ -2565,13 +2547,6 @@ function renderFreeBuild() {
   wrap.style.width = width + 'px';
   wrap.style.height = height + 'px';
 
-  // Calculate viewport bounds for virtualized rendering
-  const scrollArea = document.getElementById('treeScroll');
-  const viewLeft = scrollArea ? scrollArea.scrollLeft / zoom : -1000;
-  const viewTop = scrollArea ? scrollArea.scrollTop / zoom : -1000;
-  const viewRight = scrollArea ? viewLeft + (scrollArea.clientWidth / zoom) + 200 : Infinity;
-  const viewBottom = scrollArea ? viewTop + (scrollArea.clientHeight / zoom) + 200 : Infinity;
-
   // Draw family unit panels (behind everything, from prototype)
   if (families && genMap && gridPos) {
     const units = buildFamilyUnits(families, positions, genMap, gridPos);
@@ -2628,16 +2603,11 @@ function renderFreeBuild() {
   }
   svg.innerHTML = svgContent;
 
-  // Draw cards
-  // Draw cards — only render those visible in the viewport (virtualized)
+  // Draw cards — render ALL cards statically (no viewport culling)
   const viewPeople = getVisiblePeople();
-  let renderedCount = 0;
   for (const person of viewPeople) {
     const pos = positions.get(person.id);
     if (!pos) continue;
-    // Skip cards outside the viewport (plus margin)
-    if (pos.x + CARD_W < viewLeft || pos.x > viewRight || pos.y + CARD_H < viewTop || pos.y > viewBottom) continue;
-    renderedCount++;
 
     const el = document.createElement('div');
     el.className = 'fb-card ' + person.status + (person.id === selectedPersonId ? ' selected' : '');
@@ -2814,21 +2784,6 @@ document.addEventListener('touchmove', function(e) {
       setZoom(zoom / 1.15);
     }
   }, { passive: false });
-})();
-
-// Virtualized rendering: re-render on scroll to swap visible cards
-(function setupScrollRender() {
-  const scrollEl = document.getElementById('treeScroll');
-  if (!scrollEl) return;
-  let scrollTimer = null;
-  scrollEl.addEventListener('scroll', function() {
-    if (scrollTimer) clearTimeout(scrollTimer);
-    scrollTimer = setTimeout(function() {
-      skipAutoScroll = true;
-      renderFreeBuild();
-      skipAutoScroll = false;
-    }, 80);
-  }, { passive: true });
 })();
 
 // ═══════════════════════════════════════════════════════════════
