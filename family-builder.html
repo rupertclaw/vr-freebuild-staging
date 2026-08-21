@@ -2239,19 +2239,36 @@ function layoutTree() {
     }
     for (const fid in families) computeZoneWidth(fid);
 
-    // ── Step 5: Find root family (anchor's grandfather family) ──
+    // ── Step 5: Find ancestor chain from anchor up to root ──
+    // Walk up through the father (husb) of each family to find the oldest ancestor.
+    // We'll place them first (at gen -1, -2, -3, etc.) centered around col 0,
+    // then place the anchor and descendants below.
     const anchorParentFam = personParentFam[anchorId];
-    let rootFam = anchorParentFam;
-    if (anchorParentFam && families[anchorParentFam]) {
-      const fam = families[anchorParentFam];
-      // Walk up through the father (husb) to find the grandfather family
-      if (fam.husb && genMap.has(fam.husb)) {
-        const grandFam = personParentFam[fam.husb];
-        if (grandFam && families[grandFam]) rootFam = grandFam;
+
+    // Walk up the ancestor chain: anchor → parent fam → grandparent fam → ...
+    const ancestorChain = []; // array of { fid, childId } from oldest to newest
+    {
+      let curFam = anchorParentFam;
+      let curChild = anchorId;
+      const seen = new Set();
+      while (curFam && families[curFam] && !seen.has(curFam)) {
+        seen.add(curFam);
+        ancestorChain.unshift({ fid: curFam, childId: curChild });
+        const fam = families[curFam];
+        // Walk up through husb's parent family
+        if (fam.husb && genMap.has(fam.husb)) {
+          curChild = fam.husb;
+          curFam = personParentFam[fam.husb];
+        } else {
+          break;
+        }
       }
     }
 
-    // ── Step 6: Place zones recursively from root family ──
+    // ── Step 6: Place ancestor families first (top-down = oldest first) ──
+    // Start at col 0. Each ancestor couple goes at col 0,1.
+    // Their children (including the one that continues the chain) spread left-to-right.
+    // The chain child keeps its position; the next ancestor couple goes above it.
     const colMap = {};        // personId -> col
     const placedZones = new Set();
 
@@ -2274,9 +2291,7 @@ function layoutTree() {
         colMap[unit.parents[0]] = startCol + Math.floor(width / 2);
       }
 
-      // Children left to right, tight packing — 1 col gap between siblings
-      // Skip children already placed (they're in the tree through their own
-      // descendants or through another family)
+      // Children left to right, tight packing
       let col = startCol;
       for (let i = 0; i < unit.children.length; i++) {
         const c = unit.children[i];
@@ -2291,12 +2306,10 @@ function layoutTree() {
             const sf = sFams[j];
             if (placedZones.has(sf)) continue;
             const cw = zoneWidths[sf] || 2;
-            // Child + spouse placed at current col
             colMap[c] = col;
             const sfam = families[sf];
             const spouse = sfam.husb === c ? sfam.wife : sfam.husb;
             if (spouse && colMap[spouse] === undefined) colMap[spouse] = col + 1;
-            // Place sub-zone starting at child's position
             placeZone(sf, col);
             col += cw;
           }
@@ -2304,20 +2317,71 @@ function layoutTree() {
           colMap[c] = col;
           col += 1;
         }
-        // No extra gap between siblings — just Gap X handles spacing
       }
       return startCol + width;
     }
 
-    // Place root family zone
-    if (rootFam && familyUnits[rootFam]) {
-      placeZone(rootFam, 100);
-    } else if (!rootFam) {
-      // No parent family — just place the anchor
-      colMap[anchorId] = 100;
+    // Place ancestors from oldest to newest.
+    // The oldest ancestor family starts at col 0.
+    // Each subsequent ancestor family places its couple directly above the
+    // chain child's column, so the line goes straight up from the anchor.
+    let nextFreeCol = 0;
+    for (let i = 0; i < ancestorChain.length; i++) {
+      const { fid, childId } = ancestorChain[i];
+      if (placedZones.has(fid)) continue;
+      const unit = familyUnits[fid];
+      if (!unit) continue;
+
+      if (i === 0) {
+        // Oldest ancestor: place at col 0
+        placeZone(fid, 0);
+        nextFreeCol = zoneWidths[fid] || 2;
+      } else {
+        // Place this ancestor family so the couple is centered above the chain child
+        const childCol = colMap[childId] !== undefined ? colMap[childId] : nextFreeCol;
+        // Place parents at childCol-1, childCol (directly above the child)
+        placedZones.add(fid);
+        if (unit.parents.length === 2) {
+          colMap[unit.parents[0]] = childCol - 1;
+          colMap[unit.parents[1]] = childCol;
+          if (colMap[unit.parents[1]] <= colMap[unit.parents[0]]) {
+            colMap[unit.parents[1]] = colMap[unit.parents[0]] + 1;
+          }
+        } else if (unit.parents.length === 1) {
+          colMap[unit.parents[0]] = childCol;
+        }
+
+        // Place unplaced siblings to the right
+        let sibCol = childCol + 2;
+        for (let si = 0; si < unit.children.length; si++) {
+          const sc = unit.children[si];
+          if (colMap[sc] !== undefined) continue;
+          const ssFams = (personSpouseFams[sc] || []).filter(sf => {
+            const sfam = families[sf]; if (!sfam) return false;
+            const spouse = sfam.husb === sc ? sfam.wife : sfam.husb;
+            return spouse && genMap.has(spouse) && viewSet.has(spouse);
+          });
+          if (ssFams.length > 0) {
+            for (let sj = 0; sj < ssFams.length; sj++) {
+              const ssf = ssFams[sj];
+              if (placedZones.has(ssf)) continue;
+              const scw = zoneWidths[ssf] || 2;
+              colMap[sc] = sibCol;
+              const sfam = families[ssf];
+              const spouse = sfam.husb === sc ? sfam.wife : sfam.husb;
+              if (spouse && colMap[spouse] === undefined) colMap[spouse] = sibCol + 1;
+              placeZone(ssf, sibCol);
+              sibCol += scw;
+            }
+          } else {
+            colMap[sc] = sibCol;
+            sibCol += 1;
+          }
+        }
+      }
     }
 
-    // Place anchor's own family (spouse + children)
+    // Place anchor's own family (spouse + children) if not already placed
     const anchorSFams = (personSpouseFams[anchorId] || []).filter(
       fid => families[fid] && !placedZones.has(fid)
     );
@@ -2332,11 +2396,8 @@ function layoutTree() {
       }
     }
 
-    // Place ancestors above root — only place parents, don't re-place children
-    // that are already in the tree through their own descendants.
-    // For ancestor families, place parents as a couple adjacent to each other,
-    // near the already-placed child. Find free columns at the parents' generation
-    // to avoid overlap resolution separating the couple.
+    // Place any remaining ancestor families not on the direct chain
+    // (e.g., through wife's lineage). Walk up from any placed person.
     let waves = 0;
     while (waves < 30) {
       waves++;
@@ -2350,27 +2411,22 @@ function layoutTree() {
             const punit = familyUnits[pfid];
             if (!punit) continue;
             placedZones.add(pfid);
-            const childCol = colMap[pid] !== undefined ? colMap[pid] : 100;
-
-            // Find the parents' generation
+            const childCol = colMap[pid] !== undefined ? colMap[pid] : nextFreeCol;
             const pGen = genMap.get(pid) - 1;
 
-            // Build a set of occupied columns at the parents' generation
+            // Build occupied cols at pGen
             const occCols = new Set();
             for (const [oid, ogen] of genMap) {
               if (ogen === pGen && colMap[oid] !== undefined) occCols.add(colMap[oid]);
             }
 
-            // Find the nearest free pair of adjacent columns at pGen,
-            // starting from childCol-2 (left of child) and expanding outward.
+            // Find nearest free adjacent pair
             let pCol0 = -1, pCol1 = -1;
             for (let offset = 0; offset < 200; offset++) {
-              // Try left: childCol - 2 - offset, childCol - 1 - offset
               const lc0 = childCol - 2 - offset, lc1 = childCol - 1 - offset;
               if (!occCols.has(lc0) && !occCols.has(lc1)) {
                 pCol0 = lc0; pCol1 = lc1; break;
               }
-              // Try right: childCol + 1 + offset, childCol + 2 + offset
               const rc0 = childCol + 1 + offset, rc1 = childCol + 2 + offset;
               if (!occCols.has(rc0) && !occCols.has(rc1)) {
                 pCol0 = rc0; pCol1 = rc1; break;
@@ -2381,7 +2437,6 @@ function layoutTree() {
             if (punit.parents.length === 2) {
               colMap[punit.parents[0]] = pCol0;
               colMap[punit.parents[1]] = pCol1;
-              // Mark these as occupied so the next ancestor placement doesn't overlap
               occCols.add(pCol0);
               occCols.add(pCol1);
             } else if (punit.parents.length === 1) {
@@ -2389,7 +2444,7 @@ function layoutTree() {
               occCols.add(pCol0 + 1);
             }
 
-            // Place unplaced siblings to the right of the child
+            // Place unplaced siblings
             let sibCol = childCol + 2;
             for (let si = 0; si < punit.children.length; si++) {
               const sc = punit.children[si];
