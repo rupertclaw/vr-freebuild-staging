@@ -194,6 +194,9 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 /* SVG for connectors */
 .fb-svg { position: absolute; top: 0; left: 0; pointer-events: none; z-index: 1; }
 
+/* Family unit panels (behind cards) */
+.family-panel { position: absolute; background: rgba(200, 190, 170, 0.15); border: 1px dashed rgba(180, 170, 150, 0.3); border-radius: 6px; z-index: 0; pointer-events: none; }
+
 /* Free Build cards */
 .fb-card {
   position: absolute; width: 150px; height: 40px; background: #faf5eb;
@@ -1607,11 +1610,12 @@ function buildFamilyUnits(viewPeople) {
 // drifting out of sync.
 function layoutTree() {
   const viewPeople = getVisiblePeople();
-  if (viewPeople.length === 0) return { positions: new Map(), width: 100, height: 100, connections: [] };
+  if (viewPeople.length === 0) return { positions: new Map(), width: 100, height: 100, connections: [], families: {}, genMap: new Map(), gridPos: new Map() };
 
   const positions = new Map();   // id -> {x, y, row, col}
   const connections = [];
   const viewSet = new Set(viewPeople.map(p => p.id));
+  const genMap = new Map();  // id -> generation (hoisted to function scope for family panels)
   const GEN_HEIGHT = CARD_H + CARD_GAP_Y;
   const COL_WIDTH = CARD_W + CARD_GAP_X;
   const TOP_MARGIN = 50;
@@ -1906,8 +1910,8 @@ function layoutTree() {
 
     let parentMidX, parentY;
     if (parentPos && spousePos) {
-      parentMidX = (parentPos.x + spousePos.x) / 2 + CARD_W / 2;
-      parentY = (parentPos.y + spousePos.y) / 2 + CARD_H;
+      parentMidX = (parentPos.x + spousePos.x) / 2;
+      parentY = (parentPos.y + spousePos.y) / 2;
     } else {
       parentMidX = parentPos.x + CARD_W / 2;
       parentY = parentPos.y;
@@ -2157,7 +2161,6 @@ function layoutTree() {
 
     // ── Step 1: BFS from anchor to assign generations ──
     // (Same as before — keep the existing BFS.)
-    const genMap = new Map();  // id -> generation
     const queue = [{ id: anchorId, gen: 0 }];
     genMap.set(anchorId, 0);
 
@@ -2508,17 +2511,53 @@ function layoutTree() {
     positions,
     width: Math.max(maxX + LEFT_MARGIN, 200),
     height: Math.max(maxY + TOP_MARGIN, 200),
-    connections
+    connections,
+    families,
+    genMap,
+    gridPos
   };
 }
 
+// ── Build family units for visual grouping (from prototype) ──
+function buildFamilyUnits(families, positions, genMap, gridPos) {
+  const units = [];
+  for (const fid in families) {
+    const fam = families[fid];
+    const husbPos = fam.husb ? positions.get(fam.husb) : null;
+    const wifePos = fam.wife ? positions.get(fam.wife) : null;
+    const placedChildren = (fam.children || []).filter(c => positions.get(c) && gridPos.has(c));
+    if (!husbPos && !wifePos && placedChildren.length === 0) continue;
+
+    const memberPositions = [];
+    if (husbPos && gridPos.has(fam.husb)) memberPositions.push({ pos: husbPos, gen: genMap.get(fam.husb) });
+    if (wifePos && gridPos.has(fam.wife)) memberPositions.push({ pos: wifePos, gen: genMap.get(fam.wife) });
+    for (const cid of placedChildren) {
+      memberPositions.push({ pos: positions.get(cid), gen: genMap.get(cid) });
+    }
+    if (memberPositions.length < 2) continue;
+
+    const minX = Math.min(...memberPositions.map(m => m.pos.x));
+    const maxX = Math.max(...memberPositions.map(m => m.pos.x));
+    const minGen = Math.min(...memberPositions.map(m => m.gen));
+    const maxGen = Math.max(...memberPositions.map(m => m.gen));
+
+    units.push({
+      fid,
+      minX, maxX, minGen, maxGen,
+      hasChildren: placedChildren.length > 0,
+      parentCount: (husbPos && gridPos.has(fam.husb) ? 1 : 0) + (wifePos && gridPos.has(fam.wife) ? 1 : 0)
+    });
+  }
+  return units;
+}
+
 function renderFreeBuild() {
-  const { positions, width, height, connections } = layoutTree();
+  const { positions, width, height, connections, families, genMap, gridPos } = layoutTree();
   const wrap = document.getElementById('treeWrap');
   const svg = document.getElementById('fbSvg');
 
-  // Remove existing cards
-  wrap.querySelectorAll('.fb-card').forEach(el => el.remove());
+  // Remove existing cards and family panels
+  wrap.querySelectorAll('.fb-card, .family-panel').forEach(el => el.remove());
 
   // Set SVG size
   svg.setAttribute('width', width);
@@ -2533,6 +2572,33 @@ function renderFreeBuild() {
   const viewRight = scrollArea ? viewLeft + (scrollArea.clientWidth / zoom) + 200 : Infinity;
   const viewBottom = scrollArea ? viewTop + (scrollArea.clientHeight / zoom) + 200 : Infinity;
 
+  // Draw family unit panels (behind everything, from prototype)
+  if (families && genMap && gridPos) {
+    const units = buildFamilyUnits(families, positions, genMap, gridPos);
+    const allGens = [...genMap.values()];
+    const minGenVal = allGens.length > 0 ? Math.min(...allGens) : 0;
+    const STEP_Y = CARD_H + CARD_GAP_Y;
+    for (const unit of units) {
+      const panel = document.createElement('div');
+      panel.className = 'family-panel';
+      const padding = 8;
+      const panelX = unit.minX - padding;
+      const panelY = (unit.minGen - minGenVal) * STEP_Y + 50 - padding;
+      const panelW = (unit.maxX - unit.minX) + CARD_W + padding * 2;
+      let panelH;
+      if (unit.hasChildren && unit.maxGen > unit.minGen) {
+        panelH = (unit.maxGen - unit.minGen) * STEP_Y + CARD_H + padding * 2;
+      } else {
+        panelH = CARD_H + padding * 2;
+      }
+      panel.style.left = panelX + 'px';
+      panel.style.top = panelY + 'px';
+      panel.style.width = panelW + 'px';
+      panel.style.height = panelH + 'px';
+      wrap.appendChild(panel);
+    }
+  }
+
   // Draw connections — render ALL connections statically (no viewport culling)
   // Prototype style: simple SVG lines, no rounded corners, no stepped paths.
   let svgContent = '';
@@ -2545,7 +2611,7 @@ function renderFreeBuild() {
       const busY = (conn.parentY + conn.children[0].childY) / 2;
 
       // Vertical from parent midpoint down to bus
-      svgContent += `<line x1="${conn.parentMidX}" y1="${conn.parentY}" x2="${conn.parentMidX}" y2="${busY}" stroke="var(--line-stroke)" stroke-width="1.5" />`;
+      svgContent += `<line x1="${conn.parentMidX}" y1="${conn.parentY + CARD_H}" x2="${conn.parentMidX}" y2="${busY}" stroke="var(--line-stroke)" stroke-width="1.5" />`;
 
       // Horizontal bus from leftmost to rightmost child
       const minChildX = Math.min(...conn.children.map(c => c.childX));
