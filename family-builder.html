@@ -2334,8 +2334,9 @@ function layoutTree() {
 
     // Place ancestors above root — only place parents, don't re-place children
     // that are already in the tree through their own descendants.
-    // For ancestor families, place parents directly above the already-placed child,
-    // not centered in a theoretical zone. This keeps couples together.
+    // For ancestor families, place parents as a couple to the LEFT of the
+    // already-placed child (cols childCol-2, childCol-1), NOT at childCol
+    // (which would overlap the child and get separated by overlap resolution).
     let waves = 0;
     while (waves < 30) {
       waves++;
@@ -2351,15 +2352,16 @@ function layoutTree() {
             placedZones.add(pfid);
             const childCol = colMap[pid] !== undefined ? colMap[pid] : 100;
 
-            // Place parents centered above the already-placed child
+            // Place parents as a couple LEFT of the already-placed child.
+            // father at childCol-2, mother at childCol-1 — adjacent, not overlapping child.
             if (punit.parents.length === 2) {
-              colMap[punit.parents[0]] = childCol - 1;
-              colMap[punit.parents[1]] = childCol;
+              colMap[punit.parents[0]] = childCol - 2;
+              colMap[punit.parents[1]] = childCol - 1;
             } else if (punit.parents.length === 1) {
-              colMap[punit.parents[0]] = childCol;
+              colMap[punit.parents[0]] = childCol - 1;
             }
 
-            // Place unplaced siblings to the right of parents
+            // Place unplaced siblings to the right of the child
             let sibCol = childCol + 2;
             for (let si = 0; si < punit.children.length; si++) {
               const sc = punit.children[si];
