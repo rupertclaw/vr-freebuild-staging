@@ -204,6 +204,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   text-align: center; z-index: 2; cursor: pointer;
   box-shadow: 0 1px 4px var(--shadow-card);
   overflow: hidden; transition: box-shadow 0.15s;
+  content-visibility: auto; contain-intrinsic-size: 150px 40px;
 }
 .fb-card:hover { box-shadow: 0 2px 8px rgba(90, 60, 30, 0.20); }
 .fb-card .name {
@@ -2667,8 +2668,11 @@ function buildFamilyUnits(families, positions, genMap, gridPos) {
   return units;
 }
 
+let _cachedLayout = null; // cached layoutTree() result — cleared on data changes
+
 function renderFreeBuild() {
-  const { positions, width, height, connections, families, genMap, gridPos } = layoutTree();
+  _cachedLayout = layoutTree();
+  const { positions, width, height, connections, families, genMap, gridPos } = _cachedLayout;
   const wrap = document.getElementById('treeWrap');
   const svg = document.getElementById('fbSvg');
 
@@ -2824,7 +2828,12 @@ function escapeHtml(s) {
 // ═══════════════════════════════════════════════════════════════
 function setZoom(z) {
   zoom = Math.max(0.05, Math.min(3, z));
-  renderFreeBuild();
+  // Only update CSS transform — do NOT re-render (prototype approach)
+  const wrap = document.getElementById('treeWrap');
+  if (wrap) {
+    wrap.style.setProperty('--zoom', zoom);
+    wrap.style.transform = 'scale(' + zoom + ')';
+  }
   document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
 }
 function fitToScreen() {
@@ -2845,7 +2854,7 @@ function centerOnPerson(personId) {
   if (!scrollArea) return;
   const target = people.find(p => p.id === personId);
   if (!target) return;
-  const { positions } = layoutTree();
+  const positions = _cachedLayout ? _cachedLayout.positions : layoutTree().positions;
   const targetPos = positions.get(personId);
   if (!targetPos) return;
   const cx = (targetPos.x + CARD_W / 2) * zoom;
@@ -2894,7 +2903,7 @@ function centerOnPerson(personId) {
   function endPinch() {
     if (isPinching) {
       isPinching = false; treeWrap.classList.remove('pinch-zooming');
-      treeWrap.style.transform = '';
+      // setZoom now only updates CSS transform (no re-render), so just call it
       setZoom(activePinchZoom);
     }
   }
