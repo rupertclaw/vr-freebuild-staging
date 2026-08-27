@@ -1726,7 +1726,7 @@ function layoutTree() {
 
   // ── COLLISION RESOLUTION (ancestor cards) ──
   // After placeAncestors, cards in the same generation may overlap.
-  // Per-generation: sort by x, push apart if overlapping. 10 passes max.
+  // Per-generation: sort by x, push apart if overlapping. 15 passes max.
   (function resolveAncestorCollisions() {
     const genMap = {};
     for (const [id, pos] of positions) {
@@ -1750,60 +1750,6 @@ function layoutTree() {
         }
         if (!moved) break;
       }
-    }
-  })();
-
-  // ── REBUILD CONNECTIONS from final positions ──
-  // Collision resolution shifts cards but connections were computed from
-  // pre-collision positions. Rebuild all connection coords from final positions.
-  (function rebuildConnections() {
-    connections.length = 0;
-
-    // Spouse lines: for every couple in view, draw a horizontal line between them
-    for (const p of viewPeople) {
-      if (!p.spouseId || !viewSet.has(p.spouseId)) continue;
-      const pPos = positions.get(p.id);
-      const sPos = positions.get(p.spouseId);
-      if (!pPos || !sPos) continue;
-      // Only draw once (avoid duplicate from the spouse's perspective)
-      if (p.id > p.spouseId) continue;
-      if (Math.abs(pPos.y - sPos.y) < 5) {
-        const leftCard = Math.min(pPos.x, sPos.x);
-        const rightCard = Math.max(pPos.x, sPos.x);
-        connections.push({
-          type: 'spouse',
-          x1: leftCard + CARD_W, y1: pPos.y + CARD_H / 2,
-          x2: rightCard, y2: sPos.y + CARD_H / 2
-        });
-      }
-    }
-
-    // Parent-child lines: for every person with parents in view, draw L-shaped connector
-    for (const p of viewPeople) {
-      if (!p.parents || p.parents.length === 0) continue;
-      const childPos = positions.get(p.id);
-      if (!childPos) continue;
-      const parentsInView = p.parents.filter(pid => viewSet.has(pid) && positions.has(pid));
-      if (parentsInView.length === 0) continue;
-
-      let parentMidX, parentY;
-      if (parentsInView.length >= 2) {
-        const p1 = positions.get(parentsInView[0]);
-        const p2 = positions.get(parentsInView[1]);
-        parentMidX = (Math.min(p1.x, p2.x) + Math.max(p1.x, p2.x) + CARD_W) / 2;
-        parentY = Math.max(p1.y, p2.y) + CARD_H;
-      } else {
-        const p1 = positions.get(parentsInView[0]);
-        parentMidX = p1.x + CARD_W / 2;
-        parentY = p1.y + CARD_H;
-      }
-      connections.push({
-        type: 'parent-child',
-        midX: parentMidX,
-        parentY: parentY,
-        childX: childPos.x + CARD_W / 2,
-        childY: childPos.y
-      });
     }
   })();
 
@@ -2033,18 +1979,59 @@ function layoutTree() {
     maxX += xShift;
   }
 
-  // Apply the same shifts to connection coordinates
-  if (yShift !== 0 || xShift !== 0) {
-    for (const conn of connections) {
-      if (conn.type === 'spouse') {
-        conn.x1 += xShift; conn.x2 += xShift;
-        conn.y1 += yShift; conn.y2 += yShift;
-      } else if (conn.type === 'parent-child') {
-        conn.midX += xShift; conn.parentY += yShift;
-        conn.childX += xShift; conn.childY += yShift;
+  // ── REBUILD CONNECTIONS from final positions ──
+  // All collision resolution and normalization is done. Rebuild connections
+  // from the final card positions so lines point to where cards actually are.
+  (function rebuildConnections() {
+    connections.length = 0;
+
+    // Spouse lines: for every couple in view, draw a horizontal line between them
+    for (const p of viewPeople) {
+      if (!p.spouseId || !viewSet.has(p.spouseId)) continue;
+      const pPos = positions.get(p.id);
+      const sPos = positions.get(p.spouseId);
+      if (!pPos || !sPos) continue;
+      // Only draw once (avoid duplicate from the spouse's perspective)
+      if (p.id > p.spouseId) continue;
+      if (Math.abs(pPos.y - sPos.y) < 5) {
+        const leftCard = Math.min(pPos.x, sPos.x);
+        const rightCard = Math.max(pPos.x, sPos.x);
+        connections.push({
+          type: 'spouse',
+          x1: leftCard + CARD_W, y1: pPos.y + CARD_H / 2,
+          x2: rightCard, y2: sPos.y + CARD_H / 2
+        });
       }
     }
-  }
+
+    // Parent-child lines: for every person with parents in view, draw L-shaped connector
+    for (const p of viewPeople) {
+      if (!p.parents || p.parents.length === 0) continue;
+      const childPos = positions.get(p.id);
+      if (!childPos) continue;
+      const parentsInView = p.parents.filter(pid => viewSet.has(pid) && positions.has(pid));
+      if (parentsInView.length === 0) continue;
+
+      let parentMidX, parentY;
+      if (parentsInView.length >= 2) {
+        const p1 = positions.get(parentsInView[0]);
+        const p2 = positions.get(parentsInView[1]);
+        parentMidX = (Math.min(p1.x, p2.x) + Math.max(p1.x, p2.x) + CARD_W) / 2;
+        parentY = Math.max(p1.y, p2.y) + CARD_H;
+      } else {
+        const p1 = positions.get(parentsInView[0]);
+        parentMidX = p1.x + CARD_W / 2;
+        parentY = p1.y + CARD_H;
+      }
+      connections.push({
+        type: 'parent-child',
+        midX: parentMidX,
+        parentY: parentY,
+        childX: childPos.x + CARD_W / 2,
+        childY: childPos.y
+      });
+    }
+  })();
 
   return {
     positions,
