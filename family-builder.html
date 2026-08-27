@@ -1712,15 +1712,35 @@ function layoutTree() {
       .map(p => p.id);
   }
 
+  // When focusing on a person, compute how many generations of ancestors are above them.
+  // Start the focus person at that depth so ancestors fit above without going negative.
+  let focusStartDepth = 0;
+  if (focusPersonId && viewSet.has(focusPersonId)) {
+    function maxAncestorDepth(personId, depth, seen) {
+      if (depth > 8) return depth;
+      if (seen.has(personId)) return depth;
+      seen.add(personId);
+      const person = getP(personId);
+      if (!person || !person.parents || person.parents.length === 0) return depth;
+      let maxD = depth;
+      for (const pid of person.parents) {
+        if (!viewSet.has(pid)) continue;
+        maxD = Math.max(maxD, maxAncestorDepth(pid, depth + 1, new Set(seen)));
+      }
+      return maxD;
+    }
+    focusStartDepth = maxAncestorDepth(focusPersonId, 0, new Set());
+  }
+
   const visited = new Set();
   let currentX = 50;
 
   for (const rootId of layoutRoots) {
     if (visited.has(rootId)) continue;
     const w = computeWidth(rootId);
-    assignPositions(rootId, currentX, 0, visited);
+    assignPositions(rootId, currentX, focusStartDepth, visited);
     // Also lay out ancestors upward (ported from prototype)
-    placeAncestors(rootId, 0, visited);
+    placeAncestors(rootId, focusStartDepth, visited);
     currentX += w + CARD_GAP_X * 2;
   }
 
