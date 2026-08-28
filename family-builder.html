@@ -1276,19 +1276,41 @@ function getVisiblePeople() {
     const visible = new Set([focusPersonId]);
     function getP(id) { return people.find(p => p.id === id); }
 
-    // ── ANCESTORS: direct line only (no ancestor siblings) ──
-    function addAncestors(personId, depth) {
+    // ── ANCESTORS + THEIR SIBLINGS ──
+    // For each direct ancestor, also include their siblings (aunts/uncles of focus)
+    function addAncestorsAndSiblings(personId, depth) {
       if (depth > 10) return;
       const person = getP(personId);
       if (!person || !person.parents || person.parents.length === 0) return;
+      const parentSet = new Set(person.parents);
+      // Add parents (direct ancestors)
       for (const pid of person.parents) {
         visible.add(pid);
-        addAncestors(pid, depth + 1);
+        // Add siblings of this parent (aunts/uncles of the person below)
+        for (const p of people) {
+          if (p.id === pid) continue;
+          if (p.parents && p.parents.some(ppid => parentSet.has(ppid))) {
+            visible.add(p.id);
+          }
+        }
+        // Recurse upward through this parent's ancestors
+        addAncestorsAndSiblings(pid, depth + 1);
       }
     }
-    addAncestors(focusPersonId, 0);
+    addAncestorsAndSiblings(focusPersonId, 0);
 
-    // ── FOCUS PERSON'S SIBLINGS (only focus person's siblings, not ancestor siblings) ──
+    // ── SPOUSES of all visible people ──
+    for (const id of [...visible]) {
+      const p = getP(id);
+      if (p) {
+        if (p.spouseId) visible.add(p.spouseId);
+        if (p.families) {
+          for (const fam of p.families) visible.add(fam.spouseId);
+        }
+      }
+    }
+
+    // ── FOCUS PERSON'S SIBLINGS + THEIR DESCENDANTS ──
     if (focus.parents && focus.parents.length > 0) {
       const parentSet = new Set(focus.parents);
       for (const p of people) {
@@ -1299,54 +1321,36 @@ function getVisiblePeople() {
       }
     }
 
-    // ── SPOUSES: all spouses of focus person ──
-    if (focus.spouseId) visible.add(focus.spouseId);
-    if (focus.families) {
-      for (const fam of focus.families) visible.add(fam.spouseId);
-    }
-
-    // ── DESCENDANTS: children, grandchildren, great-grandchildren (down 4 gens) ──
+    // ── ALL DESCENDANTS: children, grandchildren, great-grandchildren ──
+    // For focus person AND all siblings (nieces/nephews)
     function addDescendants(personId, depth) {
-      if (depth > 4) return;
+      if (depth > 5) return;
       const person = getP(personId);
       if (!person) return;
-      // Add spouse of this descendant
       if (person.spouseId) visible.add(person.spouseId);
       if (person.families) {
         for (const fam of person.families) visible.add(fam.spouseId);
       }
-      // Add children
       for (const cid of (person.children || [])) {
         visible.add(cid);
         addDescendants(cid, depth + 1);
       }
     }
-    // Add descendants from each marriage of the focus person
-    if (focus.families && focus.families.length > 0) {
-      for (const fam of focus.families) {
-        const children = (focus.children || []).filter(cid => {
-          const child = getP(cid);
-          return child && child.parents && child.parents.includes(fam.spouseId);
-        });
-        for (const cid of children) {
-          visible.add(cid);
-          addDescendants(cid, 1);
-        }
-      }
-    } else {
-      for (const cid of (focus.children || [])) {
-        visible.add(cid);
-        addDescendants(cid, 1);
-      }
+
+    // Descendants of focus person
+    for (const cid of (focus.children || [])) {
+      visible.add(cid);
+      addDescendants(cid, 1);
     }
 
-    // ── SPOUSES of siblings ──
-    for (const id of [...visible]) {
-      const p = getP(id);
-      if (p && p.id !== focusPersonId) {
-        if (p.spouseId) visible.add(p.spouseId);
-        if (p.families) {
-          for (const fam of p.families) visible.add(fam.spouseId);
+    // Descendants of focus person's siblings (nieces/nephews and their kids)
+    const focusParentSet = new Set(focus.parents || []);
+    for (const p of people) {
+      if (p.id === focusPersonId) continue;
+      if (focusParentSet.size > 0 && p.parents && p.parents.some(pid => focusParentSet.has(pid))) {
+        for (const cid of (p.children || [])) {
+          visible.add(cid);
+          addDescendants(cid, 1);
         }
       }
     }
@@ -1429,13 +1433,56 @@ function layoutTree() {
   function getP(id) { return people.find(p => p.id === id); }
 
   // ============================================================
-  // PEDIGREE LAYOUT ENGINE
-  // Focus person at bottom center. Direct ancestors fan upward.
-  // Each ancestor generation: 2^depth slots (2 parents, 4 grandparents...)
-  // Descendants fan downward. Siblings of focus beside focus.
+  // TOP-DOWN FAMILY TREE LAYOUT (Ancestry-style)
+  // Ancestors ABOVE focus. Descendants BELOW.
+  // Each ancestor's siblings fan outward. Father's side left, mother's side right.
+  // Couples side by side. Connector lines are orthogonal T-junctions.
   // ============================================================
 
-  // ── Compute max ancestor depth (how many generations above focus) ──
+  // ── Helper: get siblings of a person (share at least one parent) ──
+  function getSiblings(personId) {
+    const person = getP(personId);
+    if (!person || !person.parents || person.parents.length === 0) return [];
+    const parentSet = new Set(person.parents);
+    return viewPeople
+      .filter(p => p.id !== personId && p.parents && p.parents.some(pid => parentSet.has(pid)))
+      .map(p => p.id)
+      .sort((a, b) => {
+        const aY = parseInt((getP(a)?.birthDate || '9999').match(/\d{4}/)?.[0] || '9999');
+        const bY = parseInt((getP(b)?.birthDate || '9999').match(/\d{4}/)?.[0] || '9999');
+        return aY - bY;
+      });
+  }
+
+  // ── Helper: get families where this person has children ──
+  function getFamsWithChildren(personId) {
+    const person = getP(personId);
+    if (!person) return [];
+    const result = [];
+    for (const fam of (person.families || [])) {
+      if (!viewSet.has(fam.spouseId)) continue;
+      const children = (person.children || []).filter(cid => {
+        if (!viewSet.has(cid)) return false;
+        const child = getP(cid);
+        if (!child || !child.parents) return false;
+        return child.parents.includes(personId) && child.parents.includes(fam.spouseId);
+      });
+      if (children.length > 0) {
+        result.push({ spouseId: fam.spouseId, children });
+      }
+    }
+    // Fallback for manually added people (no families array)
+    if (result.length === 0 && person.children && person.children.length > 0) {
+      const children = person.children.filter(cid => viewSet.has(cid));
+      if (children.length > 0) {
+        const coParent = person.spouseId && viewSet.has(person.spouseId) ? person.spouseId : null;
+        result.push({ spouseId: coParent, children });
+      }
+    }
+    return result;
+  }
+
+  // ── Compute max ancestor depth ──
   function maxAncDepth(personId, depth, seen) {
     if (depth > 12) return depth;
     if (seen.has(personId)) return depth;
@@ -1450,59 +1497,81 @@ function layoutTree() {
     return maxD;
   }
 
-  // ── PLACE ANCESTORS (pedigree tree with adaptive spacing) ──
-  // Parents placed ±UNIT_W/2 from child. Collision resolution handles overlaps
-  // from branches that have more ancestors than available space.
+  // ── Compute subtree width (for a person + all their descendants in view) ──
+  const descWidthCache = new Map();
+  function computeDescWidth(personId, visited) {
+    if (visited.has(personId)) return UNIT_W;
+    visited.add(personId);
+    if (descWidthCache.has(personId)) return descWidthCache.get(personId);
+
+    const fams = getFamsWithChildren(personId);
+    if (fams.length === 0) { descWidthCache.set(personId, UNIT_W); return UNIT_W; }
+
+    let totalW = 0;
+    for (const fam of fams) {
+      let famW = 0;
+      for (const child of fam.children) {
+        famW += computeDescWidth(child, new Set(visited));
+      }
+      totalW += Math.max(famW, UNIT_W);
+    }
+    const w = Math.max(totalW, UNIT_W);
+    descWidthCache.set(personId, w);
+    return w;
+  }
+
+  // ── PLACE ANCESTORS (going UP, with siblings fanning outward) ──
+  // For each person: place them, then place their parents above, then
+  // place their siblings on the same row (father's siblings go left, mother's go right).
   function placeAncestors(personId, centerX, gen, visited) {
     if (visited.has(personId)) return;
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
     visited.add(personId);
 
+    // Place this person
     positions.set(personId, { x: Math.round(centerX - CARD_W / 2), y: 50 + gen * GEN_HEIGHT });
 
+    // Place this person's siblings on the same row
+    const siblings = getSiblings(personId);
+    for (let i = 0; i < siblings.length; i++) {
+      const sibId = siblings[i];
+      if (visited.has(sibId)) continue;
+      visited.add(sibId);
+      // Siblings go to the LEFT of this person (older siblings first)
+      const sibCenterX = centerX - (i + 1) * UNIT_W;
+      positions.set(sibId, { x: Math.round(sibCenterX - CARD_W / 2), y: 50 + gen * GEN_HEIGHT });
+
+      // Place this sibling's spouse if they have one in view
+      const sib = getP(sibId);
+      if (sib) {
+        const sibSpouses = (sib.families || []).filter(f => viewSet.has(f.spouseId));
+        if (sibSpouses.length > 0 && !visited.has(sibSpouses[0].spouseId)) {
+          visited.add(sibSpouses[0].spouseId);
+          positions.set(sibSpouses[0].spouseId, {
+            x: Math.round(sibCenterX - CARD_W / 2 - CARD_W - COUPLE_GAP),
+            y: 50 + gen * GEN_HEIGHT
+          });
+        }
+      }
+    }
+
+    // Place parents above
     const parents = (person.parents || []).filter(pid => viewSet.has(pid));
     if (parents.length === 0) return;
 
     if (parents.length === 1) {
       placeAncestors(parents[0], centerX, gen - 1, visited);
     } else {
-      // Place parents as a couple: father left, mother right, with COUPLE_GAP between
-      const coupleCenterX = centerX;
-      placeAncestors(parents[0], coupleCenterX - (CARD_W + COUPLE_GAP) / 2, gen - 1, visited);
-      placeAncestors(parents[1], coupleCenterX + (CARD_W + COUPLE_GAP) / 2, gen - 1, visited);
+      // Father to the LEFT of center, mother to the RIGHT
+      const fatherCenterX = centerX - (CARD_W + COUPLE_GAP) / 2;
+      const motherCenterX = centerX + (CARD_W + COUPLE_GAP) / 2;
+      placeAncestors(parents[0], fatherCenterX, gen - 1, visited);
+      placeAncestors(parents[1], motherCenterX, gen - 1, visited);
     }
   }
 
-  // ── ANCESTOR WIDTH: how much horizontal space a direct-line ancestor subtree needs ──
-  // For a pedigree, person needs space for self + parents' subtrees side by side
-  const ancWidthCache = new Map();
-  function computeAncWidth(personId, visited) {
-    if (visited.has(personId)) return UNIT_W;
-    visited.add(personId);
-    if (ancWidthCache.has(personId)) return ancWidthCache.get(personId);
-
-    const person = getP(personId);
-    if (!person || !viewSet.has(personId)) { ancWidthCache.set(personId, UNIT_W); return UNIT_W; }
-
-    const parents = (person.parents || []).filter(pid => viewSet.has(pid));
-    if (parents.length === 0) { ancWidthCache.set(personId, UNIT_W); return UNIT_W; }
-
-    if (parents.length === 1) {
-      const w = computeAncWidth(parents[0], new Set(visited));
-      ancWidthCache.set(personId, Math.max(w, UNIT_W));
-      return Math.max(w, UNIT_W);
-    }
-
-    // Two parents: their subtrees go side by side
-    const fatherW = computeAncWidth(parents[0], new Set(visited));
-    const motherW = computeAncWidth(parents[1], new Set(visited));
-    const w = Math.max(fatherW + motherW + COUPLE_GAP, UNIT_W);
-    ancWidthCache.set(personId, w);
-    return w;
-  }
-
-  // ── PLACE DESCENDANTS (going DOWN from focus person) ──
+  // ── PLACE DESCENDANTS (going DOWN) ──
   function placeDescendants(personId, centerX, gen, visited) {
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
@@ -1513,13 +1582,12 @@ function layoutTree() {
       positions.set(personId, { x: Math.round(centerX - CARD_W / 2), y: 50 + gen * GEN_HEIGHT });
     }
 
-    // Get families with children in view
     const fams = getFamsWithChildren(personId);
     if (fams.length === 0) return;
 
     for (const fam of fams) {
       const spouseId = fam.spouseId;
-      if (spouseId && !visited.has(spouseId)) {
+      if (spouseId && !visited.has(spouseId) && !positions.has(spouseId)) {
         visited.add(spouseId);
         const myX = positions.get(personId).x;
         positions.set(spouseId, {
@@ -1544,98 +1612,36 @@ function layoutTree() {
     }
   }
 
-  // ── DESCENDANT WIDTH ──
-  const descWidthCache = new Map();
-  function computeDescWidth(personId, visited) {
-    if (visited.has(personId)) return UNIT_W;
-    visited.add(personId);
-    if (descWidthCache.has(personId)) return descWidthCache.get(personId);
-
-    const fams = getFamsWithChildren(personId);
-    if (fams.length === 0) { descWidthCache.set(personId, UNIT_W); return UNIT_W; }
-
-    let totalW = 0;
-    for (const fam of fams) {
-      let famW = 0;
-      for (const child of fam.children) {
-        famW += computeDescWidth(child, new Set(visited));
-      }
-      totalW += Math.max(famW, UNIT_W);
-    }
-    const w = Math.max(totalW, UNIT_W);
-    descWidthCache.set(personId, w);
-    return w;
-  }
-
-  // ── Helper: get families where this person has children ──
-  function getFamsWithChildren(personId) {
-    const person = getP(personId);
-    if (!person) return [];
-    const result = [];
-    for (const fam of (person.families || [])) {
-      if (!viewSet.has(fam.spouseId)) continue;
-      const children = (person.children || []).filter(cid => {
-        if (!viewSet.has(cid)) return false;
-        const child = getP(cid);
-        if (!child || !child.parents) return false;
-        return child.parents.includes(personId) && child.parents.includes(fam.spouseId);
-      });
-      if (children.length > 0) {
-        result.push({ spouseId: fam.spouseId, children });
-      }
-    }
-    // Fallback for manually added people (no families array)
-    if (result.length === 0 && person.children && person.children.length > 0) {
-      const coParent = person.spouseId && viewSet.has(person.spouseId) ? person.spouseId : null;
-      const children = person.children.filter(cid => viewSet.has(cid));
-      if (children.length > 0) {
-        result.push({ spouseId: coParent, children });
-      }
-    }
-    return result;
-  }
-
   // ── MAIN LAYOUT ──
   const visited = new Set();
 
   if (focusPersonId && viewSet.has(focusPersonId)) {
-    // Pedigree mode: focus at bottom, ancestors up, descendants down
     const focusDepth = maxAncDepth(focusPersonId, 0, new Set());
     const focusGen = focusDepth; // focus person at this gen, ancestors above
 
-    // Place focus person's siblings beside focus
     const focus = getP(focusPersonId);
-    const focusParents = (focus.parents || []).filter(pid => viewSet.has(pid));
-    let siblings = [];
-    if (focusParents.length > 0) {
-      const parentSet = new Set(focusParents);
-      siblings = viewPeople
-        .filter(p => p.id !== focusPersonId && p.parents && p.parents.some(pid => parentSet.has(pid)))
-        .map(p => p.id);
-      siblings.sort((a, b) => {
-        const aY = parseInt((getP(a)?.birthDate || '9999').match(/\d{4}/)?.[0] || '9999');
-        const bY = parseInt((getP(b)?.birthDate || '9999').match(/\d{4}/)?.[0] || '9999');
-        return aY - bY;
-      });
-    }
-
-    // Compute total width needed: ancestors + siblings + spouses
-    const ancW = computeAncWidth(focusPersonId, new Set());
-    // Spouses take space to the right of focus
+    const focusSiblings = getSiblings(focusPersonId);
     const spousesInView = (focus.families || []).filter(f => viewSet.has(f.spouseId));
-    const spouseW = spousesInView.length * (CARD_W + COUPLE_GAP);
-    // Siblings take space to the left and right
-    const sibW = siblings.length * UNIT_W;
-    const totalW = Math.max(ancW, (sibW + UNIT_W + spouseW) * 2, UNIT_W * 4);
-    const focusCenterX = totalW / 2;
 
-    // Place ancestors first
+    // Estimate total width: ancestors need space, siblings fan left, spouses go right
+    // Each ancestor generation can have siblings, so width grows upward
+    // Use a generous starting width and let collision resolution handle the rest
+    const sibCount = focusSiblings.length;
+    const spouseCount = spousesInView.length;
+    const estimatedW = Math.max(
+      UNIT_W * 8,  // minimum
+      (sibCount + 1 + spouseCount) * UNIT_W * 2,  // focus row width
+      Math.pow(2, focusDepth) * UNIT_W  // ancestors might need exponential width
+    );
+    const focusCenterX = estimatedW / 2;
+
+    // ── 1. Place ancestors going UP from focus ──
     placeAncestors(focusPersonId, focusCenterX, focusGen, visited);
 
-    // Place focus person's spouses to the right
+    // ── 2. Place focus person's spouses to the RIGHT ──
     let spouseX = focusCenterX + CARD_W / 2 + COUPLE_GAP;
     for (const fam of spousesInView) {
-      if (!visited.has(fam.spouseId)) {
+      if (!visited.has(fam.spouseId) && !positions.has(fam.spouseId)) {
         visited.add(fam.spouseId);
         positions.set(fam.spouseId, {
           x: Math.round(spouseX),
@@ -1645,28 +1651,18 @@ function layoutTree() {
       }
     }
 
-    // Place siblings of focus person in the same row
-    // Half go left, half go right of focus
-    const halfSib = Math.ceil(siblings.length / 2);
-    let sibLeftX = focusCenterX - UNIT_W;  // start one unit left of focus
-    let sibRightX = focusCenterX + spouseW + UNIT_W;  // start right of spouses
-    for (let i = 0; i < siblings.length; i++) {
-      const sibId = siblings[i];
-      if (visited.has(sibId)) continue;
-      visited.add(sibId);
-      let sibCenterX;
-      if (i < halfSib) {
-        sibCenterX = sibLeftX;
-        sibLeftX -= UNIT_W;
-      } else {
-        sibCenterX = sibRightX;
-        sibRightX += UNIT_W;
-      }
-      positions.set(sibId, { x: Math.round(sibCenterX - CARD_W / 2), y: 50 + focusGen * GEN_HEIGHT });
-    }
-
-    // Place descendants going DOWN
+    // ── 3. Place descendants going DOWN ──
     placeDescendants(focusPersonId, focusCenterX, focusGen, visited);
+
+    // ── 4. Place descendants of siblings (nieces/nephews) ──
+    for (const sibId of focusSiblings) {
+      const sib = getP(sibId);
+      if (!sib) continue;
+      const sibPos = positions.get(sibId);
+      if (!sibPos) continue;
+      // Place this sibling's children below them
+      placeDescendants(sibId, sibPos.x + CARD_W / 2, focusGen + 1, visited);
+    }
 
   } else {
     // No focus: simple top-down layout from roots
@@ -1685,14 +1681,14 @@ function layoutTree() {
   // Layout any unplaced people (disconnected) at top
   let currentX = 50;
   for (const p of viewPeople) {
-    if (!visited.has(p.id)) {
+    if (!visited.has(p.id) && !positions.has(p.id)) {
       positions.set(p.id, { x: currentX, y: 50 });
       visited.add(p.id);
       currentX += CARD_W + CARD_GAP_X;
     }
   }
 
-  // ── COLLISION RESOLUTION (gentle, per-generation) ──
+  // ── COLLISION RESOLUTION (per-generation, push apart overlapping cards) ──
   (function resolveCollisions() {
     const genMap = {};
     for (const [id, pos] of positions) {
@@ -1702,7 +1698,7 @@ function layoutTree() {
     }
     for (const gen in genMap) {
       const ids = genMap[gen].sort((a, b) => positions.get(a).x - positions.get(b).x);
-      for (let pass = 0; pass < 15; pass++) {
+      for (let pass = 0; pass < 20; pass++) {
         let moved = false;
         for (let i = 1; i < ids.length; i++) {
           const prev = positions.get(ids[i - 1]);
@@ -1739,8 +1735,8 @@ function layoutTree() {
     maxX += xShift;
   }
 
-  // ── BUILD CONNECTIONS from final positions ──
-  // Spouse lines
+  // ── BUILD CONNECTIONS (orthogonal T-junctions) ──
+  // Spouse lines: horizontal line between couple
   const seenSpouse = new Set();
   for (const p of viewPeople) {
     const spouses = [];
@@ -1765,30 +1761,52 @@ function layoutTree() {
     }
   }
 
-  // Parent-child lines
+  // Parent-child lines: orthogonal T-junction
+  // Vertical from parents' midpoint → horizontal bar → verticals down to each child
+  // Group children by parent pair
+  const familyGroups = new Map(); // key = sorted parent IDs, value = { parentIds, children: [] }
   for (const p of viewPeople) {
     if (!p.parents || p.parents.length === 0) continue;
-    const childPos = positions.get(p.id);
-    if (!childPos) continue;
     const parentsInView = p.parents.filter(pid => viewSet.has(pid) && positions.has(pid));
     if (parentsInView.length === 0) continue;
-
-    let parentMidX, parentY;
-    if (parentsInView.length >= 2) {
-      const p1 = positions.get(parentsInView[0]);
-      const p2 = positions.get(parentsInView[1]);
-      parentMidX = (Math.min(p1.x, p2.x) + Math.max(p1.x, p2.x) + CARD_W) / 2;
-      parentY = Math.max(p1.y, p2.y) + CARD_H;
-    } else {
-      const p1 = positions.get(parentsInView[0]);
-      parentMidX = p1.x + CARD_W / 2;
-      parentY = p1.y + CARD_H;
+    const key = parentsInView.slice().sort((a, b) => a - b).join('-');
+    if (!familyGroups.has(key)) {
+      familyGroups.set(key, { parentIds: parentsInView, children: [] });
     }
-    connections.push({
-      type: 'parent-child',
-      midX: parentMidX, parentY: parentY,
-      childX: childPos.x + CARD_W / 2, childY: childPos.y
-    });
+    familyGroups.get(key).children.push(p.id);
+  }
+
+  for (const { parentIds, children } of familyGroups.values()) {
+    // Compute parents' midpoint
+    let parentMidX, parentBottomY;
+    if (parentIds.length >= 2) {
+      const p1 = positions.get(parentIds[0]);
+      const p2 = positions.get(parentIds[1]);
+      parentMidX = (Math.min(p1.x, p2.x) + Math.max(p1.x, p2.x) + CARD_W) / 2;
+      parentBottomY = Math.max(p1.y, p2.y) + CARD_H;
+    } else {
+      const p1 = positions.get(parentIds[0]);
+      parentMidX = p1.x + CARD_W / 2;
+      parentBottomY = p1.y + CARD_H;
+    }
+
+    // For each child, draw orthogonal line: parent midpoint → down → horizontal bar → down to child
+    for (const childId of children) {
+      const childPos = positions.get(childId);
+      if (!childPos) continue;
+      const childMidX = childPos.x + CARD_W / 2;
+      const childTopY = childPos.y;
+      const midY = (parentBottomY + childTopY) / 2;
+
+      connections.push({
+        type: 'parent-child',
+        midX: parentMidX,
+        parentY: parentBottomY,
+        childX: childMidX,
+        childY: childTopY,
+        midY: midY
+      });
+    }
   }
 
   return {
@@ -1821,7 +1839,7 @@ function renderFreeBuild() {
                     stroke="var(--line-stroke)" stroke-width="2" />`;
     } else if (conn.type === 'parent-child') {
       // L-shaped: vertical down from midpoint, horizontal to child, vertical down to child top
-      const midY = (conn.parentY + conn.childY) / 2;
+      const midY = conn.midY || (conn.parentY + conn.childY) / 2;
       svgContent += `<path d="M ${conn.midX} ${conn.parentY} L ${conn.midX} ${midY} L ${conn.childX} ${midY} L ${conn.childX} ${conn.childY}"
                     fill="none" stroke="var(--line-stroke)" stroke-width="1.5" />`;
     }
