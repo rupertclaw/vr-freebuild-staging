@@ -1520,9 +1520,39 @@ function layoutTree() {
     return w;
   }
 
-  // ── PLACE ANCESTORS (going UP, with siblings fanning outward) ──
-  // For each person: place them, then place their parents above, then
-  // place their siblings on the same row (father's siblings go left, mother's go right).
+  // ── Compute ancestor subtree width (prototype: computeAncWidth) ──
+  // How much horizontal space this person's ancestor tree needs:
+  // includes their siblings + parents' full ancestor subtrees.
+  const ancWidthCache = new Map();
+  function computeAncWidth(id, visited) {
+    if (visited.has(id)) return 0;
+    visited.add(id);
+    if (ancWidthCache.has(id)) return ancWidthCache.get(id);
+
+    // Get the parent family (famc)
+    const person = getP(id);
+    if (!person) { ancWidthCache.set(id, UNIT_W); return UNIT_W; }
+
+    const parents = (person.parents || []).filter(pid => viewSet.has(pid));
+    if (parents.length === 0) { ancWidthCache.set(id, UNIT_W); return UNIT_W; }
+
+    // Children row width (this person + siblings)
+    const siblings = getSiblings(id);
+    const childrenW = (siblings.length + 1) * UNIT_W;
+
+    // Parents' combined subtree widths
+    let husbW = 0, wifeW = 0;
+    if (parents[0]) husbW = computeAncWidth(parents[0], new Set(visited));
+    if (parents[1]) wifeW = computeAncWidth(parents[1], new Set(visited));
+
+    const w = Math.max(childrenW, husbW + wifeW, UNIT_W);
+    ancWidthCache.set(id, w);
+    return w;
+  }
+
+  // ── PLACE ANCESTORS (prototype: width-aware centering) ──
+  // Centers parents over their children row, accounting for full ancestor
+  // subtree widths. Siblings distributed on both sides by birth order.
   function placeAncestors(personId, centerX, gen, visited) {
     if (visited.has(personId)) return;
     const person = getP(personId);
@@ -1532,42 +1562,76 @@ function layoutTree() {
     // Place this person
     positions.set(personId, { x: Math.round(centerX - CARD_W / 2), y: 50 + gen * GEN_HEIGHT });
 
-    // Place this person's siblings on the same row
+    // Get parent family info
+    const parents = (person.parents || []).filter(pid => viewSet.has(pid));
     const siblings = getSiblings(personId);
-    for (let i = 0; i < siblings.length; i++) {
-      const sibId = siblings[i];
-      if (visited.has(sibId)) continue;
+
+    // Place siblings on both sides (prototype: offset = (i - myIndex) * UNIT_W)
+    // Need to find this person's index among all children in the family
+    const allChildren = parents.length > 0 ? [...siblings, personId] : [personId];
+    // Sort all children by birth year to determine positions
+    allChildren.sort((a, b) => {
+      const aY = parseInt((getP(a)?.birthDate || '9999').match(/\d{4}/)?.[0] || '9999');
+      const bY = parseInt((getP(b)?.birthDate || '9999').match(/\d{4}/)?.[0] || '9999');
+      return aY - bY;
+    });
+    const myIndex = allChildren.indexOf(personId);
+    const numChildren = allChildren.length;
+
+    // For focus person, leave space for spouses to the right
+    let spouseGap = 0;
+    if (personId === focusPersonId) {
+      const sFams = (person.families || []).filter(f => viewSet.has(f.spouseId));
+      spouseGap = sFams.length * (CARD_W + COUPLE_GAP);
+    }
+
+    // Place siblings at their correct positions relative to this person
+    for (let i = 0; i < numChildren; i++) {
+      if (i === myIndex) continue;
+      const sibId = allChildren[i];
+      if (visited.has(sibId) || !viewSet.has(sibId)) continue;
       visited.add(sibId);
-      // Siblings go to the LEFT of this person (older siblings first)
-      const sibCenterX = centerX - (i + 1) * UNIT_W;
+
+      let offset = (i - myIndex) * UNIT_W;
+      if (i > myIndex) offset += spouseGap;
+      const sibCenterX = centerX + offset;
       positions.set(sibId, { x: Math.round(sibCenterX - CARD_W / 2), y: 50 + gen * GEN_HEIGHT });
 
-      // Place this sibling's spouse if they have one in view
+      // Place sibling's spouse beside them (to the right)
       const sib = getP(sibId);
       if (sib) {
         const sibSpouses = (sib.families || []).filter(f => viewSet.has(f.spouseId));
         if (sibSpouses.length > 0 && !visited.has(sibSpouses[0].spouseId)) {
           visited.add(sibSpouses[0].spouseId);
           positions.set(sibSpouses[0].spouseId, {
-            x: Math.round(sibCenterX - CARD_W / 2 - CARD_W - COUPLE_GAP),
+            x: Math.round(sibCenterX - CARD_W / 2 + CARD_W + COUPLE_GAP),
             y: 50 + gen * GEN_HEIGHT
           });
         }
       }
     }
 
-    // Place parents above
-    const parents = (person.parents || []).filter(pid => viewSet.has(pid));
     if (parents.length === 0) return;
 
+    // Compute parent subtree widths
+    let husbW = 0, wifeW = 0;
+    if (parents[0]) husbW = computeAncWidth(parents[0], new Set());
+    if (parents[1]) wifeW = computeAncWidth(parents[1], new Set());
+
+    // Center parents over the children row (prototype approach)
+    const rowLeftX = centerX - myIndex * UNIT_W;
+    const rowWidth = numChildren * UNIT_W + spouseGap;
+    const rowCenterX = rowLeftX + rowWidth / 2;
+
+    const parentTotalW = husbW + wifeW;
+    const husbCenterX = rowCenterX - parentTotalW / 2 + husbW / 2;
+    const wifeCenterX = rowCenterX + parentTotalW / 2 - wifeW / 2;
+
     if (parents.length === 1) {
-      placeAncestors(parents[0], centerX, gen - 1, visited);
+      placeAncestors(parents[0], rowCenterX, gen - 1, visited);
     } else {
-      // Father to the LEFT of center, mother to the RIGHT
-      const fatherCenterX = centerX - (CARD_W + COUPLE_GAP) / 2;
-      const motherCenterX = centerX + (CARD_W + COUPLE_GAP) / 2;
-      placeAncestors(parents[0], fatherCenterX, gen - 1, visited);
-      placeAncestors(parents[1], motherCenterX, gen - 1, visited);
+      placeAncestors(parents[0], husbCenterX, gen - 1, visited);
+      placeAncestors(parents[1], wifeCenterX, gen - 1, visited);
     }
   }
 
@@ -2562,7 +2626,8 @@ function startFromScratch() {
 
 function initDefault() {
   people = []; nextId = 1;
-  const me = createPerson(nextId++, 0, 'Me', '?', 'blank', { status: 'you' });
+  const me = createPerson(nextId++, 0, 'Me', '?', 'you', {});
+  me.isYou = true;
   people.push(me);
   autoSave();
 }
