@@ -1637,12 +1637,12 @@ function layoutTree() {
 
   // ── PLACE DESCENDANTS (going DOWN) ──
   function placeDescendants(personId, centerX, gen, visited) {
+    if (visited.has(personId)) return;
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
+    visited.add(personId);
 
     if (!positions.has(personId)) {
-      if (visited.has(personId)) return;
-      visited.add(personId);
       positions.set(personId, { x: Math.round(centerX - CARD_W / 2), y: 50 + gen * GEN_HEIGHT });
     }
 
