@@ -2742,14 +2742,22 @@ function openFoundingForm() {
   if (submitBtn) submitBtn.textContent = 'Join the list';
   modal.style.display = 'flex';
 }
-document.getElementById('privacyModalOk').addEventListener('click', () => {
-  document.getElementById('privacyModal').style.display = 'none';
-  updateExpandGenBtn();
-});
-document.getElementById('privacyModalDismissForever').addEventListener('click', () => {
-  document.getElementById('privacyModal').style.display = 'none';
-  localStorage.setItem('vaultedRootsPrivacySeen', '1');
-  updateExpandGenBtn();
+document.addEventListener('DOMContentLoaded', () => {
+  const okBtn = document.getElementById('privacyModalOk');
+  const foreverBtn = document.getElementById('privacyModalDismissForever');
+  if (okBtn) {
+    okBtn.addEventListener('click', () => {
+      document.getElementById('privacyModal').style.display = 'none';
+      updateExpandGenBtn();
+    });
+  }
+  if (foreverBtn) {
+    foreverBtn.addEventListener('click', () => {
+      document.getElementById('privacyModal').style.display = 'none';
+      localStorage.setItem('vaultedRootsPrivacySeen', '1');
+      updateExpandGenBtn();
+    });
+  }
 });
 if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
   if (document.readyState === 'loading') {
