@@ -1636,11 +1636,14 @@ function layoutTree() {
   }
 
   // ── PLACE DESCENDANTS (going DOWN) ──
-  function placeDescendants(personId, centerX, gen, visited) {
-    if (visited.has(personId)) return;
+  // processed: people whose children have already been expanded (cycle protection).
+  // Deliberately does NOT consult `visited`: people placed by placeAncestors must
+  // still have their descendants expanded (e.g. the focus person themselves).
+  function placeDescendants(personId, centerX, gen, processed) {
+    if (processed.has(personId)) return;
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
-    visited.add(personId);
+    processed.add(personId);
 
     if (!positions.has(personId)) {
       positions.set(personId, { x: Math.round(centerX - CARD_W / 2), y: 50 + gen * GEN_HEIGHT });
@@ -1651,8 +1654,8 @@ function layoutTree() {
 
     for (const fam of fams) {
       const spouseId = fam.spouseId;
-      if (spouseId && !visited.has(spouseId) && !positions.has(spouseId)) {
-        visited.add(spouseId);
+      if (spouseId && !processed.has(spouseId) && !positions.has(spouseId)) {
+        processed.add(spouseId);
         const myX = positions.get(personId).x;
         positions.set(spouseId, {
           x: Math.round(myX + CARD_W + COUPLE_GAP),
@@ -1670,7 +1673,7 @@ function layoutTree() {
 
       for (let i = 0; i < fam.children.length; i++) {
         const childCenterX = cursor + childWidths[i] / 2;
-        placeDescendants(fam.children[i], childCenterX, gen + 1, visited);
+        placeDescendants(fam.children[i], childCenterX, gen + 1, processed);
         cursor += childWidths[i];
       }
     }
@@ -1678,6 +1681,7 @@ function layoutTree() {
 
   // ── MAIN LAYOUT ──
   const visited = new Set();
+  const processed = new Set();
 
   if (focusPersonId && viewSet.has(focusPersonId)) {
     const focusDepth = maxAncDepth(focusPersonId, 0, new Set());
@@ -1716,7 +1720,7 @@ function layoutTree() {
     }
 
     // ── 3. Place descendants going DOWN ──
-    placeDescendants(focusPersonId, focusCenterX, focusGen, visited);
+    placeDescendants(focusPersonId, focusCenterX, focusGen, processed);
 
     // ── 4. Place descendants of siblings (nieces/nephews) ──
     for (const sibId of focusSiblings) {
@@ -1725,7 +1729,7 @@ function layoutTree() {
       const sibPos = positions.get(sibId);
       if (!sibPos) continue;
       // Place this sibling's children below them
-      placeDescendants(sibId, sibPos.x + CARD_W / 2, focusGen + 1, visited);
+      placeDescendants(sibId, sibPos.x + CARD_W / 2, focusGen + 1, processed);
     }
 
   } else {
@@ -1737,7 +1741,7 @@ function layoutTree() {
     for (const rootId of roots) {
       if (visited.has(rootId)) continue;
       const w = computeDescWidth(rootId, new Set());
-      placeDescendants(rootId, currentX + w / 2, 0, visited);
+      placeDescendants(rootId, currentX + w / 2, 0, processed);
       currentX += w + CARD_GAP_X * 2;
     }
   }
