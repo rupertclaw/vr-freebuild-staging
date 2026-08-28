@@ -1734,7 +1734,7 @@ function layoutTree() {
 
   } else {
     // No focus: simple top-down layout from roots
-    let currentX = 50;
+    currentX = 50;
     const roots = viewPeople
       .filter(p => !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid)))
       .map(p => p.id);
@@ -1746,14 +1746,44 @@ function layoutTree() {
     }
   }
 
-  // Layout any unplaced people (disconnected) at top
+  // ── Attach unplaced people to their placed relatives ──
+  // People the ancestor/descendant walks never reached (collateral branches like
+  // great-aunts' spouses) get anchored next to a placed family member instead of
+  // being dumped in a disconnected row.
   let currentX = 50;
   for (const p of viewPeople) {
-    if (!visited.has(p.id) && !positions.has(p.id)) {
-      positions.set(p.id, { x: currentX, y: 50 });
-      visited.add(p.id);
-      currentX += CARD_W + CARD_GAP_X;
+    if (positions.has(p.id)) continue;
+
+    // 1. Spouse placed → sit beside them
+    let anchor = null;
+    for (const fam of (p.families || [])) {
+      if (fam.spouseId && positions.has(fam.spouseId)) { anchor = positions.get(fam.spouseId); break; }
     }
+    if (anchor) {
+      positions.set(p.id, { x: anchor.x + CARD_W + COUPLE_GAP, y: anchor.y });
+      continue;
+    }
+
+    // 2. A placed child → sit above the first placed child (they're a parent)
+    let placedChild = (p.children || []).find(cid => positions.has(cid));
+    if (placedChild) {
+      const cp = positions.get(placedChild);
+      positions.set(p.id, { x: cp.x, y: cp.y - GEN_HEIGHT });
+      continue;
+    }
+
+    // 3. A placed parent → sit beside the parent
+    let placedParent = (p.parents || []).find(pid => positions.has(pid));
+    if (placedParent) {
+      const pp = positions.get(placedParent);
+      positions.set(p.id, { x: pp.x + CARD_W + COUPLE_GAP, y: pp.y });
+      continue;
+    }
+
+    // 4. Truly disconnected → bottom row
+    positions.set(p.id, { x: currentX, y: 50 });
+    visited.add(p.id);
+    currentX += CARD_W + CARD_GAP_X;
   }
 
   // ── COLLISION RESOLUTION (per-generation, push apart overlapping cards) ──
