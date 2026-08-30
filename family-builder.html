@@ -1856,6 +1856,18 @@ function layoutTree() {
       .map(p => p.id);
     for (const rootId of roots) {
       if (visited.has(rootId)) continue;
+      const p = getP(rootId);
+      // Skip roots whose spouse has parents in view: the couple belongs on
+      // the spouse's row (a child unit of older parents). The spouse's own
+      // parent-walk will place the whole couple. Otherwise an in-law with
+      // no listed parents gets treated as a top-row root and drags their
+      // spouse up a generation with a stray horizontal child-line.
+      const spId = p.spouseId && viewSet.has(p.spouseId) ? p.spouseId : null;
+      if (spId) {
+        const sp = getP(spId);
+        const spHasParents = sp && sp.parents && sp.parents.some(pid => viewSet.has(pid));
+        if (spHasParents) continue;
+      }
       const w = computeDescWidth(rootId, new Set());
       placeDescendants(rootId, rootX + w / 2, 0, processed);
       rootX += w + CARD_GAP_X * 2;
