@@ -1253,8 +1253,9 @@ function parseGedcom(text) {
 let CARD_W = window.innerWidth <= 600 ? 120 : 150;
 let CARD_H = window.innerWidth <= 600 ? 34 : 40;
 const CARD_GAP_X = 30;
-const CARD_GAP_Y = 80;
+const CARD_GAP_Y = 45;
 const COUPLE_GAP = 10;
+const SIB_GAP = 16;
 
 // Update card dimensions on viewport change
 function updateCardDimensions() {
@@ -1432,6 +1433,18 @@ function layoutTree() {
 
   function getP(id) { return people.find(p => p.id === id); }
 
+  // ── Couple-unit width ──
+  // A married-in-view person occupies TWO card widths (them + spouse).
+  // Layout reserves this space up front so couples never get split apart
+  // by the collision pass and children centre under the pair, not one card.
+  function coupleUnitW(id) {
+    const p = getP(id);
+    if (!p) return UNIT_W;
+    const hasSpouse = (p.spouseId && viewSet.has(p.spouseId)) ||
+      (p.families || []).some(f => viewSet.has(f.spouseId));
+    return hasSpouse ? 2 * CARD_W + COUPLE_GAP : CARD_W;
+  }
+
   // ============================================================
   // TOP-DOWN FAMILY TREE LAYOUT (Ancestry-style)
   // Ancestors ABOVE focus. Descendants BELOW.
@@ -1500,12 +1513,12 @@ function layoutTree() {
   // ── Compute subtree width (for a person + all their descendants in view) ──
   const descWidthCache = new Map();
   function computeDescWidth(personId, visited) {
-    if (visited.has(personId)) return UNIT_W;
+    if (visited.has(personId)) return coupleUnitW(personId);
     visited.add(personId);
     if (descWidthCache.has(personId)) return descWidthCache.get(personId);
 
     const fams = getFamsWithChildren(personId);
-    if (fams.length === 0) { descWidthCache.set(personId, UNIT_W); return UNIT_W; }
+    if (fams.length === 0) { descWidthCache.set(personId, coupleUnitW(personId)); return descWidthCache.get(personId); }
 
     let totalW = 0;
     for (const fam of fams) {
@@ -1513,9 +1526,9 @@ function layoutTree() {
       for (const child of fam.children) {
         famW += computeDescWidth(child, new Set(visited));
       }
-      totalW += Math.max(famW, UNIT_W);
+      totalW += Math.max(famW, coupleUnitW(personId));
     }
-    const w = Math.max(totalW, UNIT_W);
+    const w = Math.max(totalW, coupleUnitW(personId));
     descWidthCache.set(personId, w);
     return w;
   }
@@ -1551,62 +1564,78 @@ function layoutTree() {
   }
 
   // ── PLACE ANCESTORS (prototype: width-aware centering) ──
-  // Centers parents over their children row, accounting for full ancestor
-  // subtree widths. Siblings distributed on both sides by birth order.
+  // Centers parent couples over their children row, accounting for full ancestor
+  // subtree widths. Siblings packed tightly (SIB_GAP), sorted by birth order.
+  // A person with a spouse in view occupies a couple-unit:
+  //   [card][spouse card] with the couple center at the unit's midpoint.
   function placeAncestors(personId, centerX, gen, visited) {
     if (visited.has(personId)) return;
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
     visited.add(personId);
 
-    // Place this person
-    positions.set(personId, { x: Math.round(centerX - CARD_W / 2), y: 50 + gen * GEN_HEIGHT });
+    // Place this person's couple-unit centered on centerX (skip if already
+    // pinned by a parent-loop, e.g. father/mother of the current row)
+    if (!positions.has(personId)) {
+      placeCoupleUnit(personId, centerX, gen, visited);
+    }
 
     // Get parent family info
     const parents = (person.parents || []).filter(pid => viewSet.has(pid));
     const siblings = getSiblings(personId);
 
-    // Place siblings on both sides (prototype: offset = (i - myIndex) * UNIT_W)
-    // Need to find this person's index among all children in the family
-    const allChildren = parents.length > 0 ? [...siblings, personId] : [personId];
-    // Sort all children by birth year to determine positions
-    allChildren.sort((a, b) => {
+    // All children of this family, sorted by birth year
+    const allChildren = parents.length > 0 ? [...siblings, personId].sort((a, b) => {
       const aY = parseInt((getP(a)?.birthDate || '9999').match(/\d{4}/)?.[0] || '9999');
       const bY = parseInt((getP(b)?.birthDate || '9999').match(/\d{4}/)?.[0] || '9999');
       return aY - bY;
-    });
+    }) : [personId];
     const myIndex = allChildren.indexOf(personId);
     const numChildren = allChildren.length;
 
-    // For focus person, leave space for spouses to the right
-    let spouseGap = 0;
+    // For focus person, leave space to the RIGHT of their unit for extra spouses
+    let focusExtra = 0;
     if (personId === focusPersonId) {
       const sFams = (person.families || []).filter(f => viewSet.has(f.spouseId));
-      spouseGap = sFams.length * (CARD_W + COUPLE_GAP);
+      focusExtra = Math.max(0, sFams.length - 1) * coupleUnitW(personId);
     }
 
-    // Place siblings at their correct positions relative to this person
+    // ── Pack children row tightly: measure each unit's real width ──
+    const unitWidths = allChildren.map(cid => {
+      if (cid === personId) return coupleUnitW(cid);
+      return visited.has(cid) ? 0 : coupleUnitW(cid);
+    });
+    const totalRowW = unitWidths.reduce((a, b) => a + b, 0) + focusExtra;
+
+    // Place each sibling at its packed position. My unit must land back on
+    // centerX (it was already placed), so compute my unit's slot start first.
+    const rowLeft = centerX - SUM_BEFORE(unitWidths, myIndex) - coupleUnitW(personId) / 2;
+    let cursor = rowLeft;
     for (let i = 0; i < numChildren; i++) {
-      if (i === myIndex) continue;
       const sibId = allChildren[i];
-      if (visited.has(sibId) || !viewSet.has(sibId)) continue;
-      visited.add(sibId);
+      if (i !== myIndex && !visited.has(sibId) && viewSet.has(sibId)) {
+        visited.add(sibId);
+        const w = unitWidths[i];
+        placeSiblingUnit(sibId, cursor, w, gen, visited);
+        cursor += w + SIB_GAP;
+      } else {
+        // My own slot, or already placed (e.g. as someone's spouse): still
+        // advance cursor by its unit width so packing stays consistent
+        cursor += unitWidths[i] + SIB_GAP;
+      }
+    }
 
-      let offset = (i - myIndex) * UNIT_W;
-      if (i > myIndex) offset += spouseGap;
-      const sibCenterX = centerX + offset;
-      positions.set(sibId, { x: Math.round(sibCenterX - CARD_W / 2), y: 50 + gen * GEN_HEIGHT });
-
-      // Place sibling's spouse beside them (to the right)
-      const sib = getP(sibId);
-      if (sib) {
-        const sibSpouses = (sib.families || []).filter(f => viewSet.has(f.spouseId));
-        if (sibSpouses.length > 0 && !visited.has(sibSpouses[0].spouseId)) {
-          visited.add(sibSpouses[0].spouseId);
-          positions.set(sibSpouses[0].spouseId, {
-            x: Math.round(sibCenterX - CARD_W / 2 + CARD_W + COUPLE_GAP),
-            y: 50 + gen * GEN_HEIGHT
-          });
+    // Focus extra spouses appended to the right of the row
+    if (focusExtra > 0) {
+      const focus = getP(personId);
+      const sFams = (focus.families || []).filter(f => viewSet.has(f.spouseId));
+      let extraX = rowLeft + SUM_BEFORE(unitWidths, myIndex) + coupleUnitW(personId) + (numChildren - 1 - myIndex) * (CARD_W + SIB_GAP) + SIB_GAP;
+      for (let f = 1; f < sFams.length; f++) {
+        const spId = sFams[f].spouseId;
+        if (!visited.has(spId) && viewSet.has(spId)) {
+          visited.add(spId);
+          positions.set(spId, { x: Math.round(extraX), y: 50 + gen * GEN_HEIGHT });
+          extraX += coupleUnitW(spId) + SIB_GAP;
         }
       }
     }
@@ -1618,20 +1647,87 @@ function layoutTree() {
     if (parents[0]) husbW = computeAncWidth(parents[0], new Set());
     if (parents[1]) wifeW = computeAncWidth(parents[1], new Set());
 
-    // Center parents over the children row (prototype approach)
-    const rowLeftX = centerX - myIndex * UNIT_W;
-    const rowWidth = numChildren * UNIT_W + spouseGap;
+    // Center the PARENT COUPLE over the children row
+    const rowLeftX = centerX - SUM_BEFORE(unitWidths, myIndex) - coupleUnitW(personId) / 2;
+    const rowWidth = totalRowW;
     const rowCenterX = rowLeftX + rowWidth / 2;
 
-    const parentTotalW = husbW + wifeW;
-    const husbCenterX = rowCenterX - parentTotalW / 2 + husbW / 2;
-    const wifeCenterX = rowCenterX + parentTotalW / 2 - wifeW / 2;
+    // Parent couple-unit: two cards side by side, centered on rowCenterX
+    const parentUnitW = (parents.length === 2) ? 2 * CARD_W + COUPLE_GAP : CARD_W;
+    const parentUnitLeft = rowCenterX - parentUnitW / 2;
 
     if (parents.length === 1) {
       placeAncestors(parents[0], rowCenterX, gen - 1, visited);
     } else {
-      placeAncestors(parents[0], husbCenterX, gen - 1, visited);
-      placeAncestors(parents[1], wifeCenterX, gen - 1, visited);
+      // Order parents: father left, mother right (by sex)
+      let father = parents.find(pid => (getP(pid)?.sex === 'M'));
+      let mother = parents.find(pid => (getP(pid)?.sex === 'F'));
+      if (!father) { father = parents[0]; mother = parents[1]; }
+      // Explicitly pin the couple at the unit slot (do NOT mark visited here;
+      // placeAncestors below needs the walk to continue through them)
+      if (!positions.has(father)) positions.set(father, { x: Math.round(parentUnitLeft), y: 50 + (gen - 1) * GEN_HEIGHT });
+      if (!positions.has(mother)) positions.set(mother, { x: Math.round(parentUnitLeft + CARD_W + COUPLE_GAP), y: 50 + (gen - 1) * GEN_HEIGHT });
+      placeAncestors(father, parentUnitLeft + CARD_W / 2, gen - 1, visited);
+      placeAncestors(mother, parentUnitLeft + CARD_W + COUPLE_GAP + CARD_W / 2, gen - 1, visited);
+    }
+  }
+
+  // Helper: sum of array items before index
+  function SUM_BEFORE(arr, idx) {
+    let s = 0;
+    for (let i = 0; i < idx; i++) s += arr[i];
+    return s;
+  }
+
+  // Place a person's couple-unit so the unit is centered at centerX
+  function placeCoupleUnit(personId, centerX, gen, visited) {
+    const person = getP(personId);
+    if (!person) return;
+    const y = 50 + gen * GEN_HEIGHT;
+
+    // Find first spouse in view
+    let spouseId = null;
+    if (person.spouseId && viewSet.has(person.spouseId)) spouseId = person.spouseId;
+    else if (person.families) {
+      for (const f of person.families) { if (viewSet.has(f.spouseId)) { spouseId = f.spouseId; break; } }
+    }
+
+    if (!spouseId) {
+      positions.set(personId, { x: Math.round(centerX - CARD_W / 2), y });
+      return;
+    }
+
+    // Couple: person + spouse centered around centerX
+    const unitLeft = centerX - (2 * CARD_W + COUPLE_GAP) / 2;
+    positions.set(personId, { x: Math.round(unitLeft), y });
+    if (!positions.has(spouseId)) {
+      positions.set(spouseId, { x: Math.round(unitLeft + CARD_W + COUPLE_GAP), y });
+      visited.add(spouseId);
+    }
+  }
+
+  // Place a sibling's unit at a packed slot (left edge + width known)
+  function placeSiblingUnit(sibId, slotLeft, slotW, gen, visited) {
+    const sib = getP(sibId);
+    if (!sib) return;
+    const y = 50 + gen * GEN_HEIGHT;
+    const hasSpouse = (sib.spouseId && viewSet.has(sib.spouseId)) ||
+      (sib.families || []).some(f => viewSet.has(f.spouseId));
+
+    if (!hasSpouse) {
+      positions.set(sibId, { x: Math.round(slotLeft), y });
+      return;
+    }
+
+    // Sibling left, spouse right within the unit
+    positions.set(sibId, { x: Math.round(slotLeft), y });
+    let spouseId = sib.spouseId && viewSet.has(sib.spouseId) ? sib.spouseId : null;
+    if (!spouseId && sib.families) {
+      for (const f of sib.families) { if (viewSet.has(f.spouseId)) { spouseId = f.spouseId; break; } }
+    }
+    if (spouseId && !positions.has(spouseId)) {
+      positions.set(spouseId, { x: Math.round(slotLeft + CARD_W + COUPLE_GAP), y });
+      visited.add(spouseId);
     }
   }
 
@@ -1646,7 +1742,20 @@ function layoutTree() {
     processed.add(personId);
 
     if (!positions.has(personId)) {
-      positions.set(personId, { x: Math.round(centerX - CARD_W / 2), y: 50 + gen * GEN_HEIGHT });
+      // Centre the couple-unit on centerX so children hang from the pair
+      let mySpouse = null;
+      if (person.spouseId && viewSet.has(person.spouseId)) mySpouse = person.spouseId;
+      else if (person.families) {
+        for (const f of person.families) { if (viewSet.has(f.spouseId) && positions.has(f.spouseId) === false && !processed.has(f.spouseId)) { mySpouse = f.spouseId; break; } }
+      }
+      if (mySpouse) {
+        const unitLeft = Math.round(centerX - (2 * CARD_W + COUPLE_GAP) / 2);
+        positions.set(personId, { x: unitLeft, y: 50 + gen * GEN_HEIGHT });
+        processed.add(mySpouse);
+        positions.set(mySpouse, { x: unitLeft + CARD_W + COUPLE_GAP, y: 50 + gen * GEN_HEIGHT });
+      } else {
+        positions.set(personId, { x: Math.round(centerX - CARD_W / 2), y: 50 + gen * GEN_HEIGHT });
+      }
     }
 
     const fams = getFamsWithChildren(personId);
@@ -1664,17 +1773,20 @@ function layoutTree() {
       }
 
       const childWidths = fam.children.map(c => computeDescWidth(c, new Set()));
-      const totalChildrenW = childWidths.reduce((a, b) => a + b, 0);
+      const totalChildrenW = childWidths.reduce((a, b) => a + b, 0) + (fam.children.length - 1) * SIB_GAP;
 
       const myPos = positions.get(personId);
       const spousePos = positions.get(spouseId);
-      const coupleCenterX = spousePos ? (myPos.x + spousePos.x + CARD_W) / 2 : myPos.x + CARD_W / 2;
+      // Children hang from the COUPLE unit's midpoint, not one card
+      const coupleCenterX = spousePos
+        ? (Math.min(myPos.x, spousePos.x) + Math.max(myPos.x, spousePos.x) + CARD_W) / 2
+        : myPos.x + CARD_W / 2;
       let cursor = coupleCenterX - totalChildrenW / 2;
 
       for (let i = 0; i < fam.children.length; i++) {
         const childCenterX = cursor + childWidths[i] / 2;
         placeDescendants(fam.children[i], childCenterX, gen + 1, processed);
-        cursor += childWidths[i];
+        cursor += childWidths[i] + SIB_GAP;
       }
     }
   }
@@ -1706,8 +1818,9 @@ function layoutTree() {
     // ── 1. Place ancestors going UP from focus ──
     placeAncestors(focusPersonId, focusCenterX, focusGen, visited);
 
-    // ── 2. Place focus person's spouses to the RIGHT ──
-    let spouseX = focusCenterX + CARD_W / 2 + COUPLE_GAP;
+    // ── 2. Place focus person's extra spouses to the RIGHT of the couple unit ──
+    const focusUnitW = coupleUnitW(focusPersonId);
+    let spouseX = focusCenterX + focusUnitW / 2 + SIB_GAP;
     for (const fam of spousesInView) {
       if (!visited.has(fam.spouseId) && !positions.has(fam.spouseId)) {
         visited.add(fam.spouseId);
@@ -1715,7 +1828,7 @@ function layoutTree() {
           x: Math.round(spouseX),
           y: 50 + focusGen * GEN_HEIGHT
         });
-        spouseX += CARD_W + COUPLE_GAP;
+        spouseX += coupleUnitW(fam.spouseId) + SIB_GAP;
       }
     }
 
@@ -1787,6 +1900,8 @@ function layoutTree() {
   }
 
   // ── COLLISION RESOLUTION (per-generation, push apart overlapping cards) ──
+  // Couples are placed as a unit, so the pass only nudges whole units when
+  // unrelated cards overlap. Overlap tolerance of 2px avoids jitter.
   (function resolveCollisions() {
     const genMap = {};
     for (const [id, pos] of positions) {
@@ -1801,7 +1916,16 @@ function layoutTree() {
         for (let i = 1; i < ids.length; i++) {
           const prev = positions.get(ids[i - 1]);
           const curr = positions.get(ids[i]);
-          const minGap = CARD_W + 5;
+          // Spouses belong to the same unit: allow the tight COUPLE_GAP
+          const isSpouseOfPrev = (() => {
+            const a = getP(ids[i - 1]), b = getP(ids[i]);
+            if (!a || !b) return false;
+            if (a.spouseId === b.id || b.spouseId === a.id) return true;
+            const aFams = (a.families || []).map(f => f.spouseId);
+            const bFams = (b.families || []).map(f => f.spouseId);
+            return aFams.includes(b.id) || bFams.includes(a.id);
+          })();
+          const minGap = isSpouseOfPrev ? CARD_W + COUPLE_GAP : CARD_W + 5;
           if (curr.x < prev.x + minGap) {
             curr.x += prev.x + minGap - curr.x;
             moved = true;
@@ -1892,6 +2016,9 @@ function layoutTree() {
     for (const childId of children) {
       const childPos = positions.get(childId);
       if (!childPos) continue;
+      // Skip degenerate lines: child directly under parent midpoint with NO
+      // visible bar (would render as a zero-length stub) — still draw the
+      // vertical, it's a real connection.
       const childMidX = childPos.x + CARD_W / 2;
       const childTopY = childPos.y;
       const midY = (parentBottomY + childTopY) / 2;
