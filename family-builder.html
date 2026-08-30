@@ -2326,6 +2326,23 @@ function openDetail(person) {
   `;
   detailPanel.classList.add('active');
   renderFreeBuild(); // re-render to show selection highlight
+
+  // Auto-select default placeholder text ("Name", "?") so typing overwrites it
+  setTimeout(() => {
+    ['d_fullName', 'd_name', 'd_maidenName', 'd_spouseName', 'd_occupation', 'd_birthplace'].forEach(id => {
+      const el = document.getElementById(id);
+      if (!el) return;
+      el.addEventListener('focus', function() {
+        const v = this.value.trim();
+        if (v === 'Name' || v === '?' || v === '') this.select();
+      });
+      // Auto-focus the full name field when it's still the default
+      if (id === 'd_fullName') {
+        const fv = el.value.trim();
+        if (fv === 'Name' || fv === 'Me') { el.focus(); el.select(); }
+      }
+    });
+  }, 50);
 }
 
 function closeDetail() {
@@ -2866,6 +2883,21 @@ function normalizeRelationships() {
         b.spouseId = a.id; b.spouseName = a.name;
         fixes++;
       }
+    }
+  }
+  // Pass 4: child has exactly one parent; that parent has a spouse →
+  // the spouse is the second parent (Ancestry default: child of X & Y)
+  for (const child of people) {
+    if (child.parents.length !== 1) continue;
+    const sole = people.find(x => x.id === child.parents[0]);
+    if (!sole || !sole.spouseId) continue;
+    const stepParent = people.find(x => x.id === sole.spouseId);
+    if (!stepParent) continue;
+    if (!child.parents.includes(stepParent.id)) {
+      child.parents.push(stepParent.id);
+      if (!stepParent.children) stepParent.children = [];
+      if (!stepParent.children.includes(child.id)) stepParent.children.push(child.id);
+      fixes++;
     }
   }
   return fixes;
