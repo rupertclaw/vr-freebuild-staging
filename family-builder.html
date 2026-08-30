@@ -1533,32 +1533,33 @@ function layoutTree() {
     return w;
   }
 
-  // ── Compute ancestor subtree width (prototype: computeAncWidth) ──
+  // ── Compute ancestor subtree width ──
   // How much horizontal space this person's ancestor tree needs:
-  // includes their siblings + parents' full ancestor subtrees.
+  // their full sibling row (couple-units, tightly packed) vs
+  // their parents' combined subtree widths. Whoever is wider wins.
   const ancWidthCache = new Map();
   function computeAncWidth(id, visited) {
     if (visited.has(id)) return 0;
     visited.add(id);
     if (ancWidthCache.has(id)) return ancWidthCache.get(id);
 
-    // Get the parent family (famc)
     const person = getP(id);
-    if (!person) { ancWidthCache.set(id, UNIT_W); return UNIT_W; }
+    if (!person) { ancWidthCache.set(id, coupleUnitW(id)); return ancWidthCache.get(id); }
 
     const parents = (person.parents || []).filter(pid => viewSet.has(pid));
-    if (parents.length === 0) { ancWidthCache.set(id, UNIT_W); return UNIT_W; }
+    if (parents.length === 0) { ancWidthCache.set(id, coupleUnitW(id)); return ancWidthCache.get(id); }
 
-    // Children row width (this person + siblings)
+    // Sibling row width: each child occupies coupleUnitW + SIB_GAP
     const siblings = getSiblings(id);
-    const childrenW = (siblings.length + 1) * UNIT_W;
+    const allKids = [...new Set([...siblings, id])];
+    const childrenW = allKids.reduce((s, cid) => s + coupleUnitW(cid) + SIB_GAP, 0);
 
-    // Parents' combined subtree widths
+    // Parents' combined subtree widths (they sit adjacent as a couple)
     let husbW = 0, wifeW = 0;
     if (parents[0]) husbW = computeAncWidth(parents[0], new Set(visited));
     if (parents[1]) wifeW = computeAncWidth(parents[1], new Set(visited));
 
-    const w = Math.max(childrenW, husbW + wifeW, UNIT_W);
+    const w = Math.max(childrenW, husbW + COUPLE_GAP + wifeW, coupleUnitW(id));
     ancWidthCache.set(id, w);
     return w;
   }
@@ -1652,23 +1653,25 @@ function layoutTree() {
     const rowWidth = totalRowW;
     const rowCenterX = rowLeftX + rowWidth / 2;
 
-    // Parent couple-unit: two cards side by side, centered on rowCenterX
-    const parentUnitW = (parents.length === 2) ? 2 * CARD_W + COUPLE_GAP : CARD_W;
-    const parentUnitLeft = rowCenterX - parentUnitW / 2;
-
     if (parents.length === 1) {
       placeAncestors(parents[0], rowCenterX, gen - 1, visited);
     } else {
-      // Order parents: father left, mother right (by sex)
+      // Parents sit as one couple: father left, mother right (by sex).
+      // Each gets the other's full subtree width as side-clearance so large
+      // ancestor branches never overlap.
       let father = parents.find(pid => (getP(pid)?.sex === 'M'));
       let mother = parents.find(pid => (getP(pid)?.sex === 'F'));
       if (!father) { father = parents[0]; mother = parents[1]; }
-      // Explicitly pin the couple at the unit slot (do NOT mark visited here;
-      // placeAncestors below needs the walk to continue through them)
-      if (!positions.has(father)) positions.set(father, { x: Math.round(parentUnitLeft), y: 50 + (gen - 1) * GEN_HEIGHT });
-      if (!positions.has(mother)) positions.set(mother, { x: Math.round(parentUnitLeft + CARD_W + COUPLE_GAP), y: 50 + (gen - 1) * GEN_HEIGHT });
-      placeAncestors(father, parentUnitLeft + CARD_W / 2, gen - 1, visited);
-      placeAncestors(mother, parentUnitLeft + CARD_W + COUPLE_GAP + CARD_W / 2, gen - 1, visited);
+      husbW = Math.max(husbW, coupleUnitW(father));
+      wifeW = Math.max(wifeW, coupleUnitW(mother));
+      const husbLeft = rowCenterX - (husbW + COUPLE_GAP + wifeW) / 2;
+      const wifeLeft = husbLeft + husbW + COUPLE_GAP;
+      const husbCenter = husbLeft + husbW / 2;
+      const wifeCenter = wifeLeft + wifeW / 2;
+      if (!positions.has(father)) positions.set(father, { x: Math.round(husbCenter - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
+      if (!positions.has(mother)) positions.set(mother, { x: Math.round(wifeCenter - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
+      placeAncestors(father, husbCenter, gen - 1, visited);
+      placeAncestors(mother, wifeCenter, gen - 1, visited);
     }
   }
 
@@ -1847,22 +1850,19 @@ function layoutTree() {
 
   } else {
     // No focus: simple top-down layout from roots
-    currentX = 50;
+    let rootX = 50;
     const roots = viewPeople
       .filter(p => !p.parents || p.parents.length === 0 || !p.parents.some(pid => viewSet.has(pid)))
       .map(p => p.id);
     for (const rootId of roots) {
       if (visited.has(rootId)) continue;
       const w = computeDescWidth(rootId, new Set());
-      placeDescendants(rootId, currentX + w / 2, 0, processed);
-      currentX += w + CARD_GAP_X * 2;
+      placeDescendants(rootId, rootX + w / 2, 0, processed);
+      rootX += w + CARD_GAP_X * 2;
     }
   }
 
   // ── Attach unplaced people to their placed relatives ──
-  // People the ancestor/descendant walks never reached (collateral branches like
-  // great-aunts' spouses) get anchored next to a placed family member instead of
-  // being dumped in a disconnected row.
   let currentX = 50;
   for (const p of viewPeople) {
     if (positions.has(p.id)) continue;
