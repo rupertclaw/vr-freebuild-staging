@@ -181,6 +181,14 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .fb-card.blank .name, .fb-card.blank .years { color: #b8a88a; }
 .fb-card.selected { box-shadow: 0 0 0 3px #38bdf8, 0 2px 8px rgba(56,189,248,0.3); }
 .fb-card .doc-badges { position: absolute; top: 2px; right: 2px; display: flex; gap: 2px; }
+.fb-card .leaf-badge {
+  position: absolute; top: 2px; right: 2px;
+  font-family: 'Cormorant Garamond', serif; font-size: 9px;
+  background: #e8f0e0; border: 1px solid #6b8e5a; border-radius: 8px;
+  color: #3a5a2a; padding: 1px 5px; line-height: 1.2; cursor: pointer;
+  user-select: none; z-index: 3;
+}
+.fb-card .leaf-badge:hover { background: #d4e4c8; }
 .fb-card .doc-badge { font-size: 7px; font-family: 'Cinzel Decorative', serif; padding: 1px 3px; border-radius: 3px; font-weight: 600; line-height: 1; }
 .fb-card .doc-badge.bc { background: #dcfce7; color: #166534; }
 .fb-card .doc-badge.mc { background: #dbeafe; color: #1e40af; }
@@ -751,6 +759,11 @@ if ('serviceWorker' in navigator) {
 </div>
 
 <!-- Custom Confirm Dialog (matches data-tree styling) -->
+<div id="childParentDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10001;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:16px 20px;max-width:360px;width:92%;max-height:80vh;overflow-y:auto;">
+    <div id="childParentOptions"></div>
+  </div>
+</div>
 <div id="confirmDialog" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.6);z-index:10000;justify-content:center;align-items:center;">
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:320px;width:90%;text-align:center;">
     <div style="font-family:'Cinzel Decorative',serif;font-size:16px;color:#991b1b;margin-bottom:12px;">⚠️ Wipe Tree Clean?</div>
@@ -1012,6 +1025,9 @@ let zoom = 0.75;
 let selectedPersonId = null;
 let focusPersonId = null;
 let viewHistory = [];
+// People whose children (+ further descendants) are COLLAPSED on the canvas.
+// Clicking the 🍃 badge on a card toggles the person's id in this set.
+let collapsedPeople = new Set();
 
 // ═══════════════════════════════════════════════════════════════
 // GEDCOM PARSER — copied from data-tree.html
@@ -1356,9 +1372,29 @@ function getVisiblePeople() {
       }
     }
 
-    return people.filter(p => visible.has(p.id));
+    return pruneCollapsed(people.filter(p => visible.has(p.id)));
   }
-  return people;
+  // No focus: everyone (minus collapsed branches)
+  return pruneCollapsed(people);
+}
+
+// ── COLLAPSE: drop every descendant of a collapsed person ──
+// A collapsed parent stays visible (with a 🍃 badge); their children and
+// everything below vanish until the badge is clicked again.
+function pruneCollapsed(list) {
+  if (collapsedPeople.size === 0) return list;
+  const hidden = new Set();
+  function markHiddenDescendants(pid) {
+    const p = people.find(x => x.id === pid);
+    if (!p) return;
+    for (const cid of (p.children || [])) {
+      if (hidden.has(cid)) continue;
+      hidden.add(cid);
+      markHiddenDescendants(cid);
+    }
+  }
+  for (const c of collapsedPeople) markHiddenDescendants(c);
+  return list.filter(p => !hidden.has(p.id));
 }
 
 function buildFamilyUnits(viewPeople) {
@@ -1601,36 +1637,34 @@ function layoutTree() {
       focusExtra = Math.max(0, sFams.length - 1) * coupleUnitW(personId);
     }
 
-    // ── Pack children row tightly: measure each unit's real width ──
-    const unitWidths = allChildren.map(cid => {
-      if (cid === personId) return coupleUnitW(cid);
-      return visited.has(cid) ? 0 : coupleUnitW(cid);
-    });
-    const totalRowW = unitWidths.reduce((a, b) => a + b, 0) + focusExtra;
+    // ── Pack children row: each slot sized to that child's FULL subtree ──
+    // A sibling with kids needs room below for them; reserving it here means
+    // couples re-center over their own children without the collision pass
+    // shoving unrelated families apart afterwards.
+    const slotWidths = allChildren.map(cid => visited.has(cid) ? 0 : Math.max(computeDescWidth(cid, new Set()), coupleUnitW(cid)));
+    const totalRowW = slotWidths.reduce((a, b) => a + b, 0) + Math.max(0, numChildren - 1) * SIB_GAP + focusExtra;
 
-    // Place each sibling at its packed position. My unit must land back on
-    // centerX (it was already placed), so compute my unit's slot start first.
-    const rowLeft = centerX - SUM_BEFORE(unitWidths, myIndex) - coupleUnitW(personId) / 2;
+    // My unit must land centered on centerX (already placed), so my SLOT
+    // centers on centerX: rowLeft makes my slot's midpoint = centerX.
+    const rowLeft = centerX - SUM_BEFORE(slotWidths, myIndex) - slotWidths[myIndex] / 2;
     let cursor = rowLeft;
     for (let i = 0; i < numChildren; i++) {
       const sibId = allChildren[i];
-      if (i !== myIndex && !visited.has(sibId) && viewSet.has(sibId)) {
+      const w = slotWidths[i];
+      if (i !== myIndex && !visited.has(sibId) && viewSet.has(sibId) && w > 0) {
         visited.add(sibId);
-        const w = unitWidths[i];
         placeSiblingUnit(sibId, cursor, w, gen, visited);
-        cursor += w + SIB_GAP;
-      } else {
-        // My own slot, or already placed (e.g. as someone's spouse): still
-        // advance cursor by its unit width so packing stays consistent
-        cursor += unitWidths[i] + SIB_GAP;
       }
+      // My own slot, or already placed (e.g. as someone's spouse): still
+      // advance cursor by its slot width so packing stays consistent
+      cursor += w + SIB_GAP;
     }
 
     // Focus extra spouses appended to the right of the row
     if (focusExtra > 0) {
       const focus = getP(personId);
       const sFams = (focus.families || []).filter(f => viewSet.has(f.spouseId));
-      let extraX = rowLeft + SUM_BEFORE(unitWidths, myIndex) + coupleUnitW(personId) + (numChildren - 1 - myIndex) * (CARD_W + SIB_GAP) + SIB_GAP;
+      let extraX = cursor;
       for (let f = 1; f < sFams.length; f++) {
         const spId = sFams[f].spouseId;
         if (!visited.has(spId) && viewSet.has(spId)) {
@@ -1709,27 +1743,23 @@ function layoutTree() {
     }
   }
 
-  // Place a sibling's unit at a packed slot (left edge + width known)
+  // Place a sibling's unit centered in its reserved slot. Slot width covers
+  // the sibling's FULL descendant subtree, so their children pack under the
+  // couple inside the slot and never collide with the neighbouring family.
   function placeSiblingUnit(sibId, slotLeft, slotW, gen, visited) {
     const sib = getP(sibId);
     if (!sib) return;
     const y = 50 + gen * GEN_HEIGHT;
-    const hasSpouse = (sib.spouseId && viewSet.has(sib.spouseId)) ||
-      (sib.families || []).some(f => viewSet.has(f.spouseId));
-
-    if (!hasSpouse) {
-      positions.set(sibId, { x: Math.round(slotLeft), y });
-      return;
-    }
-
-    // Sibling left, spouse right within the unit
-    positions.set(sibId, { x: Math.round(slotLeft), y });
     let spouseId = sib.spouseId && viewSet.has(sib.spouseId) ? sib.spouseId : null;
     if (!spouseId && sib.families) {
       for (const f of sib.families) { if (viewSet.has(f.spouseId)) { spouseId = f.spouseId; break; } }
     }
+
+    const unitW = spouseId ? 2 * CARD_W + COUPLE_GAP : CARD_W;
+    const unitLeft = slotLeft + Math.max(0, (slotW - unitW) / 2);
+    positions.set(sibId, { x: Math.round(unitLeft), y });
     if (spouseId && !positions.has(spouseId)) {
-      positions.set(spouseId, { x: Math.round(slotLeft + CARD_W + COUPLE_GAP), y });
+      positions.set(spouseId, { x: Math.round(unitLeft + CARD_W + COUPLE_GAP), y });
       visited.add(spouseId);
     }
   }
@@ -1775,8 +1805,14 @@ function layoutTree() {
         });
       }
 
-      const childWidths = fam.children.map(c => computeDescWidth(c, new Set()));
-      const totalChildrenW = childWidths.reduce((a, b) => a + b, 0) + (fam.children.length - 1) * SIB_GAP;
+      // Children in chronological order (by birth year when known)
+      const kids = fam.children.slice().sort((a, b) => {
+        const aY = parseInt((getP(a)?.birthDate || '9999').match(/\d{4}/)?.[0] || '9999');
+        const bY = parseInt((getP(b)?.birthDate || '9999').match(/\d{4}/)?.[0] || '9999');
+        return aY - bY;
+      });
+      const childWidths = kids.map(c => computeDescWidth(c, new Set()));
+      const totalChildrenW = childWidths.reduce((a, b) => a + b, 0) + (kids.length - 1) * SIB_GAP;
 
       const myPos = positions.get(personId);
       const spousePos = positions.get(spouseId);
@@ -1786,9 +1822,9 @@ function layoutTree() {
         : myPos.x + CARD_W / 2;
       let cursor = coupleCenterX - totalChildrenW / 2;
 
-      for (let i = 0; i < fam.children.length; i++) {
+      for (let i = 0; i < kids.length; i++) {
         const childCenterX = cursor + childWidths[i] / 2;
-        placeDescendants(fam.children[i], childCenterX, gen + 1, processed);
+        placeDescendants(kids[i], childCenterX, gen + 1, processed);
         cursor += childWidths[i] + SIB_GAP;
       }
     }
@@ -1844,8 +1880,18 @@ function layoutTree() {
       if (!sib) continue;
       const sibPos = positions.get(sibId);
       if (!sibPos) continue;
-      // Place this sibling's children below them
-      placeDescendants(sibId, sibPos.x + CARD_W / 2, focusGen + 1, processed);
+      // Children hang from the SLOT center (couple midpoint), not the
+      // sibling card's edge. The gen passed here is the SIBLING'S OWN row
+      // (placeDescendants puts children at gen+1), so nieces/nephews land
+      // on the same row as the focus person's children.
+      const sibGen = Math.round((sibPos.y - 50) / GEN_HEIGHT);
+      const spId = (sib.spouseId && viewSet.has(sib.spouseId)) ? sib.spouseId
+        : ((sib.families || []).find(f => viewSet.has(f.spouseId)) || {}).spouseId;
+      const spPos = spId ? positions.get(spId) : null;
+      const coupleCenterX = spPos
+        ? (Math.min(sibPos.x, spPos.x) + Math.max(sibPos.x, spPos.x) + CARD_W) / 2
+        : sibPos.x + CARD_W / 2;
+      placeDescendants(sibId, coupleCenterX, sibGen, processed);
     }
 
   } else {
@@ -2116,6 +2162,11 @@ function renderFreeBuild() {
     let h = '<div class="name">' + escapeHtml(displayName) + '</div>';
     if (cardYears) h += '<div class="years">' + escapeHtml(cardYears) + '</div>';
     if (mYear) h += '<div class="married">m. ' + mYear[0] + '</div>';
+    // 🍃 badge: person has children hidden by collapse — click to expand
+    if (collapsedPeople.has(person.id)) {
+      const count = countDescendants(person.id);
+      h += '<div class="leaf-badge" title="Expand ' + count + ' descendant' + (count > 1 ? 's' : '') + '">🍃 +' + count + '</div>';
+    }
     if (person.docs && person.docs.length) {
       h += '<div class="doc-badges">';
       person.docs.forEach(d => {
@@ -2126,6 +2177,14 @@ function renderFreeBuild() {
     }
 
     el.innerHTML = h;
+    // 🍃 badge click toggles collapse without opening the detail panel
+    const badge = el.querySelector('.leaf-badge');
+    if (badge) {
+      badge.onclick = (ev) => {
+        ev.stopPropagation();
+        toggleCollapse(person.id);
+      };
+    }
     el.onclick = () => { focusOnPerson(person.id); openDetail(person); };
     wrap.appendChild(el);
   }
@@ -2150,6 +2209,30 @@ function renderFreeBuild() {
 
 function escapeHtml(s) {
   return String(s || '').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+
+// ── COLLAPSE HELPERS ──
+function toggleCollapse(personId) {
+  if (collapsedPeople.has(personId)) collapsedPeople.delete(personId);
+  else collapsedPeople.add(personId);
+  renderFreeBuild();
+}
+
+function countDescendants(personId) {
+  let n = 0;
+  const seen = new Set();
+  function walk(pid) {
+    const p = people.find(x => x.id === pid);
+    if (!p) return;
+    for (const cid of (p.children || [])) {
+      if (seen.has(cid)) continue;
+      seen.add(cid);
+      n++;
+      walk(cid);
+    }
+  }
+  walk(personId);
+  return n;
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -2313,6 +2396,11 @@ function openDetail(person) {
       <button class="fb-add-btn" onclick="fbAddSpouse()">💍 Add Spouse/Partner</button>
       <button class="fb-add-btn" onclick="fbAddChild()">👶 Add Child</button>
       <button class="fb-add-btn" onclick="fbAddSibling()">👥 Add Sibling</button>
+      ${person.children && person.children.length > 0 ? (
+        collapsedPeople.has(person.id)
+          ? '<button class="fb-add-btn" onclick="closeDetail(); toggleCollapse(' + person.id + ')}>🍃 Expand ' + countDescendants(person.id) + ' Descendant' + (countDescendants(person.id) > 1 ? 's' : '') + '</button>'
+          : '<button class="fb-add-btn" onclick="closeDetail(); toggleCollapse(' + person.id + ')">🍃 Collapse ' + person.children.length + ' Child' + (person.children.length > 1 ? 'ren' : '') + '</button>'
+      ) : ''}
     </div>
 
     <div class="detail-field" style="margin-top:8px;">
@@ -2457,10 +2545,53 @@ function fbAddSpouse() {
   showToast('Added spouse for ' + person.name);
 }
 
+// ── CO-PARENT PICKER (Ancestry-style) ──
+// Asks "is this child of X & Y, or X and someone else?" before creating it.
 function fbAddChild() {
   if (!selectedPersonId) return;
   const person = people.find(p => p.id === selectedPersonId);
   if (!person) return;
+
+  // Candidate co-parents: current spouse + anyone sharing an existing child
+  const candidates = [];
+  if (person.spouseId) {
+    const sp = people.find(p => p.id === person.spouseId);
+    if (sp) candidates.push(sp);
+  }
+  for (const other of people) {
+    if (other.id === person.id || candidates.some(c => c.id === other.id)) continue;
+    const sharesChild = (person.children || []).some(cid => (other.children || []).includes(cid));
+    if (sharesChild) candidates.push(other);
+  }
+
+  if (candidates.length === 0) {
+    fbAddChildWith(null); // no co-parent known: child of this person alone
+    return;
+  }
+
+  // Build the chooser dialog
+  let html = '<div style="font-family:\'Cormorant Garamond\',serif;font-size:15px;color:#3e2b1a;margin-bottom:12px;">Who is the other parent of this child?</div>';
+  for (const c of candidates) {
+    html += '<button class="fb-add-btn" style="display:block;width:100%;margin-bottom:6px;text-align:left;" onclick="fbAddChildWith(' + c.id + ')">' + escapeHtml(c.name) + (c.years ? ' (' + c.years.replace(/^b\.\s*/, 'b. ') + ')' : '') + '</button>';
+  }
+  html += '<button class="fb-add-btn" style="display:block;width:100%;margin-bottom:6px;text-align:left;background:#efe6d0;" onclick="fbAddChildWith(-1)">Someone else / unknown</button>';
+  html += '<button class="fb-add-btn" style="display:block;width:100%;text-align:left;background:transparent;color:#7a6a4a;text-decoration:underline;" onclick="fbCancelChild()">Cancel</button>';
+
+  const dlg = document.getElementById('childParentDialog');
+  document.getElementById('childParentOptions').innerHTML = html;
+  dlg.style.display = 'flex';
+}
+
+function fbCancelChild() {
+  document.getElementById('childParentDialog').style.display = 'none';
+}
+
+function fbAddChildWith(coParentId) {
+  document.getElementById('childParentDialog').style.display = 'none';
+  if (!selectedPersonId) return;
+  const person = people.find(p => p.id === selectedPersonId);
+  if (!person) return;
+  if (coParentId === -1) coParentId = null; // "someone else / unknown"
   const childGen = person.gen - 1;
   const newChild = createPerson(nextId++, childGen, 'Name', '?', 'blank', {});
   people.push(newChild);
@@ -2471,30 +2602,13 @@ function fbAddChild() {
   if (!newChild.parents) newChild.parents = [];
   newChild.parents.push(person.id);
 
-  // Second parent, in priority order:
-  // 1. The person's spouse (most common case)
-  // 2. Anyone who already shares a child with this person (ex-partner)
-  if (person.spouseId) {
-    const spouse = people.find(p => p.id === person.spouseId);
-    if (spouse) {
-      newChild.parents.push(spouse.id);
-      if (!spouse.children) spouse.children = [];
-      spouse.children.push(newChild.id);
-    }
-  } else {
-    // Ex-partner: someone who shares an existing child with this person
-    const myChildIds = person.children.filter(cid => {
-      const c = people.find(x => x.id === cid);
-      return c && c.parents.length === 2 && c.parents.includes(person.id);
-    });
-    for (const other of people) {
-      if (other.id === person.id) continue;
-      if (myChildIds.some(cid => other.children.includes(cid))) {
-        newChild.parents.push(other.id);
-        if (!other.children) other.children = [];
-        other.children.push(newChild.id);
-        break;
-      }
+  // Second parent if chosen (and not already the person themself)
+  if (coParentId) {
+    const co = people.find(p => p.id === coParentId);
+    if (co && co.id !== person.id) {
+      newChild.parents.push(co.id);
+      if (!co.children) co.children = [];
+      co.children.push(newChild.id);
     }
   }
 
@@ -2502,7 +2616,8 @@ function fbAddChild() {
   closeDetail();
   renderFreeBuild();
   setTimeout(() => openDetail(newChild), 100);
-  showToast('Added child of ' + person.name + (newChild.parents.length === 2 ? ' & ' + people.find(p => p.id === newChild.parents[1]).name : ''));
+  const coName = coParentId ? ' & ' + people.find(p => p.id === coParentId).name : '';
+  showToast('Added child of ' + person.name + coName);
 }
 
 function fbAddSibling() {
