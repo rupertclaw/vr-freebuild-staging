@@ -1683,7 +1683,7 @@ function layoutTree() {
     if (parents[1]) wifeW = computeAncWidth(parents[1], new Set());
 
     // Center the PARENT COUPLE over the children row
-    const rowLeftX = centerX - SUM_BEFORE(unitWidths, myIndex) - coupleUnitW(personId) / 2;
+    const rowLeftX = centerX - SUM_BEFORE(slotWidths, myIndex) - slotWidths[myIndex] / 2;
     const rowWidth = totalRowW;
     const rowCenterX = rowLeftX + rowWidth / 2;
 
