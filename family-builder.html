@@ -2388,6 +2388,16 @@ function fbAddParent() {
   if (!person.parents) person.parents = [];
   person.parents.push(newParent.id);
 
+  // Link the two parents as spouses when the second one arrives (Ancestry-style:
+  // a child's father and mother are a couple by default)
+  if (person.parents.length === 2) {
+    const [p1, p2] = person.parents.map(pid => people.find(x => x.id === pid));
+    if (p1 && p2 && !p1.spouseId && !p2.spouseId) {
+      p1.spouseId = p2.id; p1.spouseName = p2.name;
+      p2.spouseId = p1.id; p2.spouseName = p1.name;
+    }
+  }
+
   autoSave();
   closeDetail();
   renderFreeBuild();
@@ -2432,7 +2442,9 @@ function fbAddChild() {
   if (!newChild.parents) newChild.parents = [];
   newChild.parents.push(person.id);
 
-  // If person has a spouse, add spouse as parent too
+  // Second parent, in priority order:
+  // 1. The person's spouse (most common case)
+  // 2. Anyone who already shares a child with this person (ex-partner)
   if (person.spouseId) {
     const spouse = people.find(p => p.id === person.spouseId);
     if (spouse) {
@@ -2440,13 +2452,28 @@ function fbAddChild() {
       if (!spouse.children) spouse.children = [];
       spouse.children.push(newChild.id);
     }
+  } else {
+    // Ex-partner: someone who shares an existing child with this person
+    const myChildIds = person.children.filter(cid => {
+      const c = people.find(x => x.id === cid);
+      return c && c.parents.length === 2 && c.parents.includes(person.id);
+    });
+    for (const other of people) {
+      if (other.id === person.id) continue;
+      if (myChildIds.some(cid => other.children.includes(cid))) {
+        newChild.parents.push(other.id);
+        if (!other.children) other.children = [];
+        other.children.push(newChild.id);
+        break;
+      }
+    }
   }
 
   autoSave();
   closeDetail();
   renderFreeBuild();
   setTimeout(() => openDetail(newChild), 100);
-  showToast('Added child for ' + person.name);
+  showToast('Added child of ' + person.name + (newChild.parents.length === 2 ? ' & ' + people.find(p => p.id === newChild.parents[1]).name : ''));
 }
 
 function fbAddSibling() {
@@ -2666,6 +2693,7 @@ function loadSession(file) {
       if (!data.people) { showToast('Invalid session file'); return; }
       people = data.people;
       nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+      normalizeRelationships();
       focusPersonId = null; viewHistory = [];
       autoSave();
       renderFreeBuild();
@@ -2741,6 +2769,7 @@ function autoRestore() {
       if (data.people && data.people.length > 0) {
         people = data.people;
         nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
+        normalizeRelationships();
         if (fromDT) showToast('Loaded ' + people.length + ' people from Pedigree Tree');
         return true;
       }
@@ -2791,6 +2820,55 @@ function initDefault() {
   me.isYou = true;
   people.push(me);
   autoSave();
+}
+
+// ── RELATIONSHIP NORMALIZER ──
+// Repairs one-sided links in loaded/restored trees:
+//  1. A child lists parent P but P's children[] lacks the child → add it
+//  2. A parent lists child C but C's parents[] lacks the parent → add it
+//     (only when the child has a free parent slot, max 2)
+//  3. Two people who share >= 1 child AND both lack a spouseId → marry them
+// Runs on every restore/import. Safe to run repeatedly (idempotent).
+function normalizeRelationships() {
+  let fixes = 0;
+  for (const p of people) {
+    p.parents = p.parents || [];
+    p.children = p.children || [];
+  }
+  // Pass 1: child.parents → parent.children
+  for (const child of people) {
+    for (const pid of child.parents) {
+      const parent = people.find(x => x.id === pid);
+      if (parent && !parent.children.includes(child.id)) {
+        parent.children.push(child.id);
+        fixes++;
+      }
+    }
+  }
+  // Pass 2: parent.children → child.parents (respect 2-parent cap)
+  for (const parent of people) {
+    for (const cid of parent.children) {
+      const child = people.find(x => x.id === cid);
+      if (child && !child.parents.includes(parent.id) && child.parents.length < 2) {
+        child.parents.push(parent.id);
+        fixes++;
+      }
+    }
+  }
+  // Pass 3: shared children + both single → spouses
+  for (let i = 0; i < people.length; i++) {
+    for (let j = i + 1; j < people.length; j++) {
+      const a = people[i], b = people[j];
+      if (a.spouseId || b.spouseId) continue;
+      const shared = a.children.filter(cid => b.children.includes(cid));
+      if (shared.length > 0) {
+        a.spouseId = b.id; a.spouseName = b.name;
+        b.spouseId = a.id; b.spouseName = a.name;
+        fixes++;
+      }
+    }
+  }
+  return fixes;
 }
 
 // THEME
@@ -4357,6 +4435,7 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
       const imported = JSON.parse(gedcomData);
       people = imported.people || [];
       nextId = imported.nextId || (people.length + 1);
+      normalizeRelationships();
       gedcomLoaded = true;
       showToast('Loaded ' + people.length + ' people from GEDCOM import');
     } catch (e) {
