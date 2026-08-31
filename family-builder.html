@@ -1862,11 +1862,19 @@ function layoutTree() {
 
       const myPos = positions.get(personId);
       const spousePos = positions.get(spouseId);
-      // Children hang from the COUPLE unit's midpoint, not one card
-      const coupleCenterX = spousePos
-        ? (Math.min(myPos.x, spousePos.x) + Math.max(myPos.x, spousePos.x) + CARD_W) / 2
-        : myPos.x + CARD_W / 2;
-      let cursor = coupleCenterX - totalChildrenW / 2;
+      // Multiple marriages: anchor each marriage's children under their own
+      // parent's side (Ancestry-style) so families sit left/right and their
+      // connector buses can never merge. Single marriage keeps the
+      // couple-midpoint hang.
+      let anchorX;
+      if (fams.length > 1 && spousePos) {
+        anchorX = spousePos.x + CARD_W / 2;
+      } else if (spousePos) {
+        anchorX = (Math.min(myPos.x, spousePos.x) + Math.max(myPos.x, spousePos.x) + CARD_W) / 2;
+      } else {
+        anchorX = myPos.x + CARD_W / 2;
+      }
+      let cursor = anchorX - totalChildrenW / 2;
       // Multiple marriages of one person: keep each marriage's children row
         // clear of the previous marriage's row.
         if (lastFamRowRight !== -Infinity && cursor < lastFamRowRight + SIB_GAP) {
