@@ -1013,9 +1013,23 @@ function createPerson(id, gen, name, years, status, opts) {
     maidenName: opts.maidenName || '', marriedName: opts.marriedName || '',
     spouseName: opts.spouseName || '', spouseId: opts.spouseId || null,
     parents: opts.parents || [], children: opts.children || [],
+    families: opts.families || [],
     docs: opts.docs || [], siblings: opts.siblings || [], notes: opts.notes || '',
     source: opts.source || '', sex: opts.sex || ''
   };
+}
+
+// All spouses of a person (primary + additional marriages), deduped.
+// Manual adds keep the legacy single spouseId; remarriages append to
+// the families array (one entry per marriage, GEDCOM-style).
+function allSpouseIds(p) {
+  if (!p) return [];
+  const ids = [];
+  if (p.spouseId) ids.push(p.spouseId);
+  for (const f of (p.families || [])) {
+    if (f.spouseId && !ids.includes(f.spouseId)) ids.push(f.spouseId);
+  }
+  return ids;
 }
 
 let people = [];
@@ -1406,9 +1420,16 @@ function buildFamilyUnits(viewPeople) {
   const viewSet = new Set(viewPeople.map(p => p.id));
 
   for (const p of viewPeople) {
-    // If person has families array (from GEDCOM), use it to create proper family units
-    if (p.families && p.families.length > 0) {
-      for (const fam of p.families) {
+    // Family units come from the families array (GEDCOM) PLUS the legacy
+    // single spouseId, folded in as an extra entry so a remarried person
+    // produces one unit per marriage and children group under the right couple.
+    const famUnits = [];
+    if (p.spouseId) famUnits.push({ spouseId: p.spouseId, marriageDate: p.marriageDate || '' });
+    for (const fam of (p.families || [])) {
+      if (!famUnits.some(g => g.spouseId === fam.spouseId)) famUnits.push(fam);
+    }
+    if (famUnits.length > 0) {
+      for (const fam of famUnits) {
         const spouseId = fam.spouseId;
         const bothInView = viewSet.has(spouseId);
         const unitKey = [Math.min(p.id, spouseId), Math.max(p.id, spouseId)].sort().join('-');
@@ -1508,7 +1529,12 @@ function layoutTree() {
     const person = getP(personId);
     if (!person) return [];
     const result = [];
+    const famList = [];
+    if (person.spouseId) famList.push({ spouseId: person.spouseId, marriageDate: person.marriageDate || '' });
     for (const fam of (person.families || [])) {
+      if (!famList.some(g => g.spouseId === fam.spouseId)) famList.push(fam);
+    }
+    for (const fam of famList) {
       if (!viewSet.has(fam.spouseId)) continue;
       const children = (person.children || []).filter(cid => {
         if (!viewSet.has(cid)) return false;
@@ -1562,7 +1588,7 @@ function layoutTree() {
       for (const child of fam.children) {
         famW += computeDescWidth(child, new Set(visited));
       }
-      totalW += Math.max(famW, coupleUnitW(personId));
+      totalW += (totalW > 0 ? SIB_GAP : 0) + Math.max(famW, coupleUnitW(personId));
     }
     const w = Math.max(totalW, coupleUnitW(personId));
     descWidthCache.set(personId, w);
@@ -1633,8 +1659,8 @@ function layoutTree() {
     // For focus person, leave space to the RIGHT of their unit for extra spouses
     let focusExtra = 0;
     if (personId === focusPersonId) {
-      const sFams = (person.families || []).filter(f => viewSet.has(f.spouseId));
-      focusExtra = Math.max(0, sFams.length - 1) * coupleUnitW(personId);
+      const sIds = allSpouseIds(person).filter(sid => viewSet.has(sid));
+      focusExtra = Math.max(0, sIds.length - 1) * (CARD_W + SIB_GAP);
     }
 
     // ── Pack children row: each slot sized to that child's FULL subtree ──
@@ -1663,10 +1689,10 @@ function layoutTree() {
     // Focus extra spouses appended to the right of the row
     if (focusExtra > 0) {
       const focus = getP(personId);
-      const sFams = (focus.families || []).filter(f => viewSet.has(f.spouseId));
+      const sIds = allSpouseIds(focus).filter(sid => viewSet.has(sid));
       let extraX = cursor;
-      for (let f = 1; f < sFams.length; f++) {
-        const spId = sFams[f].spouseId;
+      for (let f = 1; f < sIds.length; f++) {
+        const spId = sIds[f];
         if (!visited.has(spId) && viewSet.has(spId)) {
           visited.add(spId);
           positions.set(spId, { x: Math.round(extraX), y: 50 + gen * GEN_HEIGHT });
@@ -1734,12 +1760,23 @@ function layoutTree() {
       return;
     }
 
-    // Couple: person + spouse centered around centerX
+    // Couple: person + spouse centered around centerX.
+    // Multi-marriage couples read Ancestry-style: spouse LEFT, person RIGHT,
+    // so additional spouses anchor cleanly on the person's right.
     const unitLeft = centerX - (2 * CARD_W + COUPLE_GAP) / 2;
-    positions.set(personId, { x: Math.round(unitLeft), y });
-    if (!positions.has(spouseId)) {
-      positions.set(spouseId, { x: Math.round(unitLeft + CARD_W + COUPLE_GAP), y });
-      visited.add(spouseId);
+    const multiSpouse = allSpouseIds(person).filter(sid => viewSet.has(sid)).length > 1;
+    if (multiSpouse) {
+      if (!positions.has(spouseId)) {
+        positions.set(spouseId, { x: Math.round(unitLeft), y });
+        visited.add(spouseId);
+      }
+      positions.set(personId, { x: Math.round(unitLeft + CARD_W + COUPLE_GAP), y });
+    } else {
+      positions.set(personId, { x: Math.round(unitLeft), y });
+      if (!positions.has(spouseId)) {
+        positions.set(spouseId, { x: Math.round(unitLeft + CARD_W + COUPLE_GAP), y });
+        visited.add(spouseId);
+      }
     }
   }
 
@@ -1794,13 +1831,22 @@ function layoutTree() {
     const fams = getFamsWithChildren(personId);
     if (fams.length === 0) return;
 
+    // Track the right edge of this person's spouse row so a second marriage
+    // gets its own slot instead of landing on top of the first spouse.
+    let spouseRowRight = positions.get(personId).x + CARD_W;
+    for (const sid of allSpouseIds(person)) {
+      if (positions.has(sid)) spouseRowRight = Math.max(spouseRowRight, positions.get(sid).x + CARD_W);
+    }
+    let lastFamRowRight = -Infinity;
+
     for (const fam of fams) {
       const spouseId = fam.spouseId;
       if (spouseId && !processed.has(spouseId) && !positions.has(spouseId)) {
         processed.add(spouseId);
-        const myX = positions.get(personId).x;
+        const myX = spouseRowRight + COUPLE_GAP;
+        spouseRowRight = myX + CARD_W;
         positions.set(spouseId, {
-          x: Math.round(myX + CARD_W + COUPLE_GAP),
+          x: Math.round(myX),
           y: 50 + gen * GEN_HEIGHT
         });
       }
@@ -1821,6 +1867,12 @@ function layoutTree() {
         ? (Math.min(myPos.x, spousePos.x) + Math.max(myPos.x, spousePos.x) + CARD_W) / 2
         : myPos.x + CARD_W / 2;
       let cursor = coupleCenterX - totalChildrenW / 2;
+      // Multiple marriages of one person: keep each marriage's children row
+        // clear of the previous marriage's row.
+        if (lastFamRowRight !== -Infinity && cursor < lastFamRowRight + SIB_GAP) {
+          cursor = lastFamRowRight + SIB_GAP;
+        }
+        lastFamRowRight = cursor + totalChildrenW;
 
       for (let i = 0; i < kids.length; i++) {
         const childCenterX = cursor + childWidths[i] / 2;
@@ -1840,7 +1892,7 @@ function layoutTree() {
 
     const focus = getP(focusPersonId);
     const focusSiblings = getSiblings(focusPersonId);
-    const spousesInView = (focus.families || []).filter(f => viewSet.has(f.spouseId));
+    const spousesInView = allSpouseIds(focus).filter(sid => viewSet.has(sid));
 
     // Estimate total width: ancestors need space, siblings fan left, spouses go right
     // Each ancestor generation can have siblings, so width grows upward
@@ -1860,38 +1912,32 @@ function layoutTree() {
     // ── 2. Place focus person's extra spouses to the RIGHT of the couple unit ──
     const focusUnitW = coupleUnitW(focusPersonId);
     let spouseX = focusCenterX + focusUnitW / 2 + SIB_GAP;
-    for (const fam of spousesInView) {
-      if (!visited.has(fam.spouseId) && !positions.has(fam.spouseId)) {
-        visited.add(fam.spouseId);
-        positions.set(fam.spouseId, {
+    spousesInView.forEach((sid, sIdx) => {
+      if (sIdx === 0) return; // primary spouse already beside the focus person
+      if (!visited.has(sid) && !positions.has(sid)) {
+        visited.add(sid);
+        positions.set(sid, {
           x: Math.round(spouseX),
           y: 50 + focusGen * GEN_HEIGHT
         });
-        spouseX += coupleUnitW(fam.spouseId) + SIB_GAP;
+        spouseX += coupleUnitW(sid) + SIB_GAP;
       }
-    }
+    });
 
     // ── 3. Place descendants going DOWN ──
     placeDescendants(focusPersonId, focusCenterX, focusGen, processed);
 
     // ── 4. Place descendants of siblings (nieces/nephews) ──
-    for (const sibId of focusSiblings) {
-      const sib = getP(sibId);
-      if (!sib) continue;
-      const sibPos = positions.get(sibId);
-      if (!sibPos) continue;
-      // Children hang from the SLOT center (couple midpoint), not the
-      // sibling card's edge. The gen passed here is the SIBLING'S OWN row
-      // (placeDescendants puts children at gen+1), so nieces/nephews land
-      // on the same row as the focus person's children.
-      const sibGen = Math.round((sibPos.y - 50) / GEN_HEIGHT);
-      const spId = (sib.spouseId && viewSet.has(sib.spouseId)) ? sib.spouseId
-        : ((sib.families || []).find(f => viewSet.has(f.spouseId)) || {}).spouseId;
-      const spPos = spId ? positions.get(spId) : null;
-      const coupleCenterX = spPos
-        ? (Math.min(sibPos.x, spPos.x) + Math.max(sibPos.x, spPos.x) + CARD_W) / 2
-        : sibPos.x + CARD_W / 2;
-      placeDescendants(sibId, coupleCenterX, sibGen, processed);
+    // Generalised: walk EVERY placed-but-unprocessed person who has children.
+    // Covers nieces/nephews (siblings of focus) AND remarried ancestors:
+    // e.g. an ancestor's second wife and her children are placed here as a
+    // new slot to the right of the first marriage, kids under that couple.
+    for (const wp of viewPeople) {
+      if (processed.has(wp.id) || !positions.has(wp.id)) continue;
+      if (!wp.children || wp.children.length === 0) continue;
+      const wPos = positions.get(wp.id);
+      const wGen = Math.round((wPos.y - 50) / GEN_HEIGHT);
+      placeDescendants(wp.id, wPos.x + CARD_W / 2, wGen, processed);
     }
 
   } else {
@@ -2467,6 +2513,27 @@ function saveDetail() {
   person.status = document.getElementById('d_status').value;
   person.notes = document.getElementById('d_notes').value;
 
+  // Sync the saved name across every marriage partner's records
+  const nameTargets = [];
+  if (person.spouseId) nameTargets.push(person.spouseId);
+  for (const f of (person.families || [])) nameTargets.push(f.spouseId);
+  for (const tid of nameTargets) {
+    const partner = people.find(pp => pp.id === tid);
+    if (!partner) continue;
+    if (partner.spouseId === person.id && partner.spouseName !== person.name) partner.spouseName = person.name;
+    if (partner.families) {
+      for (const pf of partner.families) {
+        if (pf.spouseId === person.id) pf.spouseName = person.name;
+      }
+    }
+  }
+
+  // Sync this person's spouse list: refresh spouseName on families entries
+  for (const f of (person.families || [])) {
+    const sp = people.find(pp => pp.id === f.spouseId);
+    if (sp) f.spouseName = sp.name;
+  }
+
   // Auto-upgrade from 'blank' to 'probable' when user enters a real name
   if (person.status === 'blank' && person.name && person.name.trim() !== '' && person.name !== 'Name') {
     person.status = 'probable';
@@ -2526,23 +2593,32 @@ function fbAddSpouse() {
   if (!selectedPersonId) return;
   const person = people.find(p => p.id === selectedPersonId);
   if (!person) return;
-  if (person.spouseId) {
-    showToast('This person already has a spouse');
-    return;
-  }
+  const existingSpouses = allSpouseIds(person);
   const newSpouse = createPerson(nextId++, person.gen, 'Name', '?', 'blank', {});
   newSpouse.spouseId = person.id;
   newSpouse.spouseName = person.name;
   people.push(newSpouse);
 
-  person.spouseId = newSpouse.id;
-  person.spouseName = 'Name'; // will be updated when spouse is edited
+  if (existingSpouses.length === 0) {
+    // First marriage: legacy single-spouse fields (backwards compatible)
+    person.spouseId = newSpouse.id;
+    person.spouseName = 'Name'; // will be updated when spouse is edited
+  } else {
+    // Remarriage: append a second family entry (GEDCOM-style)
+    if (!person.families) person.families = [];
+    person.families.push({ spouseId: newSpouse.id, spouseName: 'Name', marriageDate: '' });
+    // The new spouse's back-pointer via spouseId is fine: allSpouseIds()
+    // dedupes, and the layout keys units by the couple pair, not by who
+    // owns the pointer.
+  }
 
   autoSave();
   closeDetail();
   renderFreeBuild();
   setTimeout(() => openDetail(newSpouse), 100);
-  showToast('Added spouse for ' + person.name);
+  showToast(existingSpouses.length === 0
+    ? 'Added spouse for ' + person.name
+    : 'Added second spouse for ' + person.name);
 }
 
 // ── CO-PARENT PICKER (Ancestry-style) ──
@@ -2554,8 +2630,8 @@ function fbAddChild() {
 
   // Candidate co-parents: current spouse + anyone sharing an existing child
   const candidates = [];
-  if (person.spouseId) {
-    const sp = people.find(p => p.id === person.spouseId);
+  for (const sid of allSpouseIds(person)) {
+    const sp = people.find(p => p.id === sid);
     if (sp) candidates.push(sp);
   }
   for (const other of people) {
@@ -2609,6 +2685,14 @@ function fbAddChildWith(coParentId) {
       newChild.parents.push(co.id);
       if (!co.children) co.children = [];
       co.children.push(newChild.id);
+      // If the co-parent is not the primary spouse, record this as a
+      // marriage on both sides so layout groups the child under that couple.
+      if (person.spouseId !== co.id && !(person.families || []).some(f => f.spouseId === co.id)) {
+        if (!person.families) person.families = [];
+        person.families.push({ spouseId: co.id, spouseName: co.name, marriageDate: '' });
+        if (!co.families) co.families = [];
+        co.families.push({ spouseId: person.id, spouseName: person.name, marriageDate: '' });
+      }
     }
   }
 
@@ -2677,11 +2761,16 @@ function fbDeletePerson() {
       }
     }
   }
-  // Clear spouse links
-  if (person.spouseId) {
-    const spouse = people.find(p => p.id === person.spouseId);
-    if (spouse) { spouse.spouseId = null; spouse.spouseName = ''; }
+  // Clear ALL spouse links (primary + remarriages) in both directions
+  for (const sid of allSpouseIds(person)) {
+    const spouse = people.find(p => p.id === sid);
+    if (!spouse) continue;
+    if (spouse.spouseId === person.id) { spouse.spouseId = null; spouse.spouseName = ''; }
+    if (spouse.families) {
+      spouse.families = spouse.families.filter(f => f.spouseId !== person.id);
+    }
   }
+  person.families = [];
 
   people = people.filter(p => p.id !== person.id);
   autoSave();
