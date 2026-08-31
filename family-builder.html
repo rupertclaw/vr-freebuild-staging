@@ -2119,6 +2119,25 @@ function layoutTree() {
       const p2 = positions.get(parentIds[1]);
       parentMidX = (Math.min(p1.x, p2.x) + Math.max(p1.x, p2.x) + CARD_W) / 2;
       parentBottomY = Math.max(p1.y, p2.y) + CARD_H;
+      // If another card (e.g. a first spouse) sits between this couple, the
+      // raw midpoint lands inside that card's footprint and the drop line
+      // appears to fall out of the WRONG parent. Drop from whichever parent's
+      // card is nearest the children instead.
+      let blocked = false;
+      for (const [pid, pos] of positions) {
+        if (pid === parentIds[0] || pid === parentIds[1]) continue;
+        if (Math.abs(pos.y - p1.y) > 5) continue;
+        if (parentMidX > pos.x && parentMidX < pos.x + CARD_W) { blocked = true; break; }
+      }
+      if (blocked) {
+        const kidXs = children.map(cid => positions.get(cid)).filter(Boolean).map(cp => cp.x + CARD_W / 2);
+        if (kidXs.length) {
+          const avgKidX = kidXs.reduce((a, b) => a + b, 0) / kidXs.length;
+          parentMidX = Math.abs(p1.x + CARD_W / 2 - avgKidX) <= Math.abs(p2.x + CARD_W / 2 - avgKidX)
+            ? p1.x + CARD_W / 2
+            : p2.x + CARD_W / 2;
+        }
+      }
     } else {
       const p1 = positions.get(parentIds[0]);
       parentMidX = p1.x + CARD_W / 2;
