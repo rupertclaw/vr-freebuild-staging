@@ -2444,7 +2444,7 @@ function openDetail(person) {
       <button class="fb-add-btn" onclick="fbAddSibling()">👥 Add Sibling</button>
       ${person.children && person.children.length > 0 ? (
         collapsedPeople.has(person.id)
-          ? '<button class="fb-add-btn" onclick="closeDetail(); toggleCollapse(' + person.id + ')}>🍃 Expand ' + countDescendants(person.id) + ' Descendant' + (countDescendants(person.id) > 1 ? 's' : '') + '</button>'
+          ? '<button class="fb-add-btn" onclick="closeDetail(); toggleCollapse(' + person.id + ')">🍃 Expand ' + countDescendants(person.id) + ' Descendant' + (countDescendants(person.id) > 1 ? 's' : '') + '</button>'
           : '<button class="fb-add-btn" onclick="closeDetail(); toggleCollapse(' + person.id + ')">🍃 Collapse ' + person.children.length + ' Child' + (person.children.length > 1 ? 'ren' : '') + '</button>'
       ) : ''}
     </div>
