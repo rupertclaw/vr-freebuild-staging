@@ -1636,11 +1636,15 @@ function layoutTree() {
   // subtree widths. Siblings packed tightly (SIB_GAP), sorted by birth order.
   // A person with a spouse in view occupies a couple-unit:
   //   [card][spouse card] with the couple center at the unit's midpoint.
-  function placeAncestors(personId, centerX, gen, visited) {
+  function placeAncestors(personId, centerX, gen, visited, side) {
     if (visited.has(personId)) return;
     const person = getP(personId);
     if (!person || !viewSet.has(personId)) return;
     visited.add(personId);
+    // Which side of the family centre this branch packs toward:
+    // 'left' = paternal (siblings pack left of the direct-line person),
+    // 'right' = maternal, null = neutral (keep birth-order packing both ways).
+    // The direct line into the focus is 'centre'.
 
     // Place this person's couple-unit centered on centerX (skip if already
     // pinned by a parent-loop, e.g. father/mother of the current row)
@@ -1661,6 +1665,13 @@ function layoutTree() {
     const myIndex = allChildren.indexOf(personId);
     const numChildren = allChildren.length;
 
+    // Ancestry side-aware packing: on the paternal branch ('left') siblings
+    // sit LEFT of the direct-line person; on the maternal branch ('right')
+    // they sit RIGHT. Neutral branches keep plain birth-order packing.
+    let packOrder = allChildren.slice();
+    if (side === 'left') packOrder = [...allChildren.slice(0, myIndex).reverse(), personId];
+    if (side === 'right') packOrder = [personId, ...allChildren.slice(myIndex + 1)];
+
     // For focus person, leave space to the RIGHT of their unit for extra spouses
     let focusExtra = 0;
     if (personId === focusPersonId) {
@@ -1678,11 +1689,13 @@ function layoutTree() {
     // My unit must land centered on centerX (already placed), so my SLOT
     // centers on centerX: rowLeft makes my slot's midpoint = centerX.
     const rowLeft = centerX - SUM_BEFORE(slotWidths, myIndex) - slotWidths[myIndex] / 2;
+    // Walk the pack order: on sided branches the direct-line person is at
+    // the inner edge, so siblings fan outward from my slot.
     let cursor = rowLeft;
-    for (let i = 0; i < numChildren; i++) {
-      const sibId = allChildren[i];
+    for (const sibId of packOrder) {
+      const i = allChildren.indexOf(sibId);
       const w = slotWidths[i];
-      if (i !== myIndex && !visited.has(sibId) && viewSet.has(sibId) && w > 0) {
+      if (sibId !== personId && !visited.has(sibId) && viewSet.has(sibId) && w > 0) {
         visited.add(sibId);
         placeSiblingUnit(sibId, cursor, w, gen, visited);
       }
@@ -1719,7 +1732,7 @@ function layoutTree() {
     const rowCenterX = rowLeftX + rowWidth / 2;
 
     if (parents.length === 1) {
-      placeAncestors(parents[0], rowCenterX, gen - 1, visited);
+      placeAncestors(parents[0], rowCenterX, gen - 1, visited, side);
     } else {
       // Parents sit as one couple: father left, mother right (by sex).
       // Each gets the other's full subtree width as side-clearance so large
@@ -1736,8 +1749,11 @@ function layoutTree() {
       const wifeCenter0 = parentRowCenterX + (CARD_W + COUPLE_GAP) / 2;
       if (!positions.has(father)) positions.set(father, { x: Math.round(husbCenter0 - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
       if (!positions.has(mother)) positions.set(mother, { x: Math.round(wifeCenter0 - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
-      placeAncestors(father, husbCenter0, gen - 1, visited);
-      placeAncestors(mother, wifeCenter0, gen - 1, visited);
+      // Father's bloodline packs LEFT, mother's RIGHT (Ancestry mirror).
+      const fatherSide = (side === 'right') ? 'right' : 'left';
+      const motherSide = (side === 'left') ? 'left' : 'right';
+      placeAncestors(father, husbCenter0, gen - 1, visited, fatherSide);
+      placeAncestors(mother, wifeCenter0, gen - 1, visited, motherSide);
     }
   }
 
@@ -1928,7 +1944,7 @@ function layoutTree() {
     const focusCenterX = estimatedW / 2;
 
     // ── 1. Place ancestors going UP from focus ──
-    placeAncestors(focusPersonId, focusCenterX, focusGen, visited);
+    placeAncestors(focusPersonId, focusCenterX, focusGen, visited, 'centre');
 
     // ── 2. Place focus person's extra spouses to the RIGHT of the couple unit ──
     const focusUnitW = coupleUnitW(focusPersonId);
