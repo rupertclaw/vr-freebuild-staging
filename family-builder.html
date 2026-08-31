@@ -2051,24 +2051,51 @@ function layoutTree() {
       genMap[gen].push(id);
     }
     for (const gen in genMap) {
+      // Group this generation into couple UNITS via connected components on
+      // the spouse graph (NOT x-adjacency: if an unrelated card already
+      // wedged between a couple's two members, adjacency checks would fail).
+      // Each component moves as one block, and interleaved components get
+      // separated so a couple is never split by another family's cards.
       const ids = genMap[gen].sort((a, b) => positions.get(a).x - positions.get(b).x);
+      const idSet = new Set(ids);
+      const seen = new Set();
+      const units = []; // each: { ids: [..], left, right }
+      for (const id of ids) {
+        if (seen.has(id)) continue;
+        // BFS over spouse links within this generation
+        const comp = [];
+        const queue = [id];
+        seen.add(id);
+        while (queue.length) {
+          const cur = queue.shift();
+          comp.push(cur);
+          const p = getP(cur);
+          if (!p) continue;
+          const partners = new Set();
+          if (p.spouseId && idSet.has(p.spouseId)) partners.add(p.spouseId);
+          for (const f of (p.families || [])) if (idSet.has(f.spouseId)) partners.add(f.spouseId);
+          for (const partner of partners) {
+            if (!seen.has(partner)) { seen.add(partner); queue.push(partner); }
+          }
+        }
+        comp.sort((a, b) => positions.get(a).x - positions.get(b).x);
+        const left = Math.min(...comp.map(cid => positions.get(cid).x));
+        const right = Math.max(...comp.map(cid => positions.get(cid).x + CARD_W));
+        units.push({ ids: comp, left, right });
+      }
+      units.sort((a, b) => a.left - b.left);
       for (let pass = 0; pass < 20; pass++) {
         let moved = false;
-        for (let i = 1; i < ids.length; i++) {
-          const prev = positions.get(ids[i - 1]);
-          const curr = positions.get(ids[i]);
-          // Spouses belong to the same unit: allow the tight COUPLE_GAP
-          const isSpouseOfPrev = (() => {
-            const a = getP(ids[i - 1]), b = getP(ids[i]);
-            if (!a || !b) return false;
-            if (a.spouseId === b.id || b.spouseId === a.id) return true;
-            const aFams = (a.families || []).map(f => f.spouseId);
-            const bFams = (b.families || []).map(f => f.spouseId);
-            return aFams.includes(b.id) || bFams.includes(a.id);
-          })();
-          const minGap = isSpouseOfPrev ? CARD_W + COUPLE_GAP : CARD_W + 5;
-          if (curr.x < prev.x + minGap) {
-            curr.x += prev.x + minGap - curr.x;
+        for (let i = 1; i < units.length; i++) {
+          const prev = units[i - 1], curr = units[i];
+          const minGap = 5;
+          if (curr.left < prev.right + minGap) {
+            // Overlap (possibly interleaved couples): shift the whole current
+            // unit right of the previous unit's span. Members move together,
+            // preserving intra-couple order.
+            const shift = prev.right + minGap - curr.left;
+            for (const uid of curr.ids) positions.get(uid).x += shift;
+            curr.left += shift; curr.right += shift;
             moved = true;
           }
         }
