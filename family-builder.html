@@ -1665,12 +1665,13 @@ function layoutTree() {
     const myIndex = allChildren.indexOf(personId);
     const numChildren = allChildren.length;
 
-    // Ancestry side-aware packing: on the paternal branch ('left') siblings
-    // sit LEFT of the direct-line person; on the maternal branch ('right')
-    // they sit RIGHT. Neutral branches keep plain birth-order packing.
+    // Ancestry side-aware packing: on the paternal branch ('left') ALL
+    // siblings sit LEFT of the direct-line person (birth order, direct line
+    // at the inner edge); on the maternal branch ('right') they sit RIGHT.
+    // Neutral branches keep plain birth-order packing.
     let packOrder = allChildren.slice();
-    if (side === 'left') packOrder = [...allChildren.slice(0, myIndex).reverse(), personId];
-    if (side === 'right') packOrder = [personId, ...allChildren.slice(myIndex + 1)];
+    if (side === 'left') packOrder = [...allChildren.filter(x => x !== personId), personId];
+    if (side === 'right') packOrder = [personId, ...allChildren.filter(x => x !== personId)];
 
     // For focus person, leave space to the RIGHT of their unit for extra spouses
     let focusExtra = 0;
@@ -1689,19 +1690,46 @@ function layoutTree() {
     // My unit must land centered on centerX (already placed), so my SLOT
     // centers on centerX: rowLeft makes my slot's midpoint = centerX.
     const rowLeft = centerX - SUM_BEFORE(slotWidths, myIndex) - slotWidths[myIndex] / 2;
-    // Walk the pack order: on sided branches the direct-line person is at
-    // the inner edge, so siblings fan outward from my slot.
-    let cursor = rowLeft;
-    for (const sibId of packOrder) {
-      const i = allChildren.indexOf(sibId);
-      const w = slotWidths[i];
-      if (sibId !== personId && !visited.has(sibId) && viewSet.has(sibId) && w > 0) {
-        visited.add(sibId);
-        placeSiblingUnit(sibId, cursor, w, gen, visited);
+    // Sided branches: pack siblings TIGHT against the direct-line person's
+    // inner edge (Ancestry does this: the sibling group hugs the family
+    // centre, no reserved-width hole between them and the direct line).
+    // 'left'  → group ends at my slot's left edge (walk right-to-left)
+    // 'right' → group starts at my slot's right edge (walk left-to-right)
+    if (side === 'left' || side === 'right') {
+      const sibs = packOrder.filter(s => s !== personId);
+      const totalSibsW = sibs.reduce((s, cid) => {
+        const i = allChildren.indexOf(cid);
+        return s + (visited.has(cid) ? 0 : slotWidths[i]) + SIB_GAP;
+      }, -SIB_GAP);
+      const isLeft = side === 'left';
+      // tight inner edge = the direct-line COUPLE UNIT edge (not the whole
+      // reserved slot: the slot also reserves space for descendants hanging
+      // the other way, which would leave a dead hole between the sibling
+      // group and the family centre).
+      const myUnitW = Math.min(coupleUnitW(personId), slotWidths[myIndex]);
+      const myUnitLeft = Math.round(centerX - myUnitW / 2);
+      const myUnitRight = myUnitLeft + myUnitW;
+      let cur = isLeft ? myUnitLeft - totalSibsW : myUnitRight + SIB_GAP;
+      for (const sibId of sibs) {
+        const i = allChildren.indexOf(sibId);
+        const w = slotWidths[i];
+        if (!visited.has(sibId) && viewSet.has(sibId) && w > 0) {
+          visited.add(sibId);
+          placeSiblingUnit(sibId, cur, w, gen, visited);
+        }
+        cur += (isLeft ? 1 : 1) * (w + SIB_GAP);
       }
-      // My own slot, or already placed (e.g. as someone's spouse): still
-      // advance cursor by its slot width so packing stays consistent
-      cursor += w + SIB_GAP;
+    } else {
+      let cursor = rowLeft;
+      for (const sibId of packOrder) {
+        const i = allChildren.indexOf(sibId);
+        const w = slotWidths[i];
+        if (sibId !== personId && !visited.has(sibId) && viewSet.has(sibId) && w > 0) {
+          visited.add(sibId);
+          placeSiblingUnit(sibId, cursor, w, gen, visited);
+        }
+        cursor += w + SIB_GAP;
+      }
     }
 
     // Focus extra spouses appended to the right of the row
@@ -1740,10 +1768,10 @@ function layoutTree() {
       let father = parents.find(pid => (getP(pid)?.sex === 'M'));
       let mother = parents.find(pid => (getP(pid)?.sex === 'F'));
       if (!father) { father = parents[0]; mother = parents[1]; }
-      // Ancestry-style: parents sit ADJACENT as one couple directly over this
-      // children row — the father's ancestors then extend LEFT of the couple
-      // and the mother's extend RIGHT, so the two bloodlines mirror out from
-      // the family centre instead of being pushed apart by reserved width.
+      // Ancestry-style: parents sit ADJACENT over this children row, biased
+      // toward their own side: the father's couple shifts left, the mother's
+      // right, so the paternal block (his siblings + ancestors) sits left of
+      // the family centre and the maternal block right of it.
       const parentRowCenterX = rowCenterX;
       const husbCenter0 = parentRowCenterX - (CARD_W + COUPLE_GAP) / 2;
       const wifeCenter0 = parentRowCenterX + (CARD_W + COUPLE_GAP) / 2;
@@ -1752,8 +1780,10 @@ function layoutTree() {
       // Father's bloodline packs LEFT, mother's RIGHT (Ancestry mirror).
       const fatherSide = (side === 'right') ? 'right' : 'left';
       const motherSide = (side === 'left') ? 'left' : 'right';
-      placeAncestors(father, husbCenter0, gen - 1, visited, fatherSide);
-      placeAncestors(mother, wifeCenter0, gen - 1, visited, motherSide);
+      const husbBiasW = (side !== 'left') ? computeAncWidth(father, new Set()) + SIB_GAP : 0;
+      const wifeBiasW = (side !== 'right') ? computeAncWidth(mother, new Set()) + SIB_GAP : 0;
+      placeAncestors(father, husbCenter0 - husbBiasW, gen - 1, visited, fatherSide);
+      placeAncestors(mother, wifeCenter0 + wifeBiasW, gen - 1, visited, motherSide);
     }
   }
 
