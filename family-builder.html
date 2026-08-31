@@ -2140,13 +2140,13 @@ function layoutTree() {
     const barX1 = Math.min(...childPts.map(c => c.x), parentMidX);
     const barX2 = Math.max(...childPts.map(c => c.x), parentMidX);
     let guard = 0;
-    const floorY = parentBottomY + 4;
-    const collides = () => placedBars.some(b => Math.abs(b.y - midY) < 5 && barX1 < b.x2 - 2 && b.x1 < barX2 - 2);
+    const floorY = parentBottomY + 2;
+    const collides = () => placedBars.some(b => Math.abs(b.y - midY) < 6 && barX1 < b.x2 - 2 && b.x1 < barX2 - 2);
     // Prefer nudging UP toward the parents: an upper bus never crosses the
     // other family's parent→bar drop verticals, and a right-side marriage's
     // bus rising above the first marriage's reads clearly as a separate union.
     while (collides() && guard < 40) {
-      if (midY - 12 >= floorY) midY -= 12; else midY += 12;
+      if (midY - 20 >= floorY) midY -= 20; else midY += 20;
       guard++;
     }
     placedBars.push({ y: midY, x1: barX1, x2: barX2 });
