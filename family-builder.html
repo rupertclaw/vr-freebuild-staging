@@ -1727,16 +1727,17 @@ function layoutTree() {
       let father = parents.find(pid => (getP(pid)?.sex === 'M'));
       let mother = parents.find(pid => (getP(pid)?.sex === 'F'));
       if (!father) { father = parents[0]; mother = parents[1]; }
-      husbW = Math.max(husbW, coupleUnitW(father));
-      wifeW = Math.max(wifeW, coupleUnitW(mother));
-      const husbLeft = rowCenterX - (husbW + COUPLE_GAP + wifeW) / 2;
-      const wifeLeft = husbLeft + husbW + COUPLE_GAP;
-      const husbCenter = husbLeft + husbW / 2;
-      const wifeCenter = wifeLeft + wifeW / 2;
-      if (!positions.has(father)) positions.set(father, { x: Math.round(husbCenter - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
-      if (!positions.has(mother)) positions.set(mother, { x: Math.round(wifeCenter - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
-      placeAncestors(father, husbCenter, gen - 1, visited);
-      placeAncestors(mother, wifeCenter, gen - 1, visited);
+      // Ancestry-style: parents sit ADJACENT as one couple directly over this
+      // children row — the father's ancestors then extend LEFT of the couple
+      // and the mother's extend RIGHT, so the two bloodlines mirror out from
+      // the family centre instead of being pushed apart by reserved width.
+      const parentRowCenterX = rowCenterX;
+      const husbCenter0 = parentRowCenterX - (CARD_W + COUPLE_GAP) / 2;
+      const wifeCenter0 = parentRowCenterX + (CARD_W + COUPLE_GAP) / 2;
+      if (!positions.has(father)) positions.set(father, { x: Math.round(husbCenter0 - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
+      if (!positions.has(mother)) positions.set(mother, { x: Math.round(wifeCenter0 - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
+      placeAncestors(father, husbCenter0, gen - 1, visited);
+      placeAncestors(mother, wifeCenter0, gen - 1, visited);
     }
   }
 
@@ -1873,7 +1874,14 @@ function layoutTree() {
       // couple-midpoint hang.
       let anchorX;
       if (fams.length > 1 && spousePos) {
-        anchorX = spousePos.x + CARD_W / 2;
+        // Ancestry-style: children hang under the parent whose card they
+        // belong to, NOT the midpoint (a wedged card would skew it).
+        const midOfUs = (Math.min(myPos.x, spousePos.x) + Math.max(myPos.x, spousePos.x) + CARD_W) / 2;
+        const kidAvg = kids.reduce((s, cid) => { const cp = positions.get(cid); return cp ? s + cp.x + CARD_W / 2 : s; }, 0) / Math.max(1, kids.filter(cid => positions.get(cid)).length);
+        anchorX = Math.abs(myPos.x + CARD_W / 2 - kidAvg) <= Math.abs(spousePos.x + CARD_W / 2 - kidAvg)
+          ? myPos.x + CARD_W / 2
+          : spousePos.x + CARD_W / 2;
+        void midOfUs;
       } else if (spousePos) {
         anchorX = (Math.min(myPos.x, spousePos.x) + Math.max(myPos.x, spousePos.x) + CARD_W) / 2;
       } else {
