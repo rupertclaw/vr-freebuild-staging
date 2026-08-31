@@ -1351,6 +1351,11 @@ function getVisiblePeople() {
         }
       }
     }
+    // Structural sibling links (covers root-level siblings with no shared parents)
+    for (const sid of (focus.siblingIds || [])) {
+      const s = getP(sid);
+      if (s) visible.add(sid);
+    }
 
     // ── ALL DESCENDANTS: children, grandchildren, great-grandchildren ──
     // For focus person AND all siblings (nieces/nephews)
@@ -2002,6 +2007,22 @@ function layoutTree() {
     if (placedParent) {
       const pp = positions.get(placedParent);
       positions.set(p.id, { x: pp.x + CARD_W + COUPLE_GAP, y: pp.y });
+      continue;
+    }
+
+    // 3b. A placed sibling (structural link, root-level siblings) → sit
+    // beside them on the same row
+    let placedSib = (p.siblingIds || []).find(sid => positions.has(sid));
+    if (placedSib) {
+      const sp = positions.get(placedSib);
+      // Spouse of the sibling may occupy the slot immediately right; if so,
+      // tuck in beside that spouse instead of on top of them.
+      const sibP = positions.get(placedSib);
+      const sib = getP(placedSib);
+      const rightSlotX = sibP.x + CARD_W + COUPLE_GAP;
+      const rightBlocked = [...positions.entries()].some(([oid, op]) =>
+        oid !== p.id && Math.abs(op.y - sibP.y) <= 5 && op.x < rightSlotX + CARD_W && op.x + CARD_W > rightSlotX);
+      positions.set(p.id, { x: rightBlocked ? rightSlotX + CARD_W + SIB_GAP : rightSlotX, y: sibP.y });
       continue;
     }
 
@@ -2765,9 +2786,26 @@ function fbAddSibling() {
         parent.children.push(newSib.id);
       }
     }
+  } else {
+    // Root person with no parents: fabricate a shared parent unit so the
+    // sibling joins the tree structurally (Ancestry-style). Each gets the
+    // placeholder as parent; layout renders it as their common family.
+    const newParent = createPerson(nextId++, person.gen + 1, 'Name', '?', 'blank', {});
+    people.push(newParent);
+    if (!newSib.parents) newSib.parents = [];
+    newSib.parents.push(newParent.id);
+    if (!person.parents) person.parents = [];
+    person.parents.push(newParent.id);
+    newParent.children = [person.id, newSib.id];
   }
+  // Structural sibling link so root-level siblings stay connected even if
+  // the shared parent is later deleted.
+  if (!newSib.siblingIds) newSib.siblingIds = [];
+  newSib.siblingIds.push(person.id);
+  if (!person.siblingIds) person.siblingIds = [];
+  person.siblingIds.push(newSib.id);
 
-  // Add sibling names
+  // Legacy display name (kept for back-compat with older saves)
   if (!newSib.siblings) newSib.siblings = [];
   newSib.siblings.push(person.name);
   if (!person.siblings) person.siblings = [];
@@ -2815,6 +2853,12 @@ function fbDeletePerson() {
     }
   }
   person.families = [];
+
+  // Clear structural sibling links in both directions
+  for (const sid of (person.siblingIds || [])) {
+    const sib = people.find(p => p.id === sid);
+    if (sib && sib.siblingIds) sib.siblingIds = sib.siblingIds.filter(x => x !== person.id);
+  }
 
   people = people.filter(p => p.id !== person.id);
   autoSave();
@@ -3158,6 +3202,51 @@ function normalizeRelationships() {
       if (!stepParent.children) stepParent.children = [];
       if (!stepParent.children.includes(child.id)) stepParent.children.push(child.id);
       fixes++;
+    }
+  }
+  // Pass 5: rescue orphaned siblings. fbAddSibling on a ROOT person used to
+  // record only a display-name string, so the sibling existed in saves but
+  // nothing structural referenced them (invisible in the tree). Convert
+  // name-string sibling links into structural siblingIds, and give
+  // root-level sibling pairs a shared placeholder parent so layout renders
+  // them as one family.
+  for (const p of people) p.siblingIds = p.siblingIds || [];
+  for (const a of people) {
+    for (const nm of (a.siblings || [])) {
+      if (typeof nm !== 'string' || nm === 'Name') continue;
+      const b = people.find(x => x.id !== a.id && x.name === nm && x.gen === a.gen);
+      if (b && !a.siblingIds.includes(b.id)) {
+        a.siblingIds.push(b.id);
+        fixes++;
+      }
+    }
+  }
+  for (const a of people) {
+    for (const sid of a.siblingIds) {
+      const b = people.find(x => x.id === sid);
+      if (b && !b.siblingIds.includes(a.id)) { b.siblingIds.push(a.id); fixes++; }
+    }
+  }
+  // Shared-parent rescue: two same-gen people linked as siblings but with no
+  // parents at all → fabricate one placeholder parent over both.
+  const sibPairsDone = new Set();
+  for (const a of people) {
+    for (const sid of a.siblingIds) {
+      const b = people.find(x => x.id === sid);
+      if (!b || b.gen !== a.gen) continue;
+      const key = Math.min(a.id, b.id) + '-' + Math.max(a.id, b.id);
+      if (sibPairsDone.has(key)) continue;
+      sibPairsDone.add(key);
+      const aRoot = !a.parents.length;
+      const bRoot = !b.parents.length;
+      if (aRoot && bRoot && a.parents.length === b.parents.length) {
+        const parent = createPerson(nextId++, a.gen + 1, 'Name', '?', 'blank', {});
+        people.push(parent);
+        a.parents.push(parent.id);
+        b.parents.push(parent.id);
+        parent.children = [a.id, b.id];
+        fixes++;
+      }
     }
   }
   return fixes;
