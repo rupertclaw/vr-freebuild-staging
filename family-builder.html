@@ -2091,6 +2091,7 @@ function layoutTree() {
   // Vertical from parents' midpoint → horizontal bar → verticals down to each child
   // Group children by parent pair
   const familyGroups = new Map(); // key = sorted parent IDs, value = { parentIds, children: [] }
+  const placedBars = []; // bus bars already drawn, to stagger collinear ones
   for (const p of viewPeople) {
     if (!p.parents || p.parents.length === 0) continue;
     const parentsInView = p.parents.filter(pid => viewSet.has(pid) && positions.has(pid));
@@ -2116,23 +2117,34 @@ function layoutTree() {
       parentBottomY = p1.y + CARD_H;
     }
 
-    // For each child, draw orthogonal line: parent midpoint → down → horizontal bar → down to child
+    // Child drop points for this family
+    const childPts = [];
     for (const childId of children) {
       const childPos = positions.get(childId);
       if (!childPos) continue;
-      // Skip degenerate lines: child directly under parent midpoint with NO
-      // visible bar (would render as a zero-length stub) — still draw the
-      // vertical, it's a real connection.
-      const childMidX = childPos.x + CARD_W / 2;
-      const childTopY = childPos.y;
-      const midY = (parentBottomY + childTopY) / 2;
+      childPts.push({ x: childPos.x + CARD_W / 2, y: childPos.y });
+    }
+    if (childPts.length === 0) continue;
 
+    // Stagger each couple's bus height so two marriages of the same person
+    // never render collinear buses (which read as one merged line).
+    let midY = (parentBottomY + Math.min(...childPts.map(c => c.y))) / 2;
+    const barX1 = Math.min(...childPts.map(c => c.x), parentMidX);
+    const barX2 = Math.max(...childPts.map(c => c.x), parentMidX);
+    let guard = 0;
+    while (placedBars.some(b => Math.abs(b.y - midY) < 5 && barX1 < b.x2 - 2 && b.x1 < barX2 - 2) && guard < 20) {
+      midY += 12;
+      guard++;
+    }
+    placedBars.push({ y: midY, x1: barX1, x2: barX2 });
+
+    for (const childPt of childPts) {
       connections.push({
         type: 'parent-child',
         midX: parentMidX,
         parentY: parentBottomY,
-        childX: childMidX,
-        childY: childTopY,
+        childX: childPt.x,
+        childY: childPt.y,
         midY: midY
       });
     }
