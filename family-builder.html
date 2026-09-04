@@ -1695,6 +1695,8 @@ function layoutTree() {
     // shoving unrelated families apart afterwards.
     const slotWidths = allChildren.map(cid => visited.has(cid) ? 0 : Math.max(computeDescWidth(cid, new Set()), coupleUnitW(cid)));
     const totalRowW = slotWidths.reduce((a, b) => a + b, 0) + Math.max(0, numChildren - 1) * SIB_GAP + focusExtra;
+    // Direct-line unit span (function scope: reused by parent-centring below)
+    let myUnitLeft = null, myUnitRight = null;
 
     // My unit must land centered on centerX (already placed), so my SLOT
     // centers on centerX: rowLeft makes my slot's midpoint = centerX.
@@ -1715,9 +1717,31 @@ function layoutTree() {
       // reserved slot: the slot also reserves space for descendants hanging
       // the other way, which would leave a dead hole between the sibling
       // group and the family centre).
-      const myUnitW = Math.min(coupleUnitW(personId), slotWidths[myIndex]);
-      const myUnitLeft = Math.round(centerX - myUnitW / 2);
-      const myUnitRight = myUnitLeft + myUnitW;
+      // Direct-line unit span from ACTUAL placed cards (person + adjacent
+      // primary spouse). A visited direct-line person has a 0-width slot,
+      // but the real couple unit still occupies space — hugging the lone
+      // card CENTRE made siblings overlap the couple, forcing the collision
+      // pass to shove the couple sideways every render.
+      const myPosU = positions.get(personId);
+      if (myPosU) {
+        myUnitLeft = myPosU.x;
+        myUnitRight = myPosU.x + CARD_W;
+        const primSp = getP(personId)?.spouseId;
+        if (primSp && viewSet.has(primSp) && positions.has(primSp)) {
+          const spPosU = positions.get(primSp);
+          if (Math.abs(spPosU.y - myPosU.y) < 2 &&
+              (Math.abs(spPosU.x - (myUnitRight + COUPLE_GAP)) <= 2 || Math.abs((spPosU.x + CARD_W + COUPLE_GAP) - myUnitLeft) <= 2)) {
+            myUnitLeft = Math.min(myUnitLeft, spPosU.x);
+            myUnitRight = Math.max(myUnitRight, spPosU.x + CARD_W);
+          }
+        }
+      } else {
+        const myUnitW = Math.min(coupleUnitW(personId), slotWidths[myIndex]);
+        myUnitLeft = Math.round(centerX - myUnitW / 2);
+        myUnitRight = myUnitLeft + myUnitW;
+      }
+      myUnitLeft = Math.round(myUnitLeft);
+      myUnitRight = Math.round(myUnitRight);
       let cur = isLeft ? myUnitLeft - totalSibsW : myUnitRight + SIB_GAP;
       for (const sibId of sibs) {
         const i = allChildren.indexOf(sibId);
@@ -1781,7 +1805,27 @@ function layoutTree() {
       // toward their own side: the father's couple shifts left, the mother's
       // right, so the paternal block (his siblings + ancestors) sits left of
       // the family centre and the maternal block right of it.
-      const parentRowCenterX = rowCenterX;
+      // On sided branches, centre over the PACKED row (siblings + the direct-
+      // line person's real unit), NOT the slot-based rowCenterX: a visited
+      // direct-line person has a 0-width slot, so rowCenterX collapses onto
+      // the sibling group — and when both sides' grandparent couples then
+      // centre at the same x, the collision pass shoves one across the other.
+      let parentRowCenterX = rowCenterX;
+      if (side === 'left' || side === 'right') {
+        const sibsForRow = packOrder.filter(s => s !== personId);
+        let totalSibsW = 0;
+        for (const cid of sibsForRow) {
+          const i = allChildren.indexOf(cid);
+          // NOTE: no visited check here — the sibling loop above already
+          // marked placed siblings as visited, but they still occupy the row.
+          if (viewSet.has(cid) && slotWidths[i] > 0) totalSibsW += slotWidths[i] + SIB_GAP;
+        }
+        if (totalSibsW > 0) totalSibsW -= SIB_GAP;
+        if (totalSibsW > 0) {
+          const sibEdge = (side === 'left') ? myUnitLeft - totalSibsW : myUnitRight + totalSibsW;
+          parentRowCenterX = (Math.min(sibEdge, myUnitLeft) + Math.max(sibEdge, myUnitRight)) / 2;
+        }
+      }
       const husbCenter0 = parentRowCenterX - (CARD_W + COUPLE_GAP) / 2;
       const wifeCenter0 = parentRowCenterX + (CARD_W + COUPLE_GAP) / 2;
       if (!positions.has(father)) positions.set(father, { x: Math.round(husbCenter0 - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
@@ -1789,8 +1833,12 @@ function layoutTree() {
       // Father's bloodline packs LEFT, mother's RIGHT (Ancestry mirror).
       const fatherSide = (side === 'right') ? 'right' : 'left';
       const motherSide = (side === 'left') ? 'left' : 'right';
-      const husbBiasW = (side !== 'left') ? computeAncWidth(father, new Set()) + SIB_GAP : 0;
-      const wifeBiasW = (side !== 'right') ? computeAncWidth(mother, new Set()) + SIB_GAP : 0;
+      // Bias pushes the OUTER parent further out (father on paternal/left
+      // branch, mother on maternal/right) and keeps the inner parent in place.
+      // The previous logic was inverted — it pushed the inner parent outward,
+      // crossing paternal grandparents to the right of maternal ones.
+      const husbBiasW = (side !== 'right') ? computeAncWidth(father, new Set()) + SIB_GAP : 0;
+      const wifeBiasW = (side !== 'left') ? computeAncWidth(mother, new Set()) + SIB_GAP : 0;
       placeAncestors(father, husbCenter0 - husbBiasW, gen - 1, visited, fatherSide);
       placeAncestors(mother, wifeCenter0 + wifeBiasW, gen - 1, visited, motherSide);
     }
