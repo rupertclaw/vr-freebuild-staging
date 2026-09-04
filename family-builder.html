@@ -1507,6 +1507,25 @@ function layoutTree() {
     return hasSpouse ? 2 * CARD_W + COUPLE_GAP : CARD_W;
   }
 
+  // ── Sex for layout (father left / mother right) ──
+  // Stored sex wins. UI-built trees often have sex:'' for everyone, and each
+  // child's parents[] array can list parents in a different order — so falling
+  // back to parents[0] mirrored the whole ancestor layout depending on which
+  // child was focused. Infer from the first name so sides are stable.
+  const SEX_NAME_MAP = {
+    M: new Set(['joseph','john','jack','james','jim','jimmy','andrew','andy','drew','brant','derek','scott','ian','mark','paul','matthew','matt','benjamin','ben','joel','michael','mike','christopher','chris','malcolm','eric','weston','graeme','graham','patrick','pat','thomas','tom','tommy','william','bill','billy','willie','robert','rob','bob','bobby','david','dave','daniel','dan','danny','peter','pete','steven','steve','stephen','ste','alexander','ryan','brian','kevin','jason','adam','aaron','justin','brandon','tyler','keith','greg','gregory','shawn','sean','craig','glenn','neil','nigel','stuart','stewart','alan','allen','bruce','wayne','ron','ronald','ronnie','gary','larry','terry','doug','douglas','frank','frankie','francis','henry','harry','harold','sam','samuel','oscar','leo','leon','leonard','luke','owen','ethan','noah','liam','mason','jacob','jake','max','maxwell','felix','hugo','arthur','alfred','albert','ernest','howard','walter','ralph','roy','earl','floyd','clarence','lawrence','laurence','gerald','jerry','dennis','denis','randy','rodney','rick','richard','richie','ed','edward','eddie','ted','theodore','theo','philip','phil','phillip','martin','marty','anthony','tony','raymond','ray','walter','herbert','clifford','cliff','cyril','sidney','sydney','leslie','les','norman','harvey','melvin','marvin','clifford']),
+    F: new Set(['rose','alice','agnes','moira','roselyn','rosalyn','rosaleen','jennifer','jen','jenny','alexandra','jaime-lynn','jaime','lynn','lisa','jan','jane','janet','janice','margaret','maggie','peggy','megan','meg','ellie','elizabeth','liz','beth','betty','elisabeth','mary','maria','marie','anna','ann','anne','hannah','sarah','sara','sally','susan','sue','suzy','karen','linda','patricia','patty','deborah','deb','debbie','barbara','carol','caroline','carolyn','nancy','sandra','sandy','sharon','cynthia','cindy','kathleen','kathy','kate','katie','catherine','cathy','elaine','helen','ellen','heather','claire','clare','clara','dorothy','doris','joyce','jean','joan','joanna','donna','diane','diana','dana','julie','julia','gillian','gill','fiona','sheila','maureen','maura','eileen','sinead','niamh','deirdre','siobhan','brigid','bridget','briege','una','fionnuala','finola','orla','grainne','caoimhe','aoife','evelyn','eve','eva','ruth','emma','emily','amy','abigail','abby','olivia','sophie','sophia','isabel','isabella','gail','tracy','tracey','wendy','dawn','kim','kimberly','nicole','nikki','rachel','rebecca','becky','laura','lauren','laurence','sam','samantha','victoria','vicky','louise','lucy','lucia','lucille','frances','frances','francis','vera','veronica','bernice','bernadette','brenda','paula','pauline','robin','robyn','erin','colleen','kathryn','kristen','kirsten','kelly','shannon','morgan','alison','allison','amanda','mandy','angela','angel','anna','audrey','bonnie','charlotte','cheryl','christine','tina','crystal','dana','daphne','darlene','denise','edith','eleanor','ellie','emily','erica','esther','gina','gloria','heidi','holly','irene','iris','isabella','ivory','jade','jasmine','jill','jo','jodi','judith','judy','julia','june','kara','kendra','lara','lena','leona','lila','lily','lindsay','lindsey','loretta','lorraine','lydia','lynette','marcia','marilyn','marnie','martha','matilda','maud','maude','melanie','melissa','michelle','mildred','millie','miriam','myrtle','naomi','natalie','nell','nora','norah','norma','olive','olivia','pamela','pam','pearl','penelope','penny','phyllis','priscilla','prudence','regina','rene','renee','rhoda','rita','rosa','rosemary','rosie','ruby','sabrina','sylvia','tabitha','tamara','tanya','teresa','terri','teri',' tess','tess','theresa','tiffany','valerie','vanessa','vera','verna','veronica','violet','virginia','vivian','wanda','wilhelmina','winifred','yvonne','yvette','zoe'])
+  };
+  function sexOf(id) {
+    const p = getP(id);
+    if (!p) return '';
+    if (p.sex) return p.sex;
+    const first = (p.name || '').trim().split(/\s+/)[0].toLowerCase().replace(/[^a-z-]/g, '');
+    if (SEX_NAME_MAP.M.has(first)) return 'M';
+    if (SEX_NAME_MAP.F.has(first)) return 'F';
+    return '';
+  }
+
   // ============================================================
   // TOP-DOWN FAMILY TREE LAYOUT (Ancestry-style)
   // Ancestors ABOVE focus. Descendants BELOW.
@@ -1798,8 +1817,8 @@ function layoutTree() {
       // Parents sit as one couple: father left, mother right (by sex).
       // Each gets the other's full subtree width as side-clearance so large
       // ancestor branches never overlap.
-      let father = parents.find(pid => (getP(pid)?.sex === 'M'));
-      let mother = parents.find(pid => (getP(pid)?.sex === 'F'));
+      let father = parents.find(pid => (sexOf(pid) === 'M'));
+      let mother = parents.find(pid => (sexOf(pid) === 'F'));
       if (!father) { father = parents[0]; mother = parents[1]; }
       // Ancestry-style: parents sit ADJACENT over this children row, biased
       // toward their own side: the father's couple shifts left, the mother's
@@ -1830,9 +1849,12 @@ function layoutTree() {
       const wifeCenter0 = parentRowCenterX + (CARD_W + COUPLE_GAP) / 2;
       if (!positions.has(father)) positions.set(father, { x: Math.round(husbCenter0 - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
       if (!positions.has(mother)) positions.set(mother, { x: Math.round(wifeCenter0 - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
-      // Father's bloodline packs LEFT, mother's RIGHT (Ancestry mirror).
-      const fatherSide = (side === 'right') ? 'right' : 'left';
-      const motherSide = (side === 'left') ? 'left' : 'right';
+      // Father's bloodline packs LEFT, mother's RIGHT — ALWAYS, regardless of
+      // which branch this family sits on. The old conditional flipped sides on
+      // maternal ('right') branches, which mirrored the paternal grandparents
+      // across the family whenever the focus was a maternal descendant.
+      const fatherSide = 'left';
+      const motherSide = 'right';
       // Bias pushes the OUTER parent further out (father on paternal/left
       // branch, mother on maternal/right) and keeps the inner parent in place.
       // The previous logic was inverted — it pushed the inner parent outward,
