@@ -1646,6 +1646,15 @@ function layoutTree() {
     // 'right' = maternal, null = neutral (keep birth-order packing both ways).
     // The direct line into the focus is 'centre'.
 
+    // If already positioned by a parent-loop, snap centerX to the ACTUAL
+    // card centre. The passed centerX carries ancestor-side bias meant for
+    // the recursive ancestor calls below; using it for child-row / parent-
+    // couple placement would shift the parents toward the biased side
+    // (e.g. father's parents appear above the wrong spouse).
+    if (positions.has(personId)) {
+      centerX = positions.get(personId).x + CARD_W / 2;
+    }
+
     // Place this person's couple-unit centered on centerX (skip if already
     // pinned by a parent-loop, e.g. father/mother of the current row)
     if (!positions.has(personId)) {
@@ -2262,12 +2271,15 @@ function layoutTree() {
     const barX2 = Math.max(...childPts.map(c => c.x), parentMidX);
     let guard = 0;
     const floorY = parentBottomY + 2;
-    const collides = () => placedBars.some(b => Math.abs(b.y - midY) < 6 && barX1 < b.x2 - 2 && b.x1 < barX2 - 2);
+    const collides = () => placedBars.some(b => Math.abs(b.y - midY) < 10 && barX1 < b.x2 - 2 && b.x1 < barX2 - 2);
     // Prefer nudging UP toward the parents: an upper bus never crosses the
     // other family's parent→bar drop verticals, and a right-side marriage's
     // bus rising above the first marriage's reads clearly as a separate union.
+    // Use 10px steps (half the old 20px) so a staggered bus sits halfway
+    // between its natural midpoint and the other family's bus — the drop line
+    // from the parent card is only slightly shorter, not dramatically so.
     while (collides() && guard < 40) {
-      if (midY - 20 >= floorY) midY -= 20; else midY += 20;
+      if (midY - 10 >= floorY) midY -= 10; else midY += 10;
       guard++;
     }
     placedBars.push({ y: midY, x1: barX1, x2: barX2 });
