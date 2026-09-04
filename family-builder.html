@@ -1725,6 +1725,11 @@ function layoutTree() {
     // centre, no reserved-width hole between them and the direct line).
     // 'left'  → group ends at my slot's left edge (walk right-to-left)
     // 'right' → group starts at my slot's right edge (walk left-to-right)
+    // cursor tracks the row's packing position in BOTH branches — it is
+    // read below by the focus-extra-spouses block, so it must live at this
+    // scope, not inside the else branch (ReferenceError there killed the
+    // whole render for any focused person with 2+ spouses).
+    let cursor = rowLeft;
     if (side === 'left' || side === 'right') {
       const sibs = packOrder.filter(s => s !== personId);
       const totalSibsW = sibs.reduce((s, cid) => {
@@ -1772,7 +1777,6 @@ function layoutTree() {
         cur += (isLeft ? 1 : 1) * (w + SIB_GAP);
       }
     } else {
-      let cursor = rowLeft;
       for (const sibId of packOrder) {
         const i = allChildren.indexOf(sibId);
         const w = slotWidths[i];
