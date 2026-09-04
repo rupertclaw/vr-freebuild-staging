@@ -1851,8 +1851,20 @@ function layoutTree() {
           parentRowCenterX = (Math.min(sibEdge, myUnitLeft) + Math.max(sibEdge, myUnitRight)) / 2;
         }
       }
-      const husbCenter0 = parentRowCenterX - (CARD_W + COUPLE_GAP) / 2;
-      const wifeCenter0 = parentRowCenterX + (CARD_W + COUPLE_GAP) / 2;
+      // When BOTH grandparents-in-law couples hang off this children row
+      // (e.g. Joseph 1906 + Alice with his parents and hers), two 310px
+      // couples cannot both centre over a 160px child couple without
+      // overlapping. The collision pass then shoves one side the whole
+      // overlap sideways, leaving that side's child visually off-centre
+      // under its grandparents. Fix: bias each couple OUTWARD by a quarter
+      // couple-width — symmetric, so the child couple stays centred between
+      // them and no shove is needed afterwards.
+      const dualInlaw = (father && mother &&
+        father.parents && father.parents.some(pid => viewSet.has(pid)) &&
+        mother.parents && mother.parents.some(pid => viewSet.has(pid)));
+      const dualBias = dualInlaw ? (CARD_W + COUPLE_GAP) / 4 : 0;
+      const husbCenter0 = parentRowCenterX - (CARD_W + COUPLE_GAP) / 2 - dualBias;
+      const wifeCenter0 = parentRowCenterX + (CARD_W + COUPLE_GAP) / 2 + dualBias;
       if (!positions.has(father)) positions.set(father, { x: Math.round(husbCenter0 - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
       if (!positions.has(mother)) positions.set(mother, { x: Math.round(wifeCenter0 - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
       // Father's bloodline packs LEFT, mother's RIGHT — ALWAYS, regardless of
@@ -2630,6 +2642,58 @@ document.addEventListener('touchmove', function(e) {
   }, { passive: false });
 })();
 
+// Drag-to-pan with the mouse: hold and drag empty canvas (or a card, without
+// clicking it) to slide the tree around, matching the touch/drag behaviour
+// the guide promises. Cards still open on a plain click — the drag threshold
+// (5px) separates a click from a pan, and card onclick fires only when the
+// pointer never moved beyond it.
+(function setupDragPan() {
+  const scrollEl = document.getElementById('treeScroll');
+  if (!scrollEl) return;
+  let panning = false, moved = false, suppressClick = false;
+  let startX = 0, startY = 0, startScrollX = 0, startScrollY = 0;
+  // Clicks fire right after mouseup — this capture-phase gate swallows the
+  // click that follows a real drag so cards don't open mid-pan.
+  document.addEventListener('click', function(ev) {
+    if (suppressClick) {
+      suppressClick = false;
+      ev.stopPropagation();
+      ev.preventDefault();
+    }
+  }, { capture: true });
+  scrollEl.addEventListener('mousedown', function(e) {
+    // Only the left button; ignore clicks on controls and text fields
+    if (e.button !== 0) return;
+    if (e.target.closest('button, input, select, textarea, .fb-menu, .help-btn, .focus-back, .detail-panel, .leaf-badge')) return;
+    panning = true; moved = false; suppressClick = false;
+    startX = e.clientX; startY = e.clientY;
+    startScrollX = scrollEl.scrollLeft; startScrollY = scrollEl.scrollTop;
+    e.preventDefault();
+  });
+  window.addEventListener('mousemove', function(e) {
+    if (!panning) return;
+    const dx = e.clientX - startX, dy = e.clientY - startY;
+    if (!moved && Math.abs(dx) + Math.abs(dy) > 5) {
+      moved = true;
+      document.body.style.cursor = 'grabbing';
+      document.body.style.userSelect = 'none';
+    }
+    if (moved) {
+      scrollEl.scrollLeft = startScrollX - dx;
+      scrollEl.scrollTop = startScrollY - dy;
+    }
+  });
+  window.addEventListener('mouseup', function(e) {
+    if (!panning) return;
+    panning = false;
+    suppressClick = moved;
+    document.body.style.cursor = '';
+    document.body.style.userSelect = '';
+  });
+  // Grab cursor feedback over the canvas
+  scrollEl.style.cursor = 'grab';
+})();
+
 // ═══════════════════════════════════════════════════════════════
 // DETAIL PANEL
 // ═══════════════════════════════════════════════════════════════
@@ -3055,6 +3119,7 @@ function fbDeletePerson() {
 function focusOnPerson(id) {
   if (focusPersonId) viewHistory.push(focusPersonId);
   focusPersonId = id;
+  overviewMode = false; // navigating to a person = leaving Overview
   document.getElementById('focusBack').classList.add('visible');
   renderFreeBuild();
 }
@@ -3092,26 +3157,36 @@ function pickBestFocus() {
 // Overview never clears the focus — it re-anchors it and fits the screen.
 // Remembers the user's previous focus so a second Overview click toggles back.
 let lastPreOverviewFocus = null;
+let overviewMode = false; // true while the canvas shows the Overview anchor
 function goOverview() {
   const anchor = pickBestFocus();
   if (!anchor) { showToast('Add some family members first'); return; }
-  if (lastPreOverviewFocus !== null && focusPersonId === anchor.id) {
+  if (overviewMode) {
     // Already on the overview anchor → return to where the user was
     focusPersonId = lastPreOverviewFocus;
     lastPreOverviewFocus = null;
+    overviewMode = false;
   } else {
     if (focusPersonId !== null) lastPreOverviewFocus = focusPersonId;
     focusPersonId = anchor.id;
+    overviewMode = true;
   }
   viewHistory = [];
-  document.getElementById('focusBack').classList.add('visible');
+  updateFocusBackVisibility();
   renderFreeBuild();
   setTimeout(function() { fitToScreen(); }, 100);
 }
 
+// Pill visibility: hidden while ON the Overview (nothing to go back to),
+// shown in any focused view.
+function updateFocusBackVisibility() {
+  document.getElementById('focusBack').classList.toggle('visible', !overviewMode);
+}
 function resetFocus() {
   if (viewHistory.length > 0) {
     focusPersonId = viewHistory.pop();
+    overviewMode = false;
+    updateFocusBackVisibility();
     renderFreeBuild();
     if (focusPersonId) {
       setTimeout(function() { fitToScreen(); centerOnPerson(focusPersonId); }, 100);
@@ -3142,6 +3217,7 @@ document.getElementById('gedcomInput').addEventListener('change', async (e) => {
       document.getElementById('focusBack').classList.add('visible');
     }
   }
+  overviewMode = false; // GEDCOM import starts in normal focus mode
 
   autoSave();
   renderFreeBuild();
@@ -5077,6 +5153,8 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
       document.getElementById('focusBack').classList.add('visible');
     }
   }
+  lastPreOverviewFocus = null; // page load starts in normal focus mode
+  overviewMode = false;
 
   if (window.innerWidth > 768 && !('ontouchstart' in window)) {
     zoom = 1;
