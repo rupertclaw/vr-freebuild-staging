@@ -2648,6 +2648,13 @@ function openDetail(person) {
     <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${escapeHtml(person.spouseName)}"></div>
     <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${escapeHtml(person.occupation)}"></div>
     <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${escapeHtml(person.birthplace)}"></div>
+    <div class="detail-field"><label>Sex</label>
+      <select id="d_sex">
+        <option value="" ${!person.sex ? 'selected' : ''}>Unknown</option>
+        <option value="M" ${person.sex === 'M' ? 'selected' : ''}>Male</option>
+        <option value="F" ${person.sex === 'F' ? 'selected' : ''}>Female</option>
+      </select>
+    </div>
     <div class="detail-field"><label>Status</label>
       <select id="d_status">
         <option value="confirmed" ${person.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
@@ -2738,6 +2745,7 @@ function saveDetail() {
   person.spouseName = document.getElementById('d_spouseName').value;
   person.occupation = document.getElementById('d_occupation').value;
   person.birthplace = document.getElementById('d_birthplace').value;
+  person.sex = document.getElementById('d_sex').value;
   person.status = document.getElementById('d_status').value;
   person.notes = document.getElementById('d_notes').value;
 
