@@ -180,6 +180,15 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .fb-card.blank:hover { transform: none; box-shadow: none; }
 .fb-card.blank .name, .fb-card.blank .years { color: #b8a88a; }
 .fb-card.selected { box-shadow: 0 0 0 3px #38bdf8, 0 2px 8px rgba(56,189,248,0.3); }
+.fb-card .leaf-badge:hover { background: #d4e4c8; }
+.fb-card .branch-badge {
+  position: absolute; top: 2px; right: 2px;
+  font-family: 'Cormorant Garamond', serif; font-size: 9px;
+  background: #eaf3e6; border: 1px solid #5a8a4a; border-radius: 8px;
+  color: #2f5522; padding: 1px 5px; line-height: 1.2;
+  cursor: pointer; user-select: none; z-index: 3; font-style: italic;
+}
+.fb-card .branch-badge:hover { background: #d8ead0; }
 .fb-card .doc-badges { position: absolute; top: 2px; right: 2px; display: flex; gap: 2px; }
 .fb-card .leaf-badge {
   position: absolute; top: 2px; right: 2px;
@@ -1532,9 +1541,9 @@ function layoutTree() {
   function coupleUnitW(id) {
     const p = getP(id);
     if (!p) return UNIT_W;
-    const hasSpouse = (p.spouseId && viewSet.has(p.spouseId)) ||
-      (p.families || []).some(f => viewSet.has(f.spouseId));
-    return hasSpouse ? 2 * CARD_W + COUPLE_GAP : CARD_W;
+    const nSp = allSpouseIds(p).filter(sid => viewSet.has(sid)).length;
+    // person + every in-view spouse (multi-marriage occupies a wider unit)
+    return nSp > 0 ? (nSp + 1) * CARD_W + nSp * COUPLE_GAP : CARD_W;
   }
 
   // ── Sex for layout (father left / mother right) ──
@@ -2012,12 +2021,30 @@ function layoutTree() {
       for (const f of sib.families) { if (viewSet.has(f.spouseId)) { spouseId = f.spouseId; break; } }
     }
 
-    const unitW = spouseId ? 2 * CARD_W + COUPLE_GAP : CARD_W;
-    const unitLeft = slotLeft + Math.max(0, (slotW - unitW) / 2);
-    positions.set(sibId, { x: Math.round(unitLeft), y });
+    // Multi-marriage: place EVERY in-view spouse. Primary spouse LEFT of the
+    // person (placeCoupleUnit convention), additional spouses chain RIGHT of
+    // the person. Previously only the first spouse was placed here — a
+    // second wife (e.g. Joseph 1906 + Rose + Moira when a sibling-in-law is
+    // focused) was left to the collision pass, which saw Rose+Joseph+Moira
+    // as one spouse-graph component and squeezed its members to an
+    // arbitrary 103px gap. Width = (n+1) cards + n couple gaps.
+    const spInView = allSpouseIds(sib).filter(sid => viewSet.has(sid));
+    const nSp = Math.max(spInView.length, spouseId ? 1 : 0);
+    const unitW = nSp > 0 ? (nSp + 1) * CARD_W + nSp * COUPLE_GAP : CARD_W;
+    let px = slotLeft + Math.max(0, (slotW - unitW) / 2) + (spouseId ? CARD_W + COUPLE_GAP : 0);
+    positions.set(sibId, { x: Math.round(px), y });
+    // primary spouse to the LEFT of the person
     if (spouseId && !positions.has(spouseId)) {
-      positions.set(spouseId, { x: Math.round(unitLeft + CARD_W + COUPLE_GAP), y });
+      positions.set(spouseId, { x: Math.round(px - CARD_W - COUPLE_GAP), y });
       visited.add(spouseId);
+    }
+    // additional spouses to the RIGHT of the person
+    let ax = px + CARD_W + COUPLE_GAP;
+    for (const sid of spInView) {
+      if (sid === spouseId || positions.has(sid)) continue;
+      positions.set(sid, { x: Math.round(ax), y });
+      visited.add(sid);
+      ax += CARD_W + COUPLE_GAP;
     }
   }
 
@@ -2225,13 +2252,29 @@ function layoutTree() {
   for (const p of viewPeople) {
     if (positions.has(p.id)) continue;
 
-    // 1. Spouse placed → sit beside them
+    // 1. Spouse placed → sit beside them. Check the primary spouseId too —
+    // a person with only a primary spouse pointer (Moira Meenagh, spouseId
+    // only, no families[]) fell through to 'disconnected', landed at row
+    // x=50 on top of the sibling row, and the collision pass then squeezed
+    // her 103px from her husband (it can't fix intra-component gaps).
     let anchor = null;
-    for (const fam of (p.families || [])) {
-      if (fam.spouseId && positions.has(fam.spouseId)) { anchor = positions.get(fam.spouseId); break; }
+    if (p.spouseId && positions.has(p.spouseId)) anchor = positions.get(p.spouseId);
+    if (!anchor) {
+      for (const fam of (p.families || [])) {
+        if (fam.spouseId && positions.has(fam.spouseId)) { anchor = positions.get(fam.spouseId); break; }
+      }
     }
     if (anchor) {
-      positions.set(p.id, { x: anchor.x + CARD_W + COUPLE_GAP, y: anchor.y });
+      // Find a free slot on the anchor's row starting beside the anchor:
+      // for multi-marriage couples the first slot right of the husband may
+      // already be taken by another wife — scan in couple-gap steps until
+      // clear (same convention as the focus extra-spouses row).
+      let sx = anchor.x + CARD_W + COUPLE_GAP;
+      const rowFree = (x) => ![...positions.entries()].some(([oid, op]) =>
+        oid !== p.id && Math.abs(op.y - anchor.y) <= 5 && op.x < x + CARD_W + 5 && op.x + CARD_W + 5 > x);
+      let guard = 0;
+      while (!rowFree(sx) && guard < 40) { sx += CARD_W + COUPLE_GAP; guard++; }
+      positions.set(p.id, { x: Math.round(sx), y: anchor.y });
       continue;
     }
 
@@ -2549,6 +2592,17 @@ function renderFreeBuild() {
       const count = countDescendants(person.id);
       h += '<div class="leaf-badge" title="Expand ' + count + ' descendant' + (count > 1 ? 's' : '') + '">🍃 +' + count + '</div>';
     }
+    // 🌿 badge: person anchors family lines the current view doesn't render
+    // (children, children-in-law). The card's normal click re-anchors the
+    // tree on this person, which reveals that subtree — badge shows it exists.
+    if (!collapsedPeople.has(person.id)) {
+      const viewSet = new Set(viewPeople.map(v => v.id));
+      const hidden = countHiddenBranchRels(person.id, viewSet);
+      if (hidden.count > 0) {
+        const label = hidden.kinds.join(' + ');
+        h += '<div class="branch-badge" title="Leads to another branch: ' + hidden.count + ' ' + label + ' not shown. Click the card to open this branch.">🌿 +' + hidden.count + '</div>';
+      }
+    }
     if (person.docs && person.docs.length) {
       h += '<div class="doc-badges">';
       person.docs.forEach(d => {
@@ -2598,6 +2652,37 @@ function toggleCollapse(personId) {
   if (collapsedPeople.has(personId)) collapsedPeople.delete(personId);
   else collapsedPeople.add(personId);
   renderFreeBuild();
+}
+
+// Hidden-branch detector: does this person anchor a family line that is NOT
+// rendered in the current view? Counts children and spouse-side parents that
+// the current view omits (e.g. an aunt's children in Overview: the view shows
+// the aunt but not her descendants, since the descendant walk only covers the
+// focus's own siblings' kids). Used for the 🌿 branch indicator.
+function countHiddenBranchRels(personId, visibleSet) {
+  const p = people.find(x => x.id === personId);
+  if (!p) return { count: 0, kinds: [] };
+  let count = 0; const kinds = [];
+  const hiddenKids = (p.children || []).filter(cid => !visibleSet.has(cid));
+  if (hiddenKids.length) { count += hiddenKids.length; kinds.push('children'); }
+  // spouse-side parents (parents-in-law) not in view
+  let hiddenInLaws = 0;
+  const spIds = allSpouseIds(p);
+  for (const sid of spIds) {
+    const sp = people.find(x => x.id === sid);
+    if (!sp) continue;
+    for (const pid of (sp.parents || [])) {
+      if (!visibleSet.has(pid)) { hiddenInLaws++; continue; }
+      // spouse's siblings (the person's siblings-in-law) hidden too?
+      const spParentSet = new Set(sp.parents);
+      for (const q of people) {
+        if (q.id === pid || visibleSet.has(q.id)) continue;
+        if (q.parents && q.parents.some(pp => spParentSet.has(pp))) hiddenInLaws++;
+      }
+    }
+  }
+  if (hiddenInLaws) { count += hiddenInLaws; kinds.push('in-laws'); }
+  return { count, kinds };
 }
 
 function countDescendants(personId) {
