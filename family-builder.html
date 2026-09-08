@@ -1332,6 +1332,34 @@ function getVisiblePeople() {
     }
     addAncestorsAndSiblings(focusPersonId, 0);
 
+    // ── SPOUSES' ANCESTORS (first-degree in-laws) ──
+    // The focus's spouse's parents must be visible even when the anchor is a
+    // blood descendant: with anchor Joseph 1931, Rose's parents (the Craigies)
+    // were never added by the ancestor walk (she's a spouse, not an ancestor),
+    // so they silently dropped out of the Overview render. Add parents of the
+    // focus's spouses — and their other children (the spouse's siblings) — so
+    // the in-law branch renders exactly like the blood branch.
+    const focusSpouseIds = new Set();
+    if (focus.spouseId) focusSpouseIds.add(focus.spouseId);
+    for (const fam of (focus.families || [])) {
+      if (fam.spouseId) focusSpouseIds.add(fam.spouseId);
+    }
+    for (const spId of focusSpouseIds) {
+      const sp = getP(spId);
+      if (!sp || !sp.parents || sp.parents.length === 0) continue;
+      const spParentSet = new Set(sp.parents);
+      for (const pid of sp.parents) {
+        visible.add(pid);
+        // Spouse's siblings (the focus's uncles/aunts by marriage)
+        for (const p of people) {
+          if (p.id === pid) continue;
+          if (p.parents && p.parents.some(ppid => spParentSet.has(ppid))) {
+            visible.add(p.id);
+          }
+        }
+      }
+    }
+
     // ── SPOUSES of all visible people ──
     for (const id of [...visible]) {
       const p = getP(id);
@@ -1825,7 +1853,11 @@ function layoutTree() {
       // ancestor branches never overlap.
       let father = parents.find(pid => (sexOf(pid) === 'M'));
       let mother = parents.find(pid => (sexOf(pid) === 'F'));
-      if (!father) { father = parents[0]; mother = parents[1]; }
+      // Sex-agnostic fallback: if EITHER lookup misses (mis-keyed sex, e.g. a
+      // wife saved with sex='M'), fall back to array order for BOTH — leaving
+      // mother undefined here created a ghost positions entry and dropped the
+      // couple's parent-child line entirely.
+      if (!father || !mother) { father = parents[0]; mother = parents[1]; }
       // Ancestry-style: parents sit ADJACENT over this children row, biased
       // toward their own side: the father's couple shifts left, the mother's
       // right, so the paternal block (his siblings + ancestors) sits left of
@@ -2106,6 +2138,25 @@ function layoutTree() {
 
     // ── 1. Place ancestors going UP from focus ──
     placeAncestors(focusPersonId, focusCenterX, focusGen, visited, 'centre');
+
+    // ── 1b. Place the primary spouse's parent couple (in-law branch) ──
+    // The anchor's ancestor walk covers only the anchor's own parents. When
+    // the anchor is a blood descendant (e.g. Joseph 1931), the spouse's
+    // parents (Rose's Craigies) are visible but never placed — Overview looked
+    // haywire. The spouse card itself is already placed+visited by
+    // placeCoupleUnit, so walk her PARENT couple directly, maternal side.
+    const focusSpouse = spousesInView[0];
+    if (focusSpouse) {
+      const sp = getP(focusSpouse);
+      const spParents = (sp.parents || []).filter(pid => viewSet.has(pid) && !visited.has(pid) && !positions.has(pid));
+      if (spParents.length > 0) {
+        const spPos = positions.get(focusSpouse);
+        const spCenterX = spPos ? spPos.x + CARD_W / 2 : focusCenterX;
+        for (const pid of spParents) {
+          placeAncestors(pid, spCenterX, focusGen - 1, visited, 'right');
+        }
+      }
+    }
 
     // ── 2. Place focus person's extra spouses to the RIGHT of the couple unit ──
     const focusUnitW = coupleUnitW(focusPersonId);
