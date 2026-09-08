@@ -1863,10 +1863,40 @@ function layoutTree() {
         father.parents && father.parents.some(pid => viewSet.has(pid)) &&
         mother.parents && mother.parents.some(pid => viewSet.has(pid)));
       const dualBias = dualInlaw ? (CARD_W + COUPLE_GAP) / 4 : 0;
-      const husbCenter0 = parentRowCenterX - (CARD_W + COUPLE_GAP) / 2 - dualBias;
-      const wifeCenter0 = parentRowCenterX + (CARD_W + COUPLE_GAP) / 2 + dualBias;
-      if (!positions.has(father)) positions.set(father, { x: Math.round(husbCenter0 - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
-      if (!positions.has(mother)) positions.set(mother, { x: Math.round(wifeCenter0 - CARD_W / 2), y: 50 + (gen - 1) * GEN_HEIGHT });
+      // ── Occupation-aware pinning ──
+      // The father's parents and the mother's parents both pin from the same
+      // child-couple centre (parentRowCenterX). If both couples target the same
+      // coords, the per-generation collision pass can't separate them when they
+      // end up on different rows — they stack vertically and read as one merged
+      // 4-card block with crossed family pairing (Lynch couple directly above
+      // the Craigie couple). Fix: before pinning, check the target zone on the
+      // parent row; if occupied, slide this couple in couple-unit steps in the
+      // branch direction until its zone is clear.
+      const parentY = 50 + (gen - 1) * GEN_HEIGHT;
+      const pinUnitW = 2 * CARD_W + COUPLE_GAP + 2 * dualBias;
+      const pinZoneFree = (cx) => {
+        const zl = cx - pinUnitW / 2 - 2, zr = cx + pinUnitW / 2 + 2;
+        for (const [oid, op] of positions) {
+          if (Math.abs(op.y - parentY) > 5) continue;
+          if (oid === father || oid === mother) continue;
+          if (op.x < zr + COUPLE_GAP && op.x + CARD_W + COUPLE_GAP > zl) return false;
+        }
+        return true;
+      };
+      let pinCenter = parentRowCenterX;
+      // Slide direction follows the branch: right-side packs slide right,
+      // left-side slide left, centre tries right first.
+      const slideDir = (side === 'right') ? 1 : (side === 'left') ? -1 : 1;
+      if (!pinZoneFree(pinCenter)) {
+        let probe = pinCenter;
+        let guard = 0;
+        while (!pinZoneFree(probe) && guard < 40) { probe += slideDir * pinUnitW; guard++; }
+        pinCenter = probe;
+      }
+      const husbCenter0 = pinCenter - (CARD_W + COUPLE_GAP) / 2 - dualBias;
+      const wifeCenter0 = pinCenter + (CARD_W + COUPLE_GAP) / 2 + dualBias;
+      if (!positions.has(father)) positions.set(father, { x: Math.round(husbCenter0 - CARD_W / 2), y: parentY });
+      if (!positions.has(mother)) positions.set(mother, { x: Math.round(wifeCenter0 - CARD_W / 2), y: parentY });
       // Father's bloodline packs LEFT, mother's RIGHT — ALWAYS, regardless of
       // which branch this family sits on. The old conditional flipped sides on
       // maternal ('right') branches, which mirrored the paternal grandparents
@@ -3210,7 +3240,9 @@ document.getElementById('gedcomInput').addEventListener('change', async (e) => {
   gedcomFams = result.families || {};
 
   // Auto-focus on best candidate
-  if (people.length > 30) {
+  // Same rule as file load / page boot: never render the no-focus island-walk
+  // layout, it scatters in-law grandparent couples far right of the tree.
+  if (people.length > 0) {
     const best = pickBestFocus();
     if (best) {
       focusPersonId = best.id;
@@ -3329,9 +3361,19 @@ function loadSession(file) {
       people = data.people;
       nextId = data.nextId || Math.max(...people.map(p => p.id)) + 1;
       normalizeRelationships();
-      focusPersonId = null; viewHistory = [];
+      viewHistory = [];
+      // NEVER render the no-focus island-walk layout: it lays out each root
+      // family sequentially without merging shared subtrees, so in-law
+      // grandparent couples (e.g. Joseph 1879 + Catherine, Edward + Mary)
+      // land thousands of px right of the tree. Anchor focus on the person
+      // who connects the most of the tree instead — same rule as page boot.
+      const best = pickBestFocus();
+      focusPersonId = best ? best.id : null;
+      overviewMode = false;
+      if (focusPersonId) document.getElementById('focusBack').classList.add('visible');
       autoSave();
       renderFreeBuild();
+      if (focusPersonId) setTimeout(function() { fitToScreen(); centerOnPerson(focusPersonId); }, 100);
       showToast('Loaded ' + people.length + ' people from file');
     } catch (e) { showToast('Invalid session file'); }
   });
@@ -5146,7 +5188,10 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
   }
 
   // Auto-focus on best candidate if tree is large
-  if (people.length > 30) {
+  // (below 30 people the island-walk is survivable, but in-law couples with
+  // empty children[] backlinks still scatter — anchor focus whenever ANY
+  // candidate exists, large tree or not)
+  if (people.length > 0) {
     const best = pickBestFocus();
     if (best) {
       focusPersonId = best.id;
