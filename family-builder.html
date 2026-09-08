@@ -2683,32 +2683,66 @@ function countHiddenBranchRels(personId, visibleSet) {
   const start = people.find(x => x.id === personId);
   if (!start) return { count: 0, owns: false };
   // Ownership gate: badge only when THIS person's own first-degree
-  // relationships are hidden (own children or own spouse). Ancestors of
-  // that person inherit no badge — Michael & Bridget are fully rendered;
-  // the +N belongs on their descendant whose kids are hidden.
+  // relationships are hidden — children or spouse BELOW, or parents ABOVE.
+  // Upward case (in-law offshoots): the focus spouse's parents' parents
+  // exist in the data but first-degree in-law inclusion stops at the
+  // spouse's parents, so e.g. Martin Bowers owns his hidden parents
+  // James + Lillian. Ancestors of that person inherit no downward badge
+  // (Michael & Bridget fully rendered → no badge); the +N belongs on the
+  // card whose own relationship is hidden.
   const ownHiddenKids = (start.children || []).some(cid => !visibleSet.has(cid));
   const ownHiddenSpouse = allSpouseIds(start).some(sid => !visibleSet.has(sid));
-  if (!ownHiddenKids && !ownHiddenSpouse) return { count: 0, owns: false };
-  // Count TOTAL hidden cards reachable down the branch (descendants + their
-  // spouses) so the number reflects how much tree is behind this card.
-  const seen = new Set([personId]);
+  const ownHiddenParents = (start.parents || []).length > 0 &&
+    (start.parents || []).some(pid => !visibleSet.has(pid));
+  if (!ownHiddenKids && !ownHiddenSpouse && !ownHiddenParents) return { count: 0, owns: false };
+  // Count hidden cards in TWO scoped directions so badges never
+  // cross-contaminate between branches:
+  // DOWN: descendants + their spouses, recursive (existing behaviour —
+  // the branch that continues below this card).
+  // UP: this person's hidden parents + those parents' spouses + their
+  // other children (the hidden grandparent/aunt-uncle generation behind
+  // an in-law marriage, e.g. Martin Bowers' parents James + Lillian).
+  // The up-walk is ONE level deep: deeper generations reveal when the
+  // user re-anchors on the newly shown cards, whose own parents then
+  // badge in that view.
   let count = 0;
-  const stack = [personId];
-  while (stack.length) {
-    const curId = stack.pop();
+  // DOWN walk
+  const seenDown = new Set([personId]);
+  const downStack = [personId];
+  while (downStack.length) {
+    const curId = downStack.pop();
     const cur = people.find(x => x.id === curId);
     if (!cur) continue;
     for (const cid of (cur.children || [])) {
-      if (seen.has(cid)) continue;
-      seen.add(cid);
-      stack.push(cid);
+      if (seenDown.has(cid)) continue;
+      seenDown.add(cid);
+      downStack.push(cid);
       if (!visibleSet.has(cid)) count++;
     }
     for (const sid of allSpouseIds(cur)) {
-      if (seen.has(sid)) continue;
-      seen.add(sid);
-      stack.push(sid);
+      if (seenDown.has(sid)) continue;
+      seenDown.add(sid);
+      downStack.push(sid);
       if (!visibleSet.has(sid)) count++;
+    }
+  }
+  // UP walk (one generation: hidden parents + their other unions/children)
+  const seenUp = new Set([personId]);
+  for (const pid of (start.parents || [])) {
+    if (visibleSet.has(pid)) continue;
+    const par = people.find(x => x.id === pid);
+    if (!par || seenUp.has(pid)) continue;
+    seenUp.add(pid);
+    count++;
+    for (const sid of allSpouseIds(par)) {
+      if (visibleSet.has(sid) || seenUp.has(sid)) continue;
+      seenUp.add(sid);
+      count++;
+    }
+    for (const sibId of (par.children || [])) {
+      if (sibId === personId || visibleSet.has(sibId) || seenUp.has(sibId)) continue;
+      seenUp.add(sibId);
+      count++;
     }
   }
   return { count, owns: true };
