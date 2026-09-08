@@ -3501,13 +3501,13 @@ document.getElementById('gedcomInput').addEventListener('change', async (e) => {
   renderFreeBuild();
   showToast('Imported ' + people.length + ' people');
 
-  // Auto-fit and center on focus person
-  if (focusPersonId) {
-    setTimeout(function() {
-      fitToScreen();
-      centerOnPerson(focusPersonId);
-    }, 200);
-  }
+  // Upload view: 82% zoom centred on the focus/anchor card (the 0,0 person).
+  // fitToScreen() squeezes whole large trees to ant size — fixed 82% keeps
+  // cards readable and centres on the anchor instead of the full bounds.
+  setTimeout(function() {
+    setZoom(0.82);
+    if (focusPersonId) centerOnPerson(focusPersonId);
+  }, 200);
 });
 
 // ═══════════════════════════════════════════════════════════════
@@ -3619,7 +3619,11 @@ function loadSession(file) {
       if (focusPersonId) document.getElementById('focusBack').classList.add('visible');
       autoSave();
       renderFreeBuild();
-      if (focusPersonId) setTimeout(function() { fitToScreen(); centerOnPerson(focusPersonId); }, 100);
+      // Upload view: 82% zoom centred on the focus card (see GEDCOM import)
+      setTimeout(function() {
+        setZoom(0.82);
+        if (focusPersonId) centerOnPerson(focusPersonId);
+      }, 100);
       showToast('Loaded ' + people.length + ' people from file');
     } catch (e) { showToast('Invalid session file'); }
   });
@@ -5536,13 +5540,11 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
   document.getElementById('zoomLevel').textContent = Math.round(zoom * 100) + '%';
   renderFreeBuild();
 
-  // Auto-center on focus person and fit to screen
-  if (focusPersonId) {
-    setTimeout(function() {
-      fitToScreen();
-      centerOnPerson(focusPersonId);
-    }, 100);
-  }
+  // Restore view: 82% zoom centred on the focus card (see GEDCOM import)
+  setTimeout(function() {
+    setZoom(0.82);
+    if (focusPersonId) centerOnPerson(focusPersonId);
+  }, 100);
 })();
 </script>
 <!-- Privacy Modal -->
