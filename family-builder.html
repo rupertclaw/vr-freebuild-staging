@@ -2598,7 +2598,7 @@ function renderFreeBuild() {
     if (!collapsedPeople.has(person.id)) {
       const viewSet = new Set(viewPeople.map(v => v.id));
       const hidden = countHiddenBranchRels(person.id, viewSet);
-      if (hidden.count > 0) {
+      if (hidden.owns && hidden.count > 0) {
         h += '<div class="branch-badge" title="' + hidden.count + ' hidden card' + (hidden.count > 1 ? 's' : '') + ' in this branch — click to open it">🌿 +' + hidden.count + '</div>';
       }
     }
@@ -2661,7 +2661,16 @@ function toggleCollapse(personId) {
 // Used for the 🌿 branch indicator.
 function countHiddenBranchRels(personId, visibleSet) {
   const start = people.find(x => x.id === personId);
-  if (!start) return { count: 0, kinds: [] };
+  if (!start) return { count: 0, owns: false };
+  // Ownership gate: badge only when THIS person's own first-degree
+  // relationships are hidden (own children or own spouse). Ancestors of
+  // that person inherit no badge — Michael & Bridget are fully rendered;
+  // the +N belongs on their descendant whose kids are hidden.
+  const ownHiddenKids = (start.children || []).some(cid => !visibleSet.has(cid));
+  const ownHiddenSpouse = allSpouseIds(start).some(sid => !visibleSet.has(sid));
+  if (!ownHiddenKids && !ownHiddenSpouse) return { count: 0, owns: false };
+  // Count TOTAL hidden cards reachable down the branch (descendants + their
+  // spouses) so the number reflects how much tree is behind this card.
   const seen = new Set([personId]);
   let count = 0;
   const stack = [personId];
@@ -2669,14 +2678,12 @@ function countHiddenBranchRels(personId, visibleSet) {
     const curId = stack.pop();
     const cur = people.find(x => x.id === curId);
     if (!cur) continue;
-    // children (and their descendants transitively via the stack)
     for (const cid of (cur.children || [])) {
       if (seen.has(cid)) continue;
       seen.add(cid);
       stack.push(cid);
       if (!visibleSet.has(cid)) count++;
     }
-    // spouses of everyone in the walked subtree
     for (const sid of allSpouseIds(cur)) {
       if (seen.has(sid)) continue;
       seen.add(sid);
@@ -2684,7 +2691,7 @@ function countHiddenBranchRels(personId, visibleSet) {
       if (!visibleSet.has(sid)) count++;
     }
   }
-  return { count, kinds: count > 0 ? ['hidden'] : [] };
+  return { count, owns: true };
 }
 
 function countDescendants(personId) {
