@@ -1754,8 +1754,12 @@ function layoutTree() {
     // at the inner edge); on the maternal branch ('right') they sit RIGHT.
     // Neutral branches keep plain birth-order packing.
     let packOrder = allChildren.slice();
-    if (side === 'left') packOrder = [...allChildren.filter(x => x !== personId), personId];
-    if (side === 'right') packOrder = [personId, ...allChildren.filter(x => x !== personId)];
+    // Sided branches keep the FULL birth-order run intact (oldest → youngest
+    // left→right on both sides): the direct-line person keeps its natural
+    // slot inside the run. The old code pinned the direct line at the inner
+    // edge, which split the run whenever the direct line wasn't the extreme
+    // sibling (e.g. anchor Jolene 1984 rendered Lloyd 1982 to her right).
+    // The group still hugs the inner edge — see the walk below.
 
     // For focus person, leave space to the RIGHT of their unit for extra spouses
     let focusExtra = 0;
@@ -1786,62 +1790,69 @@ function layoutTree() {
     // scope, not inside the else branch (ReferenceError there killed the
     // whole render for any focused person with 2+ spouses).
     let cursor = rowLeft;
-    if (side === 'left' || side === 'right') {
-      const sibs = packOrder.filter(s => s !== personId);
-      const totalSibsW = sibs.reduce((s, cid) => {
-        const i = allChildren.indexOf(cid);
-        return s + (visited.has(cid) ? 0 : slotWidths[i]) + SIB_GAP;
-      }, -SIB_GAP);
-      const isLeft = side === 'left';
-      // tight inner edge = the direct-line COUPLE UNIT edge (not the whole
-      // reserved slot: the slot also reserves space for descendants hanging
-      // the other way, which would leave a dead hole between the sibling
-      // group and the family centre).
-      // Direct-line unit span from ACTUAL placed cards (person + adjacent
-      // primary spouse). A visited direct-line person has a 0-width slot,
-      // but the real couple unit still occupies space — hugging the lone
-      // card CENTRE made siblings overlap the couple, forcing the collision
-      // pass to shove the couple sideways every render.
-      const myPosU = positions.get(personId);
-      if (myPosU) {
-        myUnitLeft = myPosU.x;
-        myUnitRight = myPosU.x + CARD_W;
-        const primSp = getP(personId)?.spouseId;
-        if (primSp && viewSet.has(primSp) && positions.has(primSp)) {
-          const spPosU = positions.get(primSp);
-          if (Math.abs(spPosU.y - myPosU.y) < 2 &&
-              (Math.abs(spPosU.x - (myUnitRight + COUPLE_GAP)) <= 2 || Math.abs((spPosU.x + CARD_W + COUPLE_GAP) - myUnitLeft) <= 2)) {
-            myUnitLeft = Math.min(myUnitLeft, spPosU.x);
-            myUnitRight = Math.max(myUnitRight, spPosU.x + CARD_W);
-          }
+    // ── Unified sibling packing (ALL branch sides: left / right / centre) ──
+    // The full birth-order run stays intact around the direct-line person's
+    // ACTUAL placed unit (person + adjacent primary spouse). Older sibs hang
+    // LEFT of the unit (placed in reverse birth order, so the row still reads
+    // oldest → youngest toward the direct line); younger sibs hang RIGHT in
+    // birth order. The direct line keeps its natural slot inside the run.
+    // Sibling slots never enter the direct-line couple's real span, so the
+    // collision pass has nothing to shove — this fixes anchor-with-spouse
+    // ordering (Lloyd 1982 must sit LEFT of anchor Jolene 1984 + her spouse,
+    // not get shoved to the couple's far side by collision resolution).
+    // Direct-line unit span from ACTUAL placed cards (person + adjacent
+    // primary spouse). A visited direct-line person has a 0-width slot,
+    // but the real couple unit still occupies space — hugging the lone
+    // card CENTRE made siblings overlap the couple, forcing the collision
+    // pass to shove the couple sideways every render.
+    const myPosU = positions.get(personId);
+    if (myPosU) {
+      myUnitLeft = myPosU.x;
+      myUnitRight = myPosU.x + CARD_W;
+      const primSp = getP(personId)?.spouseId;
+      if (primSp && viewSet.has(primSp) && positions.has(primSp)) {
+        const spPosU = positions.get(primSp);
+        if (Math.abs(spPosU.y - myPosU.y) < 2 &&
+            (Math.abs(spPosU.x - (myUnitRight + COUPLE_GAP)) <= 2 || Math.abs((spPosU.x + CARD_W + COUPLE_GAP) - myUnitLeft) <= 2)) {
+          myUnitLeft = Math.min(myUnitLeft, spPosU.x);
+          myUnitRight = Math.max(myUnitRight, spPosU.x + CARD_W);
         }
-      } else {
-        const myUnitW = Math.min(coupleUnitW(personId), slotWidths[myIndex]);
-        myUnitLeft = Math.round(centerX - myUnitW / 2);
-        myUnitRight = myUnitLeft + myUnitW;
-      }
-      myUnitLeft = Math.round(myUnitLeft);
-      myUnitRight = Math.round(myUnitRight);
-      let cur = isLeft ? myUnitLeft - totalSibsW : myUnitRight + SIB_GAP;
-      for (const sibId of sibs) {
-        const i = allChildren.indexOf(sibId);
-        const w = slotWidths[i];
-        if (!visited.has(sibId) && viewSet.has(sibId) && w > 0) {
-          visited.add(sibId);
-          placeSiblingUnit(sibId, cur, w, gen, visited);
-        }
-        cur += (isLeft ? 1 : 1) * (w + SIB_GAP);
       }
     } else {
-      for (const sibId of packOrder) {
-        const i = allChildren.indexOf(sibId);
-        const w = slotWidths[i];
-        if (sibId !== personId && !visited.has(sibId) && viewSet.has(sibId) && w > 0) {
-          visited.add(sibId);
-          placeSiblingUnit(sibId, cursor, w, gen, visited);
-        }
-        cursor += w + SIB_GAP;
+      const myUnitW = Math.min(coupleUnitW(personId), slotWidths[myIndex]);
+      myUnitLeft = Math.round(centerX - myUnitW / 2);
+      myUnitRight = myUnitLeft + myUnitW;
+    }
+    myUnitLeft = Math.round(myUnitLeft);
+    myUnitRight = Math.round(myUnitRight);
+    const sibs = packOrder.filter(s => s !== personId);
+    // Younger run: right of the direct-line unit, birth order. cursor ends
+    // after the younger run — the focus-extra-spouses block below appends
+    // there, so extra spouses never land on a sibling.
+    cursor = myUnitRight + SIB_GAP;
+    for (const sibId of sibs) {
+      const i = allChildren.indexOf(sibId);
+      if (i <= myIndex) continue;
+      const w = slotWidths[i];
+      if (!visited.has(sibId) && viewSet.has(sibId) && w > 0) {
+        visited.add(sibId);
+        placeSiblingUnit(sibId, cursor, w, gen, visited);
       }
+      cursor += w + SIB_GAP;
+    }
+    // Older run: left of the direct-line unit, reverse birth order (the
+    // run still reads oldest→youngest toward the direct line).
+    let curL = myUnitLeft - SIB_GAP;
+    for (let ri = sibs.length - 1; ri >= 0; ri--) {
+      const sibId = sibs[ri];
+      const i = allChildren.indexOf(sibId);
+      if (i >= myIndex) continue;
+      const w = slotWidths[i];
+      if (!visited.has(sibId) && viewSet.has(sibId) && w > 0) {
+        visited.add(sibId);
+        placeSiblingUnit(sibId, curL - w, w, gen, visited);
+      }
+      curL -= (w + SIB_GAP);
     }
 
     // Focus extra spouses appended to the right of the row
