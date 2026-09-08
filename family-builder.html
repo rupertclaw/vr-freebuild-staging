@@ -1826,33 +1826,67 @@ function layoutTree() {
     myUnitLeft = Math.round(myUnitLeft);
     myUnitRight = Math.round(myUnitRight);
     const sibs = packOrder.filter(s => s !== personId);
-    // Younger run: right of the direct-line unit, birth order. cursor ends
-    // after the younger run — the focus-extra-spouses block below appends
-    // there, so extra spouses never land on a sibling.
+    // ── Sided branches (left = paternal, right = maternal) ──
+    // ALL siblings pack to the OUTER side of the direct-line person, in birth
+    // order, hugging the actual couple-unit edge. This keeps each ancestral
+    // super-branch on its own side of the focus-parents' centre line: maternal
+    // siblings (e.g. Margaret Craigie's sons Robert/Peter) never spill across
+    // the paternal boundary, and paternal siblings never spill right. The old
+    // unified walk hung older-than-anchor siblings LEFT on every side, which
+    // walked maternal siblings across into paternal territory.
+    // ── Centre branch (focus row) keeps the birth-order run ──
+    // Older sibs LEFT in reverse birth order, younger sibs RIGHT in birth
+    // order, run intact around the direct-line couple unit (the Lloyd/Jolene
+    // birth-order fix — the anchor row is a single family, no branch sides).
     cursor = myUnitRight + SIB_GAP;
-    for (const sibId of sibs) {
-      const i = allChildren.indexOf(sibId);
-      if (i <= myIndex) continue;
-      const w = slotWidths[i];
-      if (!visited.has(sibId) && viewSet.has(sibId) && w > 0) {
-        visited.add(sibId);
-        placeSiblingUnit(sibId, cursor, w, gen, visited);
+    if (side === 'left' || side === 'right') {
+      // Outer-side packing: birth order walking outward from the inner edge.
+      // 'right' → siblings start at myUnitRight + GAP walking right;
+      // 'left'  → siblings END at myUnitLeft - GAP walking left.
+      let curOut = (side === 'right') ? myUnitRight + SIB_GAP : myUnitLeft - SIB_GAP;
+      for (const sibId of sibs) {
+        const i = allChildren.indexOf(sibId);
+        const w = slotWidths[i];
+        if (!visited.has(sibId) && viewSet.has(sibId) && w > 0) {
+          visited.add(sibId);
+          if (side === 'right') {
+            placeSiblingUnit(sibId, curOut, w, gen, visited);
+          } else {
+            placeSiblingUnit(sibId, curOut - w, w, gen, visited);
+          }
+        }
+        curOut += (side === 'right') ? (w + SIB_GAP) : -(w + SIB_GAP);
       }
-      cursor += w + SIB_GAP;
-    }
-    // Older run: left of the direct-line unit, reverse birth order (the
-    // run still reads oldest→youngest toward the direct line).
-    let curL = myUnitLeft - SIB_GAP;
-    for (let ri = sibs.length - 1; ri >= 0; ri--) {
-      const sibId = sibs[ri];
-      const i = allChildren.indexOf(sibId);
-      if (i >= myIndex) continue;
-      const w = slotWidths[i];
-      if (!visited.has(sibId) && viewSet.has(sibId) && w > 0) {
-        visited.add(sibId);
-        placeSiblingUnit(sibId, curL - w, w, gen, visited);
+      // cursor stays after the (empty) younger run; sided branches never have
+      // focus-extra spouses — focus is always the 'centre' walk.
+    } else {
+      // Younger run: right of the direct-line unit, birth order. cursor ends
+      // after the younger run — the focus-extra-spouses block below appends
+      // there, so extra spouses never land on a sibling.
+      for (const sibId of sibs) {
+        const i = allChildren.indexOf(sibId);
+        if (i <= myIndex) continue;
+        const w = slotWidths[i];
+        if (!visited.has(sibId) && viewSet.has(sibId) && w > 0) {
+          visited.add(sibId);
+          placeSiblingUnit(sibId, cursor, w, gen, visited);
+        }
+        cursor += w + SIB_GAP;
       }
-      curL -= (w + SIB_GAP);
+      // Older run: left of the direct-line unit, reverse birth order (the
+      // run still reads oldest→youngest toward the direct line).
+      let curL = myUnitLeft - SIB_GAP;
+      for (let ri = sibs.length - 1; ri >= 0; ri--) {
+        const sibId = sibs[ri];
+        const i = allChildren.indexOf(sibId);
+        if (i >= myIndex) continue;
+        const w = slotWidths[i];
+        if (!visited.has(sibId) && viewSet.has(sibId) && w > 0) {
+          visited.add(sibId);
+          placeSiblingUnit(sibId, curL - w, w, gen, visited);
+        }
+        curL -= (w + SIB_GAP);
+      }
     }
 
     // Focus extra spouses appended to the right of the row
