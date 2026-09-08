@@ -1853,11 +1853,16 @@ function layoutTree() {
       // ancestor branches never overlap.
       let father = parents.find(pid => (sexOf(pid) === 'M'));
       let mother = parents.find(pid => (sexOf(pid) === 'F'));
-      // Sex-agnostic fallback: if EITHER lookup misses (mis-keyed sex, e.g. a
-      // wife saved with sex='M'), fall back to array order for BOTH — leaving
-      // mother undefined here created a ghost positions entry and dropped the
-      // couple's parent-child line entirely.
-      if (!father || !mother) { father = parents[0]; mother = parents[1]; }
+      // Deterministic per-parent fallback (family-chart lesson: a missing or
+      // wrong sex value must degrade to 'wrong side', never to undefined).
+      // If the sex lookups collide (both found the same person) or one misses,
+      // assign by array order: parents[0] takes the father slot (left),
+      // parents[1] the mother slot (right). A couple whose sex values are
+      // swapped shows mirrored but structurally intact — no ghost entries,
+      // no dropped connector lines.
+      if (!father && !mother) { father = parents[0]; mother = parents[1]; }
+      else if (!father) { father = parents.find(pid => pid !== mother) || parents[0]; }
+      else if (!mother) { mother = parents.find(pid => pid !== father) || parents[1]; }
       // Ancestry-style: parents sit ADJACENT over this children row, biased
       // toward their own side: the father's couple shifts left, the mother's
       // right, so the paternal block (his siblings + ancestors) sits left of
@@ -3484,6 +3489,11 @@ function openPrintDialog() {
 
 function autoSave() {
   try {
+    // Save-time integrity: guarantee every persisted snapshot is bidirectional
+    // (both directions of every parent/child/sibling/spouse link), so saves
+    // are self-consistent and load-time normalizeRelationships stays a net,
+    // not a repair shop.
+    syncRelationships();
     const data = JSON.stringify({ people, nextId });
     localStorage.setItem(STORAGE_KEY, data);
     // Also write to legacy key so data-tree (pedigree) can pick it up
@@ -3568,6 +3578,82 @@ function initDefault() {
 //     (only when the child has a free parent slot, max 2)
 //  3. Two people who share >= 1 child AND both lack a spouseId → marry them
 // Runs on every restore/import. Safe to run repeatedly (idempotent).
+// Save-time relationship integrity. Runs inside autoSave() so every persisted
+// snapshot (localStorage + downloaded .familytree) is fully bidirectional.
+// family-chart principle: don't repair on load, never write one side. The
+// mutation functions already write both directions; this is the belt to the
+// normalize-on-load braces. Cheap (62 people → ~200 comparisons), idempotent.
+function syncRelationships() {
+  let fixes = 0;
+  for (const p of people) {
+    p.parents = p.parents || [];
+    p.children = p.children || [];
+    p.siblingIds = p.siblingIds || [];
+    p.families = p.families || [];
+  }
+  for (const child of people) {
+    // parent side: child.parents → parent.children
+    for (const pid of child.parents) {
+      const parent = people.find(x => x.id === pid);
+      if (parent && !parent.children.includes(child.id)) {
+        parent.children.push(child.id);
+        fixes++;
+      }
+    }
+    // child side: parent.children → child.parents
+    for (const parent of people) {
+      if (!parent.children.includes(child.id)) continue;
+      if (!child.parents.includes(parent.id) && child.parents.length < 2) {
+        child.parents.push(parent.id);
+        fixes++;
+      }
+    }
+    // dangling parent ids (deleted person, corrupt import) — drop them
+    child.parents = child.parents.filter(pid => people.some(x => x.id === pid));
+    // dangling child ids
+    child.children = child.children.filter(cid => people.some(x => x.id === cid));
+  }
+  // sibling symmetry
+  for (const p of people) {
+    p.siblingIds = p.siblingIds.filter(sid => people.some(x => x.id === sid));
+    for (const sid of p.siblingIds) {
+      const sib = people.find(x => x.id === sid);
+      if (sib && !sib.siblingIds.includes(p.id)) { sib.siblingIds.push(p.id); fixes++; }
+    }
+  }
+  // spouse symmetry: every spouse pointer must have a mirror. Primary
+  // spouseId mirrors into the partner; families[] entries mirror as families
+  // entries (GEDCOM-style remarriage records live on both sides).
+  for (const p of people) {
+    if (p.spouseId && !people.some(x => x.id === p.spouseId)) { p.spouseId = null; p.spouseName = ''; fixes++; }
+    if (p.spouseId) {
+      const sp = people.find(x => x.id === p.spouseId);
+      if (sp && sp.spouseId !== p.id) {
+        // partner's primary slot busy with someone else? demote to families entry
+        if (sp.spouseId && sp.spouseId !== p.id) {
+          sp.families = sp.families || [];
+          if (!sp.families.some(f => f.spouseId === p.id)) sp.families.push({ spouseId: p.id, spouseName: p.name, marriageDate: '' });
+          fixes++;
+        } else {
+          sp.spouseId = p.id; sp.spouseName = p.name; fixes++;
+        }
+      }
+    }
+    for (const f of p.families) {
+      if (f.spouseId && !people.some(x => x.id === f.spouseId)) { f.spouseId = null; fixes++; continue; }
+      if (!f.spouseId) continue;
+      const sp = people.find(x => x.id === f.spouseId);
+      if (sp && sp.spouseId !== p.id && !(sp.families || []).some(pf => pf.spouseId === p.id)) {
+        sp.families = sp.families || [];
+        sp.families.push({ spouseId: p.id, spouseName: p.name, marriageDate: f.marriageDate || '' });
+        fixes++;
+      }
+    }
+    p.families = p.families.filter(f => f.spouseId);
+  }
+  return fixes;
+}
+
 function normalizeRelationships() {
   let fixes = 0;
   for (const p of people) {
