@@ -182,7 +182,7 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .fb-card.selected { box-shadow: 0 0 0 3px #38bdf8, 0 2px 8px rgba(56,189,248,0.3); }
 .fb-card .leaf-badge:hover { background: #d4e4c8; }
 .fb-card .branch-badge {
-  position: absolute; top: 2px; right: 2px;
+  position: absolute; bottom: 2px; right: 2px;
   font-family: 'Cormorant Garamond', serif; font-size: 9px;
   background: #eaf3e6; border: 1px solid #5a8a4a; border-radius: 8px;
   color: #2f5522; padding: 1px 5px; line-height: 1.2;
@@ -2599,8 +2599,7 @@ function renderFreeBuild() {
       const viewSet = new Set(viewPeople.map(v => v.id));
       const hidden = countHiddenBranchRels(person.id, viewSet);
       if (hidden.count > 0) {
-        const label = hidden.kinds.join(' + ');
-        h += '<div class="branch-badge" title="Leads to another branch: ' + hidden.count + ' ' + label + ' not shown. Click the card to open this branch.">🌿 +' + hidden.count + '</div>';
+        h += '<div class="branch-badge" title="' + hidden.count + ' hidden card' + (hidden.count > 1 ? 's' : '') + ' in this branch — click to open it">🌿 +' + hidden.count + '</div>';
       }
     }
     if (person.docs && person.docs.length) {
@@ -2655,34 +2654,37 @@ function toggleCollapse(personId) {
 }
 
 // Hidden-branch detector: does this person anchor a family line that is NOT
-// rendered in the current view? Counts children and spouse-side parents that
-// the current view omits (e.g. an aunt's children in Overview: the view shows
-// the aunt but not her descendants, since the descendant walk only covers the
-// focus's own siblings' kids). Used for the 🌿 branch indicator.
+// rendered in the current view? Counts the TOTAL number of cards reachable
+// from this person (descendants via children, plus each descendant's spouses)
+// that the current view omits. E.g. an aunt in Overview whose daughter,
+// the daughter's husband and their two kids are all hidden → badge +4.
+// Used for the 🌿 branch indicator.
 function countHiddenBranchRels(personId, visibleSet) {
-  const p = people.find(x => x.id === personId);
-  if (!p) return { count: 0, kinds: [] };
-  let count = 0; const kinds = [];
-  const hiddenKids = (p.children || []).filter(cid => !visibleSet.has(cid));
-  if (hiddenKids.length) { count += hiddenKids.length; kinds.push('children'); }
-  // spouse-side parents (parents-in-law) not in view
-  let hiddenInLaws = 0;
-  const spIds = allSpouseIds(p);
-  for (const sid of spIds) {
-    const sp = people.find(x => x.id === sid);
-    if (!sp) continue;
-    for (const pid of (sp.parents || [])) {
-      if (!visibleSet.has(pid)) { hiddenInLaws++; continue; }
-      // spouse's siblings (the person's siblings-in-law) hidden too?
-      const spParentSet = new Set(sp.parents);
-      for (const q of people) {
-        if (q.id === pid || visibleSet.has(q.id)) continue;
-        if (q.parents && q.parents.some(pp => spParentSet.has(pp))) hiddenInLaws++;
-      }
+  const start = people.find(x => x.id === personId);
+  if (!start) return { count: 0, kinds: [] };
+  const seen = new Set([personId]);
+  let count = 0;
+  const stack = [personId];
+  while (stack.length) {
+    const curId = stack.pop();
+    const cur = people.find(x => x.id === curId);
+    if (!cur) continue;
+    // children (and their descendants transitively via the stack)
+    for (const cid of (cur.children || [])) {
+      if (seen.has(cid)) continue;
+      seen.add(cid);
+      stack.push(cid);
+      if (!visibleSet.has(cid)) count++;
+    }
+    // spouses of everyone in the walked subtree
+    for (const sid of allSpouseIds(cur)) {
+      if (seen.has(sid)) continue;
+      seen.add(sid);
+      stack.push(sid);
+      if (!visibleSet.has(sid)) count++;
     }
   }
-  if (hiddenInLaws) { count += hiddenInLaws; kinds.push('in-laws'); }
-  return { count, kinds };
+  return { count, kinds: count > 0 ? ['hidden'] : [] };
 }
 
 function countDescendants(personId) {
