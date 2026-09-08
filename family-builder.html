@@ -1241,7 +1241,24 @@ function parseGedcom(text) {
       if (aYear && bYear) return parseInt(aYear[0]) - parseInt(bYear[0]);
       if (aYear) return -1;  // dated marriage comes before undated
       if (bYear) return 1;
-      return 0;  // both undated, keep file order
+      // Both undated: prefer the marriage that produced children — the
+      // lineal line (Ancestry treats the child-bearing marriage as the
+      // primary union). Keeps a parent anchored beside the spouse they
+      // actually had kids with, instead of a childless first marriage
+      // winning by file order (Karen's mother placed beside her first
+      // husband, disconnected from the father on the canvas).
+      // family entries carry famId (raw GEDCOM xref); resolve children of
+      // that union via gedcomFams + xrefMap.
+      const famKids = (famEntry) => {
+        const raw = famEntry && famEntry.famId ? fams[famEntry.famId] : null;
+        if (!raw) return new Set();
+        return new Set((raw.children || []).map(cx => xrefMap[cx]).filter(Boolean));
+      };
+      const aKids = famKids(a), bKids = famKids(b);
+      const aHas = (p.children || []).some(cid => aKids.has(cid));
+      const bHas = (p.children || []).some(cid => bKids.has(cid));
+      if (aHas !== bHas) return aHas ? -1 : 1;
+      return 0;  // still ambiguous, keep file order
     });
     // Set spouseId and marriageDate from earliest marriage
     const earliest = p.families[0];
@@ -2492,7 +2509,10 @@ function layoutTree() {
     const barX2 = Math.max(...childPts.map(c => c.x), parentMidX);
     let guard = 0;
     const floorY = parentBottomY + 2;
-    const collides = () => placedBars.some(b => Math.abs(b.y - midY) < 10 && barX1 < b.x2 - 2 && b.x1 < barX2 - 2);
+    // Endpoint-touching bars must stagger too: two buses that merely share an
+    // end x render collinear and read as ONE merged line (Karen's parent bus
+    // visually swallowing into the Andrews in-law bus). Pad by +2.
+    const collides = () => placedBars.some(b => Math.abs(b.y - midY) < 10 && barX1 < b.x2 + 2 && b.x1 < barX2 + 2);
     // Prefer nudging UP toward the parents: an upper bus never crosses the
     // other family's parent→bar drop verticals, and a right-side marriage's
     // bus rising above the first marriage's reads clearly as a separate union.
