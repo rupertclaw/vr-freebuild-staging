@@ -3221,6 +3221,13 @@ function pickBestFocus() {
     return p.parents.length + p.parents.reduce((s, pid) => s + countAncestors(pid, depth + 1), 0);
   }
   let best = null, bestScore = -1;
+  // The 'you' card is the natural centre of the user's own tree: anchoring
+  // Overview on whoever won the score lottery (e.g. Joseph 1931) put Rose
+  // Craigie left of Joseph and his brothers left of Moira — a layout the
+  // user reads as wrong. When a 'you' person exists (with parents, so the
+  // 3-gen view works), they win outright.
+  const youPerson = people.find(p => p.isYou || p.status === 'you');
+  if (youPerson && youPerson.parents && youPerson.parents.length > 0) return youPerson;
   for (const p of people) {
     if (!p.parents || p.parents.length === 0) continue;
     const ancestors = countAncestors(p.id, 0);
