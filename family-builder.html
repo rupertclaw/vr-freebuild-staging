@@ -3107,13 +3107,33 @@ function fbAddSpouse() {
     // owns the pointer.
   }
 
+  // Adoption rule (family-chart behaviour): children of `person` with no
+  // second parent recorded become children of the new spouse too. Without
+  // this, adding the mother AFTER her kids exist leaves them recorded as
+  // the father's children only — the connector pass then draws separate
+  // buses (father-only kids from his card, couple kids from the midpoint)
+  // and the family reads split. Kids who already have a second parent are
+  // left alone (real half-siblings / prior marriages).
+  let adopted = 0;
+  for (const cid of (person.children || [])) {
+    const child = people.find(x => x.id === cid);
+    if (!child || (child.parents || []).length >= 2) continue;
+    if ((child.parents || []).includes(newSpouse.id)) continue;
+    if (!child.parents) child.parents = [];
+    child.parents.push(newSpouse.id);
+    if (!newSpouse.children) newSpouse.children = [];
+    if (!newSpouse.children.includes(child.id)) newSpouse.children.push(child.id);
+    adopted++;
+  }
+
   autoSave();
   closeDetail();
   renderFreeBuild();
   setTimeout(() => openDetail(newSpouse), 100);
-  showToast(existingSpouses.length === 0
+  showToast((existingSpouses.length === 0
     ? 'Added spouse for ' + person.name
-    : 'Added second spouse for ' + person.name);
+    : 'Added second spouse for ' + person.name)
+    + (adopted > 0 ? ' — also parent of ' + adopted + ' existing child' + (adopted > 1 ? 'ren' : '') : ''));
 }
 
 // ── CO-PARENT PICKER (Ancestry-style) ──
