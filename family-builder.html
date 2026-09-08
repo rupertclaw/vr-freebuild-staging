@@ -1897,12 +1897,16 @@ function layoutTree() {
       const wifeCenter0 = pinCenter + (CARD_W + COUPLE_GAP) / 2 + dualBias;
       if (!positions.has(father)) positions.set(father, { x: Math.round(husbCenter0 - CARD_W / 2), y: parentY });
       if (!positions.has(mother)) positions.set(mother, { x: Math.round(wifeCenter0 - CARD_W / 2), y: parentY });
-      // Father's bloodline packs LEFT, mother's RIGHT — ALWAYS, regardless of
-      // which branch this family sits on. The old conditional flipped sides on
-      // maternal ('right') branches, which mirrored the paternal grandparents
-      // across the family whenever the focus was a maternal descendant.
-      const fatherSide = 'left';
-      const motherSide = 'right';
+      // Graeme's rule: the whole PATERNAL super-branch (everything above the
+      // focus's father, INCLUDING the paternal grandmother's parents — e.g.
+      // Edward Lynch + Mary Graham) packs LEFT of the focus-parents' centre
+      // line; the whole MATERNAL super-branch (e.g. Andrew Craigie + Agnes)
+      // packs RIGHT. Side is decided once at the branch point (father's walk
+      // → 'left', mother's walk → 'right') and inherited unchanged by every
+      // ancestor recursion below it — an in-law spouse's ancestors follow the
+      // branch their marriage sits in, not the spouse's own sex.
+      const fatherSide = (side === 'centre') ? 'left' : side;
+      const motherSide = (side === 'centre') ? 'right' : side;
       // Bias pushes the OUTER parent further out (father on paternal/left
       // branch, mother on maternal/right) and keeps the inner parent in place.
       // The previous logic was inverted — it pushed the inner parent outward,
