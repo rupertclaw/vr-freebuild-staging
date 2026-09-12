@@ -9,4 +9,5 @@
 node_modules/
 
 # Local dev artifacts
-*.log
+*.logtest_cdp.py
+test_remarriage.py
