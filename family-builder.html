@@ -2175,21 +2175,17 @@ function layoutTree() {
       // parent's side (Ancestry-style) so families sit left/right and their
       // connector buses can never merge. Single marriage keeps the
       // couple-midpoint hang.
-      let anchorX;
-      if (fams.length > 1 && spousePos) {
-        // Ancestry-style: children hang under the parent whose card they
-        // belong to, NOT the midpoint (a wedged card would skew it).
-        const midOfUs = (Math.min(myPos.x, spousePos.x) + Math.max(myPos.x, spousePos.x) + CARD_W) / 2;
-        const kidAvg = kids.reduce((s, cid) => { const cp = positions.get(cid); return cp ? s + cp.x + CARD_W / 2 : s; }, 0) / Math.max(1, kids.filter(cid => positions.get(cid)).length);
-        anchorX = Math.abs(myPos.x + CARD_W / 2 - kidAvg) <= Math.abs(spousePos.x + CARD_W / 2 - kidAvg)
-          ? myPos.x + CARD_W / 2
-          : spousePos.x + CARD_W / 2;
-        void midOfUs;
-      } else if (spousePos) {
-        anchorX = (Math.min(myPos.x, spousePos.x) + Math.max(myPos.x, spousePos.x) + CARD_W) / 2;
-      } else {
-        anchorX = myPos.x + CARD_W / 2;
-      }
+      // Multi-marriage: anchor each marriage's children under THAT marriage's
+      // couple-unit midpoint (Ancestry-style: each family hangs under its own
+      // couple). Deterministic — on fresh GEDCOM re-import the children have
+      // no positions yet when this runs, so the old kidAvg nearest-parent
+      // heuristic always computed 0: every marriage's row anchored to the
+      // same parent's card and the rows interleaved with crossing buses.
+      // A card wedged between the couple only affects the DRAWN drop point,
+      // which the connector pass already resolves to the nearest clear parent.
+      const anchorX = spousePos
+        ? (Math.min(myPos.x, spousePos.x) + Math.max(myPos.x, spousePos.x) + CARD_W) / 2
+        : myPos.x + CARD_W / 2;
       let cursor = anchorX - totalChildrenW / 2;
       // Multiple marriages of one person: keep each marriage's children row
         // clear of the previous marriage's row.
