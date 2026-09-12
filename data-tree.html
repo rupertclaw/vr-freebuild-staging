@@ -5820,9 +5820,18 @@ function toggleDarkMode() {
 
 // Save tree to localStorage (for Tree menu Save button)
 function saveTreeToStorage() {
-  localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
-  // Also write to family builder key for cross-page sync
-  localStorage.setItem('vr_freebuild_data_v1', JSON.stringify({people: people, nextId: nextId}));
+  // Don't overwrite the shared localStorage keys with placeholder-only data.
+  // If pedigree has no real named people (just the skeleton), writing to
+  // localStorage would wipe family-builder's real data on the return trip.
+  const hasRealPeople = people.some(p => {
+    const n = (p.name || '').trim();
+    return n && n !== 'Name' && n !== 'You' && p.status !== 'blank';
+  });
+  if (hasRealPeople) {
+    localStorage.setItem('familytree_data_v5', JSON.stringify({people: people, nextId: nextId}));
+    // Also write to family builder key for cross-page sync
+    localStorage.setItem('vr_freebuild_data_v1', JSON.stringify({people: people, nextId: nextId}));
+  }
   if (currentTreeId) saveTreeData(currentTreeId, { people, nextId, visibleMaxGen });
   showToast('Tree saved');
 }
