@@ -180,11 +180,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   font-size: 14px; color: var(--text-tagline); font-weight: 700;
   letter-spacing: 2px; margin-top: 3px;
 }
-.header-pagename {
-  font-family: 'Cormorant Garamond', serif;
-  font-size: 15px; color: #c4a875; font-style: italic;
-  margin-top: 2px;
-}
 .header-stats {
   display: flex; gap: 10px; align-items: center;
 }
@@ -243,7 +238,6 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
   background: #f5eedc; border: 1px solid #c4b89a; border-radius: 8px;
   width: 240px; padding: 6px; z-index: 10000;
   box-shadow: 0 6px 18px rgba(0,0,0,0.25);
-  max-height: calc(100vh - 200px); overflow-y: auto;
 }
 .tb-menu.open { display: block; }
 .tb-menu-item {
@@ -740,7 +734,6 @@ details.acc .acc-body { padding: 6px 12px; }
   box-sizing: border-box;
 }
 .detail-field textarea { min-height: 60px; resize: vertical; }
-.detail-field input::placeholder, .detail-field textarea::placeholder { color: #b0a090; font-style: italic; }
 .detail-actions { display: flex; gap: 10px; margin-top: 16px; padding: 12px 0 16px 0; border-top: 1px solid #c4b89a; position: sticky; bottom: 0; background: #f5eedc; z-index: 10; }
 .detail-body { padding: 16px 16px 60px 16px; }
 .detail-actions .cancel-btn { flex: 1; padding: 10px; border: 1px solid #8a7a5a; border-radius: 4px; background: #e8dcc8; color: #4a3a22; font-family: 'Cormorant Garamond', serif; font-size: 13px; cursor: pointer; }
@@ -895,7 +888,6 @@ details.acc .acc-body { padding: 6px 12px; }
     <div class="header-brand">
       <div class="header-logo">Vaulted Roots</div>
       <div class="header-tagline">Your legacy. Secure.</div>
-      <div class="header-pagename">Pedigree Tree</div>
     </div>
     <div class="header-stats">
       <div class="header-stat">
@@ -943,7 +935,7 @@ details.acc .acc-body { padding: 6px 12px; }
         <div class="tb-menu-item" id="shareBtn" role="menuitem" tabindex="0" onclick="shareTree()"><span class="icon">📤</span> Share Tree</div>
         <div class="tb-menu-item" role="menuitem" tabindex="0" onclick="openPrintDialog()"><span class="icon">🖨️</span> Print Tree</div>
         <div class="tb-menu-item" id="treeManagerToggle" role="menuitem" tabindex="0" onclick="toggleTreeManager()"><span class="icon">🌳</span> My Trees</div>
-        <div class="tb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0" onclick="doResetTree()">🗑️ Reset Tree</div>
+        <div class="tb-menu-item danger" id="resetBtn" role="menuitem" tabindex="0">🗑️ Reset Tree</div>
       </div>
       <!-- More menu -->
       <button class="tb-btn" id="moreMenuBtn" title="More options" aria-label="More options menu" aria-haspopup="true" aria-expanded="false">⋯ <span>More</span> ▾</button>
@@ -1271,46 +1263,46 @@ details.acc .acc-body { padding: 6px 12px; }
 
 <!-- Privacy Splash Modal (first visit) -->
 <div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
-  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:16px 20px;max-width:400px;width:92%;max-height:90vh;overflow-y:auto;">
-    <div style="text-align:center;margin-bottom:10px;">
-      <div style="font-size:36px;margin-bottom:4px;">🔒</div>
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
+    <div style="text-align:center;margin-bottom:16px;">
+      <div style="font-size:48px;margin-bottom:8px;">🔒</div>
       <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:4px;">Your Data. Your Device.</div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b5537;">How Vaulted Roots protects your family history</div>
     </div>
-    <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#2a1f10;line-height:1.5;margin-bottom:10px;">
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
-        <div style="font-size:17px;flex-shrink:0;">📱</div>
+    <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#2a1f10;line-height:1.6;margin-bottom:16px;">
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+        <div style="font-size:20px;flex-shrink:0;">📱</div>
         <div><strong>Stays on your device.</strong> Everything is saved locally in your browser. No servers, no cloud, no accounts.</div>
       </div>
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
-        <div style="font-size:17px;flex-shrink:0;">🔐</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+        <div style="font-size:20px;flex-shrink:0;">🔐</div>
         <div><strong>Private local storage.</strong> Your tree stays in your browser's own IndexedDB storage. We cannot read it, even if we wanted to.</div>
       </div>
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
-        <div style="font-size:17px;flex-shrink:0;">🚫</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+        <div style="font-size:20px;flex-shrink:0;">🚫</div>
         <div><strong>No cookies, no ads.</strong> We measure anonymous page visits with cookieless Google Analytics. Your tree data never leaves your device.</div>
       </div>
-      <div style="display:flex;align-items:flex-start;gap:8px;margin-bottom:6px;">
-        <div style="font-size:17px;flex-shrink:0;">📤</div>
+      <div style="display:flex;align-items:flex-start;gap:10px;margin-bottom:10px;">
+        <div style="font-size:20px;flex-shrink:0;">📤</div>
         <div><strong>You control sharing.</strong> Export your tree as a file to share with family. Only send it to people you trust.</div>
       </div>
       <div style="display:flex;align-items:flex-start;gap:10px;">
-        <div style="font-size:17px;flex-shrink:0;">🗑️</div>
+        <div style="font-size:20px;flex-shrink:0;">🗑️</div>
         <div><strong>Delete anytime.</strong> Clear your browser data and your tree is gone forever. No backups we keep, no hidden copies.</div>
       </div>
     </div>
-    <div style="background:#e8f0e0;border:1px solid #6b8e5a;border-radius:6px;padding:8px;margin-bottom:10px;font-family:'Cormorant Garamond',serif;font-size:11px;color:#3a5a2a;">
+    <div style="background:#e8f0e0;border:1px solid #6b8e5a;border-radius:6px;padding:10px;margin-bottom:16px;font-family:'Cormorant Garamond',serif;font-size:12px;color:#3a5a2a;">
       <strong>Compare:</strong> Other sites upload your family data to their servers and use it to train AI. Vaulted Roots never does this.
     </div>
-    <button id="privacyModalOk" style="width:100%;padding:10px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;margin-bottom:6px;">Dismiss</button>
-    <button id="privacyModalDismissForever" style="width:100%;padding:8px;border:none;background:transparent;color:#6b5537;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Dismiss forever — do not show again</button>
+    <button id="privacyModalOk" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;margin-bottom:8px;">Dismiss</button>
+    <button id="privacyModalDismissForever" style="width:100%;padding:10px;border:none;background:transparent;color:#6b5537;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Dismiss forever — do not show again</button>
   </div>
 </div>
 
 <!-- Feedback Modal -->
 <div id="feedbackModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
-  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:16px 20px;max-width:400px;width:92%;max-height:90vh;overflow-y:auto;">
-    <div style="text-align:center;margin-bottom:10px;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
+    <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:36px;margin-bottom:8px;">💬</div>
       <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;margin-bottom:4px;">Send Feedback</div>
       <div style="font-family:'Cormorant Garamond',serif;font-size:13px;color:#6b5537;">We'd love to hear your thoughts</div>
@@ -1330,8 +1322,8 @@ details.acc .acc-body { padding: 6px 12px; }
         <label style="display:block;font-family:'Cinzel Decorative',serif;font-size:12px;color:#4a3a22;margin-bottom:4px;">Message</label>
         <textarea name="message" required rows="4" style="width:100%;padding:10px;border:2px solid #8a7a5a;border-radius:4px;background:#fff;font-family:'Cormorant Garamond',serif;font-size:14px;color:#2a1f10;box-sizing:border-box;resize:vertical;" placeholder="What's on your mind?"></textarea>
       </div>
-      <button type="submit" style="width:100%;padding:10px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;margin-bottom:6px;">Send Feedback</button>
-      <button type="button" onclick="document.getElementById('feedbackModal').style.display='none'" style="width:100%;padding:8px;border:none;background:transparent;color:#6b5537;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Cancel</button>
+      <button type="submit" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;margin-bottom:8px;">Send Feedback</button>
+      <button type="button" onclick="document.getElementById('feedbackModal').style.display='none'" style="width:100%;padding:10px;border:none;background:transparent;color:#6b5537;font-family:'Cormorant Garamond',serif;font-size:12px;cursor:pointer;text-decoration:underline;">Cancel</button>
     </form>
   </div>
 </div>
@@ -1591,21 +1583,20 @@ function initDefaultData() {
   people = [];
   nextId = 1;
   gedcomFamilies = null;
-  const MAX_GEN = 8; // generations 0-8 = 511 nodes total (31 visible on load)
   // Gen 0: "You" card — bigger, gold-bordered, calls to action
   const you = createPerson(nextId++, 0, 'You', 'Start your tree', 'blank', {});
   you.isYou = true;
   people.push(you);
-  // Gens 1-8: blank placeholder cards so the tree has visual structure
-  // (2^gen each: 2 + 4 + 8 + 16 + 32 + 64 + 128 + 256 = 510 blank ancestors)
-  for (let g = 1; g <= MAX_GEN; g++) {
+  // Gens 1-4: blank placeholder cards so the tree has visual structure
+  // (2^gen each: 2 + 4 + 8 + 16 = 30 blank ancestors)
+  for (let g = 1; g <= 4; g++) {
     const count = Math.pow(2, g);
     for (let i = 0; i < count; i++) {
       people.push(createPerson(nextId++, g, '', '', 'blank', {}));
     }
   }
   // Wire parent-child relationships AND spouse relationships
-  for (let g = 0; g < MAX_GEN; g++) {
+  for (let g = 0; g < 4; g++) {
     const gen = people.filter(p => p.gen === g).sort((a,b) => a.id - b.id);
     const nextGen = people.filter(p => p.gen === g + 1).sort((a,b) => a.id - b.id);
     gen.forEach((p, i) => {
@@ -2156,7 +2147,7 @@ const CARD_W = 130, GAP_Y = 8;
 const GEN_X_GAP = 95; // wider gap since gen 0 is offset right by a full card width
 const MINI_W = 100, MINI_H = 14;
 const TREE_TOP_MARGIN = 70; // push Gen 0/1 below the floating tree title lozenge
-let visibleMaxGen = 4; // show gens 0-4 (31 nodes) on load, reveal more via button
+let visibleMaxGen = 4; // progressive expansion: show gens 0-4 by default
 
 const wrap = document.getElementById('treeWrap');
 const svg = document.getElementById('linesSvg');
@@ -2645,20 +2636,6 @@ function fitZoomToViewport() {
   scrollArea.addEventListener('touchcancel', endPinch);
 })();
 
-// Mouse wheel zoom on tree scroll area — scroll up = zoom in, scroll down = zoom out
-(function setupWheelZoom() {
-  const scrollArea = document.getElementById('treeScroll');
-  if (!scrollArea) return;
-  scrollArea.addEventListener('wheel', function(e) {
-    e.preventDefault();
-    if (e.deltaY < 0) {
-      setZoom(zoom * 1.15);
-    } else {
-      setZoom(zoom / 1.15);
-    }
-  }, { passive: false });
-})();
-
 // Block browser page-level pinch zoom everywhere except our tree handler
 document.addEventListener('touchmove', function(e) {
   if (e.touches.length > 1) {
@@ -2681,18 +2658,11 @@ function openDetail(person) {
     <details class="acc" open>
       <summary>Identity</summary>
       <div class="acc-body">
-        <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${escapeHtml(person.fullName && person.fullName !== person.name ? person.fullName : '')}" placeholder="Enter full name"></div>
-        <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${escapeHtml(person.name && person.name !== 'Me' && person.name !== 'Name' ? person.name : '')}" placeholder="Enter display name"></div>
-        <div class="detail-field"><label>Sex</label>
-          <select id="d_sex" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:13px;">
-            <option value="" ${!person.sex ? 'selected' : ''}>—</option>
-            <option value="M" ${person.sex === 'M' ? 'selected' : ''}>Male</option>
-            <option value="F" ${person.sex === 'F' ? 'selected' : ''}>Female</option>
-          </select>
-        </div>
-        <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${escapeHtml(person.maidenName)}" placeholder="Enter maiden name"></div>
-        <div class="detail-field"><label>Married Name</label><input type="text" id="d_marriedName" value="${escapeHtml(person.marriedName || '')}" placeholder="Enter married name"></div>
-        <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${escapeHtml(person.spouseName)}" placeholder="Enter spouse name"></div>
+        <div class="detail-field"><label>Full Name</label><input type="text" id="d_fullName" value="${escapeHtml(person.fullName || person.name)}"></div>
+        <div class="detail-field"><label>Display Name</label><input type="text" id="d_name" value="${escapeHtml(person.name)}"></div>
+        <div class="detail-field"><label>Maiden Name</label><input type="text" id="d_maidenName" value="${escapeHtml(person.maidenName)}"></div>
+        <div class="detail-field"><label>Married Name</label><input type="text" id="d_marriedName" value="${escapeHtml(person.marriedName || '')}"></div>
+        <div class="detail-field"><label>Spouse</label><input type="text" id="d_spouseName" value="${escapeHtml(person.spouseName)}"></div>
         <div class="detail-field"><label>Status</label>
           <select id="d_status" style="width:100%;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:13px;">
             <option value="confirmed" ${person.status === 'confirmed' ? 'selected' : ''}>Confirmed</option>
@@ -2707,12 +2677,12 @@ function openDetail(person) {
     <details class="acc">
       <summary>Dates &amp; Places</summary>
       <div class="acc-body">
-        <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${escapeHtml(person.birthDate)}" placeholder="e.g. 1950 or 1950-03-15"></div>
-        <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${escapeHtml(person.deathDate || '')}" placeholder="e.g. 2020 or 2020-06-10"></div>
-        <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${escapeHtml(person.ageAtDeath || '')}" placeholder="e.g. 75"></div>
-        <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${escapeHtml(person.marriageDate || '')}" placeholder="e.g. 1975 or 1975-06-01"></div>
-        <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${escapeHtml(person.birthplace)}" placeholder="Enter birthplace"></div>
-        <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${escapeHtml(person.occupation)}" placeholder="Enter occupation"></div>
+        <div class="detail-field"><label>Birth Date</label><input type="text" id="d_birthDate" value="${escapeHtml(person.birthDate)}" placeholder="YYYY or YYYY-MM-DD"></div>
+        <div class="detail-field"><label>Death Date</label><input type="text" id="d_deathDate" value="${escapeHtml(person.deathDate || '')}"></div>
+        <div class="detail-field"><label>Age at Death</label><input type="text" id="d_ageAtDeath" value="${escapeHtml(person.ageAtDeath || '')}"></div>
+        <div class="detail-field"><label>Marriage Date</label><input type="text" id="d_marriageDate" value="${escapeHtml(person.marriageDate || '')}"></div>
+        <div class="detail-field"><label>Birthplace</label><input type="text" id="d_birthplace" value="${escapeHtml(person.birthplace)}"></div>
+        <div class="detail-field"><label>Occupation</label><input type="text" id="d_occupation" value="${escapeHtml(person.occupation)}"></div>
       </div>
     </details>
     <details class="acc">
@@ -2757,7 +2727,7 @@ function openDetail(person) {
     <details class="acc">
       <summary>Research — notes · siblings · sources</summary>
       <div class="acc-body">
-        <div class="detail-field"><label>Notes</label><textarea id="d_notes" placeholder="Add notes about this person">${escapeHtml(person.notes)}</textarea></div>
+        <div class="detail-field"><label>Notes</label><textarea id="d_notes">${escapeHtml(person.notes)}</textarea></div>
         <div class="detail-field"><label>Siblings</label>
           <div style="display:flex;gap:6px;margin-bottom:4px;">
             <input type="text" id="d_siblingInput" placeholder="Sibling name" style="flex:1;padding:8px;border:1px solid #8a7a5a;border-radius:4px;font-family:Cormorant Garamond,serif;font-size:14px;">
@@ -2913,15 +2883,6 @@ function closeDetail(fromPopstate) {
 function updateExpandGenBtn() {
   const btn = document.getElementById('expandGenBtn');
   if (!btn) return;
-  // Update text/disabled state based on current generation visibility
-  const actualMax = maxGen(people, p => p.gen);
-  if (visibleMaxGen >= actualMax) {
-    btn.textContent = 'Click a name to add a parent';
-    btn.disabled = true;
-  } else {
-    btn.textContent = 'Reveal Next Generation';
-    btn.disabled = false;
-  }
   // Only hide for side panels that overlap the button area — modals are overlays
   // and the button is below them via z-index, so no need to hide.
   const anyPanelOpen =
@@ -2929,7 +2890,7 @@ function updateExpandGenBtn() {
     document.getElementById('detailPanel')?.classList.contains('active') ||
     document.getElementById('guidancePanel')?.classList.contains('active') ||
     document.getElementById('printChoiceDlg') ||
-    (document.getElementById('focusPickerOverlay') && document.getElementById('focusPickerOverlay').style.display !== 'none');
+    document.getElementById('focusPickerOverlay')?.style.display !== 'none';
   btn.style.display = anyPanelOpen ? 'none' : 'block';
 }
 function clearCertPanel() {
@@ -2978,9 +2939,7 @@ function saveDetail() {
   if (!person) return;
   pushUndo();
   person.fullName = document.getElementById('d_fullName').value;
-  person.name = document.getElementById('d_name').value || (person.status === 'you' ? 'Me' : 'Name');
-  const sexEl = document.getElementById('d_sex');
-  if (sexEl) person.sex = sexEl.value;
+  person.name = document.getElementById('d_name').value;
   person.birthDate = document.getElementById('d_birthDate').value;
   person.deathDate = document.getElementById('d_deathDate').value;
   person.ageAtDeath = document.getElementById('d_ageAtDeath').value;
@@ -5199,12 +5158,7 @@ async function saveSession() {
       }
     }
   }
-  // Ensure every person has children[] and sex before saving (v7 schema)
-  for (const p of payloadPeople) {
-    if (!p.children) p.children = [];
-    if (!p.sex) p.sex = '';
-  }
-  const payload = { version: 7, exportedAt: new Date().toISOString(), people: payloadPeople, nextId: nextId, visibleMaxGen: visibleMaxGen };
+  const payload = { version: 5, exportedAt: new Date().toISOString(), people: payloadPeople, nextId: nextId, visibleMaxGen: visibleMaxGen };
   const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
   const url = URL.createObjectURL(blob);
   const a = document.createElement('a');
@@ -5219,21 +5173,6 @@ async function loadSession(file) {
     if (!data.people) { showToast('Invalid session file'); return; }
     pushUndo();
     people = data.people;
-    // Rebuild children[] arrays from parents[] for legacy files (v5/v6)
-    const hasChildren = people.some(p => p.children && p.children.length > 0);
-    if (!hasChildren) {
-      const childMap = new Map();
-      for (const p of people) {
-        const parents = p.parents || [];
-        for (const pid of parents) {
-          if (!childMap.has(pid)) childMap.set(pid, []);
-          childMap.get(pid).push(p.id);
-        }
-      }
-      for (const p of people) {
-        p.children = childMap.get(p.id) || [];
-      }
-    }
     nextId = data.nextId || maxGen(people, p => p.id) + 1;
     gedcomFamilies = null; // loading a .familytree file clears GEDCOM FAM records
     visibleMaxGen = data.visibleMaxGen !== undefined ? data.visibleMaxGen : maxGen(people, p => p.gen);
@@ -5302,7 +5241,6 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
   const file = e.target.files[0]; if (file) loadSession(file); e.target.value = '';
 });
 function doResetTree() {
-  closeAllMenus();
   const dlg = document.getElementById('confirmDialog');
   dlg.style.display = 'flex';
   document.getElementById('confirmOk').onclick = async () => {
@@ -5341,14 +5279,7 @@ function doResetTree() {
     dlg.style.display = 'none';
   };
 }
-// Keep addEventListener as backup; onclick="doResetTree()" on the menu item is primary
-var _rb = document.getElementById('resetBtn');
-if (_rb) _rb.addEventListener('click', doResetTree);
-
-// Close all open dropdown menus (used by inline onclick handlers)
-function closeAllMenus() {
-  document.querySelectorAll('.tb-menu.open').forEach(m => m.classList.remove('open'));
-}
+document.getElementById('resetBtn').addEventListener('click', doResetTree);
 
 // Progressive expansion button
 function expandNextGen() {
@@ -5359,8 +5290,6 @@ function expandNextGen() {
     showToast('Large tree — may be slow to scroll at this depth');
   }
   renderTree();
-  // Auto-fit zoom so the whole tree width is visible
-  fitZoomToViewport();
   const btn = document.getElementById('expandGenBtn');
   if (visibleMaxGen >= actualMax) {
     btn.textContent = 'Click a name to add a parent';
@@ -5368,19 +5297,14 @@ function expandNextGen() {
   } else {
     btn.textContent = 'Reveal Next Generation';
   }
-  // Re-center on "You" card so user keeps their bearings
+  // Auto-scroll right to reveal new gen
   setTimeout(() => {
     const sc = document.getElementById('treeScroll');
-    const youEl = cardEls.get(1) || document.querySelector('.person-card.you');
-    if (youEl) {
-      const scRect = sc.getBoundingClientRect();
-      const youRect = youEl.getBoundingClientRect();
-      const targetLeft = youEl.offsetLeft - scRect.width / 2 + youRect.width / 2;
-      sc.scrollTo({ left: Math.max(0, targetLeft), behavior: 'smooth' });
-    }
+    sc.scrollTo({ left: wrap.scrollWidth, behavior: 'smooth' });
   }, 50);
 }
-// expandGenBtn uses inline onclick="expandNextGen()" — no member gate.
+// NOTE: expandGenBtn already has inline onclick="checkMemberFeature('expand_generation', expandNextGen)"
+// Do NOT add a second addEventListener here — it causes expandNextGen to fire twice.
 
 // Removed duplicate listen
 document.getElementById('guidanceClose').addEventListener('click', closeGuidancePanel);
@@ -5477,22 +5401,6 @@ async function autoRestore() {
         if (data.people && data.people.length > 0) {
           people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
           visibleMaxGen = maxGen(people, p => p.gen);
-          // Rebuild children[] arrays from parents[] if missing (v5/v6 files
-          // from family-builder don't include children arrays)
-          const hasChildren = people.some(p => p.children && p.children.length > 0);
-          if (!hasChildren) {
-            const childMap = new Map();
-            for (const p of people) {
-              const parents = p.parents || [];
-              for (const pid of parents) {
-                if (!childMap.has(pid)) childMap.set(pid, []);
-                childMap.get(pid).push(p.id);
-              }
-            }
-            for (const p of people) {
-              p.children = childMap.get(p.id) || [];
-            }
-          }
           // Save to IndexedDB so it persists for future visits
           const treeId = 'tree_' + Date.now();
           currentTreeId = treeId;
@@ -5577,43 +5485,28 @@ async function autoRestore() {
       }
     } catch (e) {}
   }
-  // Fallback: family builder storage — ONLY when explicitly arriving from FB
-  // (removed auto-fallback: pedigree page should show its own 31-node tree by default)
-  if (fromFB) {
-    const fbSaved = localStorage.getItem('vr_freebuild_data_v1');
-    if (fbSaved) {
-      try {
-        const data = JSON.parse(fbSaved);
-        if (data.people && data.people.length > 0) {
-          people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
-          visibleMaxGen = maxGen(people, p => p.gen);
-          // Rebuild children[] arrays from parents[] if missing
-          const hasChildren = people.some(p => p.children && p.children.length > 0);
-          if (!hasChildren) {
-            const childMap = new Map();
-            for (const p of people) {
-              const parents = p.parents || [];
-              for (const pid of parents) {
-                if (!childMap.has(pid)) childMap.set(pid, []);
-                childMap.get(pid).push(p.id);
-              }
-            }
-            for (const p of people) {
-              p.children = childMap.get(p.id) || [];
-            }
-          }
-          const treeId = 'tree_' + Date.now();
-          await saveTreeData(treeId, { people, nextId, visibleMaxGen });
-          const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
-          await saveTreeMeta(meta);
-          currentTreeId = treeId;
-          treesList = [meta];
-          showToast('Loaded ' + people.length + ' people from Family Builder');
-          updateTreeManagerUI();
-          return true;
-        }
-      } catch (e) {}
-    }
+  // Fallback: family builder storage (cross-page data sharing)
+  const fbSaved = localStorage.getItem('vr_freebuild_data_v1');
+  if (fbSaved) {
+    try {
+      const data = JSON.parse(fbSaved);
+      if (data.people && data.people.length > 0) {
+        people = data.people; nextId = data.nextId || maxGen(people, p => p.id) + 1;
+        // Family builder uses gen 0 = youngest, pedigree uses gen 0 = root (oldest)
+        // The parser already normalises, so just use as-is
+        visibleMaxGen = maxGen(people, p => p.gen);
+        // Migrate to IndexedDB tree store
+        const treeId = 'tree_' + Date.now();
+        await saveTreeData(treeId, { people, nextId, visibleMaxGen });
+        const meta = { id: treeId, name: 'My Family Tree', createdAt: Date.now(), updatedAt: Date.now() };
+        await saveTreeMeta(meta);
+        currentTreeId = treeId;
+        treesList = [meta];
+        showToast('Loaded ' + people.length + ' people from Family Builder');
+        updateTreeManagerUI();
+        return true;
+      }
+    } catch (e) {}
   }
   return false;
 }
@@ -5676,14 +5569,12 @@ function addParentsForPerson(person) {
   }
   pushUndo();
   const parentGen = person.gen + 1;
-  const father = createPerson(nextId++, parentGen, '', '', 'blank', { sex: 'M' });
-  const mother = createPerson(nextId++, parentGen, '', '', 'blank', { sex: 'F' });
+  const father = createPerson(nextId++, parentGen, '', '', 'blank', {});
+  const mother = createPerson(nextId++, parentGen, '', '', 'blank', {});
   father.spouseId = mother.id;
   mother.spouseId = father.id;
   father.spouseName = mother.name;
   mother.spouseName = father.name;
-  father.children = [person.id];
-  mother.children = [person.id];
   people.push(father);
   people.push(mother);
   person.parents = [father.id, mother.id];
@@ -5786,26 +5677,6 @@ function backfillComputedFields() {
     await saveTreeData(treeId, { people, nextId, visibleMaxGen });
     treesList = await loadAllTreeMetas();
     updateTreeManagerUI();
-  }
-  // If the restored tree is just placeholder cards (no real named people),
-  // replace with the full 9-gen (511-node) skeleton. But don't nuke real
-  // data that happens to have fewer than 8 generations — family-builder
-  // trees legitimately stop at gen 5, 6, 7, etc.
-  const realCount = people.filter(p => {
-    const n = (p.name || '').trim();
-    return n && n !== 'Name' && n !== 'You' && p.status !== 'blank';
-  }).length;
-  if (people.length <= 1 || realCount === 0) {
-    initDefaultData();
-    visibleMaxGen = 4;
-    if (currentTreeId) {
-      await saveTreeData(currentTreeId, { people, nextId, visibleMaxGen });
-    }
-    showToast('Loaded 9-generation tree (' + people.length + ' nodes)');
-  }
-  // Show gens 0-4 (31 nodes) on load, reveal gens 5-8 via button
-  if (people.length > 1) {
-    visibleMaxGen = 4;
   }
   rebuildPeopleMaps(); // ensure maps are fresh regardless of which path loaded people
   backfillComputedFields();
@@ -5950,8 +5821,8 @@ function toggleDarkMode() {
 // Save tree to localStorage (for Tree menu Save button)
 function saveTreeToStorage() {
   // Don't overwrite the shared localStorage keys with placeholder-only data.
-  // If pedigree has no real named people (just the 511-node skeleton), writing
-  // to localStorage would wipe family-builder's real data on the return trip.
+  // If pedigree has no real named people (just the skeleton), writing to
+  // localStorage would wipe family-builder's real data on the return trip.
   const hasRealPeople = people.some(p => {
     const n = (p.name || '').trim();
     return n && n !== 'Name' && n !== 'You' && p.status !== 'blank';
