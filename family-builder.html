@@ -527,8 +527,15 @@ html, body { height: 100%; overflow: hidden; background: var(--bg-page); font-fa
 .focus-back.visible { display: flex; }
 .focus-back .fb-arrow { font-size: 18px; line-height: 1; }
 
+@media (max-width: 740px) {
+  /* header wraps on mobile: drop the centred emblem so it can't sit behind buttons */
+  .header-emblem { display: none; }
+}
 @media (max-width: 600px) {
   .header-logo { font-size: 12px; }
+  .header-top { gap: 6px; }
+  .header-actions { gap: 4px; }
+  .help-btn { padding: 0 7px; font-size: 11px; height: 26px; }
   .view-toggle button { padding: 4px 8px; font-size: 9px; }
   .gedcom-btn { padding: 5px 8px; font-size: 9px; }
   .header-btn { width: 30px; height: 28px; font-size: 14px; }
