@@ -452,7 +452,7 @@ if ('serviceWorker' in navigator) {
 
 <div class="footer">
   <p>Vaulted Roots — Private Genealogy</p>
-  <p style="margin-top:10px;"><button id="aboutBtn" onclick="showAboutModal()" style="background:none;border:1px solid var(--text-muted);border-radius:6px;color:var(--text-muted);padding:12px 22px;min-height:44px;font-size:13px;cursor:pointer;font-family:inherit;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.2);">ℹ️ About Vaulted Roots</button></p>
+  <p style="margin-top:10px;"><button id="aboutBtn" style="background:none;border:1px solid var(--text-muted);border-radius:6px;color:var(--text-muted);padding:12px 22px;min-height:44px;font-size:13px;cursor:pointer;font-family:inherit;touch-action:manipulation;-webkit-tap-highlight-color:rgba(0,0,0,0.2);">ℹ️ About Vaulted Roots</button></p>
 </div>
 
 <div id="privacyModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10003;justify-content:center;align-items:center;">
@@ -572,10 +572,7 @@ function hideAboutModal() {
 })();
 (function() {
   var b = document.getElementById('aboutBtn');
-  if (b) {
-    b.addEventListener('pointerdown', function() { showAboutModal(); });
-    b.addEventListener('click', function() { showAboutModal(); });
-  }
+  if (b) b.addEventListener('click', function() { showAboutModal(); });
 })();
 </script>
 </body>
