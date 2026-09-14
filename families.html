@@ -233,6 +233,7 @@ if ('serviceWorker' in navigator) {
   <div class="header-actions">
     <a class="header-btn" href="data-tree.html">&#9664; Back to Tree</a>
     <a class="header-btn" href="heritage-poster.html" target="_blank">Heritage Poster</a>
+    <button class="header-btn" title="About Vaulted Roots" aria-label="About Vaulted Roots" onclick="showAboutModal()" style="cursor:pointer;font-family:inherit;">ℹ️ About</button>
   </div>
 </div>
 
@@ -578,5 +579,56 @@ if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
   <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:24px;max-width:380px;width:90%;max-height:85vh;overflow-y:auto;">
     <div style="text-align:center;margin-bottom:16px;">
       <div style="font-size:48px;margin-bottom:8px;">🔒</div>
+<!-- About Modal -->
+<div id="aboutModal" style="display:none;position:fixed;top:0;left:0;width:100%;height:100%;background:rgba(0,0,0,0.85);z-index:10004;justify-content:center;align-items:center;">
+  <div style="background:#f5eedc;border:3px solid #4a3a22;border-radius:8px;padding:18px 22px;max-width:440px;width:92%;max-height:90vh;overflow-y:auto;font-family:'Cormorant Garamond',serif;">
+    <div style="text-align:center;margin-bottom:12px;">
+      <div style="font-size:34px;margin-bottom:2px;">🌳</div>
+      <div style="font-family:'Cinzel Decorative',serif;font-size:18px;color:#3e2b1a;">About Vaulted Roots</div>
+      <div style="font-size:13px;color:#6b5537;">Your legacy. Secure.</div>
+    </div>
+    <div style="background:#ece2cc;border:1px solid #c9b896;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#3e2b1a;margin-bottom:6px;">Who's behind it</div>
+      <div style="font-size:13.5px;color:#2a1f10;line-height:1.55;">
+        <strong>Graeme Mooney</strong> — independent hobby developer, 60, from Canada. Spent his working life in telecommunications and builds Vaulted Roots for the love of it: a clean, distraction-free way for families to record their lineage without paywalls or data harvesting.
+      </div>
+    </div>
+    <div style="background:#ece2cc;border:1px solid #c9b896;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#3e2b1a;margin-bottom:6px;">Your privacy</div>
+      <div style="font-size:13.5px;color:#2a1f10;line-height:1.6;">
+        <strong>Your tree never leaves your device.</strong> Everything lives in your own browser's storage on your own computer or phone. There are no servers holding your data, no accounts, no logins. The only files that move are the ones you export yourself (GEDCOM or backup) and choose to share.<br><br>
+        <strong>No data selling. Ever.</strong> Your family information is never sold, shared, or used to train AI. If a paid tier is added one day, it will be for extra features — never access to your data.<br><br>
+        <strong>One honest footnote:</strong> anonymous page-visit counts are measured (cookieless, no cookies, no personal data, nothing about your tree). That's the only signal that leaves your browser, and it carries no family information.
+      </div>
+    </div>
+    <div style="background:#ece2cc;border:1px solid #c9b896;border-radius:6px;padding:12px 14px;margin-bottom:12px;">
+      <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#3e2b1a;margin-bottom:6px;">Contact & source</div>
+      <div style="font-size:13.5px;color:#2a1f10;line-height:1.7;">
+        📧 Questions or privacy concerns: <a id="aboutEmailLink" href="mailto:graememooney66@gmail.com" style="color:#38bdf8;">graememooney66@gmail.com</a><br>
+        💻 Open source: <a href="https://github.com/MaplePulse/genealogy-mockup" target="_blank" rel="noopener" style="color:#38bdf8;">GitHub — MaplePulse/genealogy-mockup</a><br>
+        👍 Follow along: <a href="https://www.facebook.com/profile.php?id=61591673636516" target="_blank" rel="noopener" style="color:#38bdf8;">Vaulted Roots on Facebook</a>
+      </div>
+    </div>
+    <button id="aboutModalOk" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;">Close</button>
+  </div>
+</div>
+<script>
+function showAboutModal() {
+  var m = document.getElementById('aboutModal');
+  if (!m) return;
+  m.style.display = 'flex';
+}
+function hideAboutModal() {
+  var m = document.getElementById('aboutModal');
+  if (m) m.style.display = 'none';
+}
+(function() {
+  var m = document.getElementById('aboutModal');
+  if (!m) return;
+  m.addEventListener('click', function(e) { if (e.target === m) hideAboutModal(); });
+  var ok = document.getElementById('aboutModalOk');
+  if (ok) ok.addEventListener('click', hideAboutModal);
+})();
+</script>
 </body>
 </html>
