@@ -614,6 +614,7 @@ if ('serviceWorker' in navigator) {
           <div class="fb-menu-item" role="menuitem" onclick="toggleTheme()"><span class="icon" id="darkModeToggle">🌙</span> Dark Mode</div>
           <div class="fb-menu-item" role="menuitem" onclick="showPrivacyModal()"><span class="icon">🔒</span> Privacy</div>
           <div class="fb-menu-item" role="menuitem" onclick="showFeedbackModal()"><span class="icon">💬</span> Send Feedback</div>
+          <div class="fb-menu-item" role="menuitem" onclick="window.open('https://www.facebook.com/profile.php?id=61591673636516','_blank','noopener')"><span class="icon">👍</span> Follow on Facebook</div>
 
         </div>
       </div>
@@ -2013,7 +2014,7 @@ function layoutTree() {
       const wifeCenter0 = pinCenter + (CARD_W + COUPLE_GAP) / 2 + dualBias;
       if (!positions.has(father)) positions.set(father, { x: Math.round(husbCenter0 - CARD_W / 2), y: parentY });
       if (!positions.has(mother)) positions.set(mother, { x: Math.round(wifeCenter0 - CARD_W / 2), y: parentY });
-      // Gavin's rule: the whole PATERNAL super-branch (everything above the
+      // Owner's rule: the whole PATERNAL super-branch (everything above the
       // focus's father, INCLUDING the paternal grandmother's parents — e.g.
       // Edward Marsh + Mary Ashdown) packs LEFT of the focus-parents' centre
       // line; the whole MATERNAL super-branch (e.g. Andrew Fenwick + Agnes)
@@ -5650,7 +5651,8 @@ document.getElementById('loadFileInput').addEventListener('change', (e) => {
       <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#3e2b1a;margin-bottom:6px;">Contact & source</div>
       <div style="font-size:13.5px;color:#2a1f10;line-height:1.7;">
         📧 Questions or privacy concerns: <a href="#" onclick="hideAboutModal(); showFeedbackModal(); return false;" style="color:#38bdf8;">use the feedback form</a> — we reply by email<br>
-        💻 Open source: <a href="https://github.com/MaplePulse/genealogy-mockup" target="_blank" rel="noopener" style="color:#38bdf8;">GitHub — MaplePulse/genealogy-mockup</a>
+        💻 Open source: <a href="https://github.com/MaplePulse/genealogy-mockup" target="_blank" rel="noopener" style="color:#38bdf8;">GitHub — MaplePulse/genealogy-mockup</a><br>
+👍 Follow along: <a href="https://www.facebook.com/profile.php?id=61591673636516" target="_blank" rel="noopener" style="color:#38bdf8;">Vaulted Roots on Facebook</a>
       </div>
     </div>
     <button id="aboutModalOk" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;">Close</button>
