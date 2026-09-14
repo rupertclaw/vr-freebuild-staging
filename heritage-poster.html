@@ -2610,7 +2610,7 @@ const SPOUSE_MAP = {
       let score = 0;
       // SAME PERSON CHECK: if normalized first+last names match, it's the same person
       // regardless of middle names, initials, or name variations.
-      // "Andrew Craigie" === "Andrew Henderson Craigie" after normalization.
+      // "Andrew Fenwick" === "Andrew Henderson Fenwick" after normalization.
       // This MUST score as high as an exact match so tiebreakers (generation, slot) decide.
       if (displayNorm === searchNorm || fullNorm === searchNorm) {
         score = 100; // Same person — exact-match tier
@@ -2713,7 +2713,7 @@ const SPOUSE_MAP = {
       const bSlot = b.plate.dataset.slot ? 1 : 0;
       if (aSlot !== bSlot) return bSlot - aSlot; // slotted wins
       // Final tiebreaker: for birth certs, prefer the LESS-filled plate
-      // so "Andrew Craigie" (empty) beats "Andrew H. Craigie" (duplicate with data)
+      // so "Andrew Fenwick" (empty) beats "Andrew H. Fenwick" (duplicate with data)
       if (opts && opts.certType === 'birth') {
         const aData = (a.plate.dataset.fullname ? 1 : 0) + (a.plate.dataset.docs ? 1 : 0);
         const bData = (b.plate.dataset.fullname ? 1 : 0) + (b.plate.dataset.docs ? 1 : 0);
@@ -2961,7 +2961,7 @@ const SPOUSE_MAP = {
     const bcOpts = birthYear ? { certType: 'birth', certYear: parseInt(birthYear) } : null;
 
     // PRE-MATCH: Merge duplicate nameplates for the same normalized person.
-    // e.g. "Andrew Craigie" (slotted, empty) and "Andrew H. Craigie" (unslotted, with data)
+    // e.g. "Andrew Fenwick" (slotted, empty) and "Andrew H. Fenwick" (unslotted, with data)
     // are the same person. Merge: copy data from duplicate into the best plate, then clear it.
     try {
     (function mergeDuplicates() {
@@ -3320,7 +3320,7 @@ const SPOUSE_MAP = {
       const brideCertSurname = brideName.includes(' ') ? brideName.split(' ').pop() : '';
       const brideCardSurname = (bridePlate.dataset.fullname || '').includes(' ') ? bridePlate.dataset.fullname.split(' ').pop() : '';
       if (brideCertSurname && brideCardSurname && brideCertSurname !== brideCardSurname) {
-        // Cert says "Alice Lynch", card says "Alice Mooney" — store "Alice Lynch" as maiden
+        // Cert says "Alice Marsh", card says "Alice Harrow" — store "Alice Marsh" as maiden
         bridePlate.dataset.maiden = brideName;
       }
       fillPlate(bridePlate, bridePlate.dataset.fullname || brideName, marriageYear ? birthYearFromAge(data.bride?.age, marriageYear) : '');
@@ -4272,7 +4272,8 @@ if (!localStorage.getItem('vaultedRootsPrivacySeen')) {
       <div style="font-family:'Cinzel Decorative',serif;font-size:13px;color:#3e2b1a;margin-bottom:6px;">Contact & source</div>
       <div style="font-size:13.5px;color:#2a1f10;line-height:1.7;">
         📧 Questions or privacy concerns: <a href="#" onclick="hideAboutModal(); showFeedbackModal(); return false;" style="color:#38bdf8;">use the feedback form</a> — we reply by email<br>
-        💻 Open source: <a href="https://github.com/MaplePulse/genealogy-mockup" target="_blank" rel="noopener" style="color:#38bdf8;">GitHub — MaplePulse/genealogy-mockup</a>
+        💻 Open source: <a href="https://github.com/MaplePulse/genealogy-mockup" target="_blank" rel="noopener" style="color:#38bdf8;">GitHub — MaplePulse/genealogy-mockup</a><br>
+👍 Follow along: <a href="https://www.facebook.com/profile.php?id=61591673636516" target="_blank" rel="noopener" style="color:#38bdf8;">Vaulted Roots on Facebook</a>
       </div>
     </div>
     <button id="aboutModalOk" style="width:100%;padding:12px;border:2px solid #4a3a22;border-radius:4px;background:#4a3a22;color:#f5eedc;font-family:'Cinzel Decorative',serif;font-size:13px;cursor:pointer;">Close</button>

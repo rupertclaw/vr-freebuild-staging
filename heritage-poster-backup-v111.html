@@ -2193,7 +2193,7 @@ const SPOUSE_MAP = {
       let score = 0;
       // SAME PERSON CHECK: if normalized first+last names match, it's the same person
       // regardless of middle names, initials, or name variations.
-      // "Andrew Craigie" === "Andrew Henderson Craigie" after normalization.
+      // "Andrew Fenwick" === "Andrew Henderson Fenwick" after normalization.
       // This MUST score as high as an exact match so tiebreakers (generation, slot) decide.
       if (displayNorm === searchNorm || fullNorm === searchNorm) {
         score = 100; // Same person — exact-match tier
@@ -2296,7 +2296,7 @@ const SPOUSE_MAP = {
       const bSlot = b.plate.dataset.slot ? 1 : 0;
       if (aSlot !== bSlot) return bSlot - aSlot; // slotted wins
       // Final tiebreaker: for birth certs, prefer the LESS-filled plate
-      // so "Andrew Craigie" (empty) beats "Andrew H. Craigie" (duplicate with data)
+      // so "Andrew Fenwick" (empty) beats "Andrew H. Fenwick" (duplicate with data)
       if (opts && opts.certType === 'birth') {
         const aData = (a.plate.dataset.fullname ? 1 : 0) + (a.plate.dataset.docs ? 1 : 0);
         const bData = (b.plate.dataset.fullname ? 1 : 0) + (b.plate.dataset.docs ? 1 : 0);
@@ -2431,7 +2431,7 @@ const SPOUSE_MAP = {
   }
 
   // Helper: shorten a full name for nameplate display
-  // "Andrew Henderson Craigie" → "Andrew H. Craigie" (3+ parts)
+  // "Andrew Henderson Fenwick" → "Andrew H. Fenwick" (3+ parts)
   // "Elizabeth Henderson" → "E. Henderson" (2 parts, if gen 3+ and name > 16 chars)
   function shortName(fullName, gen) {
     if (!fullName) return fullName;
@@ -2443,7 +2443,7 @@ const SPOUSE_MAP = {
       if (total > maxLen && parts[0].length > 1) {
         return parts[0].charAt(0) + '. ' + parts[1];
       }
-      return fullName; // "Joseph Mooney" stays as is
+      return fullName; // "Joseph Harrow" stays as is
     }
     // First name + initials + surname
     const surname = parts.pop();
@@ -2550,7 +2550,7 @@ const SPOUSE_MAP = {
     const bcOpts = birthYear ? { certType: 'birth', certYear: parseInt(birthYear) } : null;
 
     // PRE-MATCH: Merge duplicate nameplates for the same normalized person.
-    // e.g. "Andrew Craigie" (slotted, empty) and "Andrew H. Craigie" (unslotted, with data)
+    // e.g. "Andrew Fenwick" (slotted, empty) and "Andrew H. Fenwick" (unslotted, with data)
     // are the same person. Merge: copy data from duplicate into the best plate, then clear it.
     try {
     (function mergeDuplicates() {
@@ -2910,7 +2910,7 @@ const SPOUSE_MAP = {
       const brideCertSurname = brideName.includes(' ') ? brideName.split(' ').pop() : '';
       const brideCardSurname = (bridePlate.dataset.fullname || '').includes(' ') ? bridePlate.dataset.fullname.split(' ').pop() : '';
       if (brideCertSurname && brideCardSurname && brideCertSurname !== brideCardSurname) {
-        // Cert says "Alice Lynch", card says "Alice Mooney" — store "Alice Lynch" as maiden
+        // Cert says "Alice Marsh", card says "Alice Harrow" — store "Alice Marsh" as maiden
         bridePlate.dataset.maiden = brideName;
       }
       fillPlate(bridePlate, bridePlate.dataset.fullname || brideName, marriageYear ? birthYearFromAge(data.bride?.age, marriageYear) : '');
