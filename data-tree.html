@@ -7081,6 +7081,52 @@ function closeMemberModal() {
     }
   });
 })();
+
+// iOS Install Hint (Safari has no beforeinstallprompt)
+(function() {
+  var isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent) ||
+              (navigator.platform === 'MacIntel' && navigator.maxTouchPoints > 1);
+  if (!isIOS) return;
+  if (window.matchMedia('(display-mode: standalone)').matches ||
+      window.navigator.standalone === true) return;
+  if (localStorage.getItem('vr_install_dismissed')) return;
+
+  var banner = document.createElement('div');
+  banner.id = 'vr-install-banner';
+  banner.style.cssText = 'position:fixed;bottom:0;left:0;right:0;background:linear-gradient(135deg,#3e2b1a,#5a3e28);color:#d4b896;padding:14px 16px;display:flex;align-items:center;gap:12px;z-index:100000;box-shadow:0 -4px 20px rgba(0,0,0,0.4);font-family:Georgia,serif;transform:translateY(100%);transition:transform 0.3s ease;';
+
+  var icon = document.createElement('img');
+  icon.src = './icon-192.png';
+  icon.style.cssText = 'width:40px;height:40px;border-radius:50%;flex-shrink:0;';
+  icon.alt = 'Vaulted Roots';
+
+  var text = document.createElement('div');
+  text.style.cssText = 'flex:1;';
+  text.innerHTML = '<div style="font-size:14px;font-weight:bold;color:#c8a972;">Install Vaulted Roots</div><div style="font-size:12px;color:#a08866;">In Safari: tap Share, then Add to Home Screen</div>';
+
+  var closeBtn = document.createElement('button');
+  closeBtn.textContent = '\u2715';
+  closeBtn.style.cssText = 'background:none;border:none;color:#a08866;font-size:18px;cursor:pointer;padding:4px;flex-shrink:0;';
+
+  banner.appendChild(icon);
+  banner.appendChild(text);
+  banner.appendChild(closeBtn);
+  document.body.appendChild(banner);
+  setTimeout(function() { banner.style.transform = 'translateY(0)'; }, 100);
+
+  if (typeof gtag === 'function') {
+    gtag('event', 'pwa_install', { event_label: 'ios_banner_shown' });
+  }
+
+  closeBtn.addEventListener('click', function() {
+    localStorage.setItem('vr_install_dismissed', '1');
+    if (typeof gtag === 'function') {
+      gtag('event', 'pwa_install', { event_label: 'banner_closed' });
+    }
+    banner.style.transform = 'translateY(100%)';
+    setTimeout(function() { banner.remove(); }, 300);
+  });
+})();
 </script>
 <script>
 // GA4 Event Tracking — click delegation for all meaningful user actions
