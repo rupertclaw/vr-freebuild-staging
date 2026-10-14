@@ -1,0 +1,244 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connection Mockup — Vaulted Roots</title>
+<link rel="icon" type="image/png" href="./favicon-32.png">
+<style>
+@import url('./fonts.css');
+* { box-sizing: border-box; margin: 0; padding: 0; }
+html, body { min-height: 100%; background: #f0e2c5; font-family: 'Cormorant Garamond', serif; }
+.topbar { position: fixed; top:0; left:0; right:0; height:52px; background:#3e2b1a; color:#d4b896; display:flex; align-items:center; gap:16px; padding:0 18px; z-index:50; border-bottom:2px solid #5c4033; }
+.topbar .brand { font-size:20px; letter-spacing:1px; }
+.topbar .tag { font-size:12px; color:#a08866; }
+.topbar .switch { margin-left:auto; display:flex; gap:8px; }
+.topbar button { background:#5c4033; color:#e6d2b5; border:1px solid #7a5a42; padding:6px 14px; font-family:inherit; font-size:14px; cursor:pointer; border-radius:4px; }
+.topbar button.on { background:#8b5e34; color:#f5e6c8; }
+#viewport { position:absolute; top:52px; left:0; right:0; bottom:0; overflow:hidden; cursor:grab; background:#f0e2c5; background-image:radial-gradient(#d9c49a 1px, transparent 1px); background-size:28px 28px; }
+#viewport.dragging { cursor:grabbing; }
+#world { position:absolute; top:0; left:0; transform-origin:0 0; width:10px; height:10px; }
+svg.links { position:absolute; top:0; left:0; overflow:visible; pointer-events:none; }
+svg.links path { fill:none; stroke:#6b4f36; stroke-width:2.2; }
+svg.links path.spouse { stroke:#a0522d; }
+.card { position:absolute; width:150px; height:64px; background:rgba(255,250,240,0.97); border:2px solid #5c4033; border-radius:8px; padding:7px 10px; box-shadow:2px 3px 8px rgba(60,40,20,0.25); user-select:none; }
+.card .nm { font-size:14px; font-weight:bold; color:#3e2b1a; white-space:nowrap; }
+.card .yr { font-size:12px; color:#7a5a42; margin-top:2px; }
+.card.main { border-color:#8b5e34; box-shadow:0 0 0 3px rgba(139,94,52,0.3), 2px 3px 8px rgba(60,40,20,0.25); }
+.legend { position:fixed; bottom:12px; left:12px; background:rgba(62,43,26,0.92); color:#d4b896; padding:10px 14px; border-radius:8px; font-size:13px; line-height:1.6; z-index:60; max-width:340px; }
+.legend b { color:#f0e6d2; }
+</style>
+</head>
+<body>
+<div class="topbar">
+  <span class="brand">🌳 Vaulted Roots</span>
+  <span class="tag">connection mockup</span>
+  <span class="switch">
+    <button id="btnNew" class="on">family-chart links</button>
+    <button id="btnOld">our current links</button>
+  </span>
+</div>
+<div id="viewport">
+  <div id="world">
+    <svg class="links" id="linkSvg"><g id="linkG"></g></svg>
+    <div id="cardLayer"></div>
+  </div>
+</div>
+<div class="legend"><b>Drag to pan, wheel to zoom.</b> Toggle the two buttons in the top bar: <b>family-chart links</b> connect each child to the midpoint between its parents (one clean line per family, rounded elbows); <b>our current links</b> draw a separate diagonal to each parent card. Data is fictional (Harrow/Fenwick).</div>
+
+<script>
+// Fictional demo data
+var DATA = [
+  {id:'p1', name:'Gavin Harrow',  yr:'1955', parents:['f1','m1'], spouses:['w1'], children:['c1','c2','c3']},
+  {id:'w1', name:'Diana Fenwick', yr:'1957', parents:['f2','m2'], spouses:['p1'], children:['c1','c2','c3']},
+  {id:'f1', name:'John Harrow',   yr:'1930', parents:['ff1','fm1'], spouses:['m1'], children:['p1','u1']},
+  {id:'m1', name:'Margaret Vale', yr:'1932', spouses:['f1'], children:['p1','u1']},
+  {id:'ff1',name:'William Harrow',yr:'1902', spouses:['fm1'], children:['f1']},
+  {id:'fm1',name:'Sarah Marsh',   yr:'1905', spouses:['ff1'], children:['f1']},
+  {id:'f2', name:'Robert Fenwick',yr:'1928', spouses:['m2'], children:['w1','u2']},
+  {id:'m2', name:'Eleanor Vale',  yr:'1931', spouses:['f2'], children:['w1','u2']},
+  {id:'c1', name:'Emma Harrow',   yr:'1982', parents:['p1','w1'], spouses:['s1'], children:['g1']},
+  {id:'s1', name:'Tom Elder',     yr:'1980', spouses:['c1'], children:['g1']},
+  {id:'c2', name:'James Harrow',  yr:'1985', parents:['p1','w1']},
+  {id:'c3', name:'Lily Harrow',   yr:'1989', parents:['p1','w1']},
+  {id:'u1', name:'Peter Harrow',  yr:'1958', parents:['f1','m1']},
+  {id:'u2', name:'Alice Fenwick', yr:'1960', parents:['f2','m2']},
+  {id:'g1', name:'Noah Harrow',   yr:'2012', parents:['c1','s1']}
+];
+var MAIN = 'p1';
+var CARD_W = 150, CARD_H = 64, NODE_SEP = 230, LEVEL_SEP = 150;
+
+var byId = {}; DATA.forEach(function(p){ byId[p.id] = p; });
+
+// generation assignment
+var GEN = {}; GEN[MAIN] = 0;
+(function assign(){
+  var changed = true;
+  while (changed) {
+    changed = false;
+    DATA.forEach(function(p){
+      var g = GEN[p.id];
+      if (g === undefined) return;
+      (p.spouses||[]).forEach(function(sid){ if (GEN[sid] === undefined) { GEN[sid] = g; changed = true; } });
+      (p.parents||[]).forEach(function(pid){ if (GEN[pid] === undefined) { GEN[pid] = g - 1; changed = true; } });
+      (p.children||[]).forEach(function(cid){ if (GEN[cid] === undefined) { GEN[cid] = g + 1; changed = true; } });
+      // consistency: parents are one generation up, children one down
+      (p.parents||[]).forEach(function(pid){ if (GEN[pid] > GEN[p.id]-1) { GEN[pid] = GEN[p.id]-1; changed = true; } });
+      (p.children||[]).forEach(function(cid){ if (GEN[cid] < GEN[p.id]+1) { GEN[cid] = GEN[p.id]+1; changed = true; } });
+    });
+  }
+})();
+
+// layout: row per generation, couples pulled adjacent
+var POS = (function(){
+  var rows = {};
+  DATA.forEach(function(p){ var g = GEN[p.id]; (rows[g] = rows[g]||[]).push(p); });
+  var pos = {};
+  Object.keys(rows).map(Number).sort(function(a,b){return a-b;}).forEach(function(g){
+    var row = rows[g];
+    // order: keep couples together, main line centered
+    var placed = [], remaining = row.slice();
+    while (remaining.length) {
+      var p = remaining.shift();
+      placed.push(p);
+      (p.spouses||[]).forEach(function(sid){
+        var i = remaining.findIndex(function(q){ return q.id===sid; });
+        if (i >= 0) placed.push(remaining.splice(i,1)[0]);
+      });
+    }
+    var x = -(placed.length * NODE_SEP)/2 + NODE_SEP/2;
+    placed.forEach(function(p){
+      pos[p.id] = { x: x, y: g * LEVEL_SEP };
+      x += NODE_SEP;
+    });
+  });
+  // pull couples adjacent (170px apart)
+  DATA.forEach(function(p){
+    (p.spouses||[]).forEach(function(sid){
+      if (GEN[sid] !== GEN[p.id]) return;
+      var a = pos[p.id], b = pos[sid];
+      if (Math.abs(a.x - b.x) > 60) {
+        var mid = (a.x + b.x)/2;
+        a.x = mid - 85; b.x = mid + 85;
+      }
+    });
+  });
+  return pos;
+})();
+
+// family-chart style links
+function newLinks(){
+  var links = [], seen = {};
+  DATA.forEach(function(p){
+    var pars = (p.parents||[]).filter(function(pid){ return POS[pid]; });
+    if (pars.length && POS[p.id]) {
+      // ONE line per child-family, to the couple midpoint; dedup by sorted id
+      var id = [p.id].concat(pars).sort().join(',');
+      if (!seen[id]) {
+        seen[id] = true;
+        var j;
+        if (pars.length === 2) {
+          j = { x: (POS[pars[0]].x + POS[pars[1]].x)/2 + CARD_W/2, y: POS[pars[0]].y + CARD_H };
+        } else {
+          j = { x: POS[pars[0]].x + CARD_W/2, y: POS[pars[0]].y + CARD_H };
+        }
+        var c = { x: POS[p.id].x + CARD_W/2, y: POS[p.id].y };
+        links.push({ d: elbow(c, j), spouse:false });
+      }
+    }
+    (p.spouses||[]).forEach(function(sid){
+      var id = [p.id, sid].sort().join(',');
+      if (seen[id] || !POS[sid] || GEN[sid] !== GEN[p.id]) return;
+      seen[id] = true;
+      var a = POS[p.id], b = POS[sid];
+      if (a.x > b.x) { var t=a; a=b; b=t; }
+      links.push({ d: 'M '+(a.x+CARD_W)+' '+(a.y+CARD_H/2)+' L '+(b.x)+' '+(b.y+CARD_H/2), spouse:true });
+    });
+  });
+  return links;
+}
+
+function elbow(from, to){
+  var midY = from.y + (to.y - from.y)/2, r = 12;
+  var dir = to.x >= from.x ? 1 : -1;
+  return 'M '+from.x+' '+from.y+
+    ' L '+from.x+' '+(midY-r)+
+    ' Q '+from.x+' '+midY+' '+(from.x+dir*r)+' '+midY+
+    ' L '+(to.x-dir*r)+' '+midY+
+    ' Q '+to.x+' '+midY+' '+to.x+' '+(midY+r)+
+    ' L '+to.x+' '+to.y;
+}
+
+// our current style: separate diagonal to each parent
+function oldLinks(){
+  var links = [];
+  DATA.forEach(function(p){
+    (p.parents||[]).forEach(function(pid){
+      if (!POS[pid] || !POS[p.id]) return;
+      links.push({ d: 'M '+(POS[p.id].x+CARD_W/2)+' '+(POS[p.id].y)+' L '+(POS[pid].x+CARD_W/2)+' '+(POS[pid].y+CARD_H), spouse:false });
+    });
+    (p.spouses||[]).forEach(function(sid){
+      if (!POS[sid] || GEN[sid] !== GEN[p.id]) return;
+      var a2 = POS[p.id], b2 = POS[sid];
+      if (a2.x > b2.x) { var t2=a2; a2=b2; b2=t2; }
+      links.push({ d: 'M '+(a2.x+CARD_W)+' '+(a2.y+CARD_H/2)+' L '+(b2.x)+' '+(b2.y+CARD_H/2), spouse:true });
+    });
+  });
+  return links;
+}
+
+function render(mode){
+  var g = document.getElementById('linkG');
+  g.innerHTML = '';
+  (mode==='new' ? newLinks() : oldLinks()).forEach(function(l){
+    var path = document.createElementNS('http://www.w3.org/2000/svg','path');
+    path.setAttribute('d', l.d);
+    if (l.spouse) path.setAttribute('class','spouse');
+    g.appendChild(path);
+  });
+}
+
+// draw cards once
+(function(){
+  var layer = document.getElementById('cardLayer');
+  DATA.forEach(function(p){
+    var c = document.createElement('div');
+    c.className = 'card' + (p.id===MAIN ? ' main' : '');
+    c.style.left = POS[p.id].x + 'px';
+    c.style.top = POS[p.id].y + 'px';
+    c.innerHTML = '<div class="nm">'+p.name+'</div><div class="yr">'+p.yr+'</div>';
+    layer.appendChild(c);
+  });
+})();
+
+render('new');
+document.getElementById('btnNew').addEventListener('click', function(){ render('new'); this.classList.add('on'); document.getElementById('btnOld').classList.remove('on'); });
+document.getElementById('btnOld').addEventListener('click', function(){ render('old'); this.classList.add('on'); document.getElementById('btnNew').classList.remove('on'); });
+
+// pan/zoom
+(function(){
+  var vp = document.getElementById('viewport'), world = document.getElementById('world');
+  var scale = 1, tx = 0, ty = 0, drag = null;
+  function apply(){ world.style.transform = 'translate('+tx+'px,'+ty+'px) scale('+scale+')'; }
+  vp.addEventListener('pointerdown', function(e){ drag = {x:e.clientX, y:e.clientY, tx:tx, ty:ty}; vp.classList.add('dragging'); });
+  window.addEventListener('pointerup', function(){ drag = null; vp.classList.remove('dragging'); });
+  vp.addEventListener('pointermove', function(e){
+    if (!drag) return;
+    tx = drag.tx + (e.clientX - drag.x); ty = drag.ty + (e.clientY - drag.y); apply();
+  });
+  vp.addEventListener('wheel', function(e){
+    e.preventDefault();
+    var ns = Math.min(2.5, Math.max(0.25, scale * (e.deltaY < 0 ? 1.12 : 0.89)));
+    var rect = vp.getBoundingClientRect();
+    var mx = e.clientX - rect.left, my = e.clientY - rect.top;
+    tx = mx - (mx - tx) * (ns/scale);
+    ty = my - (my - ty) * (ns/scale);
+    scale = ns; apply();
+  }, {passive:false});
+  tx = -POS[MAIN].x * scale + (window.innerWidth/2 - CARD_W/2);
+  ty = -POS[MAIN].y * scale + (window.innerHeight/2 - CARD_H/2 - 52);
+  apply();
+})();
+</script>
+</body>
+</html>
