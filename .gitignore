@@ -11,3 +11,10 @@ node_modules/
 # Local dev artifacts
 *.logtest_cdp.py
 test_remarriage.py
+
+# Real family data must never be committed
+*.ged
+*.familytree
+*.familytree.json
+familytree_*.json
+downloads/

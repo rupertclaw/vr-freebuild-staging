@@ -1,7 +1,7 @@
 # Vaulted Roots — Complete Handover Brief for Claude
 
 **Date:** 2026-10-14
-**Author:** Rupert (Gavin's build agent)
+**Author:** Rupert (the owner's build agent)
 **Repo:** `rupertclaw/vr-freebuild-staging` (staging) / `MaplePulse/genealogy-mockup` (production via PR)
 **Live URLs:**
 - Production: `https://vaultedroots.com`
@@ -93,7 +93,6 @@ Pages communicate via shared data structures in memory (not a real router). The 
 | `data-tree.html` | Pedigree (ancestor-only) view. Full-screen, focused tree. | ~322KB |
 | `families.html` | Multi-family manager. Create, switch, rename, delete families. | ~22KB |
 | `heritage-poster.html` | Printable tree poster (customisable banner, fonts, etc). | ~190KB |
-| `download.html` | GEDCOM export + `.familytree` JSON export | ~1KB (redirects to builder) |
 | `sw.js` | Service worker for PWA offline caching | ~3.8KB |
 | `manifest.json` | PWA manifest | ~0.9KB |
 
@@ -107,8 +106,7 @@ Pages communicate via shared data structures in memory (not a real router). The 
 | `poster-banner-bg.jpg` | Default banner for heritage poster |
 | `fonts/` | Custom web fonts (Cormorant Garamond for headers, Source Sans Pro for body) |
 | `fonts.css` | @font-face declarations |
-| `tree-data.js` / `tree-data.json` | Demo/test data embedded in repo (fictionalised, see Privacy section) |
-| `test-harrow.ged` / `test-harrow-small.ged` | Test GEDCOM files (fictionalised names) |
+| `tree-data.js` / `tree-data.json` | Demo/test data embedded in repo (fully fictional, see Privacy section) |
 
 ### Staging-Only Experimental Files (NOT in production)
 
@@ -230,8 +228,8 @@ There is no `npm install`, no `webpack`, no `vite`. The entire app is static HTM
 
 | Branch | Purpose | Rules |
 |--------|---------|-------|
-| `main` | Production. Live on `vaultedroots.com`. | **Protected.** Gavin merges PRs here. Rupert NEVER pushes directly. |
-| `stage` | Staging. Live on `rupertclaw.github.io/vr-freebuild-staging/`. | Rupert pushes freely. Used for Gavin to preview before merging. |
+| `main` | Production. Live on `vaultedroots.com`. | **Protected.** The owner merges PRs here. Rupert NEVER pushes directly. |
+| `stage` | Staging. Live on `rupertclaw.github.io/vr-freebuild-staging/`. | Rupert pushes freely. Used by the owner to preview before merging. |
 | Feature branches | `rupert/feature-name` — created off `main` or `stage` | Merged to `stage` first, then PR to `main`. |
 
 ### Deploy Flow (Rupert → Staging)
@@ -242,9 +240,9 @@ There is no `npm install`, no `webpack`, no `vite`. The entire app is static HTM
 5. Wait ~60 seconds for GitHub Pages to rebuild
 6. Verify on `https://rupertclaw.github.io/vr-freebuild-staging/<file>.html`
 
-### Deploy Flow (Gavin → Production)
-1. Gavin reviews the `stage` branch on staging URL
-2. Creates PR from `stage` → `main` on `MaplePulse/genealogy-mockup` (or approves Rupert's PR)
+### Deploy Flow (Owner → Production)
+1. The owner reviews the `stage` branch on staging URL
+2. Owner creates PR from `stage` → `main` on `MaplePulse/genealogy-mockup` (or approves Rupert's PR)
 3. Merges PR on GitHub web UI
 4. GitHub Pages rebuilds `main` → `vaultedroots.com`
 
@@ -268,7 +266,7 @@ For Vaulted Roots (GitHub Pages), this is NOT required but is used consistently 
 
 ## Privacy Scrub Context
 
-This is CRITICAL context. In October 2026, a major privacy pass was completed (PRs #83, #86, #87). ALL real personal identifiers were removed from the repo and the live site. The project owner is now described as:
+This is CRITICAL context. In October 2026, a major privacy pass was completed (PRs #83, #86, #87). Real personal identifiers were removed from the production pages (see "Staging Repo Scrub" below for the follow-up on this repo). The project owner is now described as:
 
 > "A retired Canadian individual who is a hobby developer."
 
@@ -279,30 +277,17 @@ This is CRITICAL context. In October 2026, a major privacy pass was completed (P
 4. **Personal Facebook profile link** — Replaced with business page link (`fb.me/VaultedRoots`)
 5. **Real family data** — All demo/test trees now use fictional names
 
-### Fictional Name Mapping
-When working with demo data, test files, or mockups, use these substitutions:
+### Fictional Demo Names
+Demo data, test files and mockups use fictional families (Harrow, Fenwick, Marsh, Elder, Vale, etc.; root person "Gavin Harrow"). The mapping from real to fictional names is deliberately **not** recorded anywhere in this repo — publishing it would undo the pseudonymisation.
 
-| Real | Fictional | Notes |
-|------|-----------|-------|
-| Harrow | Harrow | Primary surname |
-| Fenwick | Fenwick | Maternal line |
-| Marsh | Marsh | |
-| Elder | Elder | |
-| Vale | Vale | |
-| Gavin | Gavin | First name of the "root" person |
-| Rose (wife) | Rose Fenwick | Kept first name, changed surname |
-
-### Files That Still Mention Real Names
-The following files contain real names in **code comments or internal variable names only** (NOT user-facing). These should be scrubbed in a final pass:
-- `family-builder.html` — comments like `// harrow normalization`, variable `harrowSoundex`
-- `heritage-poster.html` — similar comment patterns
-
-All user-facing text, demo data, and mockups are clean.
+### Staging Repo Scrub (2026-10-14)
+The October privacy PRs were applied to production pages, but this public staging repo still held real family data. On 2026-10-14 it was cleaned:
+- Real GEDCOM files, `.familytree` exports, the `downloads/` folder, old `data-tree.html` backups and the backup-download pages were deleted.
+- `tree-data.js` / `tree-data.json` were regenerated with every given name and surname swapped and dates cut to the year.
+- Git history was rewritten on all branches to remove the deleted files and replace real names in old file versions and commit messages. **Any clone made before 2026-10-14 must be deleted and re-cloned — never push from an old clone, or the old history comes back.**
 
 ### Demo/Test Data Policy
-- `tree-data.js` / `tree-data.json` contain fictional data (Harrow/Fenwick)
-- `test-harrow.ged` — file NAME still says "harrow" but contents are fictionalised. Renaming the file is low priority.
-- Any new demo data MUST use fictional names. Never commit real family data to the repo.
+- Any new demo data MUST be fully fictional: swap given names AND surnames, and trim exact dates. Never commit real family data, real GEDCOMs or real `.familytree` exports to the repo (they are git-ignored).
 
 ---
 
@@ -323,7 +308,7 @@ We are evaluating whether to adopt the connection-drawing approach from the open
 
 **9-generation mockup:** `connection-mockup-9gen.html` — real 9-generation ancestor tree (511 people from export, fictionalised to Harrow/Fenwick/Marsh). 69 cards rendered (34 real + 35 blank "unknown" stubs). NEW mode: 136 paths, 0 crossings. OLD mode: 102 paths, 0 crossings.
 
-**Next step:** Awaiting Gavin's decision on which style he prefers. If approved, port the 3 rules into `family-builder.html`'s actual connection-drawing code. This is a bigger job because the custom layout engine must feed new link math.
+**Next step:** Awaiting the owner's decision on which style they prefer. If approved, port the 3 rules into `family-builder.html`'s actual connection-drawing code. This is a bigger job because the custom layout engine must feed new link math.
 
 **Reference:**
 - family-chart repo: `https://github.com/donatso/family-chart` (MIT, ~770 stars)
@@ -592,12 +577,12 @@ If you're picking up work on this project with NO prior context:
 2. **Open `family-builder.html`** in a browser — this is the core app. Understand the `STATE` object and the `render()` function.
 3. **Check the staging mockups** — `connection-mockup.html` and `connection-mockup-9gen.html` show the current experiment.
 4. **Look at recent commits** on the `stage` branch to see what changed last.
-5. **Never commit real names** — if testing with personal data, fictionalise using the mapping table above.
+5. **Never commit real names** — if testing with personal data, fully fictionalise it (given names, surnames and exact dates) before it touches the repo.
 6. **Bump `sw.js` version** on every production deploy.
 7. **Test on mobile** — tap targets, drag-to-pan, modal scroll lock.
 8. **Use headless Chromium + CDP** for automated verification, not manual browser clicking.
 
-**Current biggest open question:** Should we port the family-chart connection style (couple-midpoint, dedup, orthogonal elbows) into the main builder? Gavin needs to decide. The mockups are ready for his review.
+**Current biggest open question:** Should we port the family-chart connection style (couple-midpoint, dedup, orthogonal elbows) into the main builder? The owner needs to decide. The mockups are ready for their review.
 
 ---
 
