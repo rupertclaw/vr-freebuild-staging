@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Connection Mockup 9-Gen — Vaulted Roots</title>
+<style>
+  body { margin:0; background:#f4ead8; font-family: Georgia, 'Times New Roman', serif; overflow:hidden; }
+  #bar { position:fixed; top:0; left:0; right:0; height:56px; background:#2e2218; color:#f4ead8;
+    display:flex; align-items:center; gap:16px; padding:0 20px; z-index:10; }
+  #bar h1 { font-size:16px; font-weight:normal; margin:0; letter-spacing:1px; }
+  #bar button { padding:8px 16px; border:1px solid #b89d7a; background:transparent; color:#f4ead8;
+    font-family:inherit; cursor:pointer; border-radius:4px; font-size:14px; }
+  #bar button.on { background:#b89d7a; color:#2e2218; font-weight:bold; }
+  #hint { margin-left:auto; font-size:12px; color:#b89d7a; }
+  #stage { position:absolute; top:56px; width:100%; height:calc(100% - 56px); cursor:grab; }
+  svg { display:block; }
+  .card { position:absolute; width:150px; height:64px; background:#fffdf6; border:1.5px solid #8a715a;
+    border-radius:6px; box-shadow:2px 2px 6px rgba(46,34,24,.25); padding:6px 8px; box-sizing:border-box; }
+  .card .nm { font-size:13px; line-height:1.15; color:#2e2218; font-weight:bold; }
+  .card .yr { font-size:11px; color:#7a6a58; margin-top:3px; }
+  .card.blank { background:#efe6d4; border-style:dashed; opacity:.65; }
+  .card.blank .nm { color:#9a8b78; font-weight:normal; font-style:italic; }
+  path.lk { stroke:#8a715a; fill:none; stroke-width:1.6; }
+  path.sp { stroke:#8a715a; fill:none; stroke-width:2.4; }
+</style>
+</head>
+<body>
+<div id="bar">
+  <h1>Connection Mockup — 9 Generations</h1>
+  <button id="btnNew" class="on">family-chart links</button>
+  <button id="btnOld">our current links</button>
+  <span id="hint">drag to pan · scroll to zoom · names fictionalised</span>
+</div>
+<div id="stage"></div>
+<script>
+var CARDS = [{"id": 1, "x": 3385.0, "y": 0, "gen": 0, "name": "Gavin Harrow", "years": "b. 1966", "blank": false}, {"id": 2, "x": 3300.0, "y": -200, "gen": 1, "name": "Joseph Harrow", "years": "b. 1931", "blank": false}, {"id": 3, "x": 3470.0, "y": -200, "gen": 1, "name": "Rose Fenwick", "years": "?", "blank": false}, {"id": 4, "x": 2900.0, "y": -400, "gen": 2, "name": "Joseph Harrow", "years": " m. 1929", "blank": false}, {"id": 5, "x": 3070.0, "y": -400, "gen": 2, "name": "Alice Marsh", "years": "?", "blank": false}, {"id": 6, "x": 6300.0, "y": -400, "gen": 2, "name": "Andrew Fenwick", "years": "b. 1904", "blank": false}, {"id": 7, "x": 6470.0, "y": -400, "gen": 2, "name": "Agnes Fenwick", "years": "?", "blank": false}, {"id": 8, "x": 2500.0, "y": -600, "gen": 3, "name": "Joseph Harrow", "years": "b. 1879", "blank": false}, {"id": 9, "x": 2670.0, "y": -600, "gen": 3, "name": "Catherine Ashford", "years": "?", "blank": false}, {"id": 10, "x": 5500.0, "y": -600, "gen": 3, "name": "Edward Marsh", "years": "?", "blank": false}, {"id": 11, "x": 5670.0, "y": -600, "gen": 3, "name": "Mary Thornbury", "years": "?", "blank": false}, {"id": 12, "x": 6100.0, "y": -600, "gen": 3, "name": "", "years": "?", "blank": true}, {"id": 13, "x": 6270.0, "y": -600, "gen": 3, "name": "Agnes Fenwick (m.s. Colton)", "years": "?", "blank": false}, {"id": 14, "x": 6500.0, "y": -600, "gen": 3, "name": "", "years": "?", "blank": true}, {"id": 15, "x": 6670.0, "y": -600, "gen": 3, "name": "", "years": "?", "blank": true}, {"id": 16, "x": 1700.0, "y": -800, "gen": 4, "name": "Thomas Harrow", "years": "1857 \u2014 1911", "blank": false}, {"id": 17, "x": 1870.0, "y": -800, "gen": 4, "name": "Catherine Marsh", "years": "?", "blank": false}, {"id": 18, "x": 4300.0, "y": -800, "gen": 4, "name": "James Ashford", "years": "?", "blank": false}, {"id": 19, "x": 4470.0, "y": -800, "gen": 4, "name": "Helen Calder", "years": "?", "blank": false}, {"id": 20, "x": 5300.0, "y": -800, "gen": 4, "name": "", "years": "?", "blank": true}, {"id": 21, "x": 5470.0, "y": -800, "gen": 4, "name": "", "years": "?", "blank": true}, {"id": 22, "x": 5700.0, "y": -800, "gen": 4, "name": "", "years": "?", "blank": true}, {"id": 23, "x": 5870.0, "y": -800, "gen": 4, "name": "", "years": "?", "blank": true}, {"id": 26, "x": 6100.0, "y": -800, "gen": 4, "name": "", "years": "?", "blank": true}, {"id": 27, "x": 6270.0, "y": -800, "gen": 4, "name": "", "years": "?", "blank": true}, {"id": 32, "x": 900.0, "y": -1000, "gen": 5, "name": "Father Unknown", "years": "?", "blank": false}, {"id": 33, "x": 1070.0, "y": -1000, "gen": 5, "name": "Hannah Harrow", "years": "?", "blank": false}, {"id": 34, "x": 2700.0, "y": -1000, "gen": 5, "name": "Thomas Marsh", "years": "?", "blank": false}, {"id": 35, "x": 2870.0, "y": -1000, "gen": 5, "name": "Catherine Stratton", "years": "? \u2014 d. 1899", "blank": false}, {"id": 36, "x": 3900.0, "y": -1000, "gen": 5, "name": "John Ashford", "years": "?", "blank": false}, {"id": 37, "x": 4070.0, "y": -1000, "gen": 5, "name": "Ann Ashford (m.s. Ashford)", "years": "?", "blank": false}, {"id": 38, "x": 4700.0, "y": -1000, "gen": 5, "name": "Patrick Calder", "years": "?", "blank": false}, {"id": 39, "x": 4870.0, "y": -1000, "gen": 5, "name": "Barbara Calder (m.s. Redvers)", "years": "?", "blank": false}, {"id": 64, "x": 100.0, "y": -1200, "gen": 6, "name": "", "years": "?", "blank": true}, {"id": 65, "x": 270.0, "y": -1200, "gen": 6, "name": "", "years": "?", "blank": true}, {"id": 66, "x": 1100.0, "y": -1200, "gen": 6, "name": "Michael Harrow", "years": "?", "blank": false}, {"id": 67, "x": 1270.0, "y": -1200, "gen": 6, "name": "Agnes Pemberton", "years": "?", "blank": false}, {"id": 68, "x": 2300.0, "y": -1200, "gen": 6, "name": "John Marsh", "years": "?", "blank": false}, {"id": 69, "x": 2470.0, "y": -1200, "gen": 6, "name": "Betty Whitlock", "years": "?", "blank": false}, {"id": 70, "x": 3100.0, "y": -1200, "gen": 6, "name": "Patrick Stratton", "years": "?", "blank": false}, {"id": 71, "x": 3270.0, "y": -1200, "gen": 6, "name": "Elizabeth Larkin", "years": "?", "blank": false}, {"id": 72, "x": 3700.0, "y": -1200, "gen": 6, "name": "", "years": "?", "blank": true}, {"id": 73, "x": 3870.0, "y": -1200, "gen": 6, "name": "", "years": "?", "blank": true}, {"id": 74, "x": 4100.0, "y": -1200, "gen": 6, "name": "", "years": "?", "blank": true}, {"id": 75, "x": 4270.0, "y": -1200, "gen": 6, "name": "", "years": "?", "blank": true}, {"id": 76, "x": 4500.0, "y": -1200, "gen": 6, "name": "", "years": "?", "blank": true}, {"id": 77, "x": 4670.0, "y": -1200, "gen": 6, "name": "", "years": "?", "blank": true}, {"id": 78, "x": 4900.0, "y": -1200, "gen": 6, "name": "", "years": "?", "blank": true}, {"id": 79, "x": 5070.0, "y": -1200, "gen": 6, "name": "", "years": "?", "blank": true}, {"id": 132, "x": 700.0, "y": -1400, "gen": 7, "name": "Thomas Harrow", "years": "?", "blank": false}, {"id": 133, "x": 870.0, "y": -1400, "gen": 7, "name": "Bridget Norwood", "years": "?", "blank": false}, {"id": 134, "x": 1500.0, "y": -1400, "gen": 7, "name": "John Pemberton", "years": "?", "blank": false}, {"id": 135, "x": 1670.0, "y": -1400, "gen": 7, "name": "Betsy Ashby (m.s. Ashby)", "years": "?", "blank": false}, {"id": 136, "x": 2100.0, "y": -1400, "gen": 7, "name": "", "years": "?", "blank": true}, {"id": 137, "x": 2270.0, "y": -1400, "gen": 7, "name": "", "years": "?", "blank": true}, {"id": 138, "x": 2500.0, "y": -1400, "gen": 7, "name": "", "years": "?", "blank": true}, {"id": 139, "x": 2670.0, "y": -1400, "gen": 7, "name": "", "years": "?", "blank": true}, {"id": 140, "x": 2900.0, "y": -1400, "gen": 7, "name": "", "years": "?", "blank": true}, {"id": 141, "x": 3070.0, "y": -1400, "gen": 7, "name": "", "years": "?", "blank": true}, {"id": 142, "x": 3300.0, "y": -1400, "gen": 7, "name": "", "years": "?", "blank": true}, {"id": 143, "x": 3470.0, "y": -1400, "gen": 7, "name": "", "years": "?", "blank": true}, {"id": 264, "x": 500.0, "y": -1600, "gen": 8, "name": "", "years": "?", "blank": true}, {"id": 265, "x": 670.0, "y": -1600, "gen": 8, "name": "", "years": "?", "blank": true}, {"id": 266, "x": 900.0, "y": -1600, "gen": 8, "name": "", "years": "?", "blank": true}, {"id": 267, "x": 1070.0, "y": -1600, "gen": 8, "name": "", "years": "?", "blank": true}, {"id": 268, "x": 1300.0, "y": -1600, "gen": 8, "name": "", "years": "?", "blank": true}, {"id": 269, "x": 1470.0, "y": -1600, "gen": 8, "name": "", "years": "?", "blank": true}, {"id": 270, "x": 1700.0, "y": -1600, "gen": 8, "name": "", "years": "?", "blank": true}, {"id": 271, "x": 1870.0, "y": -1600, "gen": 8, "name": "", "years": "?", "blank": true}];
+var CLINKS = [{"child": 1, "parents": [2, 3]}, {"child": 2, "parents": [4, 5]}, {"child": 3, "parents": [6, 7]}, {"child": 4, "parents": [8, 9]}, {"child": 5, "parents": [10, 11]}, {"child": 6, "parents": [12, 13]}, {"child": 7, "parents": [14, 15]}, {"child": 8, "parents": [16, 17]}, {"child": 9, "parents": [18, 19]}, {"child": 10, "parents": [20, 21]}, {"child": 11, "parents": [22, 23]}, {"child": 13, "parents": [26, 27]}, {"child": 16, "parents": [32, 33]}, {"child": 17, "parents": [34, 35]}, {"child": 18, "parents": [36, 37]}, {"child": 19, "parents": [38, 39]}, {"child": 32, "parents": [64, 65]}, {"child": 33, "parents": [66, 67]}, {"child": 34, "parents": [68, 69]}, {"child": 35, "parents": [70, 71]}, {"child": 36, "parents": [72, 73]}, {"child": 37, "parents": [74, 75]}, {"child": 38, "parents": [76, 77]}, {"child": 39, "parents": [78, 79]}, {"child": 66, "parents": [132, 133]}, {"child": 67, "parents": [134, 135]}, {"child": 68, "parents": [136, 137]}, {"child": 69, "parents": [138, 139]}, {"child": 70, "parents": [140, 141]}, {"child": 71, "parents": [142, 143]}, {"child": 132, "parents": [264, 265]}, {"child": 133, "parents": [266, 267]}, {"child": 134, "parents": [268, 269]}, {"child": 135, "parents": [270, 271]}];
+var SLINKS = [{"a": 2, "b": 3}, {"a": 4, "b": 5}, {"a": 6, "b": 7}, {"a": 8, "b": 9}, {"a": 10, "b": 11}, {"a": 12, "b": 13}, {"a": 14, "b": 15}, {"a": 16, "b": 17}, {"a": 18, "b": 19}, {"a": 20, "b": 21}, {"a": 22, "b": 23}, {"a": 26, "b": 27}, {"a": 32, "b": 33}, {"a": 34, "b": 35}, {"a": 36, "b": 37}, {"a": 38, "b": 39}, {"a": 64, "b": 65}, {"a": 66, "b": 67}, {"a": 68, "b": 69}, {"a": 70, "b": 71}, {"a": 72, "b": 73}, {"a": 74, "b": 75}, {"a": 76, "b": 77}, {"a": 78, "b": 79}, {"a": 132, "b": 133}, {"a": 134, "b": 135}, {"a": 136, "b": 137}, {"a": 138, "b": 139}, {"a": 140, "b": 141}, {"a": 142, "b": 143}, {"a": 264, "b": 265}, {"a": 266, "b": 267}, {"a": 268, "b": 269}, {"a": 270, "b": 271}];
+var CW = 150, CH = 64;
+var W = 6920.0, H = 1864;
+
+var POS = {};
+CARDS.forEach(function(c){ POS[c.id] = {x:c.x, y:c.y}; });
+
+// build the svg link layer once
+var stage = document.getElementById('stage');
+var NS = 'http://www.w3.org/2000/svg';
+var svg = document.createElementNS(NS, 'svg');
+svg.setAttribute('width', W); svg.setAttribute('height', H);
+svg.setAttribute('id', 'linkSvg');
+stage.appendChild(svg);
+var linkG = document.createElementNS(NS, 'g');
+linkG.setAttribute('id', 'linkG');
+svg.appendChild(linkG);
+
+// cards
+var cardLayer = document.createElement('div');
+cardLayer.id = 'cardLayer';
+stage.appendChild(cardLayer);
+CARDS.forEach(function(c){
+  var d = document.createElement('div');
+  d.className = 'card' + (c.blank ? ' blank' : '');
+  d.style.left = c.x + 'px'; d.style.top = c.y + 'px';
+  d.innerHTML = '<div class="nm">' + (c.blank ? 'unknown' : c.name) + '</div>' +
+                (c.years && c.years !== '?' ? '<div class="yr">' + c.years + '</div>' : '');
+  cardLayer.appendChild(d);
+});
+
+function mkpath(d, cls){
+  var p = document.createElementNS(NS, 'path');
+  p.setAttribute('d', d); p.setAttribute('class', cls);
+  linkG.appendChild(p);
+}
+
+function drawNew(){
+  linkG.innerHTML = '';
+  // spouse links: inner edges
+  SLINKS.forEach(function(s){
+    var a = POS[s.a], b = POS[s.b];
+    if (a.x > b.x) { var t=a; a=b; b=t; }
+    mkpath('M '+(a.x+CW)+' '+(a.y+CH/2)+' L '+(b.x)+' '+(b.y+CH/2), 'sp');
+  });
+  // child links: single line to couple midpoint, orthogonal elbows with rounded corners
+  CLINKS.forEach(function(L){
+    var ch = POS[L.child];
+    var p1 = POS[L.parents[0]];
+    var p2 = POS[L.parents[1]] || p1;
+    var mx = (p1.x + p2.x) / 2 + CW/2;
+    var py = Math.max(p1.y, p2.y) + CH;
+    var cy = ch.y;
+    // vertical drop from couple
+    mkpath('M '+mx+' '+py+' L '+mx+' '+(py+30), 'lk');
+    // bus across to child x
+    var midY = py + 45;
+    mkpath('M '+mx+' '+(py+30)+' Q '+mx+' '+midY+' '+(mx + (ch.x+CW/2 > mx ? 8 : -8))+' '+midY+
+           ' L '+(ch.x+CW/2 - (ch.x+CW/2 > mx ? 8 : -8))+' '+midY+
+           ' Q '+(ch.x+CW/2)+' '+midY+' '+(ch.x+CW/2)+' '+(midY+15), 'lk');
+    mkpath('M '+(ch.x+CW/2)+' '+(midY+15)+' L '+(ch.x+CW/2)+' '+cy, 'lk');
+  });
+}
+
+function drawOld(){
+  linkG.innerHTML = '';
+  SLINKS.forEach(function(s){
+    var a = POS[s.a], b = POS[s.b];
+    if (a.x > b.x) { var t=a; a=b; b=t; }
+    mkpath('M '+(a.x+CW)+' '+(a.y+CH/2)+' L '+(b.x)+' '+(b.y+CH/2), 'sp');
+  });
+  // separate diagonal from child to each parent card
+  CLINKS.forEach(function(L){
+    var ch = POS[L.child];
+    L.parents.forEach(function(pid){
+      if (!POS[pid]) return;
+      var p = POS[pid];
+      mkpath('M '+(ch.x+CW/2)+' '+ch.y+' L '+(p.x+CW/2)+' '+(p.y+CH), 'lk');
+    });
+  });
+}
+
+var btnNew = document.getElementById('btnNew'), btnOld = document.getElementById('btnOld');
+btnNew.onclick = function(){ drawNew(); btnNew.className='on'; btnOld.className=''; };
+btnOld.onclick = function(){ drawOld(); btnOld.className='on'; btnNew.className=''; };
+drawNew();
+
+// pan + zoom
+var scale = 1, tx = 0, ty = 0, dragging = false, sx=0, sy=0, fx=0, fy=0;
+function apply(){ stage.firstElementChild.style.transform = 'translate('+tx+'px,'+ty+'px) scale('+scale+')'; cardLayer.style.transform = 'translate('+tx+'px,'+ty+'px) scale('+scale+')'; }
+stage.addEventListener('mousedown', function(e){ dragging=true; sx=e.clientX; sy=e.clientY; fx=tx; fy=ty; });
+window.addEventListener('mousemove', function(e){ if(dragging){ tx=fx+e.clientX-sx; ty=fy+e.clientY-sy; apply(); } });
+window.addEventListener('mouseup', function(){ dragging=false; });
+stage.addEventListener('wheel', function(e){
+  e.preventDefault();
+  var f = e.deltaY < 0 ? 1.12 : 0.89;
+  var r = stage.getBoundingClientRect();
+  var mx = e.clientX - r.left, my = e.clientY - r.top;
+  tx = mx - (mx - tx) * f; ty = my - (my - ty) * f; scale *= f;
+  svg.style.transform = 'translate('+tx+'px,'+ty+'px) scale('+scale+')';
+  svg.style.transformOrigin = '0 0';
+  cardLayer.style.transform = 'translate('+tx+'px,'+ty+'px) scale('+scale+')';
+  cardLayer.style.transformOrigin = '0 0';
+}, {passive:false});
+</script>
+</body>
+</html>
