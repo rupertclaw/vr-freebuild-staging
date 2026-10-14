@@ -1586,7 +1586,7 @@ function layoutTree() {
   // back to parents[0] mirrored the whole ancestor layout depending on which
   // child was focused. Infer from the first name so sides are stable.
   const SEX_NAME_MAP = {
-    M: new Set(['joseph','john','jack','james','jim','jimmy','andrew','andy','drew','brant','derek','scott','ian','mark','paul','matthew','matt','benjamin','ben','joel','michael','mike','christopher','chris','malcolm','eric','weston','gavin','graham','patrick','pat','thomas','tom','tommy','william','bill','billy','willie','robert','rob','bob','bobby','david','dave','daniel','dan','danny','peter','pete','steven','steve','stephen','ste','alexander','ryan','brian','kevin','jason','adam','aaron','justin','brandon','tyler','keith','greg','gregory','shawn','sean','craig','glenn','neil','nigel','stuart','stewart','alan','allen','bruce','wayne','ron','ronald','ronnie','gary','larry','terry','doug','douglas','frank','frankie','francis','henry','harry','harold','sam','samuel','oscar','leo','leon','leonard','luke','owen','ethan','noah','liam','mason','jacob','jake','max','maxwell','felix','hugo','arthur','alfred','albert','ernest','howard','walter','ralph','roy','earl','floyd','clarence','lawrence','laurence','gerald','jerry','dennis','denis','randy','rodney','rick','richard','richie','ed','edward','eddie','ted','theodore','theo','philip','phil','phillip','martin','marty','anthony','tony','raymond','ray','walter','herbert','clifford','cliff','cyril','sidney','sydney','leslie','les','norman','harvey','melvin','marvin','clifford']),
+    M: new Set(['joseph','john','jack','james','jim','jimmy','andrew','andy','drew','brant','derek','scott','ian','mark','paul','matthew','matt','benjamin','ben','joel','michael','mike','christopher','chris','malcolm','eric','weston','graeme','graham','patrick','pat','thomas','tom','tommy','william','bill','billy','willie','robert','rob','bob','bobby','david','dave','daniel','dan','danny','peter','pete','steven','steve','stephen','ste','alexander','ryan','brian','kevin','jason','adam','aaron','justin','brandon','tyler','keith','greg','gregory','shawn','sean','craig','glenn','neil','nigel','stuart','stewart','alan','allen','bruce','wayne','ron','ronald','ronnie','gary','larry','terry','doug','douglas','frank','frankie','francis','henry','harry','harold','sam','samuel','oscar','leo','leon','leonard','luke','owen','ethan','noah','liam','mason','jacob','jake','max','maxwell','felix','hugo','arthur','alfred','albert','ernest','howard','walter','ralph','roy','earl','floyd','clarence','lawrence','laurence','gerald','jerry','dennis','denis','randy','rodney','rick','richard','richie','ed','edward','eddie','ted','theodore','theo','philip','phil','phillip','martin','marty','anthony','tony','raymond','ray','walter','herbert','clifford','cliff','cyril','sidney','sydney','leslie','les','norman','harvey','melvin','marvin','clifford']),
     F: new Set(['rose','alice','agnes','moira','roselyn','rosalyn','rosaleen','jennifer','jen','jenny','alexandra','jaime-lynn','jaime','lynn','lisa','jan','jane','janet','janice','margaret','maggie','peggy','megan','meg','ellie','elizabeth','liz','beth','betty','elisabeth','mary','maria','marie','anna','ann','anne','hannah','sarah','sara','sally','susan','sue','suzy','karen','linda','patricia','patty','deborah','deb','debbie','barbara','carol','caroline','carolyn','nancy','sandra','sandy','sharon','cynthia','cindy','kathleen','kathy','kate','katie','catherine','cathy','elaine','helen','ellen','heather','claire','clare','clara','dorothy','doris','joyce','jean','joan','joanna','donna','diane','diana','dana','julie','julia','gillian','gill','fiona','sheila','maureen','maura','eileen','sinead','niamh','deirdre','siobhan','brigid','bridget','briege','una','fionnuala','finola','orla','grainne','caoimhe','aoife','evelyn','eve','eva','ruth','emma','emily','amy','abigail','abby','olivia','sophie','sophia','isabel','isabella','gail','tracy','tracey','wendy','dawn','kim','kimberly','nicole','nikki','rachel','rebecca','becky','laura','lauren','laurence','sam','samantha','victoria','vicky','louise','lucy','lucia','lucille','frances','frances','francis','vera','veronica','bernice','bernadette','brenda','paula','pauline','robin','robyn','erin','colleen','kathryn','kristen','kirsten','kelly','shannon','morgan','alison','allison','amanda','mandy','angela','angel','anna','audrey','bonnie','charlotte','cheryl','christine','tina','crystal','dana','daphne','darlene','denise','edith','eleanor','ellie','emily','erica','esther','gina','gloria','heidi','holly','irene','iris','isabella','ivory','jade','jasmine','jill','jo','jodi','judith','judy','julia','june','kara','kendra','lara','lena','leona','lila','lily','lindsay','lindsey','loretta','lorraine','lydia','lynette','marcia','marilyn','marnie','martha','matilda','maud','maude','melanie','melissa','michelle','mildred','millie','miriam','myrtle','naomi','natalie','nell','nora','norah','norma','olive','olivia','pamela','pam','pearl','penelope','penny','phyllis','priscilla','prudence','regina','rene','renee','rhoda','rita','rosa','rosemary','rosie','ruby','sabrina','sylvia','tabitha','tamara','tanya','teresa','terri','teri',' tess','tess','theresa','tiffany','valerie','vanessa','vera','verna','veronica','violet','virginia','vivian','wanda','wilhelmina','winifred','yvonne','yvette','zoe'])
   };
   function sexOf(id) {
@@ -1775,7 +1775,7 @@ function layoutTree() {
     // left→right on both sides): the direct-line person keeps its natural
     // slot inside the run. The old code pinned the direct line at the inner
     // edge, which split the run whenever the direct line wasn't the extreme
-    // sibling (e.g. anchor Jolene 1984 rendered Pryor 1982 to her right).
+    // sibling (e.g. anchor Jolene 1984 rendered Lloyd 1982 to her right).
     // The group still hugs the inner edge — see the walk below.
 
     // For focus person, leave space to the RIGHT of their unit for extra spouses
@@ -1815,7 +1815,7 @@ function layoutTree() {
     // birth order. The direct line keeps its natural slot inside the run.
     // Sibling slots never enter the direct-line couple's real span, so the
     // collision pass has nothing to shove — this fixes anchor-with-spouse
-    // ordering (Pryor 1982 must sit LEFT of anchor Jolene 1984 + her spouse,
+    // ordering (Lloyd 1982 must sit LEFT of anchor Jolene 1984 + her spouse,
     // not get shoved to the couple's far side by collision resolution).
     // Direct-line unit span from ACTUAL placed cards (person + adjacent
     // primary spouse). A visited direct-line person has a 0-width slot,
@@ -1853,7 +1853,7 @@ function layoutTree() {
     // walked maternal siblings across into paternal territory.
     // ── Centre branch (focus row) keeps the birth-order run ──
     // Older sibs LEFT in reverse birth order, younger sibs RIGHT in birth
-    // order, run intact around the direct-line couple unit (the Pryor/Jolene
+    // order, run intact around the direct-line couple unit (the Lloyd/Jolene
     // birth-order fix — the anchor row is a single family, no branch sides).
     cursor = myUnitRight + SIB_GAP;
     if (side === 'left' || side === 'right') {
@@ -2024,7 +2024,7 @@ function layoutTree() {
       if (!positions.has(mother)) positions.set(mother, { x: Math.round(wifeCenter0 - CARD_W / 2), y: parentY });
       // Owner's rule: the whole PATERNAL super-branch (everything above the
       // focus's father, INCLUDING the paternal grandmother's parents — e.g.
-      // Edward Marsh + Mary Ashdown) packs LEFT of the focus-parents' centre
+      // Edward Marsh + Mary Graham) packs LEFT of the focus-parents' centre
       // line; the whole MATERNAL super-branch (e.g. Andrew Fenwick + Agnes)
       // packs RIGHT. Side is decided once at the branch point (father's walk
       // → 'left', mother's walk → 'right') and inherited unchanged by every
@@ -2328,7 +2328,7 @@ function layoutTree() {
     if (positions.has(p.id)) continue;
 
     // 1. Spouse placed → sit beside them. Check the primary spouseId too —
-    // a person with only a primary spouse pointer (Moira Prentice, spouseId
+    // a person with only a primary spouse pointer (e.g. a second wife, spouseId
     // only, no families[]) fell through to 'disconnected', landed at row
     // x=50 on top of the sibling row, and the collision pass then squeezed
     // her 103px from her husband (it can't fix intra-component gaps).
@@ -2569,7 +2569,7 @@ function layoutTree() {
     const floorY = parentBottomY + 2;
     // Endpoint-touching bars must stagger too: two buses that merely share an
     // end x render collinear and read as ONE merged line (Karen's parent bus
-    // visually swallowing into the Newbold in-law bus). Pad by +2.
+    // visually swallowing into the Andrews in-law bus). Pad by +2.
     const collides = () => placedBars.some(b => Math.abs(b.y - midY) < 10 && barX1 < b.x2 + 2 && b.x1 < barX2 + 2);
     // Prefer nudging UP toward the parents: an upper bus never crosses the
     // other family's parent→bar drop verticals, and a right-side marriage's
@@ -2744,7 +2744,7 @@ function countHiddenBranchRels(personId, visibleSet) {
   // relationships are hidden — children or spouse BELOW, or parents ABOVE.
   // Upward case (in-law offshoots): the focus spouse's parents' parents
   // exist in the data but first-degree in-law inclusion stops at the
-  // spouse's parents, so e.g. Martin Rookwood owns his hidden parents
+  // spouse's parents, so e.g. Martin Bowers owns his hidden parents
   // James + Lillian. Ancestors of that person inherit no downward badge
   // (Michael & Bridget fully rendered → no badge); the +N belongs on the
   // card whose own relationship is hidden.
@@ -2759,7 +2759,7 @@ function countHiddenBranchRels(personId, visibleSet) {
   // the branch that continues below this card).
   // UP: this person's hidden parents + those parents' spouses + their
   // other children (the hidden grandparent/aunt-uncle generation behind
-  // an in-law marriage, e.g. Martin Rookwood' parents James + Lillian).
+  // an in-law marriage, e.g. Martin Bowers' parents James + Lillian).
   // The up-walk is ONE level deep: deeper generations reveal when the
   // user re-anchors on the newly shown cards, whose own parents then
   // badge in that view.

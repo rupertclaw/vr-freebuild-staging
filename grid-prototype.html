@@ -52,7 +52,7 @@ body { background: #2a1f1a; color: #e0d6c8; font-family: 'Segoe UI', Tahoma, san
   <div id="treeSvg"></div>
 </div>
 
-<script>const EMBEDDED_DATA = {"individuals": {"I1": {"id": "I1", "name": "Wendell /Frome/", "sex": "M", "birth": "1966", "death": ""}, "I2": {"id": "I2", "name": "Gavin /Frome/", "sex": "M", "birth": "1931", "death": "2004"}, "I3": {"id": "I3", "name": "Theodora /Ashford/", "sex": "F", "birth": "1931", "death": ""}, "I4": {"id": "I4", "name": "Edwin /Ashford/", "sex": "M", "birth": "1904", "death": "1972"}, "I5": {"id": "I5", "name": "Harriet /Garside/", "sex": "F", "birth": "1908", "death": "1985"}, "I6": {"id": "I6", "name": "Delphine /Garside/", "sex": "F", "birth": "1935", "death": ""}}, "families": {"F1": {"id": "F1", "husb": "I2", "wife": "I3", "children": ["I1"]}, "F2": {"id": "F2", "husb": "I4", "wife": "I5", "children": ["I3", "I6"]}}};</script>
+<script>const EMBEDDED_DATA = {"individuals": {"I1": {"id": "I1", "name": "Gavin /Harrow/", "sex": "M", "birth": "11 Aug 1966", "death": ""}, "I2": {"id": "I2", "name": "Joseph /Harrow/", "sex": "M", "birth": "4 Mar 1931", "death": "24 Jul 2004"}, "I3": {"id": "I3", "name": "Rose /Fenwick/", "sex": "F", "birth": "1 Dec 1931", "death": ""}, "I4": {"id": "I4", "name": "Thomas /Fenwick/", "sex": "M", "birth": "1904", "death": "1972"}, "I5": {"id": "I5", "name": "Edith /Marsh/", "sex": "F", "birth": "1908", "death": "1985"}, "I6": {"id": "I6", "name": "Alice /Marsh/", "sex": "F", "birth": "26 Apr 1935", "death": ""}}, "families": {"F1": {"id": "F1", "husb": "I2", "wife": "I3", "children": ["I1"]}, "F2": {"id": "F2", "husb": "I4", "wife": "I5", "children": ["I3", "I6"]}}};</script>
 <script>
 // ============================================================
 // VR GRID LAYOUT PROTOTYPE
@@ -61,7 +61,7 @@ body { background: #2a1f1a; color: #e0d6c8; font-family: 'Segoe UI', Tahoma, san
 // ============================================================
 
 let DATA = null;
-let ANCHOR_ID = 'I126'; // John Penhallow Harrow
+let ANCHOR_ID = 'I126'; // fictional demo anchor (see tree-data.js)
 
 // ---- GED parser ----
 function parseGed(text) {
