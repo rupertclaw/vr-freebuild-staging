@@ -294,7 +294,7 @@ The October privacy PRs were applied to production pages, but this public stagin
 ## Current Open Work
 
 ### 1. Family-Chart Connection Style Experiment
-**Status:** In staging, NOT in production
+**Status:** Superseded (2026-10-21). `family-builder.html`'s `layoutTree()` was rewritten as an "hourglass" layout (the Topola / family-chart approach): focus at the centre of row 0, father's side always left of the centre line and mother's right, ancestors' siblings and other partners on the outer side of their couple, half-sibling families grouped on their shared parent's side, subtrees packed by contour (no collision pass), and one rounded-corner bus per family drawn from the couple midpoint. The focus's in-laws are no longer shown in the focus view (the partner's card shows the 🌿 badge). "Add Parent" is now "Add Father" / "Add Mother" and stores sex; first-name sex guessing was removed. The mockups below are kept for reference only.
 **Files:** `connection-mockup.html`, `connection-mockup-9gen.html`
 
 We are evaluating whether to adopt the connection-drawing approach from the open-source `family-chart` library (MIT license) into the main builder.
